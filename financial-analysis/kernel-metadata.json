@@ -1,0 +1,25 @@
+{
+  "id": "lorenzoscaturchio/financial-time-series-analysis-prediction",
+  "title": "Stock Market Analysis & Prediction with Python",
+  "code_file": "stock_market_analysis.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "finance",
+    "stock market",
+    "time series",
+    "prediction",
+    "trading",
+    "technical analysis",
+    "lstm",
+    "machine learning",
+    "tutorial",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

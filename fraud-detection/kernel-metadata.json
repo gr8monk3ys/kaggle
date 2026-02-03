@@ -1,0 +1,25 @@
+{
+  "id": "lorenzoscaturchio/credit-card-fraud-detection-ml",
+  "title": "Credit Card Fraud Detection: Complete ML Pipeline",
+  "code_file": "fraud_detection.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "fraud detection",
+    "classification",
+    "imbalanced data",
+    "smote",
+    "machine learning",
+    "xgboost",
+    "random forest",
+    "anomaly detection",
+    "tutorial",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

@@ -1,0 +1,11 @@
+{
+  "id": "lorenzoscaturchio/gnn-guide-2026",
+  "title": "GNN Guide 2026",
+  "code_file": "gnn_practical_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["deep learning", "tutorial"]
+}

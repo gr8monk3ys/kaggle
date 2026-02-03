@@ -1,0 +1,12 @@
+{
+  "id": "lorenzoscaturchio/titanic-ultimate-guide-top-5-percent",
+  "title": "Titanic Ultimate Guide: From Zero to Top 5%",
+  "code_file": "titanic_ultimate_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "competition_sources": ["titanic"],
+  "keywords": ["beginner", "classification", "tutorial", "feature engineering", "ensembling"]
+}

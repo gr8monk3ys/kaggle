@@ -1,0 +1,26 @@
+{
+  "id": "lorenzoscaturchio/rag-from-scratch",
+  "title": "RAG From Scratch: Build Retrieval-Augmented Generation",
+  "code_file": "rag_from_scratch.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "rag",
+    "retrieval augmented generation",
+    "llm",
+    "langchain",
+    "vector database",
+    "embeddings",
+    "nlp",
+    "chatgpt",
+    "tutorial",
+    "from scratch",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

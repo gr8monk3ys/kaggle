@@ -1,0 +1,24 @@
+{
+  "id": "lorenzoscaturchio/vesuvius-challenge-surface-eda",
+  "title": "Vesuvius Challenge: 3D Surface Detection EDA",
+  "code_file": "vesuvius_eda.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "computer vision",
+    "3d segmentation",
+    "image segmentation",
+    "deep learning",
+    "vesuvius",
+    "ancient scrolls",
+    "eda",
+    "competition",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": ["vesuvius-challenge-2-surface-detection"]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "lorenzoscaturchio/ai-research-papers-trends-eda",
+  "title": "AI Research Trends: Paper Analysis & Topic Modeling",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "ai research",
+    "nlp",
+    "topic modeling",
+    "arxiv",
+    "trend analysis",
+    "eda",
+    "education"
+  ],
+  "dataset_sources": ["lorenzoscaturchio/ai-ml-research-papers-trends"],
+  "kernel_sources": [],
+  "competition_sources": []
+}

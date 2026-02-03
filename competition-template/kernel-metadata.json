@@ -1,0 +1,26 @@
+{
+  "id": "lorenzoscaturchio/competition-masterclass-full-ml-pipeline",
+  "title": "Kaggle Competition Masterclass: Full ML Pipeline Template",
+  "code_file": "kaggle_competition_masterclass.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "kaggle",
+    "competitions",
+    "machine learning",
+    "pipeline",
+    "eda",
+    "feature engineering",
+    "model selection",
+    "cross validation",
+    "template",
+    "tutorial",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

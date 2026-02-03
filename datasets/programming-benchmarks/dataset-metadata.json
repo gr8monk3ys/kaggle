@@ -1,0 +1,30 @@
+{
+  "id": "lorenzoscaturchio/programming-language-benchmarks",
+  "title": "Programming Language Benchmarks Dataset",
+  "subtitle": "2200+ benchmarks across 16 languages and 10 tasks",
+  "description": "A synthetic dataset of 2200+ programming language benchmark results covering 16 popular languages across 10 computational tasks. Includes execution time, memory usage, lines of code, and language metadata. Useful for performance comparison, language selection analysis, and software engineering research.",
+  "isPrivate": false,
+  "licenses": [{"name": "CC-BY-SA-4.0"}],
+  "keywords": ["education", "programming"],
+  "resources": [
+    {
+      "path": "language_benchmarks.csv",
+      "description": "Benchmark results across languages including execution time, memory usage, and language characteristics",
+      "schema": {
+        "fields": [
+          {"name": "language", "title": "Language", "description": "Programming language name (Python, Rust, Go, etc.)", "type": "string"},
+          {"name": "benchmark_name", "title": "Benchmark Name", "description": "Name of the benchmark task", "type": "string"},
+          {"name": "execution_time_ms", "title": "Execution Time (ms)", "description": "Time to complete benchmark in milliseconds", "type": "number"},
+          {"name": "memory_usage_mb", "title": "Memory Usage (MB)", "description": "Peak memory usage in megabytes", "type": "number"},
+          {"name": "lines_of_code", "title": "Lines of Code", "description": "LOC for the benchmark implementation", "type": "integer"},
+          {"name": "cpu_cores", "title": "CPU Cores", "description": "Number of CPU cores used", "type": "integer"},
+          {"name": "year", "title": "Year", "description": "Benchmark run year (2020-2025)", "type": "integer"},
+          {"name": "paradigm", "title": "Paradigm", "description": "Programming paradigm (functional, OOP, multi-paradigm)", "type": "string"},
+          {"name": "typing", "title": "Typing", "description": "Type system (static, dynamic)", "type": "string"},
+          {"name": "gc", "title": "Garbage Collection", "description": "Has garbage collection (yes/no)", "type": "string"},
+          {"name": "popularity_index", "title": "Popularity Index", "description": "Language popularity score (0-1)", "type": "number"}
+        ]
+      }
+    }
+  ]
+}

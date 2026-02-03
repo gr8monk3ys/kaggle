@@ -1,0 +1,21 @@
+{
+  "id": "lorenzoscaturchio/programming-language-benchmarks-eda",
+  "title": "Programming Language Benchmarks: Performance Analysis",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "programming languages",
+    "benchmarks",
+    "performance",
+    "eda",
+    "software engineering",
+    "education"
+  ],
+  "dataset_sources": ["lorenzoscaturchio/programming-language-benchmarks"],
+  "kernel_sources": [],
+  "competition_sources": []
+}

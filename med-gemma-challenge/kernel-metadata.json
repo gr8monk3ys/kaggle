@@ -1,0 +1,25 @@
+{
+  "id": "lorenzoscaturchio/med-gemma-challenge-eda-baseline-pipeline",
+  "title": "Med-Gemma Challenge: Medical AI EDA & Baseline",
+  "code_file": "med_gemma_eda.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "keywords": [
+    "medical ai",
+    "healthcare",
+    "deep learning",
+    "computer vision",
+    "chest x-ray",
+    "radiology",
+    "gemma",
+    "eda",
+    "competition",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": ["medgemma-assistants-impact-challenge"]
+}

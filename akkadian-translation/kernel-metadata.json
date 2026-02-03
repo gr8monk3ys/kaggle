@@ -1,0 +1,25 @@
+{
+  "id": "lorenzoscaturchio/akkadian-translation-eda-byt5-seq2seq-baseline",
+  "title": "Akkadian Translation: Ancient Language NLP with ByT5",
+  "code_file": "akkadian_eda.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "keywords": [
+    "nlp",
+    "machine translation",
+    "byt5",
+    "seq2seq",
+    "transformers",
+    "ancient languages",
+    "akkadian",
+    "eda",
+    "competition",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": ["deep-past-akkadian-text-completion"]
+}
