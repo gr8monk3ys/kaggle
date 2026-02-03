@@ -1,0 +1,23 @@
+{
+  "id": "lorenzoscaturchio/ml-interview-qa-exploration",
+  "title": "ML Interview Q&A: EDA, Text Classification & RAG Demo",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "dataset_sources": ["lorenzoscaturchio/ml-interview-qa"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "keywords": [
+    "machine learning",
+    "data science",
+    "interview prep",
+    "nlp",
+    "text classification",
+    "eda",
+    "rag",
+    "education"
+  ]
+}

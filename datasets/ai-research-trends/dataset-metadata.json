@@ -1,0 +1,34 @@
+{
+  "id": "lorenzoscaturchio/ai-ml-research-papers-trends",
+  "title": "AI/ML Research Papers Trends (3K+ Papers)",
+  "subtitle": "3200+ AI/ML papers with metadata for trend analysis",
+  "description": "A comprehensive synthetic dataset of 3200+ AI/ML research papers with metadata including titles, abstracts, authors, categories, venues, citation counts, and methodological information. Designed for bibliometric analysis, trend detection, and citation prediction tasks.",
+  "isPrivate": false,
+  "licenses": [{"name": "CC-BY-SA-4.0"}],
+  "keywords": ["education", "research", "nlp"],
+  "resources": [
+    {
+      "path": "ai_research_papers.csv",
+      "description": "Main dataset with paper metadata including titles, abstracts, authors, categories, venues, citation counts, and methods",
+      "schema": {
+        "fields": [
+          {"name": "paper_id", "title": "Paper ID", "description": "Unique identifier (arXiv format)", "type": "string"},
+          {"name": "title", "title": "Title", "description": "Paper title", "type": "string"},
+          {"name": "abstract", "title": "Abstract", "description": "Paper abstract text", "type": "string"},
+          {"name": "authors", "title": "Authors", "description": "Semicolon-separated author names", "type": "string"},
+          {"name": "year", "title": "Year", "description": "Publication year (2018-2025)", "type": "integer"},
+          {"name": "month", "title": "Month", "description": "Publication month (1-12)", "type": "integer"},
+          {"name": "category", "title": "Category", "description": "Primary arXiv category (cs.CV, cs.LG, cs.CL, etc.)", "type": "string"},
+          {"name": "subcategory", "title": "Subcategory", "description": "Specific topic area", "type": "string"},
+          {"name": "citation_count", "title": "Citation Count", "description": "Number of citations", "type": "integer"},
+          {"name": "venue", "title": "Venue", "description": "Publication venue (NeurIPS, ICML, CVPR, etc.)", "type": "string"},
+          {"name": "num_authors", "title": "Number of Authors", "description": "Count of authors", "type": "integer"},
+          {"name": "has_code", "title": "Has Code", "description": "Whether paper has code release (True/False)", "type": "boolean"},
+          {"name": "primary_method", "title": "Primary Method", "description": "Main methodology used", "type": "string"},
+          {"name": "dataset_used", "title": "Dataset Used", "description": "Primary dataset used in paper", "type": "string"},
+          {"name": "is_survey", "title": "Is Survey", "description": "Whether paper is a survey (True/False)", "type": "boolean"}
+        ]
+      }
+    }
+  ]
+}
