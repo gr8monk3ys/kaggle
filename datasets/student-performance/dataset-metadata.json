@@ -1,6 +1,6 @@
 {
   "id": "lorenzoscaturchio/student-academic-performance-dataset",
-  "title": "Student Academic Performance Dataset (10K Students)",
+  "title": "Student Academic Performance (10K Students)",
   "subtitle": "10K students, 25 features: study habits, demographics, and GPA outcomes",
   "description": "10,000 synthetic student records across 25 features covering demographics, study habits, family background, school resources, and academic outcomes. Includes math, reading, writing, and science scores along with GPA and a binary pass/fail label. Realistic correlations between study hours, attendance, tutoring, parental involvement, and performance.\n\nBuilt for: GPA regression, pass/fail classification, fairness analysis across demographic groups, feature importance analysis (which factors most affect performance), educational data mining, and intervention targeting. The multi-subject scores enable both single-target and multi-output ML.\n\nNotable features: sleep_hours has a realistic quadratic relationship with performance (optimal 7-8 hours); stress_level and motivation_score capture psychological factors; parental_education and family_income enable socioeconomic analysis; tutoring_sessions has diminishing returns built in. All data is synthetic.",
   "isPrivate": false,
