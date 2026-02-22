@@ -30,27 +30,36 @@ NOTEBOOK_DIRS=(
     "akkadian-translation"
     "attention-guide"
     "competition-template"
+    "digit-recognizer"
     "eda-tutorial"
     "ensemble-stacking"
     "feature-engineering"
     "financial-analysis"
     "fraud-detection"
     "graph-neural-networks"
+    "house-prices"
     "image-segmentation"
     "llm-finetuning"
     "med-gemma-challenge"
+    "nlp-text-classification"
+    "optuna-guide"
     "rag-from-scratch"
+    "shap-explainability"
     "timeseries-transformers"
+    "titanic-ultimate"
     "vesuvius-surface"
 )
 
 # Dataset directories (contain dataset-metadata.json)
 DATASET_DIRS=(
     "datasets/ai-research-trends"
+    "datasets/credit-card-fraud"
     "datasets/ecommerce-behavior"
     "datasets/github-repo-metrics"
+    "datasets/job-postings"
     "datasets/ml-interview-qa"
     "datasets/programming-benchmarks"
+    "datasets/student-performance"
 )
 
 color_green='\033[0;32m'
