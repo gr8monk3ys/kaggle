@@ -7,53 +7,72 @@ on:
       - master
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  baseline-checks:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        if: ${{ hashFiles('package.json') != '' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Node dependencies
-        if: ${{ hashFiles('package.json') != '' }}
-        run: |
-          if [ -f package-lock.json ]; then npm ci; \
-          elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-          elif [ -f pnpm-lock.yaml ]; then corepack enable && pnpm install --frozen-lockfile; \
-          else npm install; fi
-
-      - name: Run Node scripts
-        if: ${{ hashFiles('package.json') != '' }}
-        run: |
-          npm run lint --if-present
-          npm run test --if-present
-          npm run build --if-present
-
       - name: Setup Python
-        if: ${{ hashFiles('requirements.txt', 'pyproject.toml') != '' }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Install Python dependencies
-        if: ${{ hashFiles('requirements.txt', 'pyproject.toml') != '' }}
+      - name: Security guardrails
+        run: |
+          set -euo pipefail
+
+          if git ls-files --error-unmatch kaggle.json >/dev/null 2>&1; then
+            echo "::error file=kaggle.json::Remove committed Kaggle credentials."
+            exit 1
+          fi
+
+          if rg -n --glob '*.py' --glob '*.sh' --glob '!tests/**' --glob '!.venv/**' '/Users/' .; then
+            echo "::error::Hardcoded /Users paths found in scripts."
+            exit 1
+          fi
+
+          if rg -n --glob '*.py' --glob '*.sh' --glob '!tests/**' --glob '!.venv/**' 'trust_remote_code\\s*=\\s*True' .; then
+            echo "::error::Avoid trust_remote_code=True unless explicitly reviewed."
+            exit 1
+          fi
+
+      - name: Script syntax checks
+        run: |
+          set -euo pipefail
+          bash -n manage.sh
+          PYTHONPYCACHEPREFIX=/tmp/pycache python -m py_compile $(find . -maxdepth 4 -type f -name '*.py' | sort)
+
+      - name: Unit tests
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          python -m pip install pytest requests
+          pytest -q
 
-      - name: Run Python tests
-        if: ${{ hashFiles('requirements.txt', 'pyproject.toml') != '' }}
+      - name: Pi automation unit tests
         run: |
-          if [ -d tests ] || [ -d test ]; then
-            python -m pip install pytest
-            pytest -q
-          else
-            echo "No Python tests found."
-          fi
+          python -m pip install requests pytest pytest-mock
+          pytest pi-automation/tests/ -q
+
+      - name: Smoke tests
+        run: |
+          set -euo pipefail
+          PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/ai-research-trends/create_dataset.py >/tmp/ai-research.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/programming-benchmarks/create_dataset.py >/tmp/programming-benchmarks.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python ensemble-stacking/build_notebook.py >/tmp/ensemble.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python llm-finetuning/build_notebook.py >/tmp/llm.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python timeseries-transformers/_build_notebook.py >/tmp/timeseries.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 scorecard >/tmp/scorecard.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 weekly-plan >/tmp/weekly-plan.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 pace >/tmp/pace.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 sync-template --out-dir /tmp/medal_ops_sync_inputs >/tmp/sync-template.log
+          printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
+          printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
+          printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
+          PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 doctor --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/doctor.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --scope all --min-score 95 --fail-under-threshold >/tmp/quality.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log
