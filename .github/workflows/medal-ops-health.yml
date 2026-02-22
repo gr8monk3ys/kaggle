@@ -1,0 +1,227 @@
+name: Medal Ops Health
+
+on:
+  schedule:
+    # Daily at 09:10 UTC.
+    - cron: "10 9 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - live
+          - offline-fixture
+      max_stale_days:
+        description: "doctor stale threshold"
+        required: true
+        default: "30"
+        type: string
+      min_quality_score:
+        description: "minimum notebook quality score"
+        required: true
+        default: "95"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Kaggle CLI (live mode only)
+        if: ${{ secrets.KAGGLE_USERNAME != '' && secrets.KAGGLE_KEY != '' }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install kaggle
+
+      - name: Configure Kaggle credentials (live mode only)
+        if: ${{ secrets.KAGGLE_USERNAME != '' && secrets.KAGGLE_KEY != '' }}
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.kaggle
+          cat > ~/.kaggle/kaggle.json <<EOF
+          {"username":"${KAGGLE_USERNAME}","key":"${KAGGLE_KEY}"}
+          EOF
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: Run medal ops health checks
+        id: checks
+        continue-on-error: true
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          FORCE_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'auto' }}
+          MAX_STALE_DAYS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_stale_days || '30' }}
+          MIN_QUALITY_SCORE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.min_quality_score || '95' }}
+        run: |
+          set -euo pipefail
+          MODE="${FORCE_MODE}"
+          if [[ "${MODE}" == "auto" ]]; then
+            MODE="offline-fixture"
+            if [[ -n "${KAGGLE_USERNAME:-}" && -n "${KAGGLE_KEY:-}" ]]; then
+              MODE="live"
+            fi
+          fi
+
+          if [[ "${MODE}" != "live" && "${MODE}" != "offline-fixture" ]]; then
+            echo "Invalid mode: ${MODE}" >&2
+            exit 1
+          fi
+
+          if ! [[ "${MAX_STALE_DAYS}" =~ ^[0-9]+$ ]]; then
+            echo "MAX_STALE_DAYS must be an integer: ${MAX_STALE_DAYS}" >&2
+            exit 1
+          fi
+
+          if ! [[ "${MIN_QUALITY_SCORE}" =~ ^[0-9]+$ ]]; then
+            echo "MIN_QUALITY_SCORE must be an integer: ${MIN_QUALITY_SCORE}" >&2
+            exit 1
+          fi
+
+          if (( MIN_QUALITY_SCORE < 0 || MIN_QUALITY_SCORE > 100 )); then
+            echo "MIN_QUALITY_SCORE must be between 0 and 100." >&2
+            exit 1
+          fi
+
+          if [[ "${MODE}" == "live" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
+            echo "Live mode requested but KAGGLE_USERNAME/KAGGLE_KEY secrets are not configured." >&2
+            exit 1
+          fi
+
+          echo "mode=${MODE}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${MODE}" == "live" ]]; then
+            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health doctor --strict --require-kaggle --max-stale-days "${MAX_STALE_DAYS}" >/tmp/doctor.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health sync --dry-run >/tmp/sync.log
+          else
+            printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
+            printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
+            printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
+            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health doctor --strict --max-stale-days "${MAX_STALE_DAYS}" --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/doctor.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log
+          fi
+
+      - name: Upload health logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: medal-ops-health-logs
+          path: |
+            /tmp/doctor.log
+            /tmp/quality.log
+            /tmp/sync.log
+          if-no-files-found: ignore
+
+      - name: Open or update incident issue
+        if: ${{ steps.checks.outcome == 'failure' }}
+        uses: actions/github-script@v7
+        env:
+          CHECK_MODE: ${{ steps.checks.outputs.mode }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = "Medal Ops Daily Health Check Failed";
+            const marker = "<!-- medal-ops-daily-health -->";
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const mode = process.env.CHECK_MODE || "unknown";
+            const now = new Date().toISOString();
+
+            const body = [
+              marker,
+              "Automated medal ops daily health check failed.",
+              "",
+              `- Timestamp: ${now}`,
+              `- Workflow run: ${runUrl}`,
+              `- Mode: ${mode}`,
+              `- Commit: ${context.sha}`,
+              "",
+              "The `medal-ops-health-logs` artifact contains `doctor.log`, `quality.log`, and `sync.log`."
+            ].join("\n");
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100
+            });
+
+            const existing = issues.find(
+              (issue) => issue.title === title && typeof issue.body === "string" && issue.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body
+              });
+            }
+
+      - name: Close incident issue on recovery
+        if: ${{ steps.checks.outcome == 'success' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = "Medal Ops Daily Health Check Failed";
+            const marker = "<!-- medal-ops-daily-health -->";
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100
+            });
+
+            for (const issue of issues) {
+              if (issue.title !== title) continue;
+              if (typeof issue.body !== "string" || !issue.body.includes(marker)) continue;
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `Automated recovery detected. Checks are passing again: ${runUrl}`
+              });
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: "closed"
+              });
+            }
+
+      - name: Mark job failed when checks fail
+        if: ${{ steps.checks.outcome == 'failure' }}
+        run: exit 1
