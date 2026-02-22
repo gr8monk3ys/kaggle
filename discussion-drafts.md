@@ -95,11 +95,11 @@ def add_lag_features(df, col, group_col, lags=[1, 7, 14]):
     return df
 ```
 
-Note the `shift(1)` inside the rolling window -- without it you leak the current value into the feature.
+Note the `shift(1)` inside the rolling window: without it you leak the current value into the feature.
 
 ---
 
-I cover all of these techniques (and more) with full working examples in my **[Feature Engineering Cookbook notebook](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook)**. If you found this useful, I would appreciate an upvote on the notebook -- and drop a comment below with your own favorite feature engineering trick!
+I cover all of these (and about 45 more) with full working examples in my **[Feature Engineering Cookbook notebook](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook)**. What's your go-to feature engineering trick? Drop it in the comments.
 
 ---
 
@@ -129,9 +129,9 @@ print(f"Missing values:    {train_df.isnull().sum().sum()}")
 
 The label distribution is heavily skewed. The most common class represents roughly **62%** of the training data, while the rarest class accounts for less than **3%**. This has direct implications for modeling:
 
-- Standard cross-entropy will underperform. Consider **focal loss** or **class-weighted loss**.
+- Standard cross-entropy underperforms here. Focal loss or class-weighted loss are worth trying.
 - Stratified K-fold is mandatory. Random splits will produce folds where minority classes are absent entirely.
-- Evaluation metric sensitivity: even small improvements on minority classes can produce large jumps in the competition metric.
+- Even small improvements on the rare classes can produce large jumps in the final metric.
 
 ```python
 import matplotlib.pyplot as plt
@@ -153,7 +153,7 @@ print(f"Patients with multiple samples: {(patient_counts > 1).sum()}")
 print(f"Max samples per patient:        {patient_counts.max()}")
 ```
 
-**Recommendation:** Use `GroupKFold` on `patient_id` for your validation strategy.
+Use `GroupKFold` on `patient_id` for your validation strategy.
 
 #### Key Finding 3: Image Dimension Variability
 
@@ -180,11 +180,11 @@ Extracting these structured sections before feeding into a language model improv
 
 #### Key Finding 5: Temporal Distribution
 
-Samples are not uniformly distributed across time. There is a noticeable gap in data collection around certain periods, which may reflect changes in clinical protocols. Be cautious about using temporal features directly -- they may not generalize to the test set.
+Samples are not uniformly distributed across time. There is a noticeable gap in data collection around certain periods, which may reflect changes in clinical protocols. Be cautious about using temporal features directly, as they may not generalize to the test set.
 
 ---
 
-The full analysis with all visualizations and additional findings is in my **[Med-Gemma EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/med-gemma-challenge-eda)**. I will keep updating it as I dig deeper. If any of these findings helped shape your approach, I would love to hear about it in the comments. And if the notebook was useful, an upvote would be greatly appreciated!
+Full analysis in my **[Med-Gemma EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/med-gemma-challenge-eda)**, which I'll keep updating as I dig deeper. If you've spotted anything I missed, or if you're handling the patient-level leakage differently, I'd like to hear it.
 
 ---
 
@@ -196,7 +196,7 @@ The full analysis with all visualizations and additional findings is in my **[Me
 
 ### Akkadian Translation: Understanding the Data
 
-The Akkadian translation challenge is one of the most unique competitions I have encountered on Kaggle. We are essentially building machine translation for a language that has been dead for over two thousand years. Before jumping into modeling, I spent time understanding the data deeply. Here is what I found.
+The Akkadian translation challenge is strange in the best way. We're building machine translation for a language that's been dead for over two thousand years. Before jumping into modeling I spent time actually understanding the data. Here's what I found.
 
 #### Character-Level Analysis
 
@@ -213,7 +213,7 @@ for char, count in all_chars.most_common(20):
 ```
 
 Key observations:
-- The vocabulary is compact -- roughly **85 unique characters** including diacritics.
+- The vocabulary is compact, roughly **85 unique characters** including diacritics.
 - Hyphen (`-`) is the most common non-space character, used as a syllable separator in transliteration (e.g., `a-na` meaning "to").
 - Diacritical variants like `s` vs `sh` (shin) carry semantic weight. Lowercasing naively will destroy information.
 
@@ -239,11 +239,11 @@ The Akkadian side tends to be shorter (agglutinative morphology packs more meani
 
 Several patterns emerged that are relevant for modeling:
 
-1. **Determinatives**: Certain signs act as semantic classifiers (like classifying the following word as a god, city, or person). These are often written in superscript in academic texts but appear as prefixes in our data. Recognizing them could improve a model's handling of proper nouns.
+1. Determinatives: Certain signs act as semantic classifiers, marking the following word as a god, city, or person. They appear as prefixes in our data (not superscript as in academic texts). Recognizing them could help with proper noun handling.
 
-2. **Logograms vs. Syllabic Writing**: Akkadian mixes logographic and syllabic writing. The same word can be written phonetically or with a single logogram. This creates a many-to-one mapping that challenges standard tokenizers.
+2. Logograms vs. syllabic writing: Akkadian mixes logographic and syllabic writing. The same word can be written phonetically or with a single logogram, creating a many-to-one mapping that confuses standard tokenizers.
 
-3. **Broken Tablets**: Some entries contain `[...]` indicating damaged or missing sections. These account for roughly **8%** of training samples.
+3. Broken tablets: Some entries contain `[...]` where sections are damaged or missing. These account for about 8% of training samples.
 
 ```python
 broken = train_df['akkadian_text'].str.contains(r'\[\.+\]', regex=True)
@@ -258,7 +258,7 @@ I compared BPE, Unigram, and character-level tokenization on the Akkadian side. 
 
 ---
 
-My full analysis with interactive visualizations is available in the **[Akkadian Translation EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda)**. This is a genuinely fascinating dataset, and I think the NLP community can learn a lot from working on low-resource ancient language translation. Let me know your thoughts in the comments, and if the notebook helped orient you in this competition, an upvote is always appreciated!
+Full analysis in the **[Akkadian Translation EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda)**. Low-resource ancient language translation is an odd niche but a genuinely interesting one. If you're taking a different tokenization approach or have domain knowledge about Akkadian linguistics, I'd like to hear about it.
 
 ---
 
@@ -274,7 +274,7 @@ Ensembling is the single most reliable technique for squeezing out extra perform
 
 #### Why Ensembling Works
 
-Different models make different errors. By combining their predictions, the errors tend to cancel out while the correct signals reinforce each other. This is not just hand-waving -- it is backed by the bias-variance decomposition theorem.
+Different models make different errors. Combine their predictions and the errors partially cancel while the signal reinforces. This is formalized in the bias-variance decomposition theorem, not just intuition.
 
 #### Method 1: Simple Averaging / Rank Averaging
 
@@ -365,10 +365,10 @@ meta_model = LogisticRegression()
 meta_model.fit(meta_train, y_train)
 ```
 
-**Best practices for stacking:**
-- Use a simple meta-learner (logistic regression, ridge). Complex meta-learners overfit.
-- Always use out-of-fold predictions. Never train the meta-learner on in-sample predictions.
-- Diversity matters more than individual accuracy. A weak model that makes different errors adds more value than a strong model that is redundant.
+Three things that matter for stacking:
+- Keep the meta-learner simple (logistic regression, ridge). Complex ones overfit fast.
+- Always use out-of-fold predictions, never in-sample.
+- Diversity beats raw accuracy. A weak model that makes different errors is more valuable than a strong but correlated one.
 
 #### When to Use What
 
@@ -381,7 +381,7 @@ meta_model.fit(meta_train, y_train)
 
 ---
 
-I use these techniques in nearly every competition. My **[Competition Template notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-template)** includes a ready-to-use ensembling module. If this guide helped clarify ensembling for you, please share your own ensembling tips in the comments and consider upvoting the linked notebook!
+My **[Competition Template notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-template)** has a ready-to-use ensembling module. If you have a favorite ensemble trick that's missing here, share it in the comments.
 
 ---
 
@@ -440,7 +440,7 @@ I benchmarked several embedding models on retrieval quality:
 | `text-embedding-3-small` | 1536 | 83.1% | 45 |
 | `e5-large-v2` | 1024 | 82.8% | 22 |
 
-The `bge-base` model hit the sweet spot for my use case -- nearly matching the OpenAI model at a third of the latency and zero API cost. For production, I strongly recommend an open-source embedding model unless you have specific reasons to use an API.
+The `bge-base` model hit the sweet spot: nearly matching the OpenAI model at a third of the latency and zero API cost. For most use cases I'd default to an open-source embedding model unless you have a specific reason to use an API.
 
 #### Lesson 3: Retrieval is Only Half the Battle
 
@@ -487,7 +487,7 @@ Without this evaluation set, I was flying blind. Every architectural change need
 
 ---
 
-The full implementation with benchmarks is in my **[RAG From Scratch notebook](https://www.kaggle.com/code/lorenzoscaturchio/rag-from-scratch)**. I would love to hear about your own RAG experiences -- what worked, what did not, and what you would do differently. If you found this useful, an upvote on the notebook helps others discover it!
+Full implementation and benchmarks in my **[RAG From Scratch notebook](https://www.kaggle.com/code/lorenzoscaturchio/rag-from-scratch)**. If you've built RAG systems, I'm curious where things broke down for you. The failure modes tend to be more interesting than the successes.
 
 ---
 
@@ -499,7 +499,7 @@ The full implementation with benchmarks is in my **[RAG From Scratch notebook](h
 
 ### Attention Mechanisms Visualized: A Practical Guide
 
-Attention is the foundation of modern deep learning, but most explanations either drown you in math or hand-wave past the implementation. This post aims for the middle ground: intuitive understanding backed by working code.
+Attention is everywhere now. But most explanations either skip the math entirely or throw Q, K, V matrices at you before you understand what problem they're solving. I'll try a different approach: start with the problem, then build up the code, then explain why it works.
 
 #### What Problem Does Attention Solve?
 
@@ -536,7 +536,7 @@ The steps are:
 4. **Softmax**: Convert scores to probabilities. Each row sums to 1.
 5. **Aggregate**: Weighted sum of Values using the attention probabilities.
 
-Think of it this way: **Queries ask questions. Keys advertise what information they hold. Values contain the actual information.** The dot product between Q and K determines "how relevant is this key to my query?" and the result is used to weight the values.
+A useful framing: Q describes what you're looking for, K describes what each position has to offer, V is the actual content you receive. The dot product between Q and K is a relevance score, which then weights the V contribution.
 
 #### Multi-Head Attention
 
@@ -604,7 +604,7 @@ def plot_attention(weights, tokens):
 
 ---
 
-My **[Attention Mechanisms Visualized notebook](https://www.kaggle.com/code/lorenzoscaturchio/attention-mechanisms-guide)** includes interactive attention visualizations, a full transformer implementation, and experiments showing how attention patterns change during training. If this post made attention click for you, drop a comment telling me which part helped most. An upvote on the notebook helps it reach more learners!
+My **[Attention Mechanisms Visualized notebook](https://www.kaggle.com/code/lorenzoscaturchio/attention-mechanisms-guide)** has interactive visualizations and a full transformer implementation from scratch. If there's a part of this that's still not clicking, drop a comment. There's usually something I glossed over.
 
 ---
 
@@ -698,7 +698,7 @@ def walk_forward_validation(df, train_window, val_window, step_size):
 
 ---
 
-I have seen this single mistake cause **10-20% inflated CV scores** compared to honest temporal validation. If you take away one thing from this post: **always respect the arrow of time.** Drop a comment if you have been bitten by this before -- I would bet most of us have. And if this saved you from a leaderboard shock, please consider upvoting!
+I've seen this cause 10-20% inflated CV scores vs. honest temporal validation. Drop a comment if you've been bitten by it. Most of us have at some point.
 
 ---
 
@@ -710,16 +710,16 @@ I have seen this single mistake cause **10-20% inflated CV scores** compared to 
 
 ### My End-to-End ML Competition Pipeline
 
-After competing on Kaggle for a while, I have converged on a systematic pipeline that I follow for every competition. It is not glamorous, but it reliably gets me into the top 20-30% -- and provides a solid foundation for pushing higher. Here is the entire process.
+After competing on Kaggle for a while, I have converged on a systematic pipeline that I follow for every competition. It's not glamorous, but it reliably gets me into the top 20-30% and gives me a stable base to push further. Here's the whole thing.
 
 #### Phase 1: Understanding (Day 1-2)
 
 Before writing any code, I spend time reading:
 
-- **Competition description**: What is the actual task? What metric are we optimizing?
-- **Data description**: Every column, every file. What does each field mean?
-- **Discussion forum**: What have others discovered? Are there known data issues?
-- **Past similar competitions**: What approaches worked? What is the SOTA baseline?
+- Competition description: the actual task, the metric, the evaluation nuance.
+- Data description: every column, every file, what each field actually means.
+- Discussion forum: what others have found, known data issues, gotchas.
+- Past similar competitions: what worked before, what the strong baseline looks like.
 
 ```python
 # First cell of every competition notebook
@@ -820,7 +820,7 @@ Once features are stable, I train multiple model types and ensemble:
 
 ---
 
-The full pipeline with code for every phase is in my **[Competition Masterclass notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-template)**. What does your competition pipeline look like? I am always looking to improve mine. Share your process in the comments, and if this framework helps you get started on your next competition, an upvote would mean a lot!
+Full pipeline code in my **[Competition Masterclass notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-template)**. Curious what others do differently, especially in phases 4 and 5 where things get more competition-specific. Share your process in the comments.
 
 ---
 
@@ -836,7 +836,7 @@ The Vesuvius challenge asks us to detect ink on ancient scrolls from 3D X-ray sc
 
 #### The Core Challenge
 
-We have volumetric CT scan data (3D) and need to produce a 2D ink detection mask. The ink signal is subtle -- we are looking for density variations on papyrus layers that are often damaged, folded, or compressed together. The question is: should we process this as a 3D problem or reduce it to 2D?
+We have volumetric CT scan data (3D) and need to produce a 2D ink detection mask. The ink signal is subtle: we're looking for density variations on papyrus layers that are often damaged, folded, or compressed together. The question is: should we process this as a 3D problem or reduce it to 2D?
 
 #### Approach 1: 2D Slice Processing
 
@@ -953,7 +953,7 @@ def combined_loss(pred, target, bce_weight=0.5):
 
 ---
 
-My full experimentation with all three approaches and benchmark results is in the **[Vesuvius Surface Detection notebook](https://www.kaggle.com/code/lorenzoscaturchio/vesuvius-surface-detection)**. I would love to hear what approaches others are trying. This competition pushes the boundaries of what is possible with computer vision on historical artifacts. If you found this comparison useful, please leave a comment and upvote the notebook!
+Benchmark numbers for all three approaches in the **[Vesuvius Surface Detection notebook](https://www.kaggle.com/code/lorenzoscaturchio/vesuvius-surface-detection)**. Curious what others are trying, especially if you've found a specific z-slice range that performs better or a different loss combination.
 
 ---
 
@@ -969,63 +969,43 @@ When I started on Kaggle, I learned more from reading other people's notebooks t
 
 #### 1. "Comprehensive Data Exploration with Python" by Pedro Marcelino
 
-**Why read it:** This is the gold standard for EDA notebooks. Pedro demonstrates how to systematically explore a dataset -- checking distributions, correlations, missing data patterns, and outliers. The Ames Housing dataset exploration is methodical and beautifully presented.
-
-**Key takeaway:** EDA is not random plotting. It follows a structured checklist.
+Pedro's EDA of the Ames Housing dataset is still the clearest example I've seen of systematic data exploration. He works through distributions, correlations, missing values, and outliers with a reason for each step. The main thing I took from it: EDA works best when you follow a checklist, not when you plot things until something looks interesting.
 
 #### 2. "Introduction to Ensembling/Stacking" by Anisotropic
 
-**Why read it:** The best practical introduction to stacking I have found anywhere. It walks through the entire process of generating out-of-fold predictions and training a meta-learner, with clear diagrams explaining why each step is necessary.
-
-**Key takeaway:** Ensembling is about combining diverse models, not just averaging the best ones.
+The best practical introduction to stacking I've found. Clear diagrams, sensible explanation of out-of-fold predictions, and honest about why each step matters. The main lesson: you want diverse models that make different errors, not just your best model averaged twice.
 
 #### 3. "Feature Engineering Cookbook" by Lorenzo Scaturchio (me)
 
-**Why read it:** I wrote this as the reference I wished I had when I started. It covers target encoding, frequency encoding, interaction features, cyclical encoding, and lag features with copy-paste-ready code for every technique.
-
-**Link:** [Feature Engineering Cookbook](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook)
+I wrote this as the reference I wished I had when I started. Target encoding, frequency encoding, interaction features, cyclical encoding, lag features — everything with working code. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook)**
 
 #### 4. "A Data Science Framework: To Achieve 99% Accuracy" by LD Freeman
 
-**Why read it:** This notebook demonstrates a complete end-to-end pipeline from raw data to a polished submission. The code is clean, the reasoning is explicit, and it shows beginners what a full Kaggle workflow looks like.
-
-**Key takeaway:** Following a systematic process beats ad-hoc experimentation.
+A clean, explicit end-to-end pipeline from raw Titanic data to final submission. The reasoning is shown at each step, which is rare in notebooks. Good model of what a complete Kaggle workflow looks like before you start improvising.
 
 #### 5. "EDA & Feature Engineering for House Prices" by Serigne
 
-**Why read it:** A masterclass in feature engineering for tabular data. Serigne shows how to derive meaningful features from domain knowledge and how to validate that each feature actually improves the model.
-
-**Key takeaway:** Domain understanding drives better features than automated feature generation.
+Feature engineering for house prices, driven by actual domain knowledge about what makes houses valuable. Serigne validates that each feature actually improves the model — that validation step is the part most tutorials skip, and it's worth stealing.
 
 #### 6. "Attention Mechanisms Visualized" by Lorenzo Scaturchio (me)
 
-**Why read it:** If you want to understand transformers, you need to understand attention. I built this notebook to demystify self-attention, multi-head attention, and cross-attention with interactive visualizations and a from-scratch implementation.
-
-**Link:** [Attention Mechanisms Guide](https://www.kaggle.com/code/lorenzoscaturchio/attention-mechanisms-guide)
+Self-attention, multi-head attention, and cross-attention from scratch, with interactive visualizations. If transformers are still fuzzy for you, this is probably worth your time. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/attention-mechanisms-guide)**
 
 #### 7. "Hitchhiker's Guide to Feature Extraction" by Chris Deotte
 
-**Why read it:** Chris Deotte is a Kaggle Grandmaster and his notebooks are consistently excellent. This one covers feature extraction techniques that are applicable across almost any competition. His approach to feature selection using adversarial validation is particularly clever.
-
-**Key takeaway:** Feature extraction is an art, but there are learnable patterns.
+Chris Deotte is a Kaggle Grandmaster and his notebooks are consistently worth reading. This one covers feature extraction across competition types. The adversarial validation approach to feature selection is particularly worth understanding — it's a technique that transfers to almost any tabular competition.
 
 #### 8. "How to Not Overfit" by Heads or Tails
 
-**Why read it:** Overfitting is the number one beginner mistake. This notebook explains regularization, cross-validation, and the bias-variance tradeoff with practical examples. It is required reading before you make your first submission.
-
-**Key takeaway:** Your local CV score should be your primary guide, not the public leaderboard.
+Regularization, cross-validation, bias-variance tradeoff — the fundamentals that separate beginners from people who actually understand why their models generalize. Read this before your first real submission. Your CV score tells you more than the public leaderboard does, and this notebook explains why.
 
 #### 9. "RAG From Scratch" by Lorenzo Scaturchio (me)
 
-**Why read it:** Retrieval-Augmented Generation is one of the most practical applications of LLMs. I built this to show every engineering decision in a RAG pipeline -- from chunking strategy to embedding model selection to evaluation methodology.
-
-**Link:** [RAG From Scratch](https://www.kaggle.com/code/lorenzoscaturchio/rag-from-scratch)
+Every engineering decision in a RAG pipeline explained: chunking strategy, embedding model selection, context assembly, evaluation. Built to show the tradeoffs, not just the happy path. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/rag-from-scratch)**
 
 #### 10. "Complete Guide to Time Series Analysis" by Prashant Banerjee
 
-**Why read it:** Time series is everywhere on Kaggle (sales forecasting, energy prediction, financial modeling) but it requires fundamentally different approaches than tabular data. This notebook covers stationarity, decomposition, ARIMA, Prophet, and neural approaches in one place.
-
-**Key takeaway:** Time series requires respecting temporal order in every step of your pipeline.
+Time series shows up everywhere on Kaggle but most tabular workflows break on it. This covers stationarity, decomposition, ARIMA, Prophet, and neural approaches in one place. Temporal order matters at every step, not just the validation split.
 
 ---
 
@@ -1034,11 +1014,11 @@ When I started on Kaggle, I learned more from reading other people's notebooks t
 Do not just read passively. For each notebook:
 
 1. **Fork it** and run every cell yourself.
-2. **Modify one thing** -- change a parameter, add a feature, try a different model.
+2. **Modify one thing** — change a parameter, add a feature, try a different model.
 3. **Write a comment** on the notebook explaining what you learned. Teaching forces understanding.
 4. **Apply one technique** from the notebook to a competition you are currently working on.
 
-If you have other notebooks that belong on this list, please share them in the comments! I would love to build a community-curated reading list. And if you find any of my linked notebooks useful, an upvote helps them reach more learners.
+If there's a notebook you think should be on this list, drop it in the comments. I'll update this as I find more worth recommending.
 
 ---
 

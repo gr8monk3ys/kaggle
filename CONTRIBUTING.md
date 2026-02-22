@@ -11,6 +11,7 @@
 - Tests pass locally
 - Docs updated when needed
 - No secrets or credentials committed
+- Kaggle credentials kept outside git (`~/.kaggle/kaggle.json`)
 
 ## Commit Style
 Use clear commit messages describing intent and scope.

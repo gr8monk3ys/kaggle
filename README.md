@@ -59,8 +59,46 @@ Located in [`datasets/`](./datasets):
 ```bash
 # Use the management script for Kaggle operations
 chmod +x manage.sh
-./manage.sh --help
+./manage.sh help
+./manage.sh scorecard
+./manage.sh weekly-plan
+./manage.sh pace
+./manage.sh sync
+./manage.sh sync-template
+./manage.sh doctor
+./manage.sh quality
+# Fallback when Kaggle CLI/network is unavailable:
+./manage.sh sync --dry-run --kernels-csv /path/kernels.csv --datasets-csv /path/datasets.csv --competitions-csv /path/competitions.csv
 ```
+
+`scorecard`, `weekly-plan`, `pace`, and `sync` generate reports under `medal_ops/reports/`.
+`sync-template` scaffolds `kernels.csv`, `datasets.csv`, `competitions.csv`, and an export helper script.
+`sync` can use live Kaggle CLI data or exported CSV files, and now fails fast if required vote columns are missing.
+`doctor` runs preflight checks and writes `medal_ops/reports/latest-doctor.md`.
+`quality` scores notebooks via rubric and writes `medal_ops/reports/latest-notebook-quality.md`.
+`quality` also generates prioritized fixer checklists in `medal_ops/reports/latest-notebook-quality-fixes.md`.
+
+## Automation
+
+- Daily GitHub Actions workflow: `.github/workflows/medal-ops-health.yml`
+- It runs `doctor --strict`, `quality --fail-under-threshold`, and `sync --dry-run` every day and opens an issue on failure.
+- The workflow uses `--max-stale-days 30` to reduce noise from short tracker update gaps.
+- The quality gate currently defaults to `--min-score 95`.
+- Manual runs support `mode` (`auto`, `live`, `offline-fixture`), `max_stale_days`, and `min_quality_score` inputs.
+- If `KAGGLE_USERNAME` and `KAGGLE_KEY` repository secrets are configured, it runs in live mode.
+- Without secrets, it runs a strict offline-fixture mode so pipeline breakages are still caught.
+
+## Authentication & Secrets
+
+```bash
+# Keep credentials outside the repository
+mkdir -p ~/.kaggle
+cp kaggle.json.example ~/.kaggle/kaggle.json
+chmod 600 ~/.kaggle/kaggle.json
+```
+
+Never commit API credentials. `kaggle.json` is gitignored in this repo.
+For GitHub Actions live checks, add `KAGGLE_USERNAME` and `KAGGLE_KEY` in repository Settings -> Secrets and variables -> Actions.
 
 ## License
 
