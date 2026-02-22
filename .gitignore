@@ -1,0 +1,19 @@
+# Secrets
+kaggle.json
+**/kaggle.json
+.kaggle/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Medal ops generated artifacts
+medal_ops/history/
+medal_ops/reports/
+medal_ops/sync_inputs/
+
+pi-automation/.env
