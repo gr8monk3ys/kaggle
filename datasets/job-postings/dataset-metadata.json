@@ -1,0 +1,35 @@
+{
+  "id": "lorenzoscaturchio/job-postings-nlp-salary-prediction",
+  "title": "Job Postings Dataset: NLP & Salary Prediction (15K listings)",
+  "subtitle": "15K synthetic job listings with salary ranges, skills, and rich NLP features",
+  "description": "15,000 synthetic tech and business job postings spanning 10 job titles across 8 industries, with salary ranges, required skills, experience levels, remote work type, company size, and job descriptions. Covers the 2023-2025 job market for Data Scientists, ML Engineers, Software Engineers, Data Analysts, Product Managers, and more.\n\nBuilt for: salary prediction (regression on salary_min/max), job title classification from description (NLP), skills extraction and analysis, remote work trend analysis, and job market exploratory data analysis. The description field enables NLP tasks while structured fields enable tabular ML.\n\nNotable features: salary ranges encode realistic correlations (senior > entry, enterprise > startup, ML roles > average, remote premium); required_skills is pipe-separated for easy parsing; experience_level × company_size interaction drives compensation; applications field enables demand modeling. All data is synthetic.",
+  "isPrivate": false,
+  "licenses": [{"name": "CC0-1.0"}],
+  "keywords": ["job postings", "salary prediction", "nlp", "text classification", "labor market"],
+  "resources": [
+    {
+      "path": "job_postings.csv",
+      "description": "15K synthetic job postings with title, salary, skills, experience level, company, and description",
+      "schema": {
+        "fields": [
+          {"name": "job_id", "title": "Job ID", "description": "Unique job posting identifier", "type": "string"},
+          {"name": "title", "title": "Job Title", "description": "Job title (Data Scientist, Software Engineer, etc.)", "type": "string"},
+          {"name": "company", "title": "Company", "description": "Hiring company name", "type": "string"},
+          {"name": "location", "title": "Location", "description": "City and state (e.g., San Francisco, CA)", "type": "string"},
+          {"name": "remote_type", "title": "Remote Type", "description": "Work arrangement (onsite, hybrid, remote)", "type": "string"},
+          {"name": "industry", "title": "Industry", "description": "Company industry (tech, finance, healthcare, etc.)", "type": "string"},
+          {"name": "company_size", "title": "Company Size", "description": "Company size band (startup, small, medium, large, enterprise)", "type": "string"},
+          {"name": "experience_level", "title": "Experience Level", "description": "Required experience level (entry, mid, senior, lead, director)", "type": "string"},
+          {"name": "salary_min", "title": "Minimum Salary", "description": "Minimum annual salary in USD", "type": "integer"},
+          {"name": "salary_max", "title": "Maximum Salary", "description": "Maximum annual salary in USD", "type": "integer"},
+          {"name": "required_skills", "title": "Required Skills", "description": "Pipe-separated list of required skills", "type": "string"},
+          {"name": "education_required", "title": "Education Required", "description": "Minimum education level (none, bachelor, master, phd)", "type": "string"},
+          {"name": "description", "title": "Job Description", "description": "2-4 sentence job posting description", "type": "string"},
+          {"name": "posted_date", "title": "Posted Date", "description": "Date job was posted (YYYY-MM-DD)", "type": "date"},
+          {"name": "applications", "title": "Applications", "description": "Number of applications received", "type": "integer"},
+          {"name": "days_to_fill", "title": "Days to Fill", "description": "Days until position was filled", "type": "integer"}
+        ]
+      }
+    }
+  ]
+}
