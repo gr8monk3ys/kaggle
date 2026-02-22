@@ -19,7 +19,7 @@
 #   quality    - Score notebook quality and enforce minimum threshold
 
 set -euo pipefail
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:$PATH"
 
 KAGGLE_DIR="$(cd "$(dirname "$0")" && pwd)"
 KAGGLE_CREDENTIALS_DEFAULT="${HOME}/.kaggle/kaggle.json"
