@@ -1,0 +1,92 @@
+[
+  {
+    "id": "draft-1",
+    "title": "5 Feature Engineering Tricks That Won Me Bronze",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 1",
+    "status": "pending",
+    "scheduled_after": "2026-02-24T10:00:00Z"
+  },
+  {
+    "id": "draft-2",
+    "title": "Med-Gemma Challenge: Initial EDA Findings",
+    "forum_url": "https://www.kaggle.com/competitions/med-gemma-challenge/discussion",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 2",
+    "status": "pending",
+    "scheduled_after": "2026-02-27T10:00:00Z"
+  },
+  {
+    "id": "draft-3",
+    "title": "Akkadian Translation: Understanding the Data",
+    "forum_url": "https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 3",
+    "status": "pending",
+    "scheduled_after": "2026-03-03T10:00:00Z"
+  },
+  {
+    "id": "draft-4",
+    "title": "Complete Guide to Ensemble Methods for Kaggle Competitions",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 4",
+    "status": "pending",
+    "scheduled_after": "2026-03-06T10:00:00Z"
+  },
+  {
+    "id": "draft-5",
+    "title": "RAG Systems: What I Learned Building One From Scratch",
+    "forum_url": "https://www.kaggle.com/discussions/general",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 5",
+    "status": "pending",
+    "scheduled_after": "2026-03-10T10:00:00Z"
+  },
+  {
+    "id": "draft-6",
+    "title": "Attention Mechanisms Visualized: A Practical Guide",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 6",
+    "status": "pending",
+    "scheduled_after": "2026-03-13T10:00:00Z"
+  },
+  {
+    "id": "draft-7",
+    "title": "Time Series Pitfalls: Don't Random Split Your Data!",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 7",
+    "status": "pending",
+    "scheduled_after": "2026-03-17T10:00:00Z"
+  },
+  {
+    "id": "draft-8",
+    "title": "My End-to-End ML Competition Pipeline",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 8",
+    "status": "pending",
+    "scheduled_after": "2026-03-20T10:00:00Z"
+  },
+  {
+    "id": "draft-9",
+    "title": "Vesuvius Challenge: 3D Segmentation Approaches",
+    "forum_url": "https://www.kaggle.com/competitions/vesuvius-challenge-ink-detection/discussion",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 9",
+    "status": "pending",
+    "scheduled_after": "2026-03-24T10:00:00Z"
+  },
+  {
+    "id": "draft-10",
+    "title": "Top 10 Kaggle Notebooks Every Beginner Should Read",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 10",
+    "status": "pending",
+    "scheduled_after": "2026-03-27T10:00:00Z"
+  }
+]
