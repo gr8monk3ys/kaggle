@@ -1,0 +1,23 @@
+{
+  "id": "lorenzoscaturchio/digit-recognizer-cnn-from-scratch-to-99",
+  "title": "Digit Recognizer: CNN from Scratch to 99%+ Accuracy",
+  "code_file": "digit_recognizer_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "keywords": [
+    "mnist",
+    "cnn",
+    "pytorch",
+    "computer vision",
+    "digit recognizer",
+    "deep learning",
+    "tutorial",
+    "image classification"
+  ],
+  "dataset_sources": ["competitions/digit-recognizer"],
+  "kernel_sources": [],
+  "competition_sources": ["digit-recognizer"]
+}
