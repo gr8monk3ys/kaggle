@@ -10,5 +10,5 @@
   "keywords": ["spaceship titanic", "binary classification", "feature engineering", "xgboost", "ensemble"],
   "dataset_sources": [],
   "kernel_sources": [],
-  "competition_sources": ["spaceship-titanic"]
+  "competition_sources": []
 }
