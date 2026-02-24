@@ -1,6 +1,10 @@
 name: Medal Ops Health
 
 on:
+  push:
+    branches:
+      - main
+      - push-sync
   schedule:
     # Daily at 09:10 UTC.
     - cron: "10 9 * * *"
