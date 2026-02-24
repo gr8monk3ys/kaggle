@@ -1,90 +1,71 @@
 # AI/ML Research Papers Trends (3K+ Papers)
 
-A comprehensive synthetic dataset of **3,200+ AI/ML research papers** spanning 2018--2025, designed for bibliometric analysis, trend detection, and citation prediction.
+> 3200+ AI/ML papers with metadata for trend analysis
 
-## Dataset Overview
+**License:** GPL-3.0  
 
-This dataset simulates metadata from AI/ML research papers, capturing realistic trends such as:
+**Kaggle:** [lorenzoscaturchio/ai-ml-research-papers-trends](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-ml-research-papers-trends)  
 
-- The rapid rise of **transformer architectures** (from ~8% in 2018 to ~52% in 2025)
-- Increasing paper volume over time, reflecting the growth of the field
-- **Power-law citation distributions** with venue and recency adjustments
-- Category-venue affinities (e.g., CVPR papers are predominantly computer vision)
-- Growing code availability in recent years
+## Description
 
-## Column Descriptions
+3,200 synthetic AI/ML research papers spanning 2018–2025 across arXiv categories including cs.CV, cs.LG, cs.CL, cs.AI, and cs.RO. Each record includes title, abstract, author list, venue (NeurIPS, ICML, CVPR, ICLR, EMNLP, etc.), citation count, primary methodology, dataset used, and flags for code release and survey papers.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `paper_id` | string | Unique identifier in arXiv-like format (e.g., `arxiv.202301.00042`) |
-| `title` | string | Paper title generated from category-specific topic components |
-| `abstract` | string | Synthetic abstract of 50--100 words summarizing the paper |
-| `authors` | string | Semicolon-separated list of author names |
-| `year` | int | Publication year (2018--2025) |
-| `month` | int | Publication month (1--12) |
-| `category` | string | Primary arXiv category: `cs.AI`, `cs.CL`, `cs.CV`, `cs.LG`, `cs.NE`, `stat.ML`, `cs.RO`, `cs.IR` |
-| `subcategory` | string | More specific topic within the category |
-| `citation_count` | int | Number of citations (power-law distributed, adjusted by age, venue, survey status) |
-| `venue` | string | Publication venue: `NeurIPS`, `ICML`, `ICLR`, `AAAI`, `CVPR`, `ACL`, `EMNLP`, `NAACL`, or `arXiv-only` |
-| `num_authors` | int | Number of authors (normally distributed, mean ~4.2) |
-| `has_code` | bool | Whether the paper released source code |
-| `primary_method` | string | Main ML method: `transformer`, `cnn`, `rnn`, `gnn`, `diffusion`, `reinforcement_learning`, `bayesian`, `ensemble`, `other` |
-| `dataset_used` | string | Primary dataset used in the paper |
-| `is_survey` | bool | Whether the paper is a survey/review (~4% of papers) |
+Built for: citation count prediction (regression), publication venue classification, trend analysis over time, topic modeling with LDA or BERTopic, author collaboration network analysis, and bibliometric research.
 
-## Key Statistics
+Notable features: the 'has_code' flag enables reproducibility studies; 'primary_method' covers transformers, diffusion models, GNNs, RL, and contrastive learning; citation counts follow a realistic Zipf distribution. All data is synthetic and generated for educational and prototyping purposes.
 
-- **Total papers**: 3,200
-- **Year range**: 2018--2025
-- **Categories**: 8 primary arXiv categories
-- **Venues**: 9 (8 top conferences + arXiv-only)
-- **Methods**: 9 primary method types
-- **Papers with code**: ~45% overall, increasing in recent years
+## Tags
 
-## Use Cases
+`education`, `nlp`, `deep learning`, `research`, `classification`
 
-1. **Bibliometric analysis**: Study publication trends, author collaboration patterns, and venue distributions over time.
-2. **Trend detection**: Analyze the rise and fall of research methods (e.g., the transformer takeover), identify emerging subcategories.
-3. **Citation prediction**: Build models to predict citation counts from paper metadata (title, abstract, venue, method, etc.).
-4. **NLP tasks**: Use titles and abstracts for text classification, topic modeling, or summarization tasks.
-5. **Network analysis**: Construct co-authorship networks from the author data.
-6. **Venue recommendation**: Predict suitable venues based on paper characteristics.
+## Authors
 
-## How It Was Generated
+- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
 
-The dataset was created using a Python script (`create_dataset.py`) that employs:
+## Coverage
 
-- **Weighted random sampling** for realistic distributions across categories, venues, methods, and years
-- **Year-dependent method weights** reflecting real-world trends (transformer adoption, CNN decline)
-- **Power-law citation distributions** with corrections for paper age, venue prestige, and survey status
-- **Category-venue affinity** matrices (e.g., CVPR papers skew toward cs.CV)
-- **Template-based abstract generation** with randomized components for diversity
+- Temporal: 2018-01-01 to 2025-12-31
+- Geospatial: Global (synthetic)
 
-All data is synthetic and does not represent real papers or authors.
+## DOI and Citations
 
-## Sample Rows
+- DOI: Not assigned
+- Scaturchio, Lorenzo (2026). AI/ML Research Papers Trends (3K+ Papers). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ai-ml-research-papers-trends
 
-| paper_id | title | year | category | venue | primary_method | citation_count |
-|----------|-------|------|----------|-------|----------------|----------------|
-| arxiv.202301.00042 | Rethinking Language Modeling with Transformers | 2023 | cs.CL | ACL | transformer | 45 |
-| arxiv.201906.00128 | Object Detection via Contrastive Learning | 2019 | cs.CV | CVPR | cnn | 312 |
-| arxiv.202207.00891 | Efficient Meta-Learning at Scale | 2022 | cs.LG | ICML | transformer | 67 |
-| arxiv.202503.01234 | AI Safety using Large Language Models | 2025 | cs.AI | arXiv-only | transformer | 3 |
+## Provenance
 
-## License
+- Source: Synthetic data generation scripts in this repository
+- Source: Public domain schemas and domain conventions for educational simulation
+- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
 
-This dataset is released under the **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)** license.
+## ai_research_papers.csv
 
-## Citation
+**Rows:** 3,200  |  **Columns:** 15  |  **Size:** 1,763.5 KB
 
-If you use this dataset in your work, please cite:
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `paper_id` | string | 0.0% | 3,200 | `arxiv.202008.00686`, `arxiv.202209.01238`, `arxiv.202209.01255` |
+| `title` | string | 0.0% | 2,757 | `Towards Style Transfer with Limited Labels`, `Progressive Point Cloud Processing across Domains`, `Semi-Supervised Entity Linking via Prompt Tuning` |
+| `abstract` | string | 0.0% | 3,198 | — |
+| `authors` | string | 0.0% | 3,182 | `Jian Wang; Siddharth Martin; Zhi Sun`, `Elena Liu; Oriol Petrov; Yoshua Mueller`, `Diego Rodriguez; Maria LeCun` |
+| `year` | integer | 0.0% | 8 | `2023`, `2024`, `2022` |
+| `month` | integer | 0.0% | 12 | `9`, `2`, `4` |
+| `category` | string | 0.0% | 8 | `cs.LG`, `cs.CL`, `cs.CV` |
+| `subcategory` | string | 0.0% | 43 | `representation-learning`, `image-generation`, `optimization` |
+| `citation_count` | integer | 0.0% | 429 | `75`, `240`, `42` |
+| `venue` | string | 0.0% | 9 | `arXiv-only`, `CVPR`, `NeurIPS` |
+| `num_authors` | integer | 0.0% | 11 | `4`, `5`, `3` |
+| `has_code` | boolean | 0.0% | 2 | `True`, `False` |
+| `primary_method` | string | 0.0% | 9 | `transformer`, `cnn`, `diffusion` |
+| `dataset_used` | string | 0.0% | 40 | `Fashion-MNIST`, `CIFAR-100`, `MuJoCo` |
+| `is_survey` | boolean | 0.0% | 2 | `False`, `True` |
 
-```
-@dataset{scaturchio2025airesearch,
-  title={AI/ML Research Papers Trends (3K+ Papers)},
-  author={Scaturchio, Lorenzo},
-  year={2025},
-  publisher={Kaggle},
-  url={https://www.kaggle.com/datasets/lorenzoscaturchio/ai-ml-research-papers-trends}
-}
-```
+## Suggested Use Cases
+
+- Text classification (TF-IDF, BERT embeddings)
+- Named entity recognition or topic modeling
+- Mental health treatment prediction (classification)
+- Workplace sentiment analysis
+
+---
+*Generated by `dataset_optimizer.py` — dataset_optimizer.py*

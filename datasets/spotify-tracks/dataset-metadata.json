@@ -4,37 +4,174 @@
   "subtitle": "50K tracks with Spotify audio features for ML tasks",
   "description": "50,000 synthetic Spotify-style tracks spanning 2000–2024 across 20 genres. Each record mirrors the Spotify Audio Features API: danceability, energy, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, duration, key, and mode — all generated with realistic per-genre distributions and correlations (e.g., electronic tracks have high energy+danceability; acoustic folk has high acousticness+valence).\n\nBuilt for: track popularity prediction (regression), genre classification (20 classes), playlist mood clustering (K-Means / UMAP), audio feature trend analysis over time, and recommender system prototyping.\n\nNotable features: 'popularity' follows a Zipf distribution (most tracks are obscure); key and mode are realistic (C major most common); tempo ranges from 60 BPM (ballads) to 180 BPM (drum-and-bass). All data is synthetic and generated for educational and ML prototyping purposes.",
   "isPrivate": false,
-  "licenses": [{"name": "CC-BY-SA-4.0"}],
-  "keywords": ["music", "audio features", "spotify", "genre classification", "recommendation"],
+  "licenses": [
+    {
+      "name": "GPL-3.0"
+    }
+  ],
+  "keywords": [
+    "music",
+    "classification",
+    "regression",
+    "clustering",
+    "beginner"
+  ],
   "resources": [
     {
       "path": "spotify_tracks.csv",
       "description": "Main dataset with track metadata and Spotify audio features",
       "schema": {
         "fields": [
-          {"name": "track_id", "title": "Track ID", "description": "Unique Spotify-style track identifier", "type": "string"},
-          {"name": "track_name", "title": "Track Name", "description": "Song title", "type": "string"},
-          {"name": "artist_name", "title": "Artist Name", "description": "Primary artist", "type": "string"},
-          {"name": "album_name", "title": "Album Name", "description": "Album title", "type": "string"},
-          {"name": "release_year", "title": "Release Year", "description": "Year of release (2000–2024)", "type": "integer"},
-          {"name": "genre", "title": "Genre", "description": "Primary genre (20 categories)", "type": "string"},
-          {"name": "popularity", "title": "Popularity", "description": "Track popularity score 0–100", "type": "integer"},
-          {"name": "duration_ms", "title": "Duration (ms)", "description": "Track length in milliseconds", "type": "integer"},
-          {"name": "explicit", "title": "Explicit", "description": "Whether track has explicit content", "type": "boolean"},
-          {"name": "danceability", "title": "Danceability", "description": "How suitable for dancing (0.0–1.0)", "type": "number"},
-          {"name": "energy", "title": "Energy", "description": "Perceptual intensity and activity (0.0–1.0)", "type": "number"},
-          {"name": "key", "title": "Key", "description": "Estimated overall key (0=C, 1=C#, ... 11=B)", "type": "integer"},
-          {"name": "loudness", "title": "Loudness", "description": "Overall loudness in dB (-60 to 0)", "type": "number"},
-          {"name": "mode", "title": "Mode", "description": "Modality: 1=major, 0=minor", "type": "integer"},
-          {"name": "speechiness", "title": "Speechiness", "description": "Presence of spoken words (0.0–1.0)", "type": "number"},
-          {"name": "acousticness", "title": "Acousticness", "description": "Confidence measure of acoustic (0.0–1.0)", "type": "number"},
-          {"name": "instrumentalness", "title": "Instrumentalness", "description": "Predicts no vocals (0.0–1.0)", "type": "number"},
-          {"name": "liveness", "title": "Liveness", "description": "Presence of audience in recording (0.0–1.0)", "type": "number"},
-          {"name": "valence", "title": "Valence", "description": "Musical positiveness conveyed (0.0–1.0)", "type": "number"},
-          {"name": "tempo", "title": "Tempo", "description": "Estimated tempo in BPM", "type": "number"},
-          {"name": "time_signature", "title": "Time Signature", "description": "Estimated time signature (3–7 beats/bar)", "type": "integer"}
+          {
+            "name": "track_id",
+            "title": "Track ID",
+            "description": "Unique Spotify-style track identifier",
+            "type": "string"
+          },
+          {
+            "name": "track_name",
+            "title": "Track Name",
+            "description": "Song title",
+            "type": "string"
+          },
+          {
+            "name": "artist_name",
+            "title": "Artist Name",
+            "description": "Primary artist",
+            "type": "string"
+          },
+          {
+            "name": "album_name",
+            "title": "Album Name",
+            "description": "Album title",
+            "type": "string"
+          },
+          {
+            "name": "release_year",
+            "title": "Release Year",
+            "description": "Year of release (2000–2024)",
+            "type": "integer"
+          },
+          {
+            "name": "genre",
+            "title": "Genre",
+            "description": "Primary genre (20 categories)",
+            "type": "string"
+          },
+          {
+            "name": "popularity",
+            "title": "Popularity",
+            "description": "Track popularity score 0–100",
+            "type": "integer"
+          },
+          {
+            "name": "duration_ms",
+            "title": "Duration (ms)",
+            "description": "Track length in milliseconds",
+            "type": "integer"
+          },
+          {
+            "name": "explicit",
+            "title": "Explicit",
+            "description": "Whether track has explicit content",
+            "type": "boolean"
+          },
+          {
+            "name": "danceability",
+            "title": "Danceability",
+            "description": "How suitable for dancing (0.0–1.0)",
+            "type": "number"
+          },
+          {
+            "name": "energy",
+            "title": "Energy",
+            "description": "Perceptual intensity and activity (0.0–1.0)",
+            "type": "number"
+          },
+          {
+            "name": "key",
+            "title": "Key",
+            "description": "Estimated overall key (0=C, 1=C#, ... 11=B)",
+            "type": "integer"
+          },
+          {
+            "name": "loudness",
+            "title": "Loudness",
+            "description": "Overall loudness in dB (-60 to 0)",
+            "type": "number"
+          },
+          {
+            "name": "mode",
+            "title": "Mode",
+            "description": "Modality: 1=major, 0=minor",
+            "type": "integer"
+          },
+          {
+            "name": "speechiness",
+            "title": "Speechiness",
+            "description": "Presence of spoken words (0.0–1.0)",
+            "type": "number"
+          },
+          {
+            "name": "acousticness",
+            "title": "Acousticness",
+            "description": "Confidence measure of acoustic (0.0–1.0)",
+            "type": "number"
+          },
+          {
+            "name": "instrumentalness",
+            "title": "Instrumentalness",
+            "description": "Predicts no vocals (0.0–1.0)",
+            "type": "number"
+          },
+          {
+            "name": "liveness",
+            "title": "Liveness",
+            "description": "Presence of audience in recording (0.0–1.0)",
+            "type": "number"
+          },
+          {
+            "name": "valence",
+            "title": "Valence",
+            "description": "Musical positiveness conveyed (0.0–1.0)",
+            "type": "number"
+          },
+          {
+            "name": "tempo",
+            "title": "Tempo",
+            "description": "Estimated tempo in BPM",
+            "type": "number"
+          },
+          {
+            "name": "time_signature",
+            "title": "Time Signature",
+            "description": "Estimated time signature (3–7 beats/bar)",
+            "type": "integer"
+          }
         ]
       }
     }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2000-01-01",
+    "temporal_end_date": "2024-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). Spotify Tracks: Audio Features (50K Songs). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k"
   ]
 }

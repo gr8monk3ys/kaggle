@@ -5,15 +5,15 @@
   "description": "5,500 GitHub repositories across 12 programming languages with 29 features spanning three dimensions: popularity (stars, forks, watchers), activity (open/closed issues, PRs, commits, releases), and community health (CI/CD, test coverage, code of conduct, contributing guide, wiki, discussions).\n\nBuilt for: star count prediction (regression benchmark), open source project health classification, language-based popularity analysis, CI/CD adoption study, and software engineering research. The combination of popularity and health signals makes it particularly useful for studying what separates high-traction projects from abandoned ones.\n\nNotable features: test_coverage percentage is included where available; has_ci distinguishes automated from manual workflows; topics field enables NLP analysis of project categorization. Spans repositories created from 2014 to 2025. All data is synthetic.",
   "licenses": [
     {
-      "name": "CC0-1.0"
+      "name": "GPL-3.0"
     }
   ],
   "keywords": [
-    "github",
-    "open source",
-    "star prediction",
-    "software engineering",
-    "regression"
+    "software",
+    "programming",
+    "beginner",
+    "regression",
+    "classification"
   ],
   "resources": [
     {
@@ -21,37 +21,205 @@
       "description": "5,500 GitHub repositories with 29 features including stars, forks, issues, contributors, CI/CD, test coverage, and topics",
       "schema": {
         "fields": [
-          {"name": "repo_name", "title": "Repository Name", "description": "Name of the GitHub repository", "type": "string"},
-          {"name": "language", "title": "Primary Language", "description": "Primary programming language (Python, JavaScript, Ruby, Go, etc.)", "type": "string"},
-          {"name": "description", "title": "Description", "description": "Repository description text", "type": "string"},
-          {"name": "stars", "title": "Stars", "description": "Number of GitHub stars (popularity metric)", "type": "integer"},
-          {"name": "forks", "title": "Forks", "description": "Number of repository forks", "type": "integer"},
-          {"name": "watchers", "title": "Watchers", "description": "Number of users watching the repository", "type": "integer"},
-          {"name": "open_issues", "title": "Open Issues", "description": "Current number of open issues", "type": "integer"},
-          {"name": "closed_issues", "title": "Closed Issues", "description": "Total number of closed issues", "type": "integer"},
-          {"name": "open_pull_requests", "title": "Open Pull Requests", "description": "Current number of open PRs", "type": "integer"},
-          {"name": "merged_pull_requests", "title": "Merged Pull Requests", "description": "Total number of merged PRs", "type": "integer"},
-          {"name": "contributors", "title": "Contributors", "description": "Number of unique contributors", "type": "integer"},
-          {"name": "commits", "title": "Commits", "description": "Total number of commits", "type": "integer"},
-          {"name": "releases", "title": "Releases", "description": "Number of tagged releases", "type": "integer"},
-          {"name": "license", "title": "License", "description": "Repository license (MIT, Apache-2.0, GPL-3.0, etc.)", "type": "string"},
-          {"name": "topics", "title": "Topics", "description": "Pipe-separated list of repository topics/tags", "type": "string"},
-          {"name": "created_date", "title": "Created Date", "description": "Date repository was created (YYYY-MM-DD)", "type": "date"},
-          {"name": "last_commit_date", "title": "Last Commit Date", "description": "Date of most recent commit (YYYY-MM-DD)", "type": "date"},
-          {"name": "readme_length", "title": "README Length", "description": "Character count of README file", "type": "integer"},
-          {"name": "has_ci", "title": "Has CI/CD", "description": "Whether repository has continuous integration (0/1)", "type": "integer"},
-          {"name": "test_coverage", "title": "Test Coverage", "description": "Test coverage percentage (if available)", "type": "number"},
-          {"name": "has_code_of_conduct", "title": "Has Code of Conduct", "description": "Whether repository has a code of conduct (0/1)", "type": "integer"},
-          {"name": "has_contributing_guide", "title": "Has Contributing Guide", "description": "Whether repository has CONTRIBUTING.md (0/1)", "type": "integer"},
-          {"name": "has_wiki", "title": "Has Wiki", "description": "Whether repository has wiki enabled (0/1)", "type": "integer"},
-          {"name": "has_pages", "title": "Has GitHub Pages", "description": "Whether repository has GitHub Pages site (0/1)", "type": "integer"},
-          {"name": "has_discussions", "title": "Has Discussions", "description": "Whether repository has discussions enabled (0/1)", "type": "integer"},
-          {"name": "default_branch", "title": "Default Branch", "description": "Name of default branch (main, master, etc.)", "type": "string"},
-          {"name": "is_archived", "title": "Is Archived", "description": "Whether repository is archived (0/1)", "type": "integer"},
-          {"name": "is_fork", "title": "Is Fork", "description": "Whether repository is a fork (0/1)", "type": "integer"},
-          {"name": "size_kb", "title": "Size (KB)", "description": "Repository size in kilobytes", "type": "integer"}
+          {
+            "name": "repo_name",
+            "title": "Repository Name",
+            "description": "Name of the GitHub repository",
+            "type": "string"
+          },
+          {
+            "name": "language",
+            "title": "Primary Language",
+            "description": "Primary programming language (Python, JavaScript, Ruby, Go, etc.)",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "title": "Description",
+            "description": "Repository description text",
+            "type": "string"
+          },
+          {
+            "name": "stars",
+            "title": "Stars",
+            "description": "Number of GitHub stars (popularity metric)",
+            "type": "integer"
+          },
+          {
+            "name": "forks",
+            "title": "Forks",
+            "description": "Number of repository forks",
+            "type": "integer"
+          },
+          {
+            "name": "watchers",
+            "title": "Watchers",
+            "description": "Number of users watching the repository",
+            "type": "integer"
+          },
+          {
+            "name": "open_issues",
+            "title": "Open Issues",
+            "description": "Current number of open issues",
+            "type": "integer"
+          },
+          {
+            "name": "closed_issues",
+            "title": "Closed Issues",
+            "description": "Total number of closed issues",
+            "type": "integer"
+          },
+          {
+            "name": "open_pull_requests",
+            "title": "Open Pull Requests",
+            "description": "Current number of open PRs",
+            "type": "integer"
+          },
+          {
+            "name": "merged_pull_requests",
+            "title": "Merged Pull Requests",
+            "description": "Total number of merged PRs",
+            "type": "integer"
+          },
+          {
+            "name": "contributors",
+            "title": "Contributors",
+            "description": "Number of unique contributors",
+            "type": "integer"
+          },
+          {
+            "name": "commits",
+            "title": "Commits",
+            "description": "Total number of commits",
+            "type": "integer"
+          },
+          {
+            "name": "releases",
+            "title": "Releases",
+            "description": "Number of tagged releases",
+            "type": "integer"
+          },
+          {
+            "name": "license",
+            "title": "License",
+            "description": "Repository license (MIT, Apache-2.0, GPL-3.0, etc.)",
+            "type": "string"
+          },
+          {
+            "name": "topics",
+            "title": "Topics",
+            "description": "Pipe-separated list of repository topics/tags",
+            "type": "string"
+          },
+          {
+            "name": "created_date",
+            "title": "Created Date",
+            "description": "Date repository was created (YYYY-MM-DD)",
+            "type": "date"
+          },
+          {
+            "name": "last_commit_date",
+            "title": "Last Commit Date",
+            "description": "Date of most recent commit (YYYY-MM-DD)",
+            "type": "date"
+          },
+          {
+            "name": "readme_length",
+            "title": "README Length",
+            "description": "Character count of README file",
+            "type": "integer"
+          },
+          {
+            "name": "has_ci",
+            "title": "Has CI/CD",
+            "description": "Whether repository has continuous integration (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "test_coverage",
+            "title": "Test Coverage",
+            "description": "Test coverage percentage (if available)",
+            "type": "number"
+          },
+          {
+            "name": "has_code_of_conduct",
+            "title": "Has Code of Conduct",
+            "description": "Whether repository has a code of conduct (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "has_contributing_guide",
+            "title": "Has Contributing Guide",
+            "description": "Whether repository has CONTRIBUTING.md (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "has_wiki",
+            "title": "Has Wiki",
+            "description": "Whether repository has wiki enabled (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "has_pages",
+            "title": "Has GitHub Pages",
+            "description": "Whether repository has GitHub Pages site (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "has_discussions",
+            "title": "Has Discussions",
+            "description": "Whether repository has discussions enabled (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "default_branch",
+            "title": "Default Branch",
+            "description": "Name of default branch (main, master, etc.)",
+            "type": "string"
+          },
+          {
+            "name": "is_archived",
+            "title": "Is Archived",
+            "description": "Whether repository is archived (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "is_fork",
+            "title": "Is Fork",
+            "description": "Whether repository is a fork (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "size_kb",
+            "title": "Size (KB)",
+            "description": "Repository size in kilobytes",
+            "type": "integer"
+          }
         ]
       }
     }
+  ],
+  "isPrivate": false,
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2014-01-01",
+    "temporal_end_date": "2025-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). GitHub Repository Metrics Dataset (5K+ Repos). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics"
   ]
 }

@@ -6,15 +6,15 @@
   "isPrivate": false,
   "licenses": [
     {
-      "name": "CC0-1.0"
+      "name": "GPL-3.0"
     }
   ],
   "keywords": [
     "education",
-    "student performance",
-    "gpa prediction",
     "classification",
-    "regression"
+    "regression",
+    "clustering",
+    "beginner"
   ],
   "resources": [
     {
@@ -175,5 +175,27 @@
         ]
       }
     }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2022-01-01",
+    "temporal_end_date": "2025-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). Student Academic Performance (10K Students). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset"
   ]
 }

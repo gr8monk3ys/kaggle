@@ -4,43 +4,210 @@
   "subtitle": "5K tech worker responses on mental health workplace culture",
   "description": "5,000 synthetic responses inspired by the Open Sourcing Mental Illness (OSMI) annual survey on mental health attitudes and culture in tech workplaces. Covers demographics, company characteristics, employer mental health benefits and policies, personal mental health history, and attitudes toward disclosure.\n\nBuilt for: treatment-seeking prediction (binary classification), employer mental health support scoring (regression), clustering workplace culture archetypes, HR analytics, and benchmarking mental health policy impact.\n\nNotable features: 'treatment' flag enables direct binary classification; 'work_interfere' captures day-to-day impact; employer benefit variables (care_options, wellness_program, seek_help, anonymity) enable policy analysis; age has realistic distribution peaking at 25–35. All responses are synthetic and generated for educational purposes.",
   "isPrivate": false,
-  "licenses": [{"name": "CC-BY-SA-4.0"}],
-  "keywords": ["mental health", "tech industry", "survey", "HR analytics", "classification"],
+  "licenses": [
+    {
+      "name": "GPL-3.0"
+    }
+  ],
+  "keywords": [
+    "mental health",
+    "classification",
+    "regression",
+    "clustering",
+    "education"
+  ],
   "resources": [
     {
       "path": "mental_health_tech.csv",
       "description": "Survey responses on mental health attitudes and workplace culture in tech",
       "schema": {
         "fields": [
-          {"name": "respondent_id", "title": "Respondent ID", "description": "Unique respondent identifier", "type": "integer"},
-          {"name": "survey_year", "title": "Survey Year", "description": "Year survey was taken (2019–2024)", "type": "integer"},
-          {"name": "age", "title": "Age", "description": "Respondent age", "type": "integer"},
-          {"name": "gender", "title": "Gender", "description": "Gender identity", "type": "string"},
-          {"name": "country", "title": "Country", "description": "Country of residence", "type": "string"},
-          {"name": "self_employed", "title": "Self Employed", "description": "Whether respondent is self-employed", "type": "string"},
-          {"name": "family_history", "title": "Family History", "description": "Family history of mental illness (Yes/No)", "type": "string"},
-          {"name": "treatment", "title": "Treatment", "description": "Has sought treatment for mental health (Yes/No) — TARGET", "type": "string"},
-          {"name": "work_interfere", "title": "Work Interference", "description": "How often mental health interferes with work", "type": "string"},
-          {"name": "no_employees", "title": "Company Size", "description": "Number of employees at company", "type": "string"},
-          {"name": "remote_work", "title": "Remote Work", "description": "Works remotely at least 50% (Yes/No)", "type": "string"},
-          {"name": "tech_company", "title": "Tech Company", "description": "Primarily a tech company (Yes/No)", "type": "string"},
-          {"name": "benefits", "title": "Mental Health Benefits", "description": "Employer provides mental health benefits", "type": "string"},
-          {"name": "care_options", "title": "Care Options", "description": "Aware of employer mental health care options", "type": "string"},
-          {"name": "wellness_program", "title": "Wellness Program", "description": "Employer wellness program includes mental health", "type": "string"},
-          {"name": "seek_help", "title": "Seek Help Resources", "description": "Employer provides resources to seek help", "type": "string"},
-          {"name": "anonymity", "title": "Anonymity Protected", "description": "Anonymity protected if using mental health resources", "type": "string"},
-          {"name": "leave", "title": "Medical Leave Ease", "description": "How easy to take medical leave for mental health", "type": "string"},
-          {"name": "mental_health_consequence", "title": "Mental Health Consequence", "description": "Negative consequence of discussing mental health with employer", "type": "string"},
-          {"name": "phys_health_consequence", "title": "Physical Health Consequence", "description": "Negative consequence of discussing physical health with employer", "type": "string"},
-          {"name": "coworkers", "title": "Discuss With Coworkers", "description": "Willingness to discuss mental health with coworkers", "type": "string"},
-          {"name": "supervisor", "title": "Discuss With Supervisor", "description": "Willingness to discuss mental health with supervisor", "type": "string"},
-          {"name": "mental_health_interview", "title": "Mental Health in Interview", "description": "Would bring up mental health in job interview", "type": "string"},
-          {"name": "phys_health_interview", "title": "Physical Health in Interview", "description": "Would bring up physical health in job interview", "type": "string"},
-          {"name": "mental_vs_physical", "title": "Mental vs Physical Priority", "description": "Employer takes mental health as seriously as physical", "type": "string"},
-          {"name": "obs_consequence", "title": "Observed Consequence", "description": "Observed negative consequence for a coworker", "type": "string"},
-          {"name": "comments", "title": "Comments", "description": "Open-ended additional comments (may be empty)", "type": "string"}
+          {
+            "name": "respondent_id",
+            "title": "Respondent ID",
+            "description": "Unique respondent identifier",
+            "type": "integer"
+          },
+          {
+            "name": "survey_year",
+            "title": "Survey Year",
+            "description": "Year survey was taken (2019–2024)",
+            "type": "integer"
+          },
+          {
+            "name": "age",
+            "title": "Age",
+            "description": "Respondent age",
+            "type": "integer"
+          },
+          {
+            "name": "gender",
+            "title": "Gender",
+            "description": "Gender identity",
+            "type": "string"
+          },
+          {
+            "name": "country",
+            "title": "Country",
+            "description": "Country of residence",
+            "type": "string"
+          },
+          {
+            "name": "self_employed",
+            "title": "Self Employed",
+            "description": "Whether respondent is self-employed",
+            "type": "string"
+          },
+          {
+            "name": "family_history",
+            "title": "Family History",
+            "description": "Family history of mental illness (Yes/No)",
+            "type": "string"
+          },
+          {
+            "name": "treatment",
+            "title": "Treatment",
+            "description": "Has sought treatment for mental health (Yes/No) — TARGET",
+            "type": "string"
+          },
+          {
+            "name": "work_interfere",
+            "title": "Work Interference",
+            "description": "How often mental health interferes with work",
+            "type": "string"
+          },
+          {
+            "name": "no_employees",
+            "title": "Company Size",
+            "description": "Number of employees at company",
+            "type": "string"
+          },
+          {
+            "name": "remote_work",
+            "title": "Remote Work",
+            "description": "Works remotely at least 50% (Yes/No)",
+            "type": "string"
+          },
+          {
+            "name": "tech_company",
+            "title": "Tech Company",
+            "description": "Primarily a tech company (Yes/No)",
+            "type": "string"
+          },
+          {
+            "name": "benefits",
+            "title": "Mental Health Benefits",
+            "description": "Employer provides mental health benefits",
+            "type": "string"
+          },
+          {
+            "name": "care_options",
+            "title": "Care Options",
+            "description": "Aware of employer mental health care options",
+            "type": "string"
+          },
+          {
+            "name": "wellness_program",
+            "title": "Wellness Program",
+            "description": "Employer wellness program includes mental health",
+            "type": "string"
+          },
+          {
+            "name": "seek_help",
+            "title": "Seek Help Resources",
+            "description": "Employer provides resources to seek help",
+            "type": "string"
+          },
+          {
+            "name": "anonymity",
+            "title": "Anonymity Protected",
+            "description": "Anonymity protected if using mental health resources",
+            "type": "string"
+          },
+          {
+            "name": "leave",
+            "title": "Medical Leave Ease",
+            "description": "How easy to take medical leave for mental health",
+            "type": "string"
+          },
+          {
+            "name": "mental_health_consequence",
+            "title": "Mental Health Consequence",
+            "description": "Negative consequence of discussing mental health with employer",
+            "type": "string"
+          },
+          {
+            "name": "phys_health_consequence",
+            "title": "Physical Health Consequence",
+            "description": "Negative consequence of discussing physical health with employer",
+            "type": "string"
+          },
+          {
+            "name": "coworkers",
+            "title": "Discuss With Coworkers",
+            "description": "Willingness to discuss mental health with coworkers",
+            "type": "string"
+          },
+          {
+            "name": "supervisor",
+            "title": "Discuss With Supervisor",
+            "description": "Willingness to discuss mental health with supervisor",
+            "type": "string"
+          },
+          {
+            "name": "mental_health_interview",
+            "title": "Mental Health in Interview",
+            "description": "Would bring up mental health in job interview",
+            "type": "string"
+          },
+          {
+            "name": "phys_health_interview",
+            "title": "Physical Health in Interview",
+            "description": "Would bring up physical health in job interview",
+            "type": "string"
+          },
+          {
+            "name": "mental_vs_physical",
+            "title": "Mental vs Physical Priority",
+            "description": "Employer takes mental health as seriously as physical",
+            "type": "string"
+          },
+          {
+            "name": "obs_consequence",
+            "title": "Observed Consequence",
+            "description": "Observed negative consequence for a coworker",
+            "type": "string"
+          },
+          {
+            "name": "comments",
+            "title": "Comments",
+            "description": "Open-ended additional comments (may be empty)",
+            "type": "string"
+          }
         ]
       }
     }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2016-01-01",
+    "temporal_end_date": "2025-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). Mental Health in Tech Survey (5K Responses). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k"
   ]
 }
