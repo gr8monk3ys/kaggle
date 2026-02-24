@@ -27,6 +27,7 @@
 #   publish-datasets - Publish draft datasets with quality gate checks
 #   auth-doctor     - Validate Kaggle credentials and upload auth
 #   draft-set       - Update a queued draft status/priority/deadline
+#   dataset-ui-sync - Sync dataset UI-only metadata fields using Playwright
 
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:$PATH"
@@ -74,7 +75,7 @@ color_reset='\033[0m'
 
 usage() {
     cat <<EOF
-Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|promote-notebooks|scout|help}
+Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|help}
 
 Commands:
   status                    Show notebooks/datasets and Kaggle account status
@@ -110,6 +111,8 @@ Commands:
   draft-ops                  Show draft backlog stage counts + priority queue
   draft-set <id> [--status STATUS] [--priority PRIORITY] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]
                             Update draft metadata and rebalance queue schedule window
+  dataset-ui-sync [--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]
+                            Sync Kaggle UI-only dataset sections (Authors/Coverage/DOI/Provenance/Citations)
   promote-notebooks [--auto]   Generate notebook promotion plan for competition forums
   scout [--update]          Scout active competitions ranked by medal opportunity
   help                      Show this message
@@ -525,6 +528,10 @@ cmd_build_all() {
     python3 notebook_pipeline.py "$@"
 }
 
+cmd_dataset_ui_sync() {
+    python3 pi-automation/scripts/dataset_metadata_sync.py "$@"
+}
+
 # Main dispatcher
 case "${1:-status}" in
     status)
@@ -620,6 +627,9 @@ case "${1:-status}" in
         ;;
     draft-set)
         python3 discussion_scheduler.py --set-id "${2:?Usage: $0 draft-set <draft_id> [--status ...] [--priority ...] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]}" "${@:3}"
+        ;;
+    dataset-ui-sync)
+        cmd_dataset_ui_sync "${@:2}"
         ;;
     promote-notebooks)
         python3 notebook_promoter.py "${@:2}"
