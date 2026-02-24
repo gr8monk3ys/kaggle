@@ -48,6 +48,16 @@ def test_manage_help_available():
     assert "sync-template" in result.stdout
     assert "doctor" in result.stdout
     assert "quality" in result.stdout
+    assert "dataset-usability" in result.stdout
+    assert "usability-tracker" in result.stdout
+    assert "campaign-pack" in result.stdout
+    assert "campaign-run" in result.stdout
+    assert "usability-benchmark" in result.stdout
+    assert "publish-datasets" in result.stdout
+    assert "auth-doctor" in result.stdout
+    assert "draft-ops" in result.stdout
+    assert "draft-set" in result.stdout
+    assert "--schedule-weeks" in result.stdout
 
 
 def test_medal_ops_health_workflow_exists_and_has_schedule():
@@ -62,8 +72,21 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "mode:" in content
     assert "max_stale_days:" in content
     assert "min_quality_score:" in content
+    assert "min_dataset_usability_score:" in content
+    assert "live_alert_under:" in content
+    assert "live_target_rating:" in content
+    assert 'default: "0.8"' in content
+    assert 'default: "1.0"' in content
+    assert "max_overdue_scheduled:" in content
+    assert "max_days_until_next_post:" in content
+    assert 'default: "85"' in content
     assert "doctor --strict" in content
     assert "notebook_quality.py" in content
+    assert "dataset_usability.py" in content
+    assert "dataset-usability.log" in content
+    assert "dataset-usability-tracker.log" in content
+    assert "discussion_scheduler.py --health-check" in content
+    assert "draft-ops.log" in content
     assert "sync --dry-run" in content
     assert "Open or update incident issue" in content
 
@@ -74,3 +97,6 @@ def test_ci_workflow_runs_notebook_quality_gate():
     content = workflow.read_text(encoding="utf-8")
     assert "notebook_quality.py" in content
     assert "--fail-under-threshold" in content
+    assert "dataset_usability.py" in content
+    assert "--fail-under 85" in content
+    assert "discussion_scheduler.py --health-check" in content
