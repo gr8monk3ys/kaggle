@@ -72,18 +72,27 @@ jobs:
           python-version: "3.11"
 
       - name: Install Kaggle CLI (live mode only)
-        if: ${{ secrets.KAGGLE_USERNAME != '' && secrets.KAGGLE_KEY != '' }}
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
+          if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
+            echo "Skipping Kaggle CLI install (credentials not configured)."
+            exit 0
+          fi
           python -m pip install --upgrade pip
           python -m pip install kaggle
 
       - name: Configure Kaggle credentials (live mode only)
-        if: ${{ secrets.KAGGLE_USERNAME != '' && secrets.KAGGLE_KEY != '' }}
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           set -euo pipefail
+          if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
+            echo "Skipping Kaggle credential setup (credentials not configured)."
+            exit 0
+          fi
           mkdir -p ~/.kaggle
           cat > ~/.kaggle/kaggle.json <<EOF
           {"username":"${KAGGLE_USERNAME}","key":"${KAGGLE_KEY}"}
