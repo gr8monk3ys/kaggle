@@ -1,0 +1,23 @@
+{
+  "id": "lorenzoscaturchio/digit-recognizer-cnn-to-99-percent",
+  "title": "Digit Recognizer CNN to 99 Percent",
+  "code_file": "digit_recognizer_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "mnist",
+    "cnn",
+    "pytorch",
+    "computer vision",
+    "digit recognizer",
+    "deep learning",
+    "tutorial",
+    "image classification"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

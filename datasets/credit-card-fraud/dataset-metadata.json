@@ -1,0 +1,267 @@
+{
+  "id": "lorenzoscaturchio/credit-card-fraud-detection-synthetic",
+  "title": "Credit Card Fraud Detection (200K Transactions)",
+  "subtitle": "200K transactions, 0.5% fraud rate, 30 features",
+  "description": "200,000 synthetic credit card transactions with a realistic ~0.5% fraud rate (1,000 fraud cases), designed to mirror the statistical properties of real fraud datasets. Features include 28 PCA-transformed components (V1-V28), transaction Amount, Time, merchant_category, hour_of_day, and day_of_week. Fraud transactions exhibit shifted PCA distributions, higher rates in online and electronics merchants, and atypical amount patterns.\n\nBuilt for: fraud detection (binary classification with severe class imbalance), threshold optimization (precision-recall tradeoff), anomaly detection, cost-sensitive learning, and SMOTE/oversampling experiments. The class imbalance mirrors real-world fraud detection challenges.\n\nNotable features: V1-V28 PCA structure allows comparison with real-world fraud datasets; merchant_category enables feature engineering; hour_of_day captures temporal fraud patterns; Amount distribution differs significantly between fraud and legit. All data is synthetic and generated for educational and ML practice purposes.",
+  "isPrivate": false,
+  "licenses": [
+    {
+      "name": "GPL-3.0"
+    }
+  ],
+  "keywords": [
+    "business",
+    "classification",
+    "binary classification",
+    "regression",
+    "clustering"
+  ],
+  "resources": [
+    {
+      "path": "credit_card_transactions.csv",
+      "description": "200K synthetic credit card transactions with PCA features, amount, merchant category, and fraud label",
+      "schema": {
+        "fields": [
+          {
+            "name": "transaction_id",
+            "title": "Transaction ID",
+            "description": "Unique transaction identifier (TXN000000 format)",
+            "type": "string"
+          },
+          {
+            "name": "Time",
+            "title": "Time",
+            "description": "Seconds elapsed from first transaction in 48-hour window (0 to 172800)",
+            "type": "number"
+          },
+          {
+            "name": "V1",
+            "title": "V1",
+            "description": "PCA component 1 (shifted -3.0 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V2",
+            "title": "V2",
+            "description": "PCA component 2 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V3",
+            "title": "V3",
+            "description": "PCA component 3 (shifted -3.0 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V4",
+            "title": "V4",
+            "description": "PCA component 4 (shifted +2.5 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V5",
+            "title": "V5",
+            "description": "PCA component 5 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V6",
+            "title": "V6",
+            "description": "PCA component 6 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V7",
+            "title": "V7",
+            "description": "PCA component 7 (shifted -2.0 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V8",
+            "title": "V8",
+            "description": "PCA component 8 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V9",
+            "title": "V9",
+            "description": "PCA component 9 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V10",
+            "title": "V10",
+            "description": "PCA component 10 (shifted -2.5 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V11",
+            "title": "V11",
+            "description": "PCA component 11 (shifted +2.0 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V12",
+            "title": "V12",
+            "description": "PCA component 12 (shifted -3.0 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V13",
+            "title": "V13",
+            "description": "PCA component 13 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V14",
+            "title": "V14",
+            "description": "PCA component 14 (shifted -3.5 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V15",
+            "title": "V15",
+            "description": "PCA component 15 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V16",
+            "title": "V16",
+            "description": "PCA component 16 (shifted -1.5 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V17",
+            "title": "V17",
+            "description": "PCA component 17 (shifted -2.0 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V18",
+            "title": "V18",
+            "description": "PCA component 18 (shifted -1.5 std for fraud transactions)",
+            "type": "number"
+          },
+          {
+            "name": "V19",
+            "title": "V19",
+            "description": "PCA component 19 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V20",
+            "title": "V20",
+            "description": "PCA component 20 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V21",
+            "title": "V21",
+            "description": "PCA component 21 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V22",
+            "title": "V22",
+            "description": "PCA component 22 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V23",
+            "title": "V23",
+            "description": "PCA component 23 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V24",
+            "title": "V24",
+            "description": "PCA component 24 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V25",
+            "title": "V25",
+            "description": "PCA component 25 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V26",
+            "title": "V26",
+            "description": "PCA component 26 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V27",
+            "title": "V27",
+            "description": "PCA component 27 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "V28",
+            "title": "V28",
+            "description": "PCA component 28 (standard normal for both classes)",
+            "type": "number"
+          },
+          {
+            "name": "Amount",
+            "title": "Amount",
+            "description": "Transaction amount in USD (lognormal; fraud skewed toward small amounts or large outliers)",
+            "type": "number"
+          },
+          {
+            "name": "merchant_category",
+            "title": "Merchant Category",
+            "description": "Merchant type: grocery, electronics, gas_station, restaurant, online, travel, entertainment, healthcare",
+            "type": "string"
+          },
+          {
+            "name": "hour_of_day",
+            "title": "Hour of Day",
+            "description": "Hour when transaction occurred (0-23, derived from Time)",
+            "type": "integer"
+          },
+          {
+            "name": "day_of_week",
+            "title": "Day of Week",
+            "description": "Day of week (0=Monday, 6=Sunday, derived from Time)",
+            "type": "integer"
+          },
+          {
+            "name": "is_weekend",
+            "title": "Is Weekend",
+            "description": "Whether transaction occurred on a weekend: Saturday or Sunday (0=weekday, 1=weekend)",
+            "type": "integer"
+          },
+          {
+            "name": "Class",
+            "title": "Class",
+            "description": "Fraud label (0=legitimate transaction, 1=fraudulent transaction)",
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2024-01-01",
+    "temporal_end_date": "2025-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). Credit Card Fraud Detection (200K Transactions). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud-detection-synthetic"
+  ]
+}

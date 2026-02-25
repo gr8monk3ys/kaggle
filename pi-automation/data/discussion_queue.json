@@ -1,0 +1,452 @@
+[
+  {
+    "id": "draft-1",
+    "title": "5 Feature Engineering Tricks That Won Me Bronze",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 1",
+    "status": "pending",
+    "scheduled_after": "2026-02-24T10:00:00Z"
+  },
+  {
+    "id": "draft-2",
+    "title": "Med-Gemma Challenge: Initial EDA Findings",
+    "forum_url": "https://www.kaggle.com/competitions/med-gemma-challenge/discussion",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 2",
+    "status": "pending",
+    "scheduled_after": "2026-02-27T10:00:00Z"
+  },
+  {
+    "id": "draft-3",
+    "title": "Akkadian Translation: Understanding the Data",
+    "forum_url": "https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 3",
+    "status": "pending",
+    "scheduled_after": "2026-03-03T10:00:00Z"
+  },
+  {
+    "id": "draft-4",
+    "title": "Complete Guide to Ensemble Methods for Kaggle Competitions",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 4",
+    "status": "pending",
+    "scheduled_after": "2026-03-06T10:00:00Z"
+  },
+  {
+    "id": "draft-5",
+    "title": "RAG Systems: What I Learned Building One From Scratch",
+    "forum_url": "https://www.kaggle.com/discussions/general",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 5",
+    "status": "pending",
+    "scheduled_after": "2026-03-10T10:00:00Z"
+  },
+  {
+    "id": "draft-6",
+    "title": "Attention Mechanisms Visualized: A Practical Guide",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 6",
+    "status": "pending",
+    "scheduled_after": "2026-03-13T10:00:00Z"
+  },
+  {
+    "id": "draft-7",
+    "title": "Time Series Pitfalls: Don't Random Split Your Data!",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 7",
+    "status": "pending",
+    "scheduled_after": "2026-03-17T10:00:00Z"
+  },
+  {
+    "id": "draft-8",
+    "title": "My End-to-End ML Competition Pipeline",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 8",
+    "status": "pending",
+    "scheduled_after": "2026-03-20T10:00:00Z"
+  },
+  {
+    "id": "draft-9",
+    "title": "Vesuvius Challenge: 3D Segmentation Approaches",
+    "forum_url": "https://www.kaggle.com/competitions/vesuvius-challenge-ink-detection/discussion",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 9",
+    "status": "pending",
+    "scheduled_after": "2026-03-24T10:00:00Z"
+  },
+  {
+    "id": "draft-10",
+    "title": "Top 10 Kaggle Notebooks Every Beginner Should Read",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 10",
+    "status": "pending",
+    "scheduled_after": "2026-03-27T10:00:00Z"
+  },
+  {
+    "id": "draft-11",
+    "title": "The Definitive Guide to Cross-Validation Strategies",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 11",
+    "status": "pending",
+    "scheduled_after": "2026-03-29T10:00:00Z"
+  },
+  {
+    "id": "draft-12",
+    "title": "How I Stopped Overfitting the Public Leaderboard",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 12",
+    "status": "pending",
+    "scheduled_after": "2026-04-01T10:00:00Z"
+  },
+  {
+    "id": "draft-13",
+    "title": "Data Leakage: The Silent Killer of Kaggle Models",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 13",
+    "status": "pending",
+    "scheduled_after": "2026-04-03T10:00:00Z"
+  },
+  {
+    "id": "draft-14",
+    "title": "My Gradient Boosting Tuning Checklist (XGBoost/LightGBM/CatBoost)",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 14",
+    "status": "pending",
+    "scheduled_after": "2026-04-06T10:00:00Z"
+  },
+  {
+    "id": "draft-15",
+    "title": "Handling Missing Data: 7 Strategies Compared",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 15",
+    "status": "pending",
+    "scheduled_after": "2026-04-08T10:00:00Z"
+  },
+  {
+    "id": "draft-16",
+    "title": "EDA in 20 Minutes: My Pandas Profiling Alternative",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 16",
+    "status": "pending",
+    "scheduled_after": "2026-04-11T10:00:00Z"
+  },
+  {
+    "id": "draft-17",
+    "title": "Feature Selection That Actually Works: 5 Methods Ranked",
+    "forum_url": "https://www.kaggle.com/discussions/machine-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 17",
+    "status": "pending",
+    "scheduled_after": "2026-04-13T10:00:00Z"
+  },
+  {
+    "id": "draft-18",
+    "title": "Outlier Detection Without Dropping Data",
+    "forum_url": "https://www.kaggle.com/discussions/machine-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 18",
+    "status": "pending",
+    "scheduled_after": "2026-04-16T10:00:00Z"
+  },
+  {
+    "id": "draft-19",
+    "title": "Log Transform vs Box-Cox vs Yeo-Johnson: Which One?",
+    "forum_url": "https://www.kaggle.com/discussions/machine-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 19",
+    "status": "pending",
+    "scheduled_after": "2026-04-18T10:00:00Z"
+  },
+  {
+    "id": "draft-20",
+    "title": "Building Better Categorical Features: Beyond One-Hot Encoding",
+    "forum_url": "https://www.kaggle.com/discussions/machine-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 20",
+    "status": "pending",
+    "scheduled_after": "2026-04-21T10:00:00Z"
+  },
+  {
+    "id": "draft-21",
+    "title": "How to Form a Kaggle Team (And Not Regret It)",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 21",
+    "status": "pending",
+    "scheduled_after": "2026-04-23T10:00:00Z"
+  },
+  {
+    "id": "draft-22",
+    "title": "My Post-Competition Analysis Template",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 22",
+    "status": "pending",
+    "scheduled_after": "2026-04-26T10:00:00Z"
+  },
+  {
+    "id": "draft-23",
+    "title": "The Notebook Competitor's Playbook",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 23",
+    "status": "pending",
+    "scheduled_after": "2026-04-28T10:00:00Z"
+  },
+  {
+    "id": "draft-24",
+    "title": "Pseudo-Labeling: Double Your Training Data",
+    "forum_url": "https://www.kaggle.com/discussions/machine-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 24",
+    "status": "pending",
+    "scheduled_after": "2026-05-01T10:00:00Z"
+  },
+  {
+    "id": "draft-25",
+    "title": "Stochastic Weight Averaging: A Free +0.3% Boost",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 25",
+    "status": "pending",
+    "scheduled_after": "2026-05-03T10:00:00Z"
+  },
+  {
+    "id": "draft-26",
+    "title": "Finding the Perfect Learning Rate: LR Range Test",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 26",
+    "status": "pending",
+    "scheduled_after": "2026-05-06T10:00:00Z"
+  },
+  {
+    "id": "draft-27",
+    "title": "Batch Size Effects: What Nobody Tells You",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 27",
+    "status": "pending",
+    "scheduled_after": "2026-05-08T10:00:00Z"
+  },
+  {
+    "id": "draft-28",
+    "title": "Data Augmentation for Tabular Data",
+    "forum_url": "https://www.kaggle.com/discussions/machine-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 28",
+    "status": "pending",
+    "scheduled_after": "2026-05-11T10:00:00Z"
+  },
+  {
+    "id": "draft-29",
+    "title": "Mixed Precision Training: 2x Speed for Free",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 29",
+    "status": "pending",
+    "scheduled_after": "2026-05-13T10:00:00Z"
+  },
+  {
+    "id": "draft-30",
+    "title": "Debugging Neural Networks: My Systematic Approach",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 30",
+    "status": "pending",
+    "scheduled_after": "2026-05-16T10:00:00Z"
+  },
+  {
+    "id": "draft-31",
+    "title": "BERT Fine-Tuning That Actually Works: 5 Tips",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 31",
+    "status": "pending",
+    "scheduled_after": "2026-05-18T10:00:00Z"
+  },
+  {
+    "id": "draft-32",
+    "title": "Text Preprocessing: What to Keep and What to Throw Away",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 32",
+    "status": "pending",
+    "scheduled_after": "2026-05-21T10:00:00Z"
+  },
+  {
+    "id": "draft-33",
+    "title": "Embedding Comparison for Classification: TF-IDF vs Word2Vec vs BERT",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 33",
+    "status": "pending",
+    "scheduled_after": "2026-05-23T10:00:00Z"
+  },
+  {
+    "id": "draft-34",
+    "title": "Multi-Label Text Classification: Lessons Learned",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 34",
+    "status": "pending",
+    "scheduled_after": "2026-05-26T10:00:00Z"
+  },
+  {
+    "id": "draft-35",
+    "title": "How I Built a RAG System in 50 Lines of Python",
+    "forum_url": "https://www.kaggle.com/discussions/general",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 35",
+    "status": "pending",
+    "scheduled_after": "2026-05-28T10:00:00Z"
+  },
+  {
+    "id": "draft-36",
+    "title": "New Dataset: Credit Card Fraud (200K Transactions, 0.5% Fraud Rate)",
+    "forum_url": "https://www.kaggle.com/discussions/data",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 36",
+    "status": "pending",
+    "scheduled_after": "2026-05-31T10:00:00Z"
+  },
+  {
+    "id": "draft-37",
+    "title": "New Dataset: Job Postings NLP (15K Listings, Salary Ranges, Skills)",
+    "forum_url": "https://www.kaggle.com/discussions/data",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 37",
+    "status": "pending",
+    "scheduled_after": "2026-06-02T10:00:00Z"
+  },
+  {
+    "id": "draft-38",
+    "title": "New Dataset: Programming Language Benchmarks (2200+ Benchmarks)",
+    "forum_url": "https://www.kaggle.com/discussions/data",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 38",
+    "status": "pending",
+    "scheduled_after": "2026-06-05T10:00:00Z"
+  },
+  {
+    "id": "draft-39",
+    "title": "New Dataset: ML/DS Interview Questions & Answers (500+)",
+    "forum_url": "https://www.kaggle.com/discussions/data",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 39",
+    "status": "pending",
+    "scheduled_after": "2026-06-07T10:00:00Z"
+  },
+  {
+    "id": "draft-40",
+    "title": "5 Notebooks You Should Upvote This Week",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 40",
+    "status": "pending",
+    "scheduled_after": "2026-06-10T10:00:00Z"
+  },
+  {
+    "id": "draft-41",
+    "title": "10 Pandas Tricks That Save Hours in Kaggle Notebooks",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 41",
+    "status": "pending",
+    "scheduled_after": "2026-06-12T10:00:00Z"
+  },
+  {
+    "id": "draft-42",
+    "title": "GPU Memory Management in PyTorch: Stop Getting OOM Errors",
+    "forum_url": "https://www.kaggle.com/discussions/deep-learning",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 42",
+    "status": "pending",
+    "scheduled_after": "2026-06-15T10:00:00Z"
+  },
+  {
+    "id": "draft-43",
+    "title": "The Perfect Kaggle Notebook Template",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 43",
+    "status": "pending",
+    "scheduled_after": "2026-06-17T10:00:00Z"
+  },
+  {
+    "id": "draft-44",
+    "title": "Reproducibility Checklist: Never Get a Different Score Again",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 44",
+    "status": "pending",
+    "scheduled_after": "2026-06-20T10:00:00Z"
+  },
+  {
+    "id": "draft-45",
+    "title": "How to Use Kaggle's Free TPUs Effectively",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 45",
+    "status": "pending",
+    "scheduled_after": "2026-06-22T10:00:00Z"
+  },
+  {
+    "id": "draft-46",
+    "title": "My Grandmaster Journey: Week 1 Progress Report",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 46",
+    "status": "pending",
+    "scheduled_after": "2026-06-25T10:00:00Z"
+  },
+  {
+    "id": "draft-47",
+    "title": "What I Learned From Reading 50 Top Competition Solutions",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 47",
+    "status": "pending",
+    "scheduled_after": "2026-06-27T10:00:00Z"
+  },
+  {
+    "id": "draft-48",
+    "title": "The Underrated Power of Kaggle Discussions",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 48",
+    "status": "pending",
+    "scheduled_after": "2026-06-30T10:00:00Z"
+  },
+  {
+    "id": "draft-49",
+    "title": "Building ML Tools for Competition Automation",
+    "forum_url": "https://www.kaggle.com/discussions/general",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 49",
+    "status": "pending",
+    "scheduled_after": "2026-07-02T10:00:00Z"
+  },
+  {
+    "id": "draft-50",
+    "title": "How I Organize My Kaggle Workflow",
+    "forum_url": "https://www.kaggle.com/discussions/getting-started",
+    "body_file": "discussion-drafts.md",
+    "body_section": "Draft 50",
+    "status": "pending",
+    "scheduled_after": "2026-07-05T10:00:00Z"
+  }
+]

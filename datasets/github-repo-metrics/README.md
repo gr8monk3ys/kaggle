@@ -1,167 +1,83 @@
----
-title: "GitHub Repository Metrics Dataset (5K+ Repos)"
-description: "Synthetic but realistic dataset of 5,500 GitHub repositories with stars, forks, issues, contributors, CI/CD status, test coverage, and more. Features realistic correlations between metrics."
-license: CC0-1.0
-tags:
-  - github
-  - open source
-  - software engineering
-  - repository analytics
-  - popularity prediction
----
+# GitHub Repository Metrics Dataset (5K+ Repos)
 
-# GitHub Repository Metrics Dataset
+> 5,500 repos with 29 features: stars, forks, CI/CD, community health
 
-![License: CC0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)
-![Repos: 5,500](https://img.shields.io/badge/Repos-5%2C500-blue.svg)
-![Features: 29](https://img.shields.io/badge/Features-29-green.svg)
-![Languages: 19](https://img.shields.io/badge/Languages-19-orange.svg)
+**License:** GPL-3.0  
 
-## Overview
+**Kaggle:** [lorenzoscaturchio/github-repo-metrics](https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics)  
 
-A synthetic dataset of **5,500 GitHub repositories** with realistic metrics, correlations, and distributions. Designed for practicing **popularity prediction**, **language trend analysis**, **open source health assessment**, and **software engineering analytics**.
+## Description
 
-The data mirrors real GitHub distributions including power-law star counts, language popularity trends, and realistic correlations between community and code health metrics.
+5,500 GitHub repositories across 12 programming languages with 29 features spanning three dimensions: popularity (stars, forks, watchers), activity (open/closed issues, PRs, commits, releases), and community health (CI/CD, test coverage, code of conduct, contributing guide, wiki, discussions).
 
----
+Built for: star count prediction (regression benchmark), open source project health classification, language-based popularity analysis, CI/CD adoption study, and software engineering research. The combination of popularity and health signals makes it particularly useful for studying what separates high-traction projects from abandoned ones.
 
-## Quick Start
+Notable features: test_coverage percentage is included where available; has_ci distinguishes automated from manual workflows; topics field enables NLP analysis of project categorization. Spans repositories created from 2014 to 2025. All data is synthetic.
 
-```python
-import pandas as pd
-import numpy as np
+## Tags
 
-# On Kaggle
-df = pd.read_csv('/kaggle/input/github-repo-metrics/github_repos.csv')
+`software`, `programming`, `beginner`, `regression`, `classification`
 
-# Quick exploration
-print(f"Total repos: {len(df):,}")
-print(f"Languages: {df['language'].nunique()}")
-print(f"\nStar distribution:")
-for p in [50, 75, 90, 95, 99]:
-    print(f"  {p}th percentile: {df['stars'].quantile(p/100):,.0f}")
+## Authors
 
-# Top languages by median stars
-print("\nMedian stars by language (top 10):")
-print(df.groupby('language')['stars'].median().sort_values(ascending=False).head(10))
+- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
 
-# Star prediction features
-df['log_stars'] = np.log1p(df['stars'])
-print(f"\nCorrelation with log(stars):")
-numeric = df.select_dtypes(include=[np.number])
-print(numeric.corrwith(df['log_stars']).sort_values(ascending=False).head(10))
-```
+## Coverage
 
----
+- Temporal: 2014-01-01 to 2025-12-31
+- Geospatial: Global (synthetic)
 
-## Dataset Description
+## DOI and Citations
 
-### Content
+- DOI: Not assigned
+- Scaturchio, Lorenzo (2026). GitHub Repository Metrics Dataset (5K+ Repos). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics
 
-The dataset contains 29 features per repository, capturing code, community, and health metrics.
+## Provenance
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `repo_name` | string | Repository name |
-| `language` | string | Primary programming language (19 languages) |
-| `description` | string | Repository description |
-| `stars` | int | GitHub stars (0-200K, power-law distributed) |
-| `forks` | int | Number of forks (~10-30% of stars) |
-| `watchers` | int | Number of watchers |
-| `open_issues` | int | Currently open issues |
-| `closed_issues` | int | Total closed issues |
-| `open_pull_requests` | int | Open PRs |
-| `merged_pull_requests` | int | Merged PRs |
-| `contributors` | int | Number of contributors |
-| `commits` | int | Total commits |
-| `releases` | int | Number of releases |
-| `license` | string | License type (MIT, Apache-2.0, GPL-3.0, etc.) |
-| `topics` | string | Pipe-separated topic tags |
-| `created_date` | date | Repository creation date |
-| `last_commit_date` | date | Date of most recent commit |
-| `readme_length` | int | README character count |
-| `has_ci` | int | Has CI/CD configured |
-| `test_coverage` | float | Test coverage percentage (NaN if no CI) |
-| `has_code_of_conduct` | int | Has code of conduct |
-| `has_contributing_guide` | int | Has contributing guidelines |
-| `has_wiki` | int | Has wiki enabled |
-| `has_pages` | int | Has GitHub Pages |
-| `has_discussions` | int | Has discussions enabled |
-| `default_branch` | string | Default branch name |
-| `is_archived` | int | Repository is archived |
-| `is_fork` | int | Repository is a fork |
-| `size_kb` | int | Repository size in KB |
+- Source: Synthetic data generation scripts in this repository
+- Source: Public domain schemas and domain conventions for educational simulation
+- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
 
-### Built-in Correlations
+## github_repos.csv
 
-The data includes realistic statistical relationships:
+**Rows:** 5,000  |  **Columns:** 29  |  **Size:** 969.5 KB
 
-- **Stars and forks**: Forks are ~10-30% of stars
-- **Stars and language**: Rust and Python repos tend to get more stars
-- **Age and stars**: Older repos accumulate more stars
-- **Stars and CI**: Popular repos are more likely to have CI/CD
-- **README length and popularity**: Popular repos have longer READMEs
-- **Activity and archival**: Inactive repos are more likely to be archived
-- **Contributors and commits**: More contributors means more commits
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `repo_name` | string | 0.0% | 5,000 | `serve-ml`, `easy-link`, `go-graph-agent` |
+| `language` | string | 0.0% | 19 | `Ruby`, `TypeScript`, `Python` |
+| `description` | string | 0.0% | 2,232 | `server framework for building authentication`, `Scalable pipeline for database management`, `lightweight dashboard built with Kotlin` |
+| `stars` | integer | 0.0% | 297 | `13`, `32`, `2` |
+| `forks` | integer | 0.0% | 128 | `0`, `3`, `4` |
+| `watchers` | integer | 0.0% | 85 | `0`, `2`, `3` |
+| `open_issues` | integer | 0.0% | 54 | `0`, `2`, `4` |
+| `closed_issues` | integer | 0.0% | 187 | `99`, `19`, `10` |
+| `open_pull_requests` | integer | 0.0% | 25 | `0`, `1`, `2` |
+| `merged_pull_requests` | integer | 0.0% | 127 | `10`, `36`, `4` |
+| `contributors` | integer | 0.0% | 24 | `1`, `6`, `5` |
+| `commits` | integer | 0.0% | 1,472 | `200`, `1167`, `10` |
+| `releases` | integer | 0.0% | 106 | `0`, `2`, `1` |
+| `license` | string | 0.0% | 10 | `MIT`, `None`, `GPL-3.0` |
+| `topics` | string | 0.0% | 4,260 | `api|automation|devops|rails|deep-learning`, `angular|react|web|api`, `mobile|desktop` |
+| `created_date` | string | 0.0% | 1,859 | `2024-09-14`, `2022-12-18`, `2024-12-13` |
+| `last_commit_date` | string | 0.0% | 247 | `2024-12-27`, `2024-12-19`, `2024-12-26` |
+| `readme_length` | integer | 0.0% | 2,928 | `1282`, `1902`, `1251` |
+| `has_ci` | integer | 0.0% | 2 | `0`, `1` |
+| `test_coverage` | float | 68.9% | 674 | `73.5`, `44.0`, `90.8` |
+| `has_code_of_conduct` | integer | 0.0% | 2 | `0`, `1` |
+| `has_contributing_guide` | integer | 0.0% | 2 | `0`, `1` |
+| `has_wiki` | integer | 0.0% | 2 | `0`, `1` |
+| `has_pages` | integer | 0.0% | 2 | `0`, `1` |
+| `has_discussions` | integer | 0.0% | 2 | `0`, `1` |
+| `default_branch` | string | 0.0% | 3 | `main`, `develop`, `master` |
+| `is_archived` | integer | 0.0% | 2 | `0`, `1` |
+| `is_fork` | integer | 0.0% | 2 | `0`, `1` |
+| `size_kb` | integer | 0.0% | 4,242 | `497`, `4622`, `2148` |
 
-### Language Distribution
+## Suggested Use Cases
 
-Reflects real GitHub trends (2024): Python (18%), JavaScript (16%), TypeScript (10%), Java (9%), Go (7%), Rust (6%), and 13 other languages.
+- Text classification (TF-IDF, BERT embeddings)
+- Named entity recognition or topic modeling
 
 ---
-
-## Use Cases
-
-| # | Use Case | Type | Key Features |
-|---|----------|------|-------------|
-| 1 | **Star Prediction** | Regression | forks, watchers, contributors, README length |
-| 2 | **Language Trend Analysis** | Visualization / Stats | language, stars, created_date |
-| 3 | **Open Source Health Scoring** | Feature Engineering | has_ci, test_coverage, has_code_of_conduct |
-| 4 | **Repository Classification** | Multi-class Classification | topics, description, language |
-| 5 | **Contributor Analysis** | Correlation / Regression | contributors, commits, merged_pull_requests |
-| 6 | **License Analysis** | Exploratory Analysis | license, stars, language |
-| 7 | **Activity Prediction** | Binary Classification | last_commit_date, is_archived, age |
-| 8 | **Feature Engineering Practice** | Tabular ML | All columns -- derive meaningful features |
-| 9 | **Anomaly Detection** | Unsupervised Learning | outlier stars, unusual metrics combinations |
-| 10 | **Topic Network Analysis** | Graph Analysis | topics co-occurrence patterns |
-
-### Related Kaggle Competitions
-
-This dataset lets you practice techniques from:
-- [Predict Student Performance](https://www.kaggle.com/competitions/predict-student-performance-from-game-play) -- tabular prediction
-- [Tabular Playground Series](https://www.kaggle.com/competitions?search=tabular+playground) -- general tabular modeling
-- [Google Research - Identify Contrails](https://www.kaggle.com/competitions/google-research-identify-contrails-reduce-global-warming) -- working with metadata features
-
----
-
-## File Structure
-
-```
-github-repo-metrics/
-  github_repos.csv         # 5,500 repositories with 29 features
-  create_dataset.py        # Generation script
-  explore.ipynb            # Exploration notebook with EDA & star prediction model
-  dataset-metadata.json    # Kaggle dataset metadata
-  kernel-metadata.json     # Kaggle notebook metadata
-```
-
----
-
-## Citation
-
-```
-@dataset{github_repo_metrics_2025,
-  title={GitHub Repository Metrics Dataset},
-  author={Lorenzo Scaturchio},
-  year={2025},
-  url={https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics}
-}
-```
-
-## License
-
-CC0 1.0 Universal -- Public Domain.
-
----
-
-**If you found this dataset useful, please upvote! It helps others in the community discover it.**
+*Generated by `dataset_optimizer.py` — dataset_optimizer.py*

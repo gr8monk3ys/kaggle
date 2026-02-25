@@ -1,0 +1,14 @@
+{
+  "id": "lorenzoscaturchio/mental-health-tech-eda-treatment-prediction",
+  "title": "Mental Health in Tech: EDA & Treatment Prediction",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["mental health", "tech industry", "eda", "classification", "hr analytics"],
+  "dataset_sources": ["lorenzoscaturchio/mental-health-in-tech-survey-5k"],
+  "kernel_sources": [],
+  "competition_sources": []
+}

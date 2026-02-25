@@ -9,6 +9,7 @@ garbage collection overhead, and historical performance improvements.
 import csv
 import random
 import math
+from pathlib import Path
 
 random.seed(123)
 
@@ -329,7 +330,7 @@ def main():
         "popularity_index",
     ]
 
-    output_path = "/Users/gr8monk3ys/code/ml-portfolio/kaggle/datasets/programming-benchmarks/language_benchmarks.csv"
+    output_path = Path(__file__).resolve().parent / "language_benchmarks.csv"
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

@@ -2,29 +2,116 @@
   "id": "lorenzoscaturchio/programming-language-benchmarks",
   "title": "Programming Language Benchmarks Dataset",
   "subtitle": "2200+ benchmarks across 16 languages and 10 tasks",
-  "description": "A synthetic dataset of 2200+ programming language benchmark results covering 16 popular languages across 10 computational tasks. Includes execution time, memory usage, lines of code, and language metadata. Useful for performance comparison, language selection analysis, and software engineering research.",
+  "description": "2,200 benchmark results across 16 programming languages (Python, Rust, Go, C++, Java, JavaScript, TypeScript, Julia, Kotlin, Swift, Ruby, Scala, Haskell, Elixir, C#, and R) measured on 10 computational tasks spanning 2020–2025. Each record includes execution time (ms), peak memory usage (MB), lines of code, CPU cores used, and language metadata: paradigm (functional/OOP/multi-paradigm), type system (static/dynamic), garbage collection, and a popularity index.\n\nBuilt for: language performance comparison (which is fastest for matrix ops? which uses least memory for sorting?), regression on execution time given language and task, clustering languages by performance profile, and software engineering research on the tradeoff between expressiveness (LOC) and performance. The popularity_index enables weighted analysis.\n\nNotable features: covers compiled (Rust, C++, Go) vs interpreted (Python, Ruby, JavaScript) vs JVM-based (Java, Kotlin, Scala) in a single table; gc flag separates manual-memory from managed-memory languages. All data is synthetic.",
   "isPrivate": false,
-  "licenses": [{"name": "CC-BY-SA-4.0"}],
-  "keywords": ["education", "programming"],
+  "licenses": [
+    {
+      "name": "GPL-3.0"
+    }
+  ],
+  "keywords": [
+    "education",
+    "programming",
+    "software",
+    "regression",
+    "classification"
+  ],
   "resources": [
     {
       "path": "language_benchmarks.csv",
       "description": "Benchmark results across languages including execution time, memory usage, and language characteristics",
       "schema": {
         "fields": [
-          {"name": "language", "title": "Language", "description": "Programming language name (Python, Rust, Go, etc.)", "type": "string"},
-          {"name": "benchmark_name", "title": "Benchmark Name", "description": "Name of the benchmark task", "type": "string"},
-          {"name": "execution_time_ms", "title": "Execution Time (ms)", "description": "Time to complete benchmark in milliseconds", "type": "number"},
-          {"name": "memory_usage_mb", "title": "Memory Usage (MB)", "description": "Peak memory usage in megabytes", "type": "number"},
-          {"name": "lines_of_code", "title": "Lines of Code", "description": "LOC for the benchmark implementation", "type": "integer"},
-          {"name": "cpu_cores", "title": "CPU Cores", "description": "Number of CPU cores used", "type": "integer"},
-          {"name": "year", "title": "Year", "description": "Benchmark run year (2020-2025)", "type": "integer"},
-          {"name": "paradigm", "title": "Paradigm", "description": "Programming paradigm (functional, OOP, multi-paradigm)", "type": "string"},
-          {"name": "typing", "title": "Typing", "description": "Type system (static, dynamic)", "type": "string"},
-          {"name": "gc", "title": "Garbage Collection", "description": "Has garbage collection (yes/no)", "type": "string"},
-          {"name": "popularity_index", "title": "Popularity Index", "description": "Language popularity score (0-1)", "type": "number"}
+          {
+            "name": "language",
+            "title": "Language",
+            "description": "Programming language name (Python, Rust, Go, etc.)",
+            "type": "string"
+          },
+          {
+            "name": "benchmark_name",
+            "title": "Benchmark Name",
+            "description": "Name of the benchmark task",
+            "type": "string"
+          },
+          {
+            "name": "execution_time_ms",
+            "title": "Execution Time (ms)",
+            "description": "Time to complete benchmark in milliseconds",
+            "type": "number"
+          },
+          {
+            "name": "memory_usage_mb",
+            "title": "Memory Usage (MB)",
+            "description": "Peak memory usage in megabytes",
+            "type": "number"
+          },
+          {
+            "name": "lines_of_code",
+            "title": "Lines of Code",
+            "description": "LOC for the benchmark implementation",
+            "type": "integer"
+          },
+          {
+            "name": "cpu_cores",
+            "title": "CPU Cores",
+            "description": "Number of CPU cores used",
+            "type": "integer"
+          },
+          {
+            "name": "year",
+            "title": "Year",
+            "description": "Benchmark run year (2020-2025)",
+            "type": "integer"
+          },
+          {
+            "name": "paradigm",
+            "title": "Paradigm",
+            "description": "Programming paradigm (functional, OOP, multi-paradigm)",
+            "type": "string"
+          },
+          {
+            "name": "typing",
+            "title": "Typing",
+            "description": "Type system (static, dynamic)",
+            "type": "string"
+          },
+          {
+            "name": "gc",
+            "title": "Garbage Collection",
+            "description": "Has garbage collection (yes/no)",
+            "type": "string"
+          },
+          {
+            "name": "popularity_index",
+            "title": "Popularity Index",
+            "description": "Language popularity score (0-1)",
+            "type": "number"
+          }
         ]
       }
     }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2020-01-01",
+    "temporal_end_date": "2025-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). Programming Language Benchmarks Dataset. Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks"
   ]
 }

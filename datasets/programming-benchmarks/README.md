@@ -1,121 +1,65 @@
 # Programming Language Benchmarks Dataset
 
-A synthetic dataset of **2,200+ programming language benchmark results** spanning 16 languages and 10 computational tasks, collected over 2020--2025.
+> 2200+ benchmarks across 16 languages and 10 tasks
 
-## Dataset Overview
+**License:** GPL-3.0  
 
-This dataset captures realistic performance characteristics of popular programming languages across diverse benchmark tasks. It accounts for:
+**Kaggle:** [lorenzoscaturchio/programming-language-benchmarks](https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks)  
 
-- **Language-specific strengths**: Rust/C++ for raw speed, Go for networking, Julia for numerical computing, Python for conciseness
-- **Garbage collection overhead**: Languages with GC show higher memory usage
-- **Compiler/runtime improvements over time**: Languages like Julia and Python (3.11+) show significant year-over-year gains
-- **Multi-core scaling**: Diminishing returns with parallelism, varying by task type
-- **Lines of code trade-offs**: Concise languages (Python, Ruby) vs. verbose ones (Java, C++)
+## Description
 
-## Column Descriptions
+2,200 benchmark results across 16 programming languages (Python, Rust, Go, C++, Java, JavaScript, TypeScript, Julia, Kotlin, Swift, Ruby, Scala, Haskell, Elixir, C#, and R) measured on 10 computational tasks spanning 2020–2025. Each record includes execution time (ms), peak memory usage (MB), lines of code, CPU cores used, and language metadata: paradigm (functional/OOP/multi-paradigm), type system (static/dynamic), garbage collection, and a popularity index.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `language` | string | Programming language name (16 languages) |
-| `benchmark_name` | string | Name of the benchmark task (10 tasks) |
-| `execution_time_ms` | float | Wall-clock execution time in milliseconds |
-| `memory_usage_mb` | float | Peak memory usage in megabytes |
-| `lines_of_code` | int | Lines of code in the benchmark implementation |
-| `cpu_cores` | int | Number of CPU cores used (1, 2, 4, 8, or 16) |
-| `year` | int | Year the benchmark was run (2020--2025) |
-| `paradigm` | string | Primary paradigm: `functional`, `oop`, `multi-paradigm`, `procedural` |
-| `typing` | string | Type system: `static`, `dynamic`, `gradual` |
-| `gc` | string | Garbage collection: `yes`, `no`, `optional` |
-| `popularity_index` | float | TIOBE-like popularity score (0--100), varies by year |
+Built for: language performance comparison (which is fastest for matrix ops? which uses least memory for sorting?), regression on execution time given language and task, clustering languages by performance profile, and software engineering research on the tradeoff between expressiveness (LOC) and performance. The popularity_index enables weighted analysis.
 
-## Languages Included
+Notable features: covers compiled (Rust, C++, Go) vs interpreted (Python, Ruby, JavaScript) vs JVM-based (Java, Kotlin, Scala) in a single table; gc flag separates manual-memory from managed-memory languages. All data is synthetic.
 
-| Language | Paradigm | Typing | GC | Approx. Popularity (2024) |
-|----------|----------|--------|----|--------------------------|
-| Python | multi-paradigm | dynamic | yes | 28.0 |
-| JavaScript | multi-paradigm | dynamic | yes | 16.0 |
-| Java | oop | static | yes | 15.0 |
-| C++ | multi-paradigm | static | no | 10.5 |
-| TypeScript | multi-paradigm | gradual | yes | 8.5 |
-| C# | oop | static | yes | 7.0 |
-| Go | multi-paradigm | static | yes | 4.5 |
-| Swift | multi-paradigm | static | optional | 3.5 |
-| Rust | multi-paradigm | static | no | 3.0 |
-| Kotlin | multi-paradigm | static | yes | 2.8 |
-| Ruby | oop | dynamic | yes | 1.8 |
-| R | multi-paradigm | dynamic | yes | 1.5 |
-| Scala | multi-paradigm | static | yes | 1.2 |
-| Julia | multi-paradigm | dynamic | yes | 0.8 |
-| Elixir | functional | dynamic | yes | 0.6 |
-| Haskell | functional | static | yes | 0.5 |
+## Tags
 
-## Benchmark Tasks
+`education`, `programming`, `software`, `regression`, `classification`
 
-| Benchmark | Type | Description |
-|-----------|------|-------------|
-| `fibonacci` | CPU | Recursive/iterative Fibonacci computation |
-| `matrix_multiply` | CPU | Dense matrix multiplication |
-| `sort_large_array` | CPU | Sorting a large array of random integers |
-| `http_server` | IO | HTTP server request handling throughput |
-| `json_parse` | IO | Parsing large JSON documents |
-| `regex_match` | CPU | Regular expression matching over text |
-| `file_io` | IO | Sequential file read/write operations |
-| `binary_trees` | CPU/Mem | Allocation-heavy binary tree operations |
-| `mandelbrot` | CPU | Mandelbrot set computation |
-| `spectral_norm` | CPU | Spectral norm calculation |
+## Authors
 
-## Key Statistics
+- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
 
-- **Total records**: 2,200
-- **Languages**: 16
-- **Benchmarks**: 10
-- **Year range**: 2020--2025
-- **CPU core configurations**: 1, 2, 4, 8, 16
+## Coverage
 
-## Use Cases
+- Temporal: 2020-01-01 to 2025-12-31
+- Geospatial: Global (synthetic)
 
-1. **Language comparison**: Compare execution speed, memory efficiency, and code conciseness across languages for specific tasks.
-2. **Performance prediction**: Build regression models to predict execution time from language, task, and hardware features.
-3. **Trade-off analysis**: Explore the speed vs. memory vs. code-size Pareto frontier.
-4. **Trend analysis**: Track how language performance and popularity evolve over time.
-5. **Language recommendation**: Suggest optimal languages for different use cases based on benchmark characteristics.
-6. **Software engineering research**: Study relationships between type systems, GC, paradigms, and performance.
+## DOI and Citations
 
-## How It Was Generated
+- DOI: Not assigned
+- Scaturchio, Lorenzo (2026). Programming Language Benchmarks Dataset. Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks
 
-The dataset was created using `create_dataset.py` with:
+## Provenance
 
-- **Language-specific speed/memory/LOC multipliers** calibrated against real-world benchmark data
-- **Benchmark-language interaction effects** (e.g., Go's networking advantage, Julia's numerical computing strength)
-- **Year-over-year improvement factors** reflecting compiler and runtime advances
-- **Multi-core scaling models** with diminishing returns varying by task parallelizability
-- **Gaussian noise** (5--15% variance) to simulate real measurement variability
+- Source: Synthetic data generation scripts in this repository
+- Source: Public domain schemas and domain conventions for educational simulation
+- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
 
-All data is synthetic and should not be used as definitive language benchmarks.
+## language_benchmarks.csv
 
-## Sample Rows
+**Rows:** 2,200  |  **Columns:** 11  |  **Size:** 154.5 KB
 
-| language | benchmark_name | execution_time_ms | memory_usage_mb | lines_of_code | cpu_cores | year |
-|----------|---------------|-------------------|-----------------|---------------|-----------|------|
-| Rust | fibonacci | 48.3 | 2.1 | 28 | 1 | 2024 |
-| Python | matrix_multiply | 1240.5 | 312.4 | 24 | 4 | 2023 |
-| Go | http_server | 72.1 | 68.5 | 62 | 8 | 2025 |
-| Julia | mandelbrot | 198.7 | 28.3 | 38 | 2 | 2022 |
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `language` | string | 0.0% | 16 | `Julia`, `Python`, `JavaScript` |
+| `benchmark_name` | string | 0.0% | 10 | `fibonacci`, `spectral_norm`, `json_parse` |
+| `execution_time_ms` | float | 0.0% | 2,179 | `82.65`, `690.4`, `38.31` |
+| `memory_usage_mb` | float | 0.0% | 2,106 | `17.12`, `50.09`, `6.25` |
+| `lines_of_code` | integer | 0.0% | 86 | `14`, `29`, `49` |
+| `cpu_cores` | integer | 0.0% | 5 | `1`, `4`, `2` |
+| `year` | integer | 0.0% | 6 | `2024`, `2025`, `2023` |
+| `paradigm` | string | 0.0% | 3 | `multi-paradigm`, `oop`, `functional` |
+| `typing` | string | 0.0% | 3 | `static`, `dynamic`, `gradual` |
+| `gc` | string | 0.0% | 3 | `yes`, `no`, `optional` |
+| `popularity_index` | float | 0.0% | 88 | `0.88`, `16.16`, `0.7` |
 
-## License
+## Suggested Use Cases
 
-This dataset is released under the **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)** license.
+- Text classification (TF-IDF, BERT embeddings)
+- Named entity recognition or topic modeling
 
-## Citation
-
-If you use this dataset in your work, please cite:
-
-```
-@dataset{scaturchio2025benchmarks,
-  title={Programming Language Benchmarks Dataset},
-  author={Scaturchio, Lorenzo},
-  year={2025},
-  publisher={Kaggle},
-  url={https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks}
-}
-```
+---
+*Generated by `dataset_optimizer.py` — dataset_optimizer.py*
