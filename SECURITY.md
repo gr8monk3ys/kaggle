@@ -1,8 +1,13 @@
 # Security Policy
 
+## Supported Versions
+
+Security updates are provided for the latest default branch.
+
 ## Reporting a Vulnerability
-Please report security issues privately via GitHub Security Advisories
-or by opening a private channel with the repository owner.
+
+Please report vulnerabilities privately via GitHub Security Advisories or by contacting the maintainer directly.
+Do not open public issues for undisclosed vulnerabilities.
 
 Include:
 - A clear description of the issue
@@ -26,3 +31,5 @@ If a secret is committed, treat it as compromised:
 1. Revoke/rotate the credential immediately.
 2. Remove the secret from the repository and git history.
 3. Audit recent usage for abuse and update affected systems.
+
+For private disclosure, use GitHub Security Advisories: [https://github.com/gr8monk3ys/kaggle/security/advisories](https://github.com/gr8monk3ys/kaggle/security/advisories).
