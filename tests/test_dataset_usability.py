@@ -300,9 +300,10 @@ def test_infer_owner_from_scores_uses_majority_owner():
 
 
 def test_fetch_kaggle_live_ratings_combines_mine_and_search(monkeypatch):
-    monkeypatch.setenv("KAGGLE_USERNAME", "owner")
+    calls: list[list[str]] = []
 
     def fake_run(args):
+        calls.append(args)
         if args == ["--mine", "--csv"]:
             return {"owner/a": 0.61}, None
         if args == ["-s", "owner", "--csv"]:
@@ -316,6 +317,104 @@ def test_fetch_kaggle_live_ratings_combines_mine_and_search(monkeypatch):
     assert err is None
     assert ratings["owner/a"] == 0.61
     assert ratings["owner/b"] == 0.58
+    assert calls == [["--mine", "--csv"], ["-s", "owner", "--csv"]]
+
+
+def test_fetch_kaggle_live_ratings_filters_non_owner_refs(monkeypatch):
+    def fake_run(args):
+        if args == ["--mine", "--csv"]:
+            return {"owner/a": 0.71, "someone-else/b": 0.91}, None
+        if args == ["-s", "owner", "--csv"]:
+            return {"owner/c": 0.81, "another/d": 0.44}, None
+        raise AssertionError(f"unexpected args: {args}")
+
+    monkeypatch.setattr(dataset_usability, "_run_kaggle_dataset_list", fake_run)
+
+    ratings, err = dataset_usability.fetch_kaggle_live_ratings("owner")
+
+    assert err is None
+    assert ratings == {"owner/a": 0.71, "owner/c": 0.81}
+
+
+def test_main_live_fetch_falls_back_to_csv_snapshot(tmp_path, monkeypatch):
+    description = "Detailed description. " * 40
+    readme = "\n".join(
+        [
+            "# Dataset",
+            "",
+            "## Description",
+            "Some description",
+            "",
+            "## Tags",
+            "`ml`, `tabular`, `baseline`, `classification`, `analysis`",
+            "",
+            "**Kaggle:** [u/sample](https://www.kaggle.com/datasets/u/sample)",
+            "",
+            "## sample.csv",
+            "",
+            "| Column | Type | Null% | Unique | Sample values |",
+            "|--------|------|-------|--------|---------------|",
+            "| `a` | integer | 0.0% | 1 | `1` |",
+            "",
+            "## Suggested Use Cases",
+            "- baseline",
+            "",
+            ("filler " * 300).strip(),
+        ]
+    )
+    _write_dataset_bundle(
+        tmp_path,
+        "sample",
+        {
+            "title": "Sample",
+            "id": "u/sample",
+            "subtitle": "subtitle",
+            "description": description,
+            "licenses": [{"name": "CC0-1.0"}],
+            "keywords": ["ml", "classification", "analysis", "baseline", "tabular"],
+        },
+        readme=readme,
+        data_files=["sample.csv"],
+    )
+
+    fallback_csv = tmp_path / "live-fallback.csv"
+    fallback_csv.write_text("ref,usabilityRating\nu/sample,0.84\n", encoding="utf-8")
+
+    def fake_fetch(_owner: str):
+        return {}, "network down"
+
+    monkeypatch.setattr(dataset_usability, "fetch_kaggle_live_ratings", fake_fetch)
+
+    out_root = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "dataset_usability.py",
+            "--root",
+            str(tmp_path),
+            "--output-root",
+            str(out_root),
+            "--today",
+            "2026-02-24",
+            "--live",
+            "--owner",
+            "u",
+            "--fallback-live-ratings-csv",
+            str(fallback_csv),
+            "--daily-tracker",
+            "--alert-under",
+            "0.8",
+            "--target-rating",
+            "1.0",
+        ],
+    )
+
+    rc = dataset_usability.main()
+
+    assert rc == 0
+    latest_json = json.loads((out_root / "reports" / "latest-dataset-usability.json").read_text(encoding="utf-8"))
+    assert latest_json["summary"]["live_kaggle"]["matched_count"] == 1
 
 
 def test_build_live_priority_queue_orders_by_status_then_rating():

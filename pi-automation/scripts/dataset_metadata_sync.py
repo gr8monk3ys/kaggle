@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sys
+from datetime import date
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Iterable
@@ -74,7 +75,8 @@ def coerce_list_of_text(value: object) -> list[str]:
 
 def default_citation(meta: dict, dataset_ref: str) -> str:
     title = str(meta.get("title", "Dataset")).strip() or "Dataset"
-    return f"Scaturchio, Lorenzo (2026). {title}. Kaggle Dataset. https://www.kaggle.com/datasets/{dataset_ref}"
+    year = date.today().year
+    return f"Scaturchio, Lorenzo ({year}). {title}. Kaggle Dataset. https://www.kaggle.com/datasets/{dataset_ref}"
 
 
 def build_payload(meta: dict, dataset_dir: str, *, force_doi: str | None = None) -> DatasetUiPayload:

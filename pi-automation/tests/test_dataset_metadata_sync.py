@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -38,7 +39,7 @@ def test_build_payload_defaults_and_citation():
     assert payload.sources == ["Script A"]
     assert payload.collection_methodology == "Generated"
     assert payload.citations == [
-        "Scaturchio, Lorenzo (2026). Sample Dataset. Kaggle Dataset. "
+        f"Scaturchio, Lorenzo ({date.today().year}). Sample Dataset. Kaggle Dataset. "
         "https://www.kaggle.com/datasets/owner/sample-dataset"
     ]
 

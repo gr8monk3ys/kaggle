@@ -501,7 +501,16 @@ cmd_dataset_usability() {
 }
 
 cmd_usability_tracker() {
-    python3 dataset_usability.py --live --daily-tracker --alert-under 0.8 --target-rating 1.0 --fail-on-live-alert "$@"
+    local reports_dir="$KAGGLE_DIR/medal_ops/reports"
+    python3 dataset_usability.py \
+        --live \
+        --daily-tracker \
+        --alert-under 0.8 \
+        --target-rating 1.0 \
+        --fail-on-live-alert \
+        --write-live-ratings-csv "$reports_dir/latest-live-ratings.csv" \
+        --fallback-live-ratings-csv "$reports_dir/latest-live-ratings.csv" \
+        "$@"
 }
 
 cmd_campaign_pack() {

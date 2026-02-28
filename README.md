@@ -193,9 +193,11 @@ chmod +x manage.sh
 | `doctor` | Run preflight checks (tracker, sync inputs, environment) | No |
 | `quality` | Score notebook quality against rubric (writes to `medal_ops/reports/`) | No |
 | `dataset-usability` | Score dataset usability and emit actionable report (writes to `medal_ops/reports/`) | No |
-| `usability-tracker` | Run live daily tracker with `0.8` alert gate and `1.0` target queue | Depends |
+| `usability-tracker` | Run live daily tracker with `0.8` alert gate and `1.0` target queue (persists/uses `medal_ops/reports/latest-live-ratings.csv`) | Depends |
 | `campaign-pack` | Generate multi-channel promotion campaign pack + queue from latest usability report | No |
 | `campaign-run` | Execute queue operations (`show`, `claim`, `complete`) and export runbook | No |
+| `publish-datasets` | Publish datasets through draft/live quality gates; optional UI metadata sync and JSON report | Yes |
+| `dataset-ui-sync` | Sync Kaggle UI-only dataset fields (Authors/Coverage/DOI/Provenance/Citations) via Playwright | No |
 | `post-discussion [--dry-run|--init|--schedule-weeks N]` | Post next queued discussion draft or rebuild a rolling scheduled window | No |
 | `draft-ops` | Show draft stage counts, flow health, and prioritized backlog | No |
 | `draft-set <id> [--status/--priority/--deadline]` | Update one draft's status/priority/deadline and rebalance schedule window | No |
@@ -235,6 +237,10 @@ chmod +x manage.sh
 
 # Run live usability tracker with 0.8 gate + 1.0 target
 ./manage.sh usability-tracker --fail-on-live-alert
+
+# Publish top-scoring draft datasets, sync UI metadata fields, and write a machine report
+./manage.sh publish-datasets --apply --owner lorenzoscaturchio --min-score 85 \
+  --sync-ui-metadata --report-json medal_ops/reports/dataset-publish-latest.json
 
 # Build a 14-day promotion campaign pack + queue
 ./manage.sh campaign-pack --days 14 --posts-per-day 2
