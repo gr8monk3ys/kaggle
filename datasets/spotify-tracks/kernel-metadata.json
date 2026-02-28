@@ -1,0 +1,14 @@
+{
+  "id": "lorenzoscaturchio/spotify-tracks-eda-popularity-prediction",
+  "title": "Spotify Tracks EDA & Popularity Prediction",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["music", "audio features", "eda", "popularity prediction", "genre classification"],
+  "dataset_sources": ["lorenzoscaturchio/spotify-tracks-audio-features-50k"],
+  "kernel_sources": [],
+  "competition_sources": []
+}

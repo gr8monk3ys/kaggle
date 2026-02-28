@@ -1,230 +1,132 @@
----
-title: "Synthetic E-Commerce Customer Behavior Dataset"
-description: "Realistic synthetic e-commerce dataset with 120K transactions, 10K customers, 1K products, 80K sessions, and 25K reviews. Features seasonality, customer segments, churn signals, and multi-table relationships."
-license: CC0-1.0
-tags:
-  - e-commerce
-  - customer behavior
-  - recommendation systems
-  - churn prediction
-  - customer segmentation
-  - market basket analysis
----
-
 # Synthetic E-Commerce Customer Behavior Dataset
 
-![License: CC0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)
-![Transactions: 120K](https://img.shields.io/badge/Transactions-120K-blue.svg)
-![Customers: 10K](https://img.shields.io/badge/Customers-10K-green.svg)
-![Products: 1K](https://img.shields.io/badge/Products-1K-orange.svg)
-![Tables: 5](https://img.shields.io/badge/Tables-5-purple.svg)
+> 10K customers, 120K transactions, 25K reviews for ML projects
 
-## Overview
+**License:** GPL-3.0  
 
-A comprehensive synthetic e-commerce dataset designed for practicing **recommendation systems**, **customer segmentation**, **churn prediction**, and **market basket analysis**. The data contains realistic patterns including seasonality, customer lifecycle stages, and correlated features across five interlinked tables.
+**Kaggle:** [lorenzoscaturchio/ecommerce-behavior](https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior)  
 
-This dataset is ideal for data science portfolios, Kaggle notebooks, and learning multi-table feature engineering.
+## Description
 
----
+Five relational tables covering the full e-commerce lifecycle: 10K customer profiles, 1K products across 8 categories, 120K transactions, 80K browsing sessions, and 25K product reviews. Tables join cleanly on customer_id and product_id — ready for multi-table ML pipelines without extra preprocessing.
 
-## Quick Start
+Built for: churn prediction (is_churned label on customers), customer lifetime value regression, product recommendation systems, market basket analysis and association rules, RFM segmentation, conversion rate optimization (converted/bounced on sessions), and sentiment analysis on review text.
 
-```python
-import pandas as pd
+Notable design choices: transactions include refunded and cancelled statuses for realistic imbalance; sessions capture device, channel, and cart additions for funnel analysis; customers include Premium/Regular/Budget segments for stratified modeling. All data is synthetic.
 
-# On Kaggle
-base = '/kaggle/input/ecommerce-behavior'
+## Tags
 
-customers = pd.read_csv(f'{base}/customers.csv')
-products = pd.read_csv(f'{base}/products.csv')
-transactions = pd.read_csv(f'{base}/transactions.csv')
-sessions = pd.read_csv(f'{base}/sessions.csv')
-reviews = pd.read_csv(f'{base}/reviews.csv')
+`business`, `classification`, `clustering`, `regression`, `beginner`
 
-# Quick stats
-for name, df in [('Customers', customers), ('Products', products),
-                  ('Transactions', transactions), ('Sessions', sessions), ('Reviews', reviews)]:
-    print(f'{name:15s}: {len(df):>8,} rows x {df.shape[1]} cols')
+## Authors
 
-# Example: Join transactions with customer data
-tx_with_customer = transactions.merge(customers, on='customer_id')
-print(f"\nAvg transaction by segment:")
-print(tx_with_customer.groupby('segment')['total_amount'].mean().round(2))
+- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
 
-# Example: RFM Analysis
-completed = transactions[transactions['status'] == 'completed']
-rfm = completed.groupby('customer_id').agg(
-    recency=('transaction_date', lambda x: (pd.to_datetime(x).max() - pd.Timestamp('2020-01-01')).days),
-    frequency=('transaction_id', 'count'),
-    monetary=('total_amount', 'sum')
-)
-print(f"\nRFM shape: {rfm.shape}")
-```
+## Coverage
 
----
+- Temporal: 2023-01-01 to 2025-12-31
+- Geospatial: Global (synthetic)
 
-## Dataset Description
+## DOI and Citations
 
-### Tables
+- DOI: Not assigned
+- Scaturchio, Lorenzo (2026). Synthetic E-Commerce Customer Behavior Dataset. Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior
 
-| File | Rows | Columns | Description |
-|------|------|---------|-------------|
-| `customers.csv` | 10,000 | 10 | Customer profiles with demographics, segments, and churn labels |
-| `products.csv` | 1,000 | 11 | Product catalog with categories, pricing, and ratings |
-| `transactions.csv` | 120,000 | 11 | Purchase history with amounts, discounts, and payment methods |
-| `sessions.csv` | 80,000 | 10 | Browsing sessions with device, channel, duration, and conversion |
-| `reviews.csv` | 25,000 | 8 | Product reviews with ratings and text |
+## Provenance
 
-### Schema Details
+- Source: Synthetic data generation scripts in this repository
+- Source: Public domain schemas and domain conventions for educational simulation
+- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
 
-#### customers.csv
-| Column | Type | Description |
-|--------|------|-------------|
-| customer_id | string | Unique identifier (C00000-C09999) |
-| signup_date | date | Account creation date |
-| age | int | Customer age (18-75) |
-| gender | string | M, F, Non-binary, Prefer not to say |
-| country | string | Two-letter country code |
-| segment | string | Customer segment (5 types) |
-| is_churned | int | 1 if customer has churned, 0 otherwise |
-| lifetime_value | float | Total lifetime spend |
-| email_opt_in | int | Email marketing consent |
-| has_app | int | Has installed the mobile app |
+## customers.csv
 
-#### products.csv
-| Column | Type | Description |
-|--------|------|-------------|
-| product_id | string | Unique identifier (P0000-P0999) |
-| product_name | string | Product name |
-| category | string | Product category (15 categories) |
-| brand | string | Brand name (20 brands) |
-| price | float | Current price |
-| avg_rating | float | Average customer rating (1-5) |
-| num_ratings | int | Number of ratings received |
-| stock_quantity | int | Current stock level |
-| discount_pct | int | Active discount percentage |
-| is_featured | int | Featured on homepage |
-| weight_kg | float | Product weight |
+**Rows:** 5,000  |  **Columns:** 10  |  **Size:** 497.5 KB
 
-#### transactions.csv
-| Column | Type | Description |
-|--------|------|-------------|
-| transaction_id | string | Unique identifier |
-| customer_id | string | FK to customers |
-| product_id | string | FK to products |
-| transaction_date | datetime | Purchase timestamp |
-| quantity | int | Items purchased |
-| unit_price | float | Price after discount |
-| total_amount | float | Total transaction value |
-| discount_applied | int | Discount percentage applied |
-| status | string | completed, refunded, cancelled, pending |
-| payment_method | string | Payment type |
-| shipping_cost | float | Shipping fee (free over $50) |
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `customer_id` | string | 0.0% | 5,000 | `C00000`, `C00001`, `C00002` |
+| `signup_date` | string | 0.0% | 1,529 | `2020-02-13`, `2021-10-01`, `2022-06-26` |
+| `age` | integer | 0.0% | 55 | `28`, `22`, `30` |
+| `gender` | string | 0.0% | 4 | `F`, `M`, `Prefer not to say` |
+| `country` | string | 0.0% | 10 | `US`, `UK`, `CA` |
+| `segment` | string | 0.0% | 5 | `Regular`, `Budget Shopper`, `Premium` |
+| `is_churned` | integer | 0.0% | 2 | `0`, `1` |
+| `lifetime_value` | float | 0.0% | 4,939 | `1595.27`, `1160.61`, `3093.32` |
+| `email_opt_in` | integer | 0.0% | 2 | `1`, `0` |
+| `has_app` | integer | 0.0% | 2 | `1`, `0` |
 
-#### sessions.csv
-| Column | Type | Description |
-|--------|------|-------------|
-| session_id | string | Unique identifier |
-| customer_id | string | FK to customers |
-| session_date | datetime | Session start time |
-| device | string | desktop, mobile, tablet |
-| channel | string | Traffic source |
-| duration_seconds | int | Session length |
-| pages_viewed | int | Pages visited |
-| converted | int | Led to a purchase |
-| bounced | int | Left within 30 seconds |
-| cart_additions | int | Items added to cart |
+## products.csv
 
-#### reviews.csv
-| Column | Type | Description |
-|--------|------|-------------|
-| review_id | string | Unique identifier |
-| customer_id | string | FK to customers |
-| product_id | string | FK to products |
-| review_date | date | Review submission date |
-| rating | int | Star rating (1-5) |
-| review_text | string | Review content |
-| helpful_votes | int | Helpfulness votes |
-| verified_purchase | int | Verified buyer |
+**Rows:** 1,000  |  **Columns:** 11  |  **Size:** 75.0 KB
 
-### Entity Relationship Diagram
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `product_id` | string | 0.0% | 1,000 | `P0000`, `P0001`, `P0002` |
+| `product_name` | string | 0.0% | 1,000 | `PetLife Health #0`, `GlowUp Beauty #1`, `EcoLiving Office Supplies #2` |
+| `category` | string | 0.0% | 15 | `Health`, `Sports`, `Beauty` |
+| `brand` | string | 0.0% | 20 | `PetLife`, `GlowUp`, `EcoLiving` |
+| `price` | float | 0.0% | 948 | `34.82`, `53.35`, `51.45` |
+| `avg_rating` | float | 0.0% | 37 | `4.0`, `3.4`, `5.0` |
+| `num_ratings` | integer | 0.0% | 437 | `137`, `494`, `433` |
+| `stock_quantity` | integer | 0.0% | 625 | `126`, `51`, `928` |
+| `discount_pct` | integer | 0.0% | 9 | `0`, `5`, `50` |
+| `is_featured` | integer | 0.0% | 2 | `0`, `1` |
+| `weight_kg` | float | 0.0% | 349 | `0.35`, `1.76`, `0.21` |
 
-```
-customers ──┬──< transactions >──── products
-            │                         │
-            ├──< sessions             │
-            │                         │
-            └──< reviews >────────────┘
-```
+## reviews.csv
 
-### Built-in Patterns
+**Rows:** 5,000  |  **Columns:** 8  |  **Size:** 1,656.0 KB
 
-- **Customer segments**: Budget Shopper, Regular, Premium, VIP, Occasional Visitor
-- **Seasonality**: Transaction volume peaks in Q4 (holiday season)
-- **Churn signals**: Segment-specific churn probabilities
-- **Price correlations**: Product prices follow category-specific log-normal distributions
-- **Conversion funnels**: Session conversion rates vary by segment and device
-- **Free shipping threshold**: Orders over $50 get free shipping
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `review_id` | string | 0.0% | 5,000 | `R22520`, `R11296`, `R15342` |
+| `customer_id` | string | 0.0% | 3,943 | `C06622`, `C01152`, `C05432` |
+| `product_id` | string | 0.0% | 988 | `P0077`, `P0726`, `P0167` |
+| `review_date` | string | 0.0% | 149 | `2023-01-05`, `2023-01-01`, `2023-01-09` |
+| `rating` | integer | 0.0% | 5 | `3`, `4`, `2` |
+| `review_text` | string | 0.0% | 15 | `Amazing value for the price.`, `Love it! Exactly what I needed.`, `Great product! Highly recommend.` |
+| `helpful_votes` | integer | 0.0% | 50 | `44`, `0`, `3` |
+| `verified_purchase` | integer | 0.0% | 2 | `1`, `0` |
+
+## sessions.csv
+
+**Rows:** 5,000  |  **Columns:** 10  |  **Size:** 4,896.2 KB
+
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `session_id` | string | 0.0% | 5,000 | `S049064`, `S015939`, `S003166` |
+| `customer_id` | string | 0.0% | 3,695 | `C03202`, `C09526`, `C07034` |
+| `session_date` | string | 0.0% | 4,996 | `2023-01-01 00:24:50`, `2023-01-01 00:42:04`, `2023-01-01 00:55:56` |
+| `device` | string | 0.0% | 3 | `mobile`, `desktop`, `tablet` |
+| `channel` | string | 0.0% | 6 | `organic`, `paid_search`, `direct` |
+| `duration_seconds` | integer | 0.0% | 1,185 | `284`, `72`, `36` |
+| `pages_viewed` | integer | 0.0% | 66 | `1`, `3`, `5` |
+| `converted` | integer | 0.0% | 2 | `0`, `1` |
+| `bounced` | integer | 0.0% | 2 | `0`, `1` |
+| `cart_additions` | integer | 0.0% | 6 | `0`, `1`, `2` |
+
+## transactions.csv
+
+**Rows:** 5,000  |  **Columns:** 11  |  **Size:** 9,606.7 KB
+
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `transaction_id` | string | 0.0% | 5,000 | `T077767`, `T021376`, `T117783` |
+| `customer_id` | string | 0.0% | 3,720 | `C08119`, `C08883`, `C05855` |
+| `product_id` | string | 0.0% | 986 | `P0932`, `P0889`, `P0065` |
+| `transaction_date` | string | 0.0% | 4,995 | `2023-01-01 00:23:39`, `2023-01-01 00:26:51`, `2023-01-01 00:45:53` |
+| `quantity` | integer | 0.0% | 7 | `1`, `2`, `3` |
+| `unit_price` | float | 0.0% | 938 | `23.87`, `31.53`, `67.75` |
+| `total_amount` | float | 0.0% | 1,538 | `23.87`, `31.53`, `67.75` |
+| `discount_applied` | integer | 0.0% | 9 | `0`, `5`, `50` |
+| `status` | string | 0.0% | 4 | `completed`, `cancelled`, `refunded` |
+| `payment_method` | string | 0.0% | 6 | `credit_card`, `debit_card`, `paypal` |
+| `shipping_cost` | float | 0.0% | 593 | `0.0`, `8.15`, `6.13` |
+
+## Suggested Use Cases
+
+- Text classification (TF-IDF, BERT embeddings)
+- Named entity recognition or topic modeling
 
 ---
-
-## Use Cases
-
-| # | Use Case | Type | Tables Needed |
-|---|----------|------|---------------|
-| 1 | **Customer Segmentation** | Unsupervised (K-Means, DBSCAN) | customers, transactions |
-| 2 | **Churn Prediction** | Binary Classification | customers, transactions, sessions |
-| 3 | **Recommendation Systems** | Collaborative / Content-Based | transactions, products, reviews |
-| 4 | **Market Basket Analysis** | Association Rules (Apriori) | transactions |
-| 5 | **CLV Prediction** | Regression | customers, transactions |
-| 6 | **Conversion Rate Optimization** | A/B Testing Simulation | sessions |
-| 7 | **Demand Forecasting** | Time Series | transactions |
-| 8 | **Sentiment Analysis** | NLP | reviews |
-| 9 | **RFM Analysis** | Business Analytics | transactions |
-| 10 | **Funnel Analysis** | Product Analytics | sessions |
-
-### Related Kaggle Competitions
-
-This dataset lets you practice techniques from:
-- [Instacart Market Basket Analysis](https://www.kaggle.com/competitions/instacart-market-basket-analysis) -- market basket + recommendations
-- [Home Credit Default Risk](https://www.kaggle.com/competitions/home-credit-default-risk) -- multi-table feature engineering
-- [Elo Merchant Category Recommendation](https://www.kaggle.com/competitions/elo-merchant-category-recommendation) -- customer behavior modeling
-- [H&M Personalized Fashion Recommendations](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations) -- recommendation systems
-
----
-
-## File Structure
-
-```
-ecommerce-behavior/
-  customers.csv           # 10K customer profiles
-  products.csv            # 1K product catalog
-  transactions.csv        # 120K purchase records
-  sessions.csv            # 80K browsing sessions
-  reviews.csv             # 25K product reviews
-  create_dataset.py       # Generation script
-  explore.ipynb           # Exploration notebook with EDA & churn model
-  dataset-metadata.json   # Kaggle dataset metadata
-  kernel-metadata.json    # Kaggle notebook metadata
-```
-
----
-
-## Citation
-
-```
-@dataset{ecommerce_behavior_2025,
-  title={Synthetic E-Commerce Customer Behavior Dataset},
-  author={Lorenzo Scaturchio},
-  year={2025},
-  url={https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior}
-}
-```
-
-## License
-
-CC0 1.0 Universal -- Public Domain.
-
----
-
-**If you found this dataset useful, please upvote! It helps others in the community discover it.**
+*Generated by `dataset_optimizer.py` — dataset_optimizer.py*

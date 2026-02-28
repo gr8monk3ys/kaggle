@@ -1,0 +1,26 @@
+# Extend your existing Pi stack:
+#   docker compose -f /path/to/existing.yml -f pi-automation/docker-compose.yml up -d kaggle-autobot
+
+services:
+  kaggle-autobot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kaggle-autobot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Repo: read-only — scripts read tracker and drafts live
+      - ..:/repo:ro
+      # Queue and posted history — writable
+      - ./data:/data
+      # Cron log persistence
+      - kaggle-autobot-logs:/var/log
+    environment:
+      - REPO_PATH=/repo
+      - QUEUE_PATH=/data/discussion_queue.json
+    network_mode: bridge
+
+volumes:
+  kaggle-autobot-logs:

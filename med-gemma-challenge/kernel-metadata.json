@@ -1,5 +1,5 @@
 {
-  "id": "lorenzoscaturchio/med-gemma-challenge-eda-baseline-pipeline",
+  "id": "lorenzoscaturchio/med-gemma-challenge-medical-ai-eda-baseline",
   "title": "Med-Gemma Challenge: Medical AI EDA & Baseline",
   "code_file": "med_gemma_eda.ipynb",
   "language": "python",
@@ -21,5 +21,7 @@
   ],
   "dataset_sources": [],
   "kernel_sources": [],
-  "competition_sources": ["medgemma-assistants-impact-challenge"]
+  "competition_sources": [
+    "medgemma-assistants-impact-challenge"
+  ]
 }

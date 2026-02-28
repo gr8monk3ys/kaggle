@@ -1,5 +1,5 @@
 {
-  "id": "lorenzoscaturchio/image-segmentation-masterclass-u-net",
+  "id": "lorenzoscaturchio/image-segmentation-masterclass-u-net-to-segformer",
   "title": "Image Segmentation Masterclass: U-Net to SegFormer",
   "code_file": "image_segmentation_masterclass.ipynb",
   "language": "python",

@@ -11,6 +11,7 @@ import random
 import math
 import hashlib
 from collections import defaultdict
+from pathlib import Path
 
 random.seed(42)
 
@@ -454,7 +455,7 @@ def main():
         "has_code", "primary_method", "dataset_used", "is_survey",
     ]
 
-    output_path = "/Users/gr8monk3ys/code/ml-portfolio/kaggle/datasets/ai-research-trends/ai_research_papers.csv"
+    output_path = Path(__file__).resolve().parent / "ai_research_papers.csv"
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

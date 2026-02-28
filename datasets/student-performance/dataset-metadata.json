@@ -1,0 +1,201 @@
+{
+  "id": "lorenzoscaturchio/student-academic-performance-dataset",
+  "title": "Student Academic Performance (10K Students)",
+  "subtitle": "10K students, 25 features: study habits, demographics, and GPA outcomes",
+  "description": "10,000 synthetic student records across 25 features covering demographics, study habits, family background, school resources, and academic outcomes. Includes math, reading, writing, and science scores along with GPA and a binary pass/fail label. Realistic correlations between study hours, attendance, tutoring, parental involvement, and performance.\n\nBuilt for: GPA regression, pass/fail classification, fairness analysis across demographic groups, feature importance analysis (which factors most affect performance), educational data mining, and intervention targeting. The multi-subject scores enable both single-target and multi-output ML.\n\nNotable features: sleep_hours has a realistic quadratic relationship with performance (optimal 7-8 hours); stress_level and motivation_score capture psychological factors; parental_education and family_income enable socioeconomic analysis; tutoring_sessions has diminishing returns built in. All data is synthetic.",
+  "isPrivate": false,
+  "licenses": [
+    {
+      "name": "GPL-3.0"
+    }
+  ],
+  "keywords": [
+    "education",
+    "classification",
+    "regression",
+    "clustering",
+    "beginner"
+  ],
+  "resources": [
+    {
+      "path": "students.csv",
+      "description": "One row per student. 10,000 rows, 25 columns.",
+      "schema": {
+        "fields": [
+          {
+            "name": "student_id",
+            "title": "Student ID",
+            "type": "string",
+            "description": "Unique student identifier in the format STU00000."
+          },
+          {
+            "name": "age",
+            "title": "Age",
+            "type": "integer",
+            "description": "Student age in years. Range: 15 to 25."
+          },
+          {
+            "name": "gender",
+            "title": "Gender",
+            "type": "string",
+            "description": "Student gender. Values: M, F, Non-binary."
+          },
+          {
+            "name": "ethnicity",
+            "title": "Ethnicity",
+            "type": "string",
+            "description": "Anonymised ethnicity group following the UCI convention. Values: A, B, C, D, E."
+          },
+          {
+            "name": "parental_education",
+            "title": "Parental Education",
+            "type": "string",
+            "description": "Highest education level attained by either parent. Values: none, high_school, some_college, bachelor, master, phd."
+          },
+          {
+            "name": "family_income",
+            "title": "Family Income",
+            "type": "string",
+            "description": "Household income bracket. Values: low (<$30K), middle ($30K-$75K), high (>$75K)."
+          },
+          {
+            "name": "school_type",
+            "title": "School Type",
+            "type": "string",
+            "description": "Type of school attended. Values: public, private, charter."
+          },
+          {
+            "name": "school_region",
+            "title": "School Region",
+            "type": "string",
+            "description": "Geographic setting of the school. Values: urban, suburban, rural."
+          },
+          {
+            "name": "study_hours_per_week",
+            "title": "Study Hours Per Week",
+            "type": "number",
+            "description": "Average hours spent studying outside class each week. Range: 0 to 40."
+          },
+          {
+            "name": "attendance_rate",
+            "title": "Attendance Rate",
+            "type": "number",
+            "description": "Percentage of scheduled classes attended. Range: 50.0 to 100.0."
+          },
+          {
+            "name": "extracurricular_activities",
+            "title": "Extracurricular Activities",
+            "type": "integer",
+            "description": "Number of extracurricular activities the student participates in. Range: 0 to 5."
+          },
+          {
+            "name": "sports_participation",
+            "title": "Sports Participation",
+            "type": "string",
+            "description": "Whether the student participates in any sport. Values: yes, no."
+          },
+          {
+            "name": "tutoring_sessions",
+            "title": "Tutoring Sessions",
+            "type": "integer",
+            "description": "Number of tutoring sessions attended in the semester. Range: 0 to 20. Effect has diminishing returns."
+          },
+          {
+            "name": "parental_involvement",
+            "title": "Parental Involvement",
+            "type": "string",
+            "description": "Level of parental engagement in the student's education. Values: low, medium, high."
+          },
+          {
+            "name": "internet_access",
+            "title": "Internet Access",
+            "type": "string",
+            "description": "Whether the student has reliable internet access at home. Values: yes, no."
+          },
+          {
+            "name": "has_laptop",
+            "title": "Has Laptop",
+            "type": "string",
+            "description": "Whether the student owns or has regular access to a laptop. Values: yes, no."
+          },
+          {
+            "name": "sleep_hours",
+            "title": "Sleep Hours",
+            "type": "number",
+            "description": "Average hours of sleep per night. Range: 4.0 to 10.0. Optimal performance at approximately 7.5 hours (quadratic relationship)."
+          },
+          {
+            "name": "stress_level",
+            "title": "Stress Level",
+            "type": "number",
+            "description": "Self-reported stress level on a 1 to 10 scale. Higher values indicate greater stress. Negatively correlated with academic performance."
+          },
+          {
+            "name": "motivation_score",
+            "title": "Motivation Score",
+            "type": "number",
+            "description": "Self-reported motivation score on a 1 to 10 scale. Positively correlated with attendance and performance."
+          },
+          {
+            "name": "reading_score",
+            "title": "Reading Score",
+            "type": "number",
+            "description": "Reading subject score. Range: 0 to 100."
+          },
+          {
+            "name": "writing_score",
+            "title": "Writing Score",
+            "type": "number",
+            "description": "Writing subject score. Range: 0 to 100."
+          },
+          {
+            "name": "math_score",
+            "title": "Math Score",
+            "type": "number",
+            "description": "Mathematics subject score. Range: 0 to 100. Slightly boosted by study hours."
+          },
+          {
+            "name": "science_score",
+            "title": "Science Score",
+            "type": "number",
+            "description": "Science subject score. Range: 0 to 100. Slightly boosted by study hours."
+          },
+          {
+            "name": "overall_gpa",
+            "title": "Overall GPA",
+            "type": "number",
+            "description": "Overall grade point average on a 0.0 to 4.0 scale. Derived from weighted average of the four subject scores plus small Gaussian noise."
+          },
+          {
+            "name": "passed",
+            "title": "Passed",
+            "type": "integer",
+            "description": "Binary pass/fail label. 1 if overall_gpa >= 2.0, else 0."
+          }
+        ]
+      }
+    }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2022-01-01",
+    "temporal_end_date": "2025-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). Student Academic Performance (10K Students). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset"
+  ]
+}

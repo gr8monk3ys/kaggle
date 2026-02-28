@@ -1,0 +1,23 @@
+{
+  "id": "lorenzoscaturchio/optuna-hyperparameter-optimization-guide",
+  "title": "Optuna: Hyperparameter Optimization for Kaggle",
+  "code_file": "optuna_hyperparameter_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "optuna",
+    "hyperparameter optimization",
+    "bayesian optimization",
+    "machine learning",
+    "xgboost",
+    "lightgbm",
+    "kaggle",
+    "tutorial"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

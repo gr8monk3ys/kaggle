@@ -29,14 +29,22 @@ kaggle/
 │   ├── financial-analysis/           # Financial time-series prediction
 │   ├── fraud-detection/              # Explainable fraud detection
 │   ├── eda-tutorial/                 # EDA best practices
-│   └── competition-template/         # Standardized ML pipeline template
+│   ├── competition-template/         # Standardized ML pipeline template
+│   ├── shap-explainability/          # SHAP Model Explainability Masterclass
+│   ├── optuna-guide/                 # Optuna Hyperparameter Optimization Guide
+│   ├── nlp-text-classification/      # NLP Text Classification: TF-IDF to BERT
+│   ├── house-prices/                 # House Prices: Complete EDA + Feature Engineering
+│   └── digit-recognizer/             # Digit Recognizer: CNN from Scratch to 99%+
 │
-└── datasets/                          # 5 custom Kaggle datasets
+└── datasets/                          # 8 custom Kaggle datasets
     ├── ml-interview-questions/
     ├── ecommerce-behavior/
     ├── github-metrics/
     ├── ai-research-papers/
-    └── programming-benchmarks/
+    ├── programming-benchmarks/
+    ├── credit-card-fraud/             # Credit Card Fraud Detection (200K transactions)
+    ├── job-postings/                  # Job Postings NLP & Salary Prediction (15K listings)
+    └── student-performance/           # Student Academic Performance (in progress)
 ```
 
 ## Conventions

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the ensemble_stacking_guide.ipynb notebook."""
 import json
+import os
 
 def md(source):
     """Create a markdown cell."""
@@ -1572,8 +1573,8 @@ notebook = {
     "cells": cells
 }
 
-output_path = "/Users/gr8monk3ys/code/ml-portfolio/kaggle/ensemble-stacking/ensemble_stacking_guide.ipynb"
-with open(output_path, "w") as f:
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ensemble_stacking_guide.ipynb")
+with open(output_path, "w", encoding="utf-8") as f:
     json.dump(notebook, f, indent=1)
 
 print(f"Notebook written to {output_path}")

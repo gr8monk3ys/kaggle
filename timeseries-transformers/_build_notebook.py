@@ -1331,8 +1331,8 @@ for cell in cells:
     cell["source"] = formatted
     notebook["cells"].append(cell)
 
-out_path = "/Users/gr8monk3ys/code/ml-portfolio/kaggle/timeseries-transformers/timeseries_transformers.ipynb"
-with open(out_path, "w") as f:
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "timeseries_transformers.ipynb")
+with open(out_path, "w", encoding="utf-8") as f:
     json.dump(notebook, f, indent=1)
 
 print(f"Notebook written to {out_path}")

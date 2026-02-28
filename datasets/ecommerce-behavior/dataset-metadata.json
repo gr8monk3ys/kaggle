@@ -2,18 +2,18 @@
   "title": "Synthetic E-Commerce Customer Behavior Dataset",
   "id": "lorenzoscaturchio/ecommerce-behavior",
   "subtitle": "10K customers, 120K transactions, 25K reviews for ML projects",
-  "description": "A comprehensive synthetic e-commerce dataset with 10K customers, 1K products, 120K transactions, 80K sessions, and 25K reviews. Perfect for recommendation systems, churn prediction, customer segmentation, market basket analysis, sentiment analysis, and conversion optimization projects.",
+  "description": "Five relational tables covering the full e-commerce lifecycle: 10K customer profiles, 1K products across 8 categories, 120K transactions, 80K browsing sessions, and 25K product reviews. Tables join cleanly on customer_id and product_id — ready for multi-table ML pipelines without extra preprocessing.\n\nBuilt for: churn prediction (is_churned label on customers), customer lifetime value regression, product recommendation systems, market basket analysis and association rules, RFM segmentation, conversion rate optimization (converted/bounced on sessions), and sentiment analysis on review text.\n\nNotable design choices: transactions include refunded and cancelled statuses for realistic imbalance; sessions capture device, channel, and cart additions for funnel analysis; customers include Premium/Regular/Budget segments for stratified modeling. All data is synthetic.",
   "licenses": [
     {
-      "name": "CC0-1.0"
+      "name": "GPL-3.0"
     }
   ],
   "keywords": [
     "business",
-    "e-commerce",
     "classification",
     "clustering",
-    "analytics"
+    "regression",
+    "beginner"
   ],
   "resources": [
     {
@@ -21,16 +21,66 @@
       "description": "10K customer profiles with demographics, segments, churn labels, and lifetime value",
       "schema": {
         "fields": [
-          {"name": "customer_id", "title": "Customer ID", "description": "Unique customer identifier (C00000 format)", "type": "string"},
-          {"name": "signup_date", "title": "Signup Date", "description": "Date when customer registered (YYYY-MM-DD)", "type": "date"},
-          {"name": "age", "title": "Age", "description": "Customer age in years", "type": "integer"},
-          {"name": "gender", "title": "Gender", "description": "Customer gender (M, F, or Prefer not to say)", "type": "string"},
-          {"name": "country", "title": "Country", "description": "Customer country code (US, UK, FR, DE, BR, etc.)", "type": "string"},
-          {"name": "segment", "title": "Customer Segment", "description": "Customer value segment (Premium, Regular, Budget)", "type": "string"},
-          {"name": "is_churned", "title": "Churned", "description": "Whether customer has churned (0=active, 1=churned)", "type": "integer"},
-          {"name": "lifetime_value", "title": "Lifetime Value", "description": "Total customer lifetime value in USD", "type": "number"},
-          {"name": "email_opt_in", "title": "Email Opt-In", "description": "Whether customer opted into email marketing (0/1)", "type": "integer"},
-          {"name": "has_app", "title": "Has App", "description": "Whether customer has installed mobile app (0/1)", "type": "integer"}
+          {
+            "name": "customer_id",
+            "title": "Customer ID",
+            "description": "Unique customer identifier (C00000 format)",
+            "type": "string"
+          },
+          {
+            "name": "signup_date",
+            "title": "Signup Date",
+            "description": "Date when customer registered (YYYY-MM-DD)",
+            "type": "date"
+          },
+          {
+            "name": "age",
+            "title": "Age",
+            "description": "Customer age in years",
+            "type": "integer"
+          },
+          {
+            "name": "gender",
+            "title": "Gender",
+            "description": "Customer gender (M, F, or Prefer not to say)",
+            "type": "string"
+          },
+          {
+            "name": "country",
+            "title": "Country",
+            "description": "Customer country code (US, UK, FR, DE, BR, etc.)",
+            "type": "string"
+          },
+          {
+            "name": "segment",
+            "title": "Customer Segment",
+            "description": "Customer value segment (Premium, Regular, Budget)",
+            "type": "string"
+          },
+          {
+            "name": "is_churned",
+            "title": "Churned",
+            "description": "Whether customer has churned (0=active, 1=churned)",
+            "type": "integer"
+          },
+          {
+            "name": "lifetime_value",
+            "title": "Lifetime Value",
+            "description": "Total customer lifetime value in USD",
+            "type": "number"
+          },
+          {
+            "name": "email_opt_in",
+            "title": "Email Opt-In",
+            "description": "Whether customer opted into email marketing (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "has_app",
+            "title": "Has App",
+            "description": "Whether customer has installed mobile app (0/1)",
+            "type": "integer"
+          }
         ]
       }
     },
@@ -39,17 +89,72 @@
       "description": "1K product catalog with categories, pricing, ratings, and stock levels",
       "schema": {
         "fields": [
-          {"name": "product_id", "title": "Product ID", "description": "Unique product identifier (P0000 format)", "type": "string"},
-          {"name": "product_name", "title": "Product Name", "description": "Product display name", "type": "string"},
-          {"name": "category", "title": "Category", "description": "Product category (Electronics, Health, Beauty, Home, Sports, etc.)", "type": "string"},
-          {"name": "brand", "title": "Brand", "description": "Product brand name", "type": "string"},
-          {"name": "price", "title": "Price", "description": "Product price in USD", "type": "number"},
-          {"name": "avg_rating", "title": "Average Rating", "description": "Average customer rating (1-5 stars)", "type": "number"},
-          {"name": "num_ratings", "title": "Number of Ratings", "description": "Total number of customer ratings", "type": "integer"},
-          {"name": "stock_quantity", "title": "Stock Quantity", "description": "Current inventory level", "type": "integer"},
-          {"name": "discount_pct", "title": "Discount Percentage", "description": "Current discount percentage (0-50)", "type": "integer"},
-          {"name": "is_featured", "title": "Featured", "description": "Whether product is featured (0/1)", "type": "integer"},
-          {"name": "weight_kg", "title": "Weight (kg)", "description": "Product weight in kilograms", "type": "number"}
+          {
+            "name": "product_id",
+            "title": "Product ID",
+            "description": "Unique product identifier (P0000 format)",
+            "type": "string"
+          },
+          {
+            "name": "product_name",
+            "title": "Product Name",
+            "description": "Product display name",
+            "type": "string"
+          },
+          {
+            "name": "category",
+            "title": "Category",
+            "description": "Product category (Electronics, Health, Beauty, Home, Sports, etc.)",
+            "type": "string"
+          },
+          {
+            "name": "brand",
+            "title": "Brand",
+            "description": "Product brand name",
+            "type": "string"
+          },
+          {
+            "name": "price",
+            "title": "Price",
+            "description": "Product price in USD",
+            "type": "number"
+          },
+          {
+            "name": "avg_rating",
+            "title": "Average Rating",
+            "description": "Average customer rating (1-5 stars)",
+            "type": "number"
+          },
+          {
+            "name": "num_ratings",
+            "title": "Number of Ratings",
+            "description": "Total number of customer ratings",
+            "type": "integer"
+          },
+          {
+            "name": "stock_quantity",
+            "title": "Stock Quantity",
+            "description": "Current inventory level",
+            "type": "integer"
+          },
+          {
+            "name": "discount_pct",
+            "title": "Discount Percentage",
+            "description": "Current discount percentage (0-50)",
+            "type": "integer"
+          },
+          {
+            "name": "is_featured",
+            "title": "Featured",
+            "description": "Whether product is featured (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "weight_kg",
+            "title": "Weight (kg)",
+            "description": "Product weight in kilograms",
+            "type": "number"
+          }
         ]
       }
     },
@@ -58,17 +163,72 @@
       "description": "120K purchase transactions with amounts, discounts, payment methods, and status",
       "schema": {
         "fields": [
-          {"name": "transaction_id", "title": "Transaction ID", "description": "Unique transaction identifier (T000000 format)", "type": "string"},
-          {"name": "customer_id", "title": "Customer ID", "description": "Foreign key to customers.csv", "type": "string"},
-          {"name": "product_id", "title": "Product ID", "description": "Foreign key to products.csv", "type": "string"},
-          {"name": "transaction_date", "title": "Transaction Date", "description": "Date and time of transaction (YYYY-MM-DD HH:MM:SS)", "type": "datetime"},
-          {"name": "quantity", "title": "Quantity", "description": "Number of units purchased", "type": "integer"},
-          {"name": "unit_price", "title": "Unit Price", "description": "Price per unit in USD", "type": "number"},
-          {"name": "total_amount", "title": "Total Amount", "description": "Total transaction amount in USD", "type": "number"},
-          {"name": "discount_applied", "title": "Discount Applied", "description": "Discount percentage applied (0-50)", "type": "integer"},
-          {"name": "status", "title": "Status", "description": "Transaction status (completed, pending, refunded, cancelled)", "type": "string"},
-          {"name": "payment_method", "title": "Payment Method", "description": "Payment method used (credit_card, debit_card, paypal, apple_pay)", "type": "string"},
-          {"name": "shipping_cost", "title": "Shipping Cost", "description": "Shipping cost in USD", "type": "number"}
+          {
+            "name": "transaction_id",
+            "title": "Transaction ID",
+            "description": "Unique transaction identifier (T000000 format)",
+            "type": "string"
+          },
+          {
+            "name": "customer_id",
+            "title": "Customer ID",
+            "description": "Foreign key to customers.csv",
+            "type": "string"
+          },
+          {
+            "name": "product_id",
+            "title": "Product ID",
+            "description": "Foreign key to products.csv",
+            "type": "string"
+          },
+          {
+            "name": "transaction_date",
+            "title": "Transaction Date",
+            "description": "Date and time of transaction (YYYY-MM-DD HH:MM:SS)",
+            "type": "datetime"
+          },
+          {
+            "name": "quantity",
+            "title": "Quantity",
+            "description": "Number of units purchased",
+            "type": "integer"
+          },
+          {
+            "name": "unit_price",
+            "title": "Unit Price",
+            "description": "Price per unit in USD",
+            "type": "number"
+          },
+          {
+            "name": "total_amount",
+            "title": "Total Amount",
+            "description": "Total transaction amount in USD",
+            "type": "number"
+          },
+          {
+            "name": "discount_applied",
+            "title": "Discount Applied",
+            "description": "Discount percentage applied (0-50)",
+            "type": "integer"
+          },
+          {
+            "name": "status",
+            "title": "Status",
+            "description": "Transaction status (completed, pending, refunded, cancelled)",
+            "type": "string"
+          },
+          {
+            "name": "payment_method",
+            "title": "Payment Method",
+            "description": "Payment method used (credit_card, debit_card, paypal, apple_pay)",
+            "type": "string"
+          },
+          {
+            "name": "shipping_cost",
+            "title": "Shipping Cost",
+            "description": "Shipping cost in USD",
+            "type": "number"
+          }
         ]
       }
     },
@@ -77,16 +237,66 @@
       "description": "80K browsing sessions with device, channel, duration, and conversion data",
       "schema": {
         "fields": [
-          {"name": "session_id", "title": "Session ID", "description": "Unique session identifier (S000000 format)", "type": "string"},
-          {"name": "customer_id", "title": "Customer ID", "description": "Foreign key to customers.csv", "type": "string"},
-          {"name": "session_date", "title": "Session Date", "description": "Date and time session started (YYYY-MM-DD HH:MM:SS)", "type": "datetime"},
-          {"name": "device", "title": "Device", "description": "Device type (desktop, mobile, tablet)", "type": "string"},
-          {"name": "channel", "title": "Traffic Channel", "description": "Acquisition channel (organic, paid, direct, social, email)", "type": "string"},
-          {"name": "duration_seconds", "title": "Duration (seconds)", "description": "Session duration in seconds", "type": "integer"},
-          {"name": "pages_viewed", "title": "Pages Viewed", "description": "Number of pages viewed in session", "type": "integer"},
-          {"name": "converted", "title": "Converted", "description": "Whether session resulted in purchase (0/1)", "type": "integer"},
-          {"name": "bounced", "title": "Bounced", "description": "Whether session was single-page bounce (0/1)", "type": "integer"},
-          {"name": "cart_additions", "title": "Cart Additions", "description": "Number of items added to cart", "type": "integer"}
+          {
+            "name": "session_id",
+            "title": "Session ID",
+            "description": "Unique session identifier (S000000 format)",
+            "type": "string"
+          },
+          {
+            "name": "customer_id",
+            "title": "Customer ID",
+            "description": "Foreign key to customers.csv",
+            "type": "string"
+          },
+          {
+            "name": "session_date",
+            "title": "Session Date",
+            "description": "Date and time session started (YYYY-MM-DD HH:MM:SS)",
+            "type": "datetime"
+          },
+          {
+            "name": "device",
+            "title": "Device",
+            "description": "Device type (desktop, mobile, tablet)",
+            "type": "string"
+          },
+          {
+            "name": "channel",
+            "title": "Traffic Channel",
+            "description": "Acquisition channel (organic, paid, direct, social, email)",
+            "type": "string"
+          },
+          {
+            "name": "duration_seconds",
+            "title": "Duration (seconds)",
+            "description": "Session duration in seconds",
+            "type": "integer"
+          },
+          {
+            "name": "pages_viewed",
+            "title": "Pages Viewed",
+            "description": "Number of pages viewed in session",
+            "type": "integer"
+          },
+          {
+            "name": "converted",
+            "title": "Converted",
+            "description": "Whether session resulted in purchase (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "bounced",
+            "title": "Bounced",
+            "description": "Whether session was single-page bounce (0/1)",
+            "type": "integer"
+          },
+          {
+            "name": "cart_additions",
+            "title": "Cart Additions",
+            "description": "Number of items added to cart",
+            "type": "integer"
+          }
         ]
       }
     },
@@ -95,16 +305,79 @@
       "description": "25K product reviews with ratings, text, and helpfulness votes",
       "schema": {
         "fields": [
-          {"name": "review_id", "title": "Review ID", "description": "Unique review identifier (R00000 format)", "type": "string"},
-          {"name": "customer_id", "title": "Customer ID", "description": "Foreign key to customers.csv", "type": "string"},
-          {"name": "product_id", "title": "Product ID", "description": "Foreign key to products.csv", "type": "string"},
-          {"name": "review_date", "title": "Review Date", "description": "Date review was submitted (YYYY-MM-DD)", "type": "date"},
-          {"name": "rating", "title": "Rating", "description": "Star rating (1-5)", "type": "integer"},
-          {"name": "review_text", "title": "Review Text", "description": "Customer review text", "type": "string"},
-          {"name": "helpful_votes", "title": "Helpful Votes", "description": "Number of helpful votes from other customers", "type": "integer"},
-          {"name": "verified_purchase", "title": "Verified Purchase", "description": "Whether reviewer made verified purchase (0/1)", "type": "integer"}
+          {
+            "name": "review_id",
+            "title": "Review ID",
+            "description": "Unique review identifier (R00000 format)",
+            "type": "string"
+          },
+          {
+            "name": "customer_id",
+            "title": "Customer ID",
+            "description": "Foreign key to customers.csv",
+            "type": "string"
+          },
+          {
+            "name": "product_id",
+            "title": "Product ID",
+            "description": "Foreign key to products.csv",
+            "type": "string"
+          },
+          {
+            "name": "review_date",
+            "title": "Review Date",
+            "description": "Date review was submitted (YYYY-MM-DD)",
+            "type": "date"
+          },
+          {
+            "name": "rating",
+            "title": "Rating",
+            "description": "Star rating (1-5)",
+            "type": "integer"
+          },
+          {
+            "name": "review_text",
+            "title": "Review Text",
+            "description": "Customer review text",
+            "type": "string"
+          },
+          {
+            "name": "helpful_votes",
+            "title": "Helpful Votes",
+            "description": "Number of helpful votes from other customers",
+            "type": "integer"
+          },
+          {
+            "name": "verified_purchase",
+            "title": "Verified Purchase",
+            "description": "Whether reviewer made verified purchase (0/1)",
+            "type": "integer"
+          }
         ]
       }
     }
+  ],
+  "isPrivate": false,
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2023-01-01",
+    "temporal_end_date": "2025-12-31",
+    "geospatial_coverage": "Global (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain schemas and domain conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). Synthetic E-Commerce Customer Behavior Dataset. Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior"
   ]
 }
