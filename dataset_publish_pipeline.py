@@ -37,10 +37,6 @@ class PublishCandidate:
     live_state: str  # draft | live | unknown
     eligible: bool
     blocked_reasons: list[str]
-
-
-
-
 def parse_live_refs_csv(raw_csv: str) -> set[str]:
     lines = raw_csv.splitlines()
     start_idx = None
