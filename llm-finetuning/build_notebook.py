@@ -91,6 +91,9 @@ cells.append(code(
     "# ── Install (uncomment on Kaggle / Colab) ──────────────────────────\n"
     "# !pip install -q torch transformers peft bitsandbytes datasets trl accelerate\n"
     "\n"
+    "import os\n"
+    "import random\n"
+    "import numpy as np\n"
     "import torch\n"
     "import torch.nn as nn\n"
     "from transformers import (\n"
@@ -103,8 +106,19 @@ cells.append(code(
     "from datasets import load_dataset\n"
     "from trl import SFTTrainer\n"
     "\n"
+    "SEED = 42\n"
+    "os.environ[\"PYTHONHASHSEED\"] = str(SEED)\n"
+    "random.seed(SEED)\n"
+    "np.random.seed(SEED)\n"
+    "torch.manual_seed(SEED)\n"
+    "if torch.cuda.is_available():\n"
+    "    torch.cuda.manual_seed_all(SEED)\n"
+    "    torch.backends.cudnn.deterministic = True\n"
+    "    torch.backends.cudnn.benchmark = False\n"
+    "\n"
     "print(f\"PyTorch  : {torch.__version__}\")\n"
     "print(f\"CUDA     : {torch.cuda.is_available()}\")\n"
+    "print(f\"Seed     : {SEED}\")\n"
     "if torch.cuda.is_available():\n"
     "    print(f\"GPU      : {torch.cuda.get_device_name(0)}\")\n"
     "    print(f\"VRAM     : {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB\")"
@@ -194,6 +208,7 @@ cells.append(md(
 # ── 12. Memory comparison code ────────────────────────────────────────────
 cells.append(code(
     "import pandas as pd\n"
+    "import matplotlib.pyplot as plt\n"
     "\n"
     "rows = []\n"
     "for size_b in [1, 3, 7, 13]:\n"
@@ -207,7 +222,22 @@ cells.append(code(
     "                 \"LoRA (GB)\": f\"{lora_mem:.1f}\", \"QLoRA (GB)\": f\"{qlora_mem:.1f}\"})\n"
     "\n"
     "df = pd.DataFrame(rows)\n"
-    "print(df.to_string(index=False))"
+    "print(df.to_string(index=False))\n"
+    "\n"
+    "# Convert formatted strings back to numeric for charting\n"
+    "plot_df = df.copy()\n"
+    "for col in [\"Full FT (GB)\", \"LoRA (GB)\", \"QLoRA (GB)\"]:\n"
+    "    plot_df[col] = plot_df[col].astype(float)\n"
+    "\n"
+    "ax = plot_df.set_index(\"Model\")[[\"Full FT (GB)\", \"LoRA (GB)\", \"QLoRA (GB)\"]].plot(\n"
+    "    kind=\"bar\",\n"
+    "    figsize=(10, 5),\n"
+    ")\n"
+    "ax.set_title(\"VRAM Comparison: Full FT vs LoRA vs QLoRA\")\n"
+    "ax.set_ylabel(\"Estimated Memory (GB)\")\n"
+    "ax.grid(axis=\"y\", alpha=0.25)\n"
+    "plt.tight_layout()\n"
+    "plt.show()"
 ))
 
 # ── 13. Takeaway ──────────────────────────────────────────────────────────
@@ -216,6 +246,16 @@ cells.append(md(
     ">\n"
     "> QLoRA lets you fine-tune a **7 B model in ~6 GB VRAM** -- that fits on a\n"
     "> free Kaggle T4 GPU!"
+))
+
+# ── 13b. Insight note ──────────────────────────────────────────────────────
+cells.append(md(
+    "### Insight: Memory vs Quality Trade-off\n"
+    "\n"
+    "- **Observation:** the memory gap between full fine-tuning and QLoRA grows as model size increases.\n"
+    "- **Because** QLoRA keeps the frozen base in 4-bit, large models remain trainable on commodity GPUs.\n"
+    "- **Therefore**, you can iterate faster on prompts, data curation, and evaluation instead of waiting on infra.\n"
+    "- **Limitation:** extremely low-rank adapters may underfit niche domain style unless you tune rank and alpha."
 ))
 
 # ── 14. Section 4 Header ─────────────────────────────────────────────────
@@ -343,15 +383,15 @@ cells.append(md(
 cells.append(code(
     "MODEL_ID = \"TinyLlama/TinyLlama-1.1B-Chat-v1.0\"  # swap for your target model\n"
     "\n"
-    "tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)\n"
+    "tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)\n"
     "tokenizer.pad_token = tokenizer.eos_token\n"
     "tokenizer.padding_side = \"right\"\n"
     "\n"
+    "# Keep trust_remote_code disabled by default; only enable for vetted models.\n"
     "model = AutoModelForCausalLM.from_pretrained(\n"
     "    MODEL_ID,\n"
     "    quantization_config=bnb_config,\n"
     "    device_map=\"auto\",\n"
-    "    trust_remote_code=True,\n"
     ")\n"
     "model = prepare_model_for_kbit_training(model)\n"
     "\n"

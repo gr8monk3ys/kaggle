@@ -1,0 +1,20 @@
+{
+  "id": "lorenzoscaturchio/nlp-disaster-tweets-bert-guide",
+  "title": "NLP Disaster Tweets BERT Guide",
+  "code_file": "nlp_disaster_tweets_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "keywords": [
+    "nlp",
+    "bert",
+    "text classification",
+    "disaster tweets",
+    "transformers"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

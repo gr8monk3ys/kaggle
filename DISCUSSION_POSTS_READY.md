@@ -110,7 +110,7 @@ The Kaggle API returned 401 Unauthorized. To fix:
 
 Once re-authenticated, you can push notebooks with:
 ```bash
-cd /Users/gr8monk3ys/code/ml-portfolio/kaggle
+cd /path/to/repo/kaggle
 ./manage.sh push-nb    # Push all notebooks
 ./manage.sh push graph-neural-networks  # Push GNN specifically
 ./manage.sh push eda-tutorial  # Push EDA tutorial

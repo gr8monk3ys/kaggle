@@ -1,5 +1,5 @@
 {
-  "id": "lorenzoscaturchio/end-to-end-ml-pipeline-house-prices",
+  "id": "lorenzoscaturchio/end-to-end-ml-pipeline-house-price-prediction",
   "title": "End-to-End ML Pipeline: From EDA to Prediction",
   "code_file": "end_to_end_ml_pipeline.ipynb",
   "language": "python",

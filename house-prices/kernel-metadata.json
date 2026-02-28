@@ -1,0 +1,27 @@
+{
+  "id": "lorenzoscaturchio/house-prices-complete-eda-feature-engineering",
+  "title": "House Prices: Complete EDA + Feature Engineering + Top 5%",
+  "code_file": "house_prices_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "house prices",
+    "regression",
+    "feature engineering",
+    "eda",
+    "xgboost",
+    "lightgbm",
+    "kaggle",
+    "tutorial",
+    "ames housing",
+    "stacking",
+    "blending",
+    "scikit-learn"
+  ],
+  "dataset_sources": ["competitions/house-prices-advanced-regression-techniques"],
+  "kernel_sources": [],
+  "competition_sources": ["house-prices-advanced-regression-techniques"]
+}

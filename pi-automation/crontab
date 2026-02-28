@@ -1,0 +1,17 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Daily health check + quality -- 9:10 UTC
+10 9 * * *   /scripts/health_check.sh >> /var/log/cron.log 2>&1
+
+# Live sync -- 9:15 UTC
+15 9 * * *   /scripts/sync.sh >> /var/log/cron.log 2>&1
+
+# Deadline alert -- every 6 hours
+0 */6 * * *  python3 /scripts/deadline_alert.py >> /var/log/cron.log 2>&1
+
+# Weekly plan -- Monday 8:00 UTC
+0 8 * * 1    /scripts/weekly_report.sh >> /var/log/cron.log 2>&1
+
+# Discussion poster -- Tuesday and Friday 10:00 UTC
+0 10 * * 2,5 python3 /scripts/discussion_post.py >> /var/log/cron.log 2>&1

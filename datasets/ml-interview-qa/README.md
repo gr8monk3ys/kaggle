@@ -1,163 +1,64 @@
----
-title: "ML/DS Interview Questions & Answers (500+)"
-description: "Comprehensive dataset of 500+ machine learning and data science interview questions with detailed answers, covering 10 categories and 3 difficulty levels. Tagged with company names and topics."
-license: CC0-1.0
-tags:
-  - machine learning
-  - data science
-  - interview questions
-  - career
-  - education
-  - NLP
-  - deep learning
-  - statistics
----
+# ML/DS Interview Questions & Answers (500+)
 
-# ML/DS Interview Questions & Answers Dataset
+> 500+ ML/DS interview Q&A with 10 categories and 3 difficulty levels
 
-![License: CC0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)
-![Questions: 500+](https://img.shields.io/badge/Questions-500%2B-blue.svg)
-![Categories: 10](https://img.shields.io/badge/Categories-10-green.svg)
-![Difficulty: 3 Levels](https://img.shields.io/badge/Difficulty-3_Levels-orange.svg)
+**License:** GPL-3.0  
 
-## Overview
+**Kaggle:** [lorenzoscaturchio/ml-interview-qa](https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa)  
 
-A curated collection of **500+ machine learning and data science interview questions** with detailed, expert-level answers. This dataset is designed to help data scientists, ML engineers, and researchers prepare for technical interviews at top tech companies.
+## Description
 
-Whether you are preparing for your next interview, building an ML tutoring chatbot, or practicing NLP tasks, this dataset provides structured, high-quality Q&A pairs across the full spectrum of ML/DS topics.
+502 machine learning and data science interview questions with expert-level answers (50–200 words each), tagged across 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Three difficulty levels (easy/medium/hard) and company_tags linking questions to Google, Meta, Amazon, Microsoft, Apple, and others.
 
----
+Built for: interview preparation and study, LLM fine-tuning on technical Q&A, text classification by category or difficulty, RAG system prototyping with a structured knowledge base, and embedding similarity search. The company_tags field enables targeted preparation for specific employers.
 
-## Quick Start
+Notable features: answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category; the mix of conceptual, coding, and system design questions reflects real interview breadth. All content is synthetic.
 
-```python
-import pandas as pd
+## Tags
 
-# On Kaggle
-df = pd.read_csv('/kaggle/input/ml-interview-qa/ml_interview_questions.csv')
+`education`, `nlp`, `deep learning`, `python`, `sql`
 
-# Quick exploration
-print(f"Total questions: {len(df)}")
-print(f"Categories: {df['category'].unique()}")
-print(f"Difficulty levels: {df['difficulty'].unique()}")
+## Authors
 
-# Filter by category and difficulty
-hard_dl = df[(df['category'] == 'Deep Learning') & (df['difficulty'] == 'hard')]
-print(f"\nHard Deep Learning questions: {len(hard_dl)}")
-print(hard_dl[['question', 'answer']].head())
+- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
 
-# Get questions for a specific company
-google_qs = df[df['company_tags'].str.contains('Google', na=False)]
-print(f"\nQuestions tagged with Google: {len(google_qs)}")
-```
+## Coverage
 
----
+- Temporal: 2020-01-01 to 2025-12-31
+- Geospatial: Global (synthetic)
 
-## Dataset Description
+## DOI and Citations
 
-### Content
+- DOI: Not assigned
+- Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (500+). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
 
-Each question includes:
+## Provenance
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | string | Unique identifier (SHA-256 hash) |
-| `question` | string | The interview question |
-| `answer` | string | Detailed expert answer (50-200 words) |
-| `category` | string | One of 10 categories (see below) |
-| `difficulty` | string | `easy`, `medium`, or `hard` |
-| `company_tags` | string | Pipe-separated company names where this type of question is asked |
-| `topic_tags` | string | Pipe-separated specific topic labels |
-| `answer_length` | int | Word count of the answer |
+- Source: Synthetic data generation scripts in this repository
+- Source: Public domain schemas and domain conventions for educational simulation
+- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
 
-### Categories (10)
+## ml_interview_questions.csv
 
-1. **Statistics** - Hypothesis testing, distributions, estimation, Bayesian methods
-2. **ML Theory** - Bias-variance, regularization, ensemble methods, optimization
-3. **Deep Learning** - Neural networks, Transformers, training techniques, generative models
-4. **NLP** - Tokenization, embeddings, language models, RAG, RLHF
-5. **Computer Vision** - CNNs, object detection, segmentation, ViT, NeRF
-6. **System Design** - ML pipelines, serving, recommendation systems, fraud detection
-7. **SQL** - Joins, window functions, optimization, analytics queries
-8. **Python** - Data structures, concurrency, decorators, memory management
-9. **Feature Engineering** - Missing data, encoding, scaling, feature selection
-10. **A/B Testing** - Experiment design, power analysis, causal inference, bandits
+**Rows:** 502  |  **Columns:** 8  |  **Size:** 241.5 KB
 
-### Difficulty Distribution
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `id` | string | 0.0% | 502 | `aa928e5348`, `e940376e2c`, `a0d8ce2738` |
+| `question` | string | 0.0% | 502 | `Describe the ConvNeXt architecture and its key innovations.`, `How would you design a medical diagnosis support system?`, `Explain neural network pruning in deep learning.` |
+| `answer` | string | 0.0% | 362 | — |
+| `category` | string | 0.0% | 10 | `Python`, `Deep Learning`, `System Design` |
+| `difficulty` | string | 0.0% | 3 | `medium`, `hard`, `easy` |
+| `company_tags` | string | 0.0% | 471 | `Amazon|Databricks`, `OpenAI|Meta|Databricks|Robinhood`, `Bloomberg|Google` |
+| `topic_tags` | string | 0.0% | 241 | `architecture|deep learning`, `data augmentation|training|regularization`, `system design|production` |
+| `answer_length` | integer | 0.0% | 65 | `39`, `62`, `42` |
 
-- **Easy**: Fundamental concepts every candidate should know
-- **Medium**: Deeper understanding expected at mid/senior level
-- **Hard**: Advanced topics for senior/staff-level positions
+## Suggested Use Cases
+
+- Text classification (TF-IDF, BERT embeddings)
+- Named entity recognition or topic modeling
+- Salary prediction (regression)
+- Job category classification (multi-class)
 
 ---
-
-## Use Cases
-
-| Use Case | Description | Techniques |
-|----------|-------------|------------|
-| **Interview Preparation** | Study by category, difficulty, or target company | Filtering, sampling |
-| **Text Classification** | Predict difficulty or category from question text | TF-IDF, BERT, Logistic Regression |
-| **Question Answering** | Build a Q&A system that retrieves relevant answers | RAG, Semantic Search, Sentence Embeddings |
-| **Summarization** | Generate concise summaries from detailed answers | T5, BART, GPT |
-| **Chatbot Training** | Fine-tune a model for ML tutoring conversations | SFT, LoRA, Instruction Tuning |
-| **Text Similarity** | Build semantic search over ML concepts | Sentence-BERT, FAISS |
-| **NER / Entity Extraction** | Extract technical terms, library names, algorithms | SpaCy, Custom NER |
-| **Education** | Teaching ML concepts with structured Q&A pairs | Direct use |
-
-### Related Kaggle Competitions
-
-This dataset is useful for practicing techniques relevant to:
-- [Feedback Prize - English Language Learning](https://www.kaggle.com/competitions/feedback-prize-english-language-learning) -- text classification
-- [Google QUEST Q&A Labeling](https://www.kaggle.com/competitions/google-quest-challenge) -- question quality prediction
-- [LLM Science Exam](https://www.kaggle.com/competitions/kaggle-llm-science-exam) -- RAG for Q&A
-- [CommonLit Readability](https://www.kaggle.com/competitions/commonlitreadabilityprize) -- text difficulty assessment
-
----
-
-## Data Generation
-
-All questions and answers are synthetically generated with expert-level content covering the breadth and depth of modern ML/DS interview topics. Company tags are randomly assigned based on realistic frequency distributions.
-
-## File Structure
-
-```
-ml-interview-qa/
-  ml_interview_questions.csv   # Main dataset (500+ rows)
-  create_dataset.py            # Generation script
-  explore.ipynb                # Exploration notebook with visualizations & sample ML task
-  dataset-metadata.json        # Kaggle dataset metadata
-  kernel-metadata.json         # Kaggle notebook metadata
-```
-
----
-
-## Sample Data
-
-| question | category | difficulty |
-|----------|----------|------------|
-| What is the bias-variance tradeoff? | ML Theory | easy |
-| Explain the Transformer self-attention mechanism | Deep Learning | medium |
-| How would you design a real-time fraud detection system? | System Design | hard |
-
----
-
-## Citation
-
-If you use this dataset, please consider upvoting on Kaggle and citing:
-
-```
-@dataset{ml_interview_qa_2025,
-  title={ML/DS Interview Questions and Answers},
-  author={Lorenzo Scaturchio},
-  year={2025},
-  url={https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa}
-}
-```
-
-## License
-
-This dataset is released under [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/) -- Public Domain.
-
----
-
-**If you found this dataset useful, please upvote! It helps others in the community discover it.**
+*Generated by `dataset_optimizer.py` — dataset_optimizer.py*
