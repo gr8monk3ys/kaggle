@@ -1,0 +1,22 @@
+{
+  "id": "lorenzoscaturchio/credit-card-fraud-detection-eda",
+  "title": "Credit Card Fraud Detection EDA",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "lorenzoscaturchio/credit-card-fraud-detection-synthetic"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "keywords": [
+    "fraud detection",
+    "classification",
+    "anomaly detection",
+    "finance",
+    "eda"
+  ]
+}

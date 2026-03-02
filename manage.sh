@@ -116,6 +116,7 @@ Commands:
                             Update draft metadata and rebalance queue schedule window
   dataset-ui-sync [--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]
                   [--max-datasets N] [--sleep-between-datasets-s SEC]
+                  [--retry-failed-datasets N] [--retry-delay-s SEC]
                             Sync Kaggle UI-only dataset sections
                             (Authors/Coverage/DOI/Provenance/Citations/License/Update Frequency/File Info)
                             Use throttling flags to reduce request bursts and avoid Kaggle rate-limit toasts.
