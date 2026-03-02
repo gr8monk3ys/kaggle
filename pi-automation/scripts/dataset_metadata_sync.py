@@ -506,6 +506,10 @@ def sync_dataset(page, payload: DatasetUiPayload, *, apply: bool, timeout_ms: in
     return DatasetResult(dataset_ref=payload.dataset_ref, editor_url=editor_url, sections=sections)
 
 
+def failed_sections(result: DatasetResult) -> list[SectionResult]:
+    return [section for section in result.sections if section.status == "failed"]
+
+
 def parse_comma_set(values: list[str]) -> set[str]:
     parsed: set[str] = set()
     for value in values:
@@ -538,6 +542,33 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Allow interactive login if credentials are not provided.",
     )
     parser.add_argument("--force-doi", default=None, help="Override DOI value for all selected datasets.")
+    parser.add_argument(
+        "--max-datasets",
+        type=int,
+        default=0,
+        help="Process at most N datasets (0 = all selected).",
+    )
+    parser.add_argument(
+        "--sleep-between-datasets-s",
+        type=float,
+        default=0.0,
+        help="Optional delay in seconds between datasets to reduce request burst.",
+    )
+    parser.add_argument(
+        "--retry-failed-datasets",
+        type=int,
+        default=1,
+        help=(
+            "Retry each dataset up to N additional times when any section fails "
+            "(default 1)."
+        ),
+    )
+    parser.add_argument(
+        "--retry-delay-s",
+        type=float,
+        default=5.0,
+        help="Delay before retrying a failed dataset attempt (seconds).",
+    )
     parser.add_argument("--report-json", type=Path, default=None, help="Optional output file for run report JSON.")
     return parser.parse_args(argv)
 
@@ -569,6 +600,17 @@ def main(argv: list[str] | None = None) -> int:
         dataset_refs=dataset_refs or None,
         force_doi=args.force_doi,
     )
+    if args.max_datasets < 0:
+        raise SystemExit("--max-datasets cannot be negative")
+    if args.sleep_between_datasets_s < 0:
+        raise SystemExit("--sleep-between-datasets-s cannot be negative")
+    if args.retry_failed_datasets < 0:
+        raise SystemExit("--retry-failed-datasets cannot be negative")
+    if args.retry_delay_s < 0:
+        raise SystemExit("--retry-delay-s cannot be negative")
+    if args.max_datasets > 0:
+        payloads = payloads[: args.max_datasets]
+    
 
     print(f"Selected {len(payloads)} dataset(s):")
     for payload in payloads:
@@ -596,6 +638,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sync_playwright, PlaywrightTimeout = require_playwright()
     results: list[DatasetResult] = []
+    attempt_counts: dict[str, int] = {}
     with sync_playwright() as p:
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_arg = str(state_path) if state_path.exists() else None
@@ -616,41 +659,79 @@ def main(argv: list[str] | None = None) -> int:
             browser.close()
             raise SystemExit(f"Authentication failed: {exc}") from exc
 
-        for payload in payloads:
-            print(f"\nSyncing {payload.dataset_ref} ...")
-            try:
-                result = sync_dataset(page, payload, apply=args.apply, timeout_ms=args.timeout_ms)
-                results.append(result)
-                for section in result.sections:
-                    detail = f" ({section.detail})" if section.detail else ""
-                    print(f"  [{section.status}] {section.name}{detail}")
-            except PlaywrightTimeout as exc:
-                print(f"  [failed] timeout: {exc}")
-                results.append(
-                    DatasetResult(
+        for idx, payload in enumerate(payloads):
+            max_attempts = args.retry_failed_datasets + 1
+            result: DatasetResult | None = None
+            for attempt in range(1, max_attempts + 1):
+                attempt_label = f" (attempt {attempt}/{max_attempts})" if max_attempts > 1 else ""
+                print(f"\nSyncing {payload.dataset_ref} ...{attempt_label}")
+                try:
+                    result = sync_dataset(page, payload, apply=args.apply, timeout_ms=args.timeout_ms)
+                except PlaywrightTimeout as exc:
+                    print(f"  [failed] timeout: {exc}")
+                    result = DatasetResult(
                         dataset_ref=payload.dataset_ref,
                         editor_url=page.url,
                         sections=[SectionResult(name="run", status="failed", detail=f"timeout: {exc}")],
                     )
-                )
-            except Exception as exc:
-                print(f"  [failed] {exc}")
-                results.append(
-                    DatasetResult(
+                except Exception as exc:
+                    print(f"  [failed] {exc}")
+                    result = DatasetResult(
                         dataset_ref=payload.dataset_ref,
                         editor_url=page.url,
                         sections=[SectionResult(name="run", status="failed", detail=str(exc))],
                     )
+
+                for section in result.sections:
+                    detail = f" ({section.detail})" if section.detail else ""
+                    print(f"  [{section.status}] {section.name}{detail}")
+
+                failures = failed_sections(result)
+                if not failures:
+                    attempt_counts[payload.dataset_ref] = attempt
+                    if attempt > 1:
+                        print(f"  [retry] recovered after {attempt} attempt(s)")
+                    break
+
+                if attempt >= max_attempts:
+                    attempt_counts[payload.dataset_ref] = attempt
+                    break
+
+                failed_names = ", ".join(section.name for section in failures)
+                print(
+                    f"  [retry] failed sections: {failed_names}; "
+                    f"retrying in {args.retry_delay_s:.1f}s"
                 )
+                try:
+                    page.goto(
+                        f"https://www.kaggle.com/datasets/{payload.dataset_ref}",
+                        wait_until="domcontentloaded",
+                        timeout=args.timeout_ms,
+                    )
+                    page.wait_for_timeout(500)
+                except Exception:
+                    pass
+                if args.retry_delay_s > 0:
+                    time.sleep(args.retry_delay_s)
+
+            if result is not None:
+                results.append(result)
+
+            if args.sleep_between_datasets_s > 0 and idx < len(payloads) - 1:
+                print(f"  [pause] sleeping {args.sleep_between_datasets_s:.1f}s before next dataset")
+                time.sleep(args.sleep_between_datasets_s)
 
         browser.close()
 
     report = {
         "apply": args.apply,
+        "retry_failed_datasets": args.retry_failed_datasets,
+        "retry_delay_s": args.retry_delay_s,
         "datasets": [
             {
                 "dataset_ref": item.dataset_ref,
                 "editor_url": item.editor_url,
+                "attempts": attempt_counts.get(item.dataset_ref, 1),
                 "sections": [asdict(section) for section in item.sections],
             }
             for item in results
