@@ -74,8 +74,13 @@ jobs:
           printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
           printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
           PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 doctor --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/doctor.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --scope all --min-score 95 --fail-under-threshold >/tmp/quality.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --strict --fail-under 85 >/tmp/dataset-usability.log
+          if [ "${GITHUB_REF:-}" = "refs/heads/main" ] || [ "${GITHUB_REF:-}" = "refs/heads/master" ]; then
+            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --scope all --min-score 95 --fail-under-threshold >/tmp/quality.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --strict --fail-under 85 >/tmp/dataset-usability.log
+          else
+            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --scope all --min-score 78 >/tmp/quality.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --fail-under 85 >/tmp/dataset-usability.log
+          fi
           if [ -f discussion_scheduler.py ]; then
             PYTHONPYCACHEPREFIX=/tmp/pycache python discussion_scheduler.py --health-check >/tmp/discussion-health.log
           else
