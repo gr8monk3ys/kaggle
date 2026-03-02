@@ -27,7 +27,11 @@
 #   publish-datasets - Publish draft datasets with quality gate checks
 #   auth-doctor     - Validate Kaggle credentials and upload auth
 #   draft-set       - Update a queued draft status/priority/deadline
-#   dataset-ui-sync - Sync dataset UI-only metadata fields using Playwright
+#   dataset-ui-sync - Sync dataset UI-only metadata fields using Playwright (supports throttling)
+#   stale-content   - Detect stale notebooks, datasets, and outdated library versions
+#   build-explore-notebooks - Generate rich EDA explore notebooks for datasets
+#   create-competition-entry - Scaffold a new competition entry from a slug
+#   metadata-tracker - Track metadata changes vs vote deltas over time
 
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:$PATH"
@@ -75,7 +79,7 @@ color_reset='\033[0m'
 
 usage() {
     cat <<EOF
-Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|help}
+Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|stale-content|build-explore-notebooks|create-competition-entry|metadata-tracker|help}
 
 Commands:
   status                    Show notebooks/datasets and Kaggle account status
@@ -112,9 +116,20 @@ Commands:
   draft-set <id> [--status STATUS] [--priority PRIORITY] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]
                             Update draft metadata and rebalance queue schedule window
   dataset-ui-sync [--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]
-                            Sync Kaggle UI-only dataset sections (Authors/Coverage/DOI/Provenance/Citations)
+                  [--max-datasets N] [--sleep-between-datasets-s SEC]
+                            Sync Kaggle UI-only dataset sections
+                            (Authors/Coverage/DOI/Provenance/Citations/License/Update Frequency/File Info)
+                            Use throttling flags to reduce request bursts and avoid Kaggle rate-limit toasts.
   promote-notebooks [--auto]   Generate notebook promotion plan for competition forums
   scout [--update]          Scout active competitions ranked by medal opportunity
+  stale-content [--max-nb-age N] [--max-ds-age N]
+                             Detect stale notebooks, datasets, and outdated library versions
+  build-explore-notebooks [--push]
+                             Generate rich EDA explore notebooks for all datasets
+  create-competition-entry <slug> [--gpu] [--push]
+                             Scaffold a new competition entry from a competition slug
+  metadata-tracker <snapshot|annotate|report> [args...]
+                             Track metadata changes vs vote deltas over time
   help                      Show this message
 EOF
 }
@@ -636,6 +651,18 @@ case "${1:-status}" in
         ;;
     scout)
         python3 competition_scout.py "${@:2}"
+        ;;
+    stale-content)
+        cmd_stale_content "${@:2}"
+        ;;
+    build-explore-notebooks)
+        python3 dataset_explore_generator.py --all "${@:2}"
+        ;;
+    create-competition-entry)
+        python3 competition_entry.py "${@:2}"
+        ;;
+    metadata-tracker)
+        python3 metadata_tracker.py "${@:2}"
         ;;
     help|-h|--help)
         usage
