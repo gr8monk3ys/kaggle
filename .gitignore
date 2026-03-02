@@ -16,4 +16,5 @@ medal_ops/history/
 medal_ops/reports/
 medal_ops/sync_inputs/
 
+.env
 pi-automation/.env
