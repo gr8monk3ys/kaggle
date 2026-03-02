@@ -87,4 +87,7 @@ jobs:
             echo "discussion_scheduler.py --health-check skipped (file not present on this branch)." >/tmp/draft-ops.log
           fi
           PYTHONPYCACHEPREFIX=/tmp/pycache python stale_content_detector.py --today 2026-02-22 >/tmp/stale-content.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_explore_generator.py --dir datasets/credit-card-fraud >/tmp/explore-gen.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python competition_entry.py --help >/tmp/comp-entry.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python metadata_tracker.py --help >/tmp/metadata-tracker.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log
