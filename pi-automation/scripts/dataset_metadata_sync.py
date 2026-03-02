@@ -3,7 +3,8 @@
 
 This script reads local `datasets/*/dataset-metadata.json` files and updates
 the corresponding Kaggle dataset UI sections that are not exposed by the CLI
-metadata model (authors, coverage, DOI, provenance, citations).
+metadata model (authors, coverage, DOI, provenance, citations, license,
+expected update frequency, and file descriptions).
 """
 
 from __future__ import annotations
@@ -18,13 +19,22 @@ from datetime import date
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import quote
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATASETS_ROOT = REPO_ROOT / "datasets"
 DEFAULT_STORAGE_STATE = REPO_ROOT / "pi-automation" / "data" / "kaggle_storage_state.json"
 DEFAULT_TIMEOUT_MS = 20000
-SECTION_TITLES = ("Authors", "Coverage", "DOI Citation", "Provenance", "Citations")
+SECTION_TITLES = (
+    "Authors",
+    "Coverage",
+    "DOI Citation",
+    "Provenance",
+    "Citations",
+    "License",
+    "Expected Update Frequency",
+)
 
 
 @dataclass(frozen=True)
@@ -40,6 +50,10 @@ class DatasetUiPayload:
     sources: list[str]
     collection_methodology: str
     citations: list[str]
+    license_name: str
+    expected_update_frequency: str
+    resource_descriptions: list[tuple[str, str]]
+    column_descriptions: dict[str, dict[str, str]]
 
 
 @dataclass(frozen=True)
@@ -110,6 +124,47 @@ def build_payload(meta: dict, dataset_dir: str, *, force_doi: str | None = None)
     if not citations:
         citations = [default_citation(meta, dataset_ref)]
 
+    licenses = meta.get("licenses") if isinstance(meta.get("licenses"), list) else []
+    license_name = ""
+    for entry in licenses:
+        if isinstance(entry, dict):
+            candidate = str(entry.get("name", "")).strip()
+            if candidate:
+                license_name = candidate
+                break
+    if not license_name:
+        license_name = "GPL-3.0"
+
+    expected_update_frequency = str(
+        meta.get("updateFrequency", meta.get("update_frequency", ""))
+    ).strip() or "Monthly"
+
+    resource_descriptions: list[tuple[str, str]] = []
+    column_descriptions: dict[str, dict[str, str]] = {}
+    resources = meta.get("resources") if isinstance(meta.get("resources"), list) else []
+    for resource in resources:
+        if not isinstance(resource, dict):
+            continue
+        path = str(resource.get("path", "")).strip()
+        if not path:
+            continue
+        description = str(resource.get("description", "")).strip()
+        if description:
+            resource_descriptions.append((path, description))
+
+        schema = resource.get("schema") if isinstance(resource.get("schema"), dict) else {}
+        fields = schema.get("fields") if isinstance(schema.get("fields"), list) else []
+        field_descriptions: dict[str, str] = {}
+        for field in fields:
+            if not isinstance(field, dict):
+                continue
+            name = str(field.get("name", "")).strip()
+            desc = str(field.get("description", "")).strip()
+            if name and desc:
+                field_descriptions[name] = desc
+        if field_descriptions:
+            column_descriptions[path] = field_descriptions
+
     return DatasetUiPayload(
         dataset_dir=dataset_dir,
         dataset_ref=dataset_ref,
@@ -122,6 +177,10 @@ def build_payload(meta: dict, dataset_dir: str, *, force_doi: str | None = None)
         sources=sources,
         collection_methodology=collection_methodology,
         citations=citations,
+        license_name=license_name,
+        expected_update_frequency=expected_update_frequency,
+        resource_descriptions=resource_descriptions,
+        column_descriptions=column_descriptions,
     )
 
 
@@ -235,7 +294,7 @@ def find_editor_url(page, dataset_ref: str, timeout_ms: int) -> str:
     for url in urls:
         page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
         page.wait_for_timeout(500)
-        if wait_for_metadata_area(page, min(timeout_ms, 4000)) and is_authenticated(page):
+        if wait_for_metadata_area(page, min(timeout_ms, 12000)) and is_authenticated(page):
             return page.url
 
     # Last attempt: dataset page then click an edit/settings affordance.
@@ -257,17 +316,35 @@ def find_editor_url(page, dataset_ref: str, timeout_ms: int) -> str:
         if locator_count(candidate):
             candidate.click(timeout=timeout_ms)
             page.wait_for_timeout(800)
-            if wait_for_metadata_area(page, min(timeout_ms, 4000)) and is_authenticated(page):
+            if wait_for_metadata_area(page, min(timeout_ms, 12000)) and is_authenticated(page):
                 return page.url
 
     if not is_authenticated(page):
         raise RuntimeError(
             "Kaggle session appears signed out. Re-run with --manual-login (headed) to refresh storage state."
         )
-    raise RuntimeError(f"Could not find metadata editor for {dataset_ref}")
+    # Kaggle periodically shifts metadata editor routes. Fall back to the dataset page
+    # so section-level selectors can still attempt updates.
+    return page.url
 
 
-def maybe_login(page, *, email: str, password: str, manual_login: bool, timeout_ms: int) -> None:
+def maybe_login(
+    page,
+    *,
+    email: str,
+    password: str,
+    manual_login: bool,
+    timeout_ms: int,
+    force_manual_login: bool = False,
+) -> None:
+    if force_manual_login and manual_login and not (email and password):
+        page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
+        print("Manual login required: complete Kaggle login in the opened browser window.")
+        input("Press Enter after login completes...")
+        page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(750)
+        return
+
     page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
     page.wait_for_timeout(500)
     if is_authenticated(page):
@@ -321,10 +398,20 @@ def maybe_login(page, *, email: str, password: str, manual_login: bool, timeout_
 
 
 def find_section_container(page, section_title: str):
-    heading = page.get_by_role("heading", name=re.compile(rf"^{re.escape(section_title)}$", re.IGNORECASE)).first
-    if locator_count(heading):
-        return heading.locator("xpath=ancestor::*[self::section or self::article or self::div][1]").first
-    text_match = page.get_by_text(re.compile(rf"^{re.escape(section_title)}$", re.IGNORECASE)).first
+    title_pattern = re.compile(rf"^{re.escape(section_title)}$", re.IGNORECASE)
+    headings = page.get_by_role("heading", name=title_pattern)
+    for idx in range(locator_count(headings)):
+        heading = headings.nth(idx)
+        container = heading.locator("xpath=ancestor::*[self::section or self::article or self::div][1]").first
+        has_controls = (
+            locator_count(container.get_by_role("button", name=re.compile(r"edit|save|cancel|add", re.IGNORECASE)).first)
+            > 0
+        )
+        if has_controls:
+            return container
+
+    # Fallback: first visible text match.
+    text_match = page.get_by_text(title_pattern).first
     if locator_count(text_match):
         return text_match.locator("xpath=ancestor::*[self::section or self::article or self::div][1]").first
     return None
@@ -366,9 +453,14 @@ def open_section_editor(page, section_title: str, timeout_ms: int):
         if locator_count(candidate):
             candidate.click(timeout=timeout_ms)
             page.wait_for_timeout(400)
-            refreshed = find_section_container(page, section_title)
-            return refreshed if refreshed is not None else container
-    return container
+            return candidate.locator("xpath=ancestor::*[self::section or self::article or self::div][1]").first
+
+    # Already in edit mode for this section.
+    if container is not None and locator_count(
+        container.get_by_role("button", name=re.compile(r"save|cancel", re.IGNORECASE)).first
+    ):
+        return container
+    return None
 
 
 def active_form_scope(page, section_container):
@@ -380,14 +472,209 @@ def active_form_scope(page, section_container):
     return page
 
 
+def try_fill_locator(locator, value: str, timeout_ms: int) -> bool:
+    if not locator_count(locator):
+        return False
+    try:
+        locator.fill(value, timeout=timeout_ms)
+        return True
+    except Exception:
+        return False
+
+
+def try_fill_contenteditable(locator, value: str, timeout_ms: int) -> bool:
+    if not locator_count(locator):
+        return False
+    try:
+        locator.click(timeout=timeout_ms)
+    except Exception:
+        return False
+    for combo in ("Meta+A", "Control+A"):
+        try:
+            locator.press(combo, timeout=timeout_ms)
+            break
+        except Exception:
+            continue
+    try:
+        locator.type(value, timeout=timeout_ms)
+        return True
+    except Exception:
+        return False
+
+
 def fill_field(scope, label_patterns: Iterable[str], value: str, timeout_ms: int) -> bool:
     if not value.strip():
         return False
     for pattern in label_patterns:
-        locator = scope.get_by_label(re.compile(pattern, re.IGNORECASE)).first
-        if locator_count(locator):
-            locator.fill(value, timeout=timeout_ms)
-            return True
+        label_regex = re.compile(pattern, re.IGNORECASE)
+        for locator in (
+            scope.get_by_label(label_regex).first,
+            scope.get_by_role("textbox", name=label_regex).first,
+        ):
+            if try_fill_locator(locator, value, timeout_ms):
+                return True
+    return False
+
+
+def fill_file_description_editor(page, file_description: str, timeout_ms: int) -> bool:
+    text = file_description.strip()
+    if not text:
+        return False
+
+    def attempt_fill() -> bool:
+        textbox_patterns = (
+            r"description\s+for\s+this\s+file",
+            r"file\s+description",
+        )
+        for pattern in textbox_patterns:
+            textbox = page.get_by_role("textbox", name=re.compile(pattern, re.IGNORECASE)).first
+            if try_fill_locator(textbox, text, timeout_ms):
+                return True
+
+        input_selectors = (
+            'textarea[aria-label*="description" i]',
+            'textarea[placeholder*="description" i]',
+            'textarea[name*="description" i]',
+            'input[aria-label*="description" i]',
+            'input[placeholder*="description" i]',
+        )
+        for selector in input_selectors:
+            editor = page.locator(selector).first
+            if try_fill_locator(editor, text, timeout_ms):
+                return True
+
+        contenteditable_selectors = (
+            '[contenteditable="true"][aria-label*="description" i]',
+            '[contenteditable="true"][data-placeholder*="description" i]',
+            '[contenteditable="true"][placeholder*="description" i]',
+        )
+        for selector in contenteditable_selectors:
+            editor = page.locator(selector).first
+            if try_fill_contenteditable(editor, text, timeout_ms):
+                return True
+
+        return False
+
+    if attempt_fill():
+        return True
+
+    create_button = first_available(
+        page.get_by_role("button", name=re.compile(r"add\s+file\s+description", re.IGNORECASE)).first,
+        page.get_by_role("button", name=re.compile(r"add\s+description", re.IGNORECASE)).first,
+        page.get_by_role("button", name=re.compile(r"^create$", re.IGNORECASE)).first,
+    )
+    if create_button is None:
+        return False
+    try:
+        create_button.click(timeout=timeout_ms)
+        page.wait_for_timeout(300)
+    except Exception:
+        return False
+    return attempt_fill()
+
+
+def normalize_kaggle_date(value: str) -> str:
+    text = value.strip()
+    if not text:
+        return ""
+    match = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", text)
+    if not match:
+        return text
+    year, month, day = match.groups()
+    return f"{month}/{day}/{year}"
+
+
+def citation_title_and_url(text: str) -> tuple[str, str]:
+    citation = text.strip()
+    if not citation:
+        return "", ""
+    match = re.search(r"https?://\S+", citation)
+    if not match:
+        return citation, ""
+    url = match.group(0).rstrip(").,;")
+    title = citation.replace(match.group(0), "").strip(" .,:;-")
+    return title or citation, url
+
+
+def license_option_pattern(license_name: str) -> re.Pattern[str]:
+    normalized = license_name.strip().lower().replace("_", "-")
+    if "gpl-3" in normalized or ("gpl" in normalized and "3" in normalized):
+        return re.compile(r"\bgpl\s*3\b", re.IGNORECASE)
+    if normalized.startswith("mit"):
+        return re.compile(r"^mit\b", re.IGNORECASE)
+    if normalized.startswith("apache"):
+        return re.compile(r"apache\s*2", re.IGNORECASE)
+    if normalized.startswith("cc0"):
+        return re.compile(r"cc0|public\s+domain", re.IGNORECASE)
+    if "cc by-sa 4.0" in normalized or normalized.startswith("cc-by-sa-4"):
+        return re.compile(r"cc\s+by-sa\s+4\.0", re.IGNORECASE)
+    return re.compile(re.escape(license_name.strip()), re.IGNORECASE)
+
+
+def normalize_update_frequency(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {"daily", "day", "every day"}:
+        return "Daily"
+    if normalized in {"weekly", "week", "every week"}:
+        return "Weekly"
+    if normalized in {"monthly", "month", "every month"}:
+        return "Monthly"
+    if normalized in {"never", "none", "no updates"}:
+        return "Never"
+    if normalized in {"not specified", "unspecified", "unknown"}:
+        return "Not specified"
+    return "Monthly"
+
+
+def open_data_file_page(page, dataset_ref: str, file_path: str, timeout_ms: int) -> None:
+    encoded = quote(file_path, safe="")
+    urls = [
+        f"https://www.kaggle.com/datasets/{dataset_ref}/data?select={encoded}",
+        f"https://www.kaggle.com/datasets/{dataset_ref}/data/data?select={encoded}",
+        f"https://www.kaggle.com/datasets/{dataset_ref}/data",
+    ]
+    for url in urls:
+        page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(600)
+        if not file_path:
+            return
+        heading = page.get_by_role(
+            "heading",
+            name=re.compile(rf"^{re.escape(Path(file_path).name)}\s*\(", re.IGNORECASE),
+        ).first
+        if locator_count(heading):
+            return
+
+
+def select_combobox_option(
+    page,
+    scope,
+    *,
+    combobox_patterns: list[str],
+    option_pattern: re.Pattern[str],
+    timeout_ms: int,
+) -> bool:
+    for pattern in combobox_patterns:
+        name_regex = re.compile(pattern, re.IGNORECASE)
+        combobox_candidates = (
+            scope.get_by_role("combobox", name=name_regex).first,
+            page.get_by_role("combobox", name=name_regex).first,
+        )
+        for combobox in combobox_candidates:
+            if not locator_count(combobox):
+                continue
+            combobox.click(timeout=timeout_ms)
+            page.wait_for_timeout(200)
+            option_candidates = (
+                scope.get_by_role("option", name=option_pattern).first,
+                page.get_by_role("option", name=option_pattern).first,
+            )
+            for option in option_candidates:
+                if locator_count(option):
+                    option.click(timeout=timeout_ms)
+                    page.wait_for_timeout(200)
+                    return True
+            page.keyboard.press("Escape")
     return False
 
 
@@ -416,11 +703,47 @@ def save_section(page, scope, apply: bool, timeout_ms: int) -> bool:
 def sync_authors(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
     container = open_section_editor(page, "Authors", timeout_ms)
     if container is None:
+        author_button = first_available(
+            page.get_by_role(
+                "button",
+                name=re.compile(r"edit\s+authors|navigate\s+and\s+edit\s+authors", re.IGNORECASE),
+            ).first,
+            page.get_by_role(
+                "link",
+                name=re.compile(r"edit\s+authors|authors", re.IGNORECASE),
+            ).first,
+        )
+        if author_button is not None:
+            author_button.click(timeout=timeout_ms)
+            page.wait_for_timeout(350)
+            container = author_button.locator("xpath=ancestor::*[self::section or self::article or self::div][1]").first
+    if container is None:
         return SectionResult(name="Authors", status="failed" if apply else "skipped", detail="section control not found")
     scope = active_form_scope(page, container)
     filled_name = fill_field(scope, ["Author Name", "Author"], payload.author_name, timeout_ms)
     filled_bio = fill_field(scope, ["Bio"], payload.author_bio, timeout_ms)
+
+    # Kaggle requires adding an author row before fields exist when empty.
     if not (filled_name or filled_bio):
+        add_author = scope.get_by_role("button", name=re.compile(r"add\s+author", re.IGNORECASE)).first
+        if locator_count(add_author):
+            add_author.click(timeout=timeout_ms)
+            page.wait_for_timeout(300)
+            filled_name = fill_field(scope, ["Author Name", "Author"], payload.author_name, timeout_ms)
+            filled_bio = fill_field(scope, ["Bio"], payload.author_bio, timeout_ms)
+
+    if not (filled_name or filled_bio) and scope is not page:
+        # Fallback: some Kaggle layouts render editable fields outside the local section node.
+        scope = page
+        add_author = scope.get_by_role("button", name=re.compile(r"add\s+author", re.IGNORECASE)).first
+        if locator_count(add_author):
+            add_author.click(timeout=timeout_ms)
+            page.wait_for_timeout(300)
+        filled_name = fill_field(scope, ["Author Name", "Author"], payload.author_name, timeout_ms)
+        filled_bio = fill_field(scope, ["Bio"], payload.author_bio, timeout_ms)
+
+    if not (filled_name or filled_bio):
+        save_section(page, scope, apply=False, timeout_ms=timeout_ms)
         return SectionResult(name="Authors", status="failed" if apply else "skipped", detail="fields not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="Authors", status="failed", detail="save action not found")
@@ -432,11 +755,21 @@ def sync_coverage(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int)
     if container is None:
         return SectionResult(name="Coverage", status="failed" if apply else "skipped", detail="section control not found")
     scope = active_form_scope(page, container)
+    start_date = normalize_kaggle_date(payload.temporal_start_date)
+    end_date = normalize_kaggle_date(payload.temporal_end_date)
     filled = False
-    filled |= fill_field(scope, ["Temporal Coverage Start Date", "Start Date"], payload.temporal_start_date, timeout_ms)
-    filled |= fill_field(scope, ["Temporal Coverage End Date", "End Date"], payload.temporal_end_date, timeout_ms)
+    filled |= fill_field(scope, ["Temporal Coverage Start Date", "Start Date"], start_date, timeout_ms)
+    filled |= fill_field(scope, ["Temporal Coverage End Date", "End Date"], end_date, timeout_ms)
     filled |= fill_field(scope, ["Geospatial Coverage"], payload.geospatial_coverage, timeout_ms)
+
+    if not filled and scope is not page:
+        scope = page
+        filled |= fill_field(scope, ["Temporal Coverage Start Date", "Start Date"], start_date, timeout_ms)
+        filled |= fill_field(scope, ["Temporal Coverage End Date", "End Date"], end_date, timeout_ms)
+        filled |= fill_field(scope, ["Geospatial Coverage"], payload.geospatial_coverage, timeout_ms)
+
     if not filled:
+        save_section(page, scope, apply=False, timeout_ms=timeout_ms)
         return SectionResult(name="Coverage", status="failed" if apply else "skipped", detail="fields not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="Coverage", status="failed", detail="save action not found")
@@ -455,7 +788,11 @@ def sync_doi(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> S
         )
     scope = active_form_scope(page, container)
     filled = fill_field(scope, ["DOI \\(Digital Object Identifier\\)", "DOI"], payload.doi, timeout_ms)
+    if not filled and scope is not page:
+        scope = page
+        filled = fill_field(scope, ["DOI \\(Digital Object Identifier\\)", "DOI"], payload.doi, timeout_ms)
     if not filled:
+        save_section(page, scope, apply=False, timeout_ms=timeout_ms)
         return SectionResult(name="DOI Citation", status="failed" if apply else "skipped", detail="DOI field not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="DOI Citation", status="failed", detail="save action not found")
@@ -471,7 +808,51 @@ def sync_provenance(page, payload: DatasetUiPayload, apply: bool, timeout_ms: in
     filled = False
     filled |= fill_field(scope, ["Sources"], sources_text, timeout_ms)
     filled |= fill_field(scope, ["Collection Methodology"], payload.collection_methodology, timeout_ms)
+
+    # Citations are edited inside Provenance (Title + Link to Url rows).
+    parsed_citations = [citation_title_and_url(item) for item in payload.citations if item.strip()]
+    if parsed_citations:
+        title_boxes = scope.get_by_role("textbox", name=re.compile(r"^title$", re.IGNORECASE))
+        url_boxes = scope.get_by_role("textbox", name=re.compile(r"link\s+to\s+url|url", re.IGNORECASE))
+        add_citation = scope.get_by_role("button", name=re.compile(r"add\s+citation", re.IGNORECASE)).first
+        for idx, (title, url) in enumerate(parsed_citations):
+            while locator_count(title_boxes) <= idx and locator_count(add_citation):
+                add_citation.click(timeout=timeout_ms)
+                page.wait_for_timeout(200)
+                title_boxes = scope.get_by_role("textbox", name=re.compile(r"^title$", re.IGNORECASE))
+                url_boxes = scope.get_by_role("textbox", name=re.compile(r"link\s+to\s+url|url", re.IGNORECASE))
+            if locator_count(title_boxes) > idx and title:
+                title_boxes.nth(idx).fill(title, timeout=timeout_ms)
+                filled = True
+            if locator_count(url_boxes) > idx and url:
+                url_boxes.nth(idx).fill(url, timeout=timeout_ms)
+                filled = True
+
+    if not filled and scope is not page:
+        scope = page
+        filled |= fill_field(scope, ["Sources"], sources_text, timeout_ms)
+        filled |= fill_field(scope, ["Collection Methodology"], payload.collection_methodology, timeout_ms)
+
+        parsed_citations = [citation_title_and_url(item) for item in payload.citations if item.strip()]
+        if parsed_citations:
+            title_boxes = scope.get_by_role("textbox", name=re.compile(r"^title$", re.IGNORECASE))
+            url_boxes = scope.get_by_role("textbox", name=re.compile(r"link\s+to\s+url|url", re.IGNORECASE))
+            add_citation = scope.get_by_role("button", name=re.compile(r"add\s+citation", re.IGNORECASE)).first
+            for idx, (title, url) in enumerate(parsed_citations):
+                while locator_count(title_boxes) <= idx and locator_count(add_citation):
+                    add_citation.click(timeout=timeout_ms)
+                    page.wait_for_timeout(200)
+                    title_boxes = scope.get_by_role("textbox", name=re.compile(r"^title$", re.IGNORECASE))
+                    url_boxes = scope.get_by_role("textbox", name=re.compile(r"link\s+to\s+url|url", re.IGNORECASE))
+                if locator_count(title_boxes) > idx and title:
+                    title_boxes.nth(idx).fill(title, timeout=timeout_ms)
+                    filled = True
+                if locator_count(url_boxes) > idx and url:
+                    url_boxes.nth(idx).fill(url, timeout=timeout_ms)
+                    filled = True
+
     if not filled:
+        save_section(page, scope, apply=False, timeout_ms=timeout_ms)
         return SectionResult(name="Provenance", status="failed" if apply else "skipped", detail="fields not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="Provenance", status="failed", detail="save action not found")
@@ -479,19 +860,202 @@ def sync_provenance(page, payload: DatasetUiPayload, apply: bool, timeout_ms: in
 
 
 def sync_citations(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
-    citation_text = "\n".join(payload.citations).strip()
-    if not citation_text:
-        return SectionResult(name="Citations", status="skipped", detail="no citation values in metadata")
-    container = open_section_editor(page, "Citations", timeout_ms)
+    if payload.citations:
+        return SectionResult(name="Citations", status="skipped", detail="handled via Provenance")
+    return SectionResult(name="Citations", status="skipped", detail="no citation values in metadata")
+
+
+def sync_license(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
+    if not payload.license_name.strip():
+        return SectionResult(name="License", status="skipped", detail="no license value in metadata")
+    container = open_section_editor(page, "License", timeout_ms)
     if container is None:
-        return SectionResult(name="Citations", status="failed" if apply else "skipped", detail="section control not found")
+        return SectionResult(name="License", status="failed" if apply else "skipped", detail="section control not found")
     scope = active_form_scope(page, container)
-    filled = fill_field(scope, ["Citations", "Citation"], citation_text, timeout_ms)
-    if not filled:
-        return SectionResult(name="Citations", status="failed" if apply else "skipped", detail="citation field not found")
+    option_pattern = license_option_pattern(payload.license_name)
+    selected = select_combobox_option(
+        page,
+        scope,
+        combobox_patterns=[r"select\s+license", r"license"],
+        option_pattern=option_pattern,
+        timeout_ms=timeout_ms,
+    )
+    if not selected and scope is not page:
+        scope = page
+        selected = select_combobox_option(
+            page,
+            scope,
+            combobox_patterns=[r"select\s+license", r"license"],
+            option_pattern=option_pattern,
+            timeout_ms=timeout_ms,
+        )
+
+    if not selected:
+        save_section(page, scope, apply=False, timeout_ms=timeout_ms)
+        return SectionResult(
+            name="License",
+            status="failed" if apply else "skipped",
+            detail=f"license option not found for '{payload.license_name}'",
+        )
     if not save_section(page, scope, apply, timeout_ms):
-        return SectionResult(name="Citations", status="failed", detail="save action not found")
-    return SectionResult(name="Citations", status="updated" if apply else "planned")
+        return SectionResult(name="License", status="failed", detail="save action not found")
+    return SectionResult(name="License", status="updated" if apply else "planned")
+
+
+def sync_expected_update_frequency(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
+    target = normalize_update_frequency(payload.expected_update_frequency)
+    container = open_section_editor(page, "Expected Update Frequency", timeout_ms)
+    if container is None:
+        update_button = first_available(
+            page.get_by_role(
+                "button",
+                name=re.compile(
+                    r"edit\s+expected\s+update\s+frequency|navigate\s+and\s+edit\s+update\s+frequency|edit\s+update\s+frequency",
+                    re.IGNORECASE,
+                ),
+            ).first,
+            page.get_by_role(
+                "link",
+                name=re.compile(r"edit\s+update\s+frequency|expected\s+update\s+frequency", re.IGNORECASE),
+            ).first,
+        )
+        if update_button is not None:
+            update_button.click(timeout=timeout_ms)
+            page.wait_for_timeout(350)
+            container = update_button.locator("xpath=ancestor::*[self::section or self::article or self::div][1]").first
+    if container is None:
+        return SectionResult(
+            name="Expected Update Frequency",
+            status="failed" if apply else "skipped",
+            detail="section control not found",
+        )
+    scope = active_form_scope(page, container)
+    option_pattern = re.compile(rf"^{re.escape(target)}$", re.IGNORECASE)
+    selected = select_combobox_option(
+        page,
+        scope,
+        combobox_patterns=[r"select\s+frequency", r"frequency"],
+        option_pattern=option_pattern,
+        timeout_ms=timeout_ms,
+    )
+    if not selected and scope is not page:
+        scope = page
+        selected = select_combobox_option(
+            page,
+            scope,
+            combobox_patterns=[r"select\s+frequency", r"frequency"],
+            option_pattern=option_pattern,
+            timeout_ms=timeout_ms,
+        )
+
+    if not selected:
+        save_section(page, scope, apply=False, timeout_ms=timeout_ms)
+        return SectionResult(
+            name="Expected Update Frequency",
+            status="failed" if apply else "skipped",
+            detail=f"frequency option not found for '{target}'",
+        )
+    if not save_section(page, scope, apply, timeout_ms):
+        return SectionResult(name="Expected Update Frequency", status="failed", detail="save action not found")
+    return SectionResult(name="Expected Update Frequency", status="updated" if apply else "planned")
+
+
+def sync_file_information(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
+    if not payload.resource_descriptions:
+        return SectionResult(name="File Information", status="skipped", detail="no file descriptions in metadata")
+
+    updated = 0
+    unavailable: list[str] = []
+    for file_path, file_description in payload.resource_descriptions:
+        if not file_description.strip():
+            continue
+        try:
+            open_data_file_page(page, payload.dataset_ref, file_path, timeout_ms=timeout_ms)
+            detail_tab = page.get_by_role("tab", name=re.compile(r"^detail\b", re.IGNORECASE)).first
+            if locator_count(detail_tab):
+                detail_tab.click(timeout=timeout_ms)
+                page.wait_for_timeout(250)
+
+            filled = fill_file_description_editor(page, file_description, timeout_ms)
+            if not filled:
+                edit_button = first_available(
+                    page.get_by_role("button", name=re.compile(r"^edit\s+file\s+description$", re.IGNORECASE)).first,
+                    page.get_by_role("button", name=re.compile(r"^add\s+file\s+description$", re.IGNORECASE)).first,
+                    page.get_by_role(
+                        "button",
+                        name=re.compile(r"(edit|add|create).*(file\s+description|description)", re.IGNORECASE),
+                    ).first,
+                )
+                if edit_button is not None:
+                    edit_button.click(timeout=timeout_ms)
+                    page.wait_for_timeout(450)
+                    filled = fill_file_description_editor(page, file_description, timeout_ms)
+            if not filled:
+                save_section(page, page, apply=False, timeout_ms=timeout_ms)
+                unavailable.append(f"{file_path}: file description editor not found")
+                continue
+            if not save_section(page, page, apply, timeout_ms):
+                unavailable.append(f"{file_path}: save action not found")
+                continue
+            updated += 1
+        except Exception as exc:
+            unavailable.append(f"{file_path}: {exc}")
+
+    if updated == 0 and unavailable:
+        return SectionResult(
+            name="File Information",
+            status="skipped",
+            detail="; ".join(unavailable[:2]),
+        )
+    if unavailable:
+        return SectionResult(
+            name="File Information",
+            status="updated" if apply else "planned",
+            detail=f"updated {updated}/{len(payload.resource_descriptions)} files; {len(unavailable)} unavailable",
+        )
+    return SectionResult(
+        name="File Information",
+        status="updated" if apply else "planned",
+        detail=f"{updated} file descriptions synced",
+    )
+
+
+def sync_column_descriptors(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
+    total_columns = sum(len(fields) for fields in payload.column_descriptions.values())
+    if total_columns == 0:
+        return SectionResult(name="Column Descriptors", status="skipped", detail="no schema field descriptions in metadata")
+
+    controls_detected = False
+    for file_path in payload.column_descriptions:
+        try:
+            open_data_file_page(page, payload.dataset_ref, file_path, timeout_ms=timeout_ms)
+            column_tab = page.get_by_role("tab", name=re.compile(r"^column\b", re.IGNORECASE)).first
+            if locator_count(column_tab):
+                column_tab.click(timeout=timeout_ms)
+                page.wait_for_timeout(300)
+            edit_controls = (
+                page.get_by_role("button", name=re.compile(r"edit\s+column", re.IGNORECASE)).first,
+                page.get_by_role("button", name=re.compile(r"column\s+description", re.IGNORECASE)).first,
+                page.get_by_role("button", name=re.compile(r"add\s+column\s+description", re.IGNORECASE)).first,
+            )
+            if any(locator_count(control) for control in edit_controls):
+                controls_detected = True
+                break
+        except Exception:
+            continue
+
+    if not controls_detected:
+        return SectionResult(
+            name="Column Descriptors",
+            status="skipped",
+            detail="column description editor not exposed in current Kaggle UI",
+        )
+
+    return SectionResult(
+        name="Column Descriptors",
+        status="skipped",
+        detail="column description controls detected; automation path not safely implemented yet",
+    )
 
 
 def sync_dataset(page, payload: DatasetUiPayload, *, apply: bool, timeout_ms: int) -> DatasetResult:
@@ -502,6 +1066,10 @@ def sync_dataset(page, payload: DatasetUiPayload, *, apply: bool, timeout_ms: in
         sync_doi(page, payload, apply=apply, timeout_ms=timeout_ms),
         sync_provenance(page, payload, apply=apply, timeout_ms=timeout_ms),
         sync_citations(page, payload, apply=apply, timeout_ms=timeout_ms),
+        sync_license(page, payload, apply=apply, timeout_ms=timeout_ms),
+        sync_expected_update_frequency(page, payload, apply=apply, timeout_ms=timeout_ms),
+        sync_file_information(page, payload, apply=apply, timeout_ms=timeout_ms),
+        sync_column_descriptors(page, payload, apply=apply, timeout_ms=timeout_ms),
     ]
     return DatasetResult(dataset_ref=payload.dataset_ref, editor_url=editor_url, sections=sections)
 
@@ -518,7 +1086,10 @@ def parse_comma_set(values: list[str]) -> set[str]:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sync Kaggle dataset UI metadata sections (authors/coverage/doi/provenance/citations)."
+        description=(
+            "Sync Kaggle dataset UI metadata sections "
+            "(authors/coverage/doi/provenance/citations/license/update-frequency/file-info)."
+        )
     )
     parser.add_argument("--root", type=Path, default=REPO_ROOT, help="Repository root.")
     parser.add_argument("--dataset", action="append", default=[], help="Dataset directory name(s), comma-separated allowed.")
@@ -538,6 +1109,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Allow interactive login if credentials are not provided.",
     )
     parser.add_argument("--force-doi", default=None, help="Override DOI value for all selected datasets.")
+    parser.add_argument(
+        "--max-datasets",
+        type=int,
+        default=0,
+        help="Process at most N datasets (0 = all selected).",
+    )
+    parser.add_argument(
+        "--sleep-between-datasets-s",
+        type=float,
+        default=0.0,
+        help="Optional delay in seconds between datasets to reduce request burst.",
+    )
     parser.add_argument("--report-json", type=Path, default=None, help="Optional output file for run report JSON.")
     return parser.parse_args(argv)
 
@@ -569,6 +1152,12 @@ def main(argv: list[str] | None = None) -> int:
         dataset_refs=dataset_refs or None,
         force_doi=args.force_doi,
     )
+    if args.max_datasets < 0:
+        raise SystemExit("--max-datasets cannot be negative")
+    if args.sleep_between_datasets_s < 0:
+        raise SystemExit("--sleep-between-datasets-s cannot be negative")
+    if args.max_datasets > 0:
+        payloads = payloads[: args.max_datasets]
 
     print(f"Selected {len(payloads)} dataset(s):")
     for payload in payloads:
@@ -583,16 +1172,23 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     state_path = args.storage_state.resolve()
+    has_saved_auth_cookie = storage_state_has_kaggle_cookie(state_path)
     if (
         not args.email.strip()
         and not args.password.strip()
         and not args.manual_login
-        and not storage_state_has_kaggle_cookie(state_path)
+        and not has_saved_auth_cookie
     ):
         raise SystemExit(
             "Kaggle login required: storage state has no Kaggle auth cookies and --no-manual-login was used. "
             "Run once with --headed --manual-login to refresh login state."
         )
+    force_manual_login = (
+        args.manual_login
+        and not args.email.strip()
+        and not args.password.strip()
+        and not has_saved_auth_cookie
+    )
 
     sync_playwright, PlaywrightTimeout = require_playwright()
     results: list[DatasetResult] = []
@@ -610,13 +1206,19 @@ def main(argv: list[str] | None = None) -> int:
                 password=args.password.strip(),
                 manual_login=args.manual_login,
                 timeout_ms=args.timeout_ms,
+                force_manual_login=force_manual_login,
             )
             context.storage_state(path=str(state_path))
+            if not storage_state_has_kaggle_cookie(state_path):
+                raise RuntimeError(
+                    "Kaggle login state was not captured (no Kaggle cookies in storage state). "
+                    "Re-run with --headed --manual-login and complete sign-in."
+                )
         except Exception as exc:
             browser.close()
             raise SystemExit(f"Authentication failed: {exc}") from exc
 
-        for payload in payloads:
+        for idx, payload in enumerate(payloads):
             print(f"\nSyncing {payload.dataset_ref} ...")
             try:
                 result = sync_dataset(page, payload, apply=args.apply, timeout_ms=args.timeout_ms)
@@ -642,6 +1244,9 @@ def main(argv: list[str] | None = None) -> int:
                         sections=[SectionResult(name="run", status="failed", detail=str(exc))],
                     )
                 )
+            if args.sleep_between_datasets_s > 0 and idx < len(payloads) - 1:
+                print(f"  [pause] sleeping {args.sleep_between_datasets_s:.1f}s before next dataset")
+                time.sleep(args.sleep_between_datasets_s)
 
         browser.close()
 

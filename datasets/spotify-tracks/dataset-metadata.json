@@ -2,7 +2,7 @@
   "id": "lorenzoscaturchio/spotify-tracks-audio-features-50k",
   "title": "Spotify Tracks: Audio Features (50K Songs)",
   "subtitle": "50K tracks with Spotify audio features for ML tasks",
-  "description": "50,000 synthetic Spotify-style tracks spanning 2000–2024 across 20 genres. Each record mirrors the Spotify Audio Features API: danceability, energy, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, duration, key, and mode — all generated with realistic per-genre distributions and correlations (e.g., electronic tracks have high energy+danceability; acoustic folk has high acousticness+valence).\n\nBuilt for: track popularity prediction (regression), genre classification (20 classes), playlist mood clustering (K-Means / UMAP), audio feature trend analysis over time, and recommender system prototyping.\n\nNotable features: 'popularity' follows a Zipf distribution (most tracks are obscure); key and mode are realistic (C major most common); tempo ranges from 60 BPM (ballads) to 180 BPM (drum-and-bass). All data is synthetic and generated for educational and ML prototyping purposes.",
+  "description": "50,000 synthetic Spotify-style tracks spanning 2000\u20132024 across 20 genres. Each record mirrors the Spotify Audio Features API: danceability, energy, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, duration, key, and mode \u2014 all generated with realistic per-genre distributions and correlations (e.g., electronic tracks have high energy+danceability; acoustic folk has high acousticness+valence).\n\nBuilt for: track popularity prediction (regression), genre classification (20 classes), playlist mood clustering (K-Means / UMAP), audio feature trend analysis over time, and recommender system prototyping.\n\nNotable features: 'popularity' follows a Zipf distribution (most tracks are obscure); key and mode are realistic (C major most common); tempo ranges from 60 BPM (ballads) to 180 BPM (drum-and-bass). All data is synthetic and generated for educational and ML prototyping purposes.",
   "isPrivate": false,
   "licenses": [
     {
@@ -49,7 +49,7 @@
           {
             "name": "release_year",
             "title": "Release Year",
-            "description": "Year of release (2000–2024)",
+            "description": "Year of release (2000\u20132024)",
             "type": "integer"
           },
           {
@@ -61,7 +61,7 @@
           {
             "name": "popularity",
             "title": "Popularity",
-            "description": "Track popularity score 0–100",
+            "description": "Track popularity score 0\u2013100",
             "type": "integer"
           },
           {
@@ -79,13 +79,13 @@
           {
             "name": "danceability",
             "title": "Danceability",
-            "description": "How suitable for dancing (0.0–1.0)",
+            "description": "How suitable for dancing (0.0\u20131.0)",
             "type": "number"
           },
           {
             "name": "energy",
             "title": "Energy",
-            "description": "Perceptual intensity and activity (0.0–1.0)",
+            "description": "Perceptual intensity and activity (0.0\u20131.0)",
             "type": "number"
           },
           {
@@ -109,31 +109,31 @@
           {
             "name": "speechiness",
             "title": "Speechiness",
-            "description": "Presence of spoken words (0.0–1.0)",
+            "description": "Presence of spoken words (0.0\u20131.0)",
             "type": "number"
           },
           {
             "name": "acousticness",
             "title": "Acousticness",
-            "description": "Confidence measure of acoustic (0.0–1.0)",
+            "description": "Confidence measure of acoustic (0.0\u20131.0)",
             "type": "number"
           },
           {
             "name": "instrumentalness",
             "title": "Instrumentalness",
-            "description": "Predicts no vocals (0.0–1.0)",
+            "description": "Predicts no vocals (0.0\u20131.0)",
             "type": "number"
           },
           {
             "name": "liveness",
             "title": "Liveness",
-            "description": "Presence of audience in recording (0.0–1.0)",
+            "description": "Presence of audience in recording (0.0\u20131.0)",
             "type": "number"
           },
           {
             "name": "valence",
             "title": "Valence",
-            "description": "Musical positiveness conveyed (0.0–1.0)",
+            "description": "Musical positiveness conveyed (0.0\u20131.0)",
             "type": "number"
           },
           {
@@ -145,7 +145,7 @@
           {
             "name": "time_signature",
             "title": "Time Signature",
-            "description": "Estimated time signature (3–7 beats/bar)",
+            "description": "Estimated time signature (3\u20137 beats/bar)",
             "type": "integer"
           }
         ]
@@ -173,5 +173,6 @@
   },
   "citations": [
     "Scaturchio, Lorenzo (2026). Spotify Tracks: Audio Features (50K Songs). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k"
-  ]
+  ],
+  "updateFrequency": "Monthly"
 }

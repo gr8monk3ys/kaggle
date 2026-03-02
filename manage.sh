@@ -23,11 +23,12 @@
 #   usability-tracker - Run daily live usability tracker with 0.8 gate, 1.0 target
 #   campaign-pack   - Build multi-channel dataset promotion campaign + queue
 #   campaign-run    - Execute campaign queue (show/claim/complete + runbook)
+#   campaign-execute - Execute due campaign actions via Playwright posting
 #   usability-benchmark - Benchmark local datasets against public 1.0-usability exemplars
 #   publish-datasets - Publish draft datasets with quality gate checks
 #   auth-doctor     - Validate Kaggle credentials and upload auth
 #   draft-set       - Update a queued draft status/priority/deadline
-#   dataset-ui-sync - Sync dataset UI-only metadata fields using Playwright
+#   dataset-ui-sync - Sync dataset UI-only metadata fields using Playwright (supports throttling)
 
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:$PATH"
@@ -75,7 +76,7 @@ color_reset='\033[0m'
 
 usage() {
     cat <<EOF
-Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|help}
+Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|help}
 
 Commands:
   status                    Show notebooks/datasets and Kaggle account status
@@ -98,6 +99,8 @@ Commands:
   usability-tracker         Daily live tracker with threshold alerts and ranked action queue
   campaign-pack             Generate multi-channel promotion campaign pack + queue
   campaign-run              Execute campaign queue (show/claim/complete + runbook export)
+  campaign-execute [--limit N] [--dry-run] [--headed] [--channel NAME]
+                            Execute due campaign queue actions by posting discussion topics
   usability-benchmark       Benchmark local datasets against public high-usability exemplars
   publish-datasets [--apply] [--all] [--min-score N] [--owner OWNER] [--max-items N]
                             Publish datasets through draft/live + quality gates
@@ -112,7 +115,10 @@ Commands:
   draft-set <id> [--status STATUS] [--priority PRIORITY] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]
                             Update draft metadata and rebalance queue schedule window
   dataset-ui-sync [--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]
-                            Sync Kaggle UI-only dataset sections (Authors/Coverage/DOI/Provenance/Citations)
+                  [--max-datasets N] [--sleep-between-datasets-s SEC]
+                            Sync Kaggle UI-only dataset sections
+                            (Authors/Coverage/DOI/Provenance/Citations/License/Update Frequency/File Info)
+                            Use throttling flags to reduce request bursts and avoid Kaggle rate-limit toasts.
   promote-notebooks [--auto]   Generate notebook promotion plan for competition forums
   scout [--update]          Scout active competitions ranked by medal opportunity
   help                      Show this message
@@ -238,13 +244,14 @@ cmd_push_ds() {
 cmd_push() {
     local target="$1"
     local path="$KAGGLE_DIR/$target"
-    if [[ -f "$path/kernel-metadata.json" ]]; then
-        echo "Pushing notebook: $target"
-        kaggle_cli kernels push -p "$path"
-    elif [[ -f "$path/dataset-metadata.json" ]]; then
+    # Prefer dataset pushes when both metadata files exist (common in datasets/* with explore notebooks).
+    if [[ -f "$path/dataset-metadata.json" ]]; then
         echo "Pushing dataset: $target"
         kaggle_cli datasets version -p "$path" -m "Updated content" --dir-mode zip \
             || kaggle_cli datasets create -p "$path" --dir-mode zip
+    elif [[ -f "$path/kernel-metadata.json" ]]; then
+        echo "Pushing notebook: $target"
+        kaggle_cli kernels push -p "$path"
     else
         echo "Error: No metadata found in $path"
         exit 1
@@ -521,6 +528,10 @@ cmd_campaign_run() {
     python3 campaign_dispatcher.py "$@"
 }
 
+cmd_campaign_execute() {
+    python3 campaign_execute.py "$@"
+}
+
 cmd_usability_benchmark() {
     python3 dataset_usability_benchmark.py "$@"
 }
@@ -610,6 +621,9 @@ case "${1:-status}" in
         ;;
     campaign-run)
         cmd_campaign_run "${@:2}"
+        ;;
+    campaign-execute)
+        cmd_campaign_execute "${@:2}"
         ;;
     usability-benchmark)
         ensure_kaggle_ready
