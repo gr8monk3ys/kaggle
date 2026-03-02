@@ -2,7 +2,7 @@
   "id": "lorenzoscaturchio/programming-language-benchmarks",
   "title": "Programming Language Benchmarks Dataset",
   "subtitle": "2200+ benchmarks across 16 languages and 10 tasks",
-  "description": "2,200 benchmark results across 16 programming languages (Python, Rust, Go, C++, Java, JavaScript, TypeScript, Julia, Kotlin, Swift, Ruby, Scala, Haskell, Elixir, C#, and R) measured on 10 computational tasks spanning 2020–2025. Each record includes execution time (ms), peak memory usage (MB), lines of code, CPU cores used, and language metadata: paradigm (functional/OOP/multi-paradigm), type system (static/dynamic), garbage collection, and a popularity index.\n\nBuilt for: language performance comparison (which is fastest for matrix ops? which uses least memory for sorting?), regression on execution time given language and task, clustering languages by performance profile, and software engineering research on the tradeoff between expressiveness (LOC) and performance. The popularity_index enables weighted analysis.\n\nNotable features: covers compiled (Rust, C++, Go) vs interpreted (Python, Ruby, JavaScript) vs JVM-based (Java, Kotlin, Scala) in a single table; gc flag separates manual-memory from managed-memory languages. All data is synthetic.",
+  "description": "2,200 benchmark results across 16 programming languages (Python, Rust, Go, C++, Java, JavaScript, TypeScript, Julia, Kotlin, Swift, Ruby, Scala, Haskell, Elixir, C#, and R) measured on 10 computational tasks spanning 2020\u20132025. Each record includes execution time (ms), peak memory usage (MB), lines of code, CPU cores used, and language metadata: paradigm (functional/OOP/multi-paradigm), type system (static/dynamic), garbage collection, and a popularity index.\n\nBuilt for: language performance comparison (which is fastest for matrix ops? which uses least memory for sorting?), regression on execution time given language and task, clustering languages by performance profile, and software engineering research on the tradeoff between expressiveness (LOC) and performance. The popularity_index enables weighted analysis.\n\nNotable features: covers compiled (Rust, C++, Go) vs interpreted (Python, Ruby, JavaScript) vs JVM-based (Java, Kotlin, Scala) in a single table; gc flag separates manual-memory from managed-memory languages. All data is synthetic.",
   "isPrivate": false,
   "licenses": [
     {
@@ -113,5 +113,6 @@
   },
   "citations": [
     "Scaturchio, Lorenzo (2026). Programming Language Benchmarks Dataset. Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks"
-  ]
+  ],
+  "updateFrequency": "Monthly"
 }

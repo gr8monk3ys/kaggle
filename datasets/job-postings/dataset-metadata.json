@@ -2,7 +2,7 @@
   "id": "lorenzoscaturchio/job-postings-nlp-salary-prediction",
   "title": "Job Postings: NLP & Salary Prediction (15K)",
   "subtitle": "15K synthetic job listings with salary ranges, skills, and rich NLP features",
-  "description": "15,000 synthetic tech and business job postings spanning 10 job titles across 8 industries, with salary ranges, required skills, experience levels, remote work type, company size, and job descriptions. Covers the 2023-2025 job market for Data Scientists, ML Engineers, Software Engineers, Data Analysts, Product Managers, and more.\n\nBuilt for: salary prediction (regression on salary_min/max), job title classification from description (NLP), skills extraction and analysis, remote work trend analysis, and job market exploratory data analysis. The description field enables NLP tasks while structured fields enable tabular ML.\n\nNotable features: salary ranges encode realistic correlations (senior > entry, enterprise > startup, ML roles > average, remote premium); required_skills is pipe-separated for easy parsing; experience_level × company_size interaction drives compensation; applications field enables demand modeling. All data is synthetic.",
+  "description": "15,000 synthetic tech and business job postings spanning 10 job titles across 8 industries, with salary ranges, required skills, experience levels, remote work type, company size, and job descriptions. Covers the 2023-2025 job market for Data Scientists, ML Engineers, Software Engineers, Data Analysts, Product Managers, and more.\n\nBuilt for: salary prediction (regression on salary_min/max), job title classification from description (NLP), skills extraction and analysis, remote work trend analysis, and job market exploratory data analysis. The description field enables NLP tasks while structured fields enable tabular ML.\n\nNotable features: salary ranges encode realistic correlations (senior > entry, enterprise > startup, ML roles > average, remote premium); required_skills is pipe-separated for easy parsing; experience_level \u00d7 company_size interaction drives compensation; applications field enables demand modeling. All data is synthetic.",
   "isPrivate": false,
   "licenses": [
     {
@@ -143,5 +143,6 @@
   },
   "citations": [
     "Scaturchio, Lorenzo (2026). Job Postings: NLP & Salary Prediction (15K). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp-salary-prediction"
-  ]
+  ],
+  "updateFrequency": "Monthly"
 }

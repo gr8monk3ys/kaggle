@@ -52,6 +52,7 @@ def test_manage_help_available():
     assert "usability-tracker" in result.stdout
     assert "campaign-pack" in result.stdout
     assert "campaign-run" in result.stdout
+    assert "campaign-execute" in result.stdout
     assert "usability-benchmark" in result.stdout
     assert "publish-datasets" in result.stdout
     assert "auth-doctor" in result.stdout
