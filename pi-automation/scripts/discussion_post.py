@@ -19,6 +19,27 @@ EMAIL = os.environ.get("KAGGLE_EMAIL", "")
 PASSWORD = os.environ.get("KAGGLE_PASSWORD", "")
 
 
+def notify_safe(message: str) -> None:
+    """Send a notification but never let notification failures crash posting."""
+    try:
+        notify.send(message)
+    except Exception as exc:
+        print(f"Notification failed: {exc}", file=sys.stderr)
+
+
+def require_kaggle_login_env() -> None:
+    missing = []
+    if not EMAIL:
+        missing.append("KAGGLE_EMAIL")
+    if not PASSWORD:
+        missing.append("KAGGLE_PASSWORD")
+    if missing:
+        raise EnvironmentError(
+            "Missing required environment variable(s) for Kaggle login: "
+            + ", ".join(missing)
+        )
+
+
 def login(page) -> None:
     page.goto("https://www.kaggle.com/account/login", wait_until="networkidle")
     page.fill('input[name="email"]', EMAIL)
@@ -41,11 +62,24 @@ def post_discussion(page, forum_url: str, title: str, body: str) -> str:
 
 
 def main() -> None:
-    if not QUEUE_PATH.exists():
-        print(f"Queue not found: {QUEUE_PATH}", file=sys.stderr)
+    try:
+        require_kaggle_login_env()
+    except EnvironmentError as exc:
+        print(str(exc), file=sys.stderr)
+        notify_safe(f"❌ Discussion post skipped: {exc}")
         sys.exit(1)
 
-    queue = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
+    if not QUEUE_PATH.exists():
+        print(f"Queue not found: {QUEUE_PATH}", file=sys.stderr)
+        notify_safe(f"❌ Queue not found: {QUEUE_PATH}")
+        sys.exit(1)
+
+    try:
+        queue = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"Queue read failed: {exc}", file=sys.stderr)
+        notify_safe(f"❌ Queue read failed: {exc}")
+        sys.exit(1)
     now = datetime.now(tz=timezone.utc)
     item = dq.next_pending(queue, now=now)
 
@@ -53,11 +87,19 @@ def main() -> None:
         print("No pending posts ready.")
         return
 
+    required_keys = ("id", "title", "forum_url", "body_file", "body_section")
+    missing_keys = [key for key in required_keys if not item.get(key)]
+    if missing_keys:
+        message = f"Queue item missing required key(s): {', '.join(missing_keys)}"
+        print(message, file=sys.stderr)
+        notify_safe(f"❌ Invalid queue item: {message}")
+        sys.exit(1)
+
     drafts_path = REPO / item["body_file"]
     try:
         body = dq.extract_body(drafts_path.read_text(encoding="utf-8"), item["body_section"])
     except (FileNotFoundError, ValueError) as e:
-        notify.send(f"❌ Cannot extract draft body: {e}")
+        notify_safe(f"❌ Cannot extract draft body: {e}")
         sys.exit(1)
 
     print(f"Posting: {item['title']}")
@@ -69,7 +111,7 @@ def main() -> None:
             post_url = post_discussion(page, item["forum_url"], item["title"], body)
             browser.close()
     except (PlaywrightTimeout, Exception) as e:
-        notify.send(f"❌ Post failed: {item['title']}\n{e}")
+        notify_safe(f"❌ Post failed: {item['title']}\n{e}")
         sys.exit(1)
 
     dq.mark_posted(QUEUE_PATH, item["id"], post_url=post_url)
@@ -82,7 +124,7 @@ def main() -> None:
         else "Queue empty."
     )
 
-    notify.send(
+    notify_safe(
         f"✅ *Discussion posted*\n"
         f"\"{item['title']}\"\n"
         f"{post_url}\n\n"

@@ -29,6 +29,7 @@
 #   auth-doctor     - Validate Kaggle credentials and upload auth
 #   draft-set       - Update a queued draft status/priority/deadline
 #   dataset-ui-sync - Sync dataset UI-only metadata fields using Playwright (supports throttling)
+#   stale-content   - Detect stale notebooks, datasets, and outdated library versions
 
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:$PATH"
@@ -76,7 +77,7 @@ color_reset='\033[0m'
 
 usage() {
     cat <<EOF
-Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|help}
+Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|stale-content|help}
 
 Commands:
   status                    Show notebooks/datasets and Kaggle account status
@@ -121,6 +122,8 @@ Commands:
                             Use throttling flags to reduce request bursts and avoid Kaggle rate-limit toasts.
   promote-notebooks [--auto]   Generate notebook promotion plan for competition forums
   scout [--update]          Scout active competitions ranked by medal opportunity
+  stale-content [--max-nb-age N] [--max-ds-age N]
+                            Detect stale notebooks, datasets, and outdated library versions
   help                      Show this message
 EOF
 }
@@ -552,6 +555,10 @@ cmd_dataset_ui_sync() {
     python3 pi-automation/scripts/dataset_metadata_sync.py "$@"
 }
 
+cmd_stale_content() {
+    python3 stale_content_detector.py "$@"
+}
+
 # Main dispatcher
 case "${1:-status}" in
     status)
@@ -659,6 +666,9 @@ case "${1:-status}" in
         ;;
     scout)
         python3 competition_scout.py "${@:2}"
+        ;;
+    stale-content)
+        cmd_stale_content "${@:2}"
         ;;
     help|-h|--help)
         usage

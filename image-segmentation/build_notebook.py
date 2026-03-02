@@ -1,53 +1,23 @@
 #!/usr/bin/env python3
-"""Build script for Image Segmentation Masterclass notebook.
-
-Generates a valid nbformat-4 .ipynb file without requiring the nbformat library.
-All cell content uses explicit \\n line breaks to avoid triple-quote nesting issues.
-"""
-
-import json
+"""import json
 import os
 
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
 
-def md(source):
-    """Create a markdown cell dict (nbformat 4)."""
-    return {
-        "cell_type": "markdown",
-        "metadata": {},
-        "source": source if isinstance(source, list) else source.split("\n")
-    }
+def md(source):"""
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from build_utils import md, code, write_notebook
 
 
-def code(source):
-    """Create a code cell dict (nbformat 4)."""
-    lines = source if isinstance(source, list) else source.split("\n")
-    return {
-        "cell_type": "code",
-        "execution_count": None,
-        "metadata": {},
-        "outputs": [],
-        "source": lines
-    }
-
-
-# Convenience: join lines with newline chars for the JSON source arrays
 def L(*lines):
-    """Return a list of strings, each terminated with \\n except the last."""
-    out = []
-    for i, line in enumerate(lines):
-        if i < len(lines) - 1:
-            out.append(line + "\n")
-        else:
-            out.append(line)
-    return out
+    """Build an nbformat source list: all lines except the last get a trailing newline."""
+    return [l + "\n" for l in lines[:-1]] + [lines[-1]]
 
 
-# ---------------------------------------------------------------------------
-# Build the cells list
-# ---------------------------------------------------------------------------
 cells = []
 
 # ── 1. Title Banner ───────────────────────────────────────────────────────
@@ -1116,36 +1086,5 @@ cells.append(md(L(
 # ---------------------------------------------------------------------------
 # Assemble the notebook and write to disk
 # ---------------------------------------------------------------------------
-notebook = {
-    "nbformat": 4,
-    "nbformat_minor": 5,
-    "metadata": {
-        "kernelspec": {
-            "display_name": "Python 3",
-            "language": "python",
-            "name": "python3"
-        },
-        "language_info": {
-            "name": "python",
-            "version": "3.10.0",
-            "mimetype": "text/x-python",
-            "file_extension": ".py",
-            "codemirror_mode": {"name": "ipython", "version": 3},
-            "pygments_lexer": "ipython3",
-            "nbconvert_exporter": "python"
-        }
-    },
-    "cells": cells
-}
 
-output_dir = os.path.dirname(os.path.abspath(__file__))
-output_path = os.path.join(output_dir, "image_segmentation_masterclass.ipynb")
-
-with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(notebook, f, indent=1, ensure_ascii=False)
-
-print(f"Notebook written to: {output_path}")
-print(f"Total cells: {len(cells)}")
-print(f"  Markdown:  {sum(1 for c in cells if c['cell_type'] == 'markdown')}")
-print(f"  Code:      {sum(1 for c in cells if c['cell_type'] == 'code')}")
-print(f"File size:   {os.path.getsize(output_path):,} bytes")
+write_notebook(cells, __file__, "image_segmentation_masterclass.ipynb")

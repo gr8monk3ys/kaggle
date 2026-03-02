@@ -1,11 +1,12 @@
 from pathlib import Path
 
+import kaggle_utils
 import dataset_optimizer
 
 
 def test_kaggle_command_falls_back_to_module_cli(monkeypatch):
-    monkeypatch.setattr(dataset_optimizer.shutil, "which", lambda _: None)
-    cmd = dataset_optimizer.kaggle_command()
+    monkeypatch.setattr(kaggle_utils.shutil, "which", lambda _: None)
+    cmd = kaggle_utils.kaggle_command()
     assert cmd[1:] == ["-m", "kaggle.cli"]
 
 

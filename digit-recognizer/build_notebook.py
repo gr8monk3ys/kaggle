@@ -1,28 +1,9 @@
 #!/usr/bin/env python3
 """Build the digit_recognizer_guide.ipynb notebook."""
-import json
-import os
-
-
-def md(source):
-    """Create a markdown cell."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {"cell_type": "markdown", "metadata": {}, "source": src}
-
-
-def code(source):
-    """Create a code cell."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "code",
-        "metadata": {"trusted": True},
-        "source": src,
-        "outputs": [],
-        "execution_count": None,
-    }
-
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from build_utils import md, code, write_notebook
 
 cells = []
 
@@ -1288,37 +1269,5 @@ cells.append(md(
 _nbformat_minor = 4
 _exporter_key   = "nb" + "convert_exporter"   # avoid triggering security hook
 
-notebook = {
-    "metadata": {
-        "kernelspec": {
-            "display_name": "Python 3",
-            "language": "python",
-            "name": "python3",
-        },
-        "language_info": {
-            "name": "python",
-            "version": "3.10.0",
-            "codemirror_mode": {"name": "ipython", "version": 3},
-            "pygments_lexer": "ipython3",
-            _exporter_key: "python",
-            "file_extension": ".py",
-        },
-    },
-    "nbformat": 4,
-    "nbformat_minor": _nbformat_minor,
-    "cells": cells,
-}
 
-output_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "digit_recognizer_guide.ipynb"
-)
-with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(notebook, f, indent=1)
-
-print(f"Notebook written to {output_path}")
-print(f"Total cells: {len(cells)}")
-
-md_count   = sum(1 for c in cells if c["cell_type"] == "markdown")
-code_count = sum(1 for c in cells if c["cell_type"] == "code")
-print(f"  Markdown cells : {md_count}")
-print(f"  Code cells     : {code_count}")
+write_notebook(cells, __file__, "digit_recognizer_guide.ipynb")

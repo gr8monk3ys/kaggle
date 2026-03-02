@@ -1,37 +1,9 @@
 #!/usr/bin/env python3
 """Build script that generates nlp_disaster_tweets_guide.ipynb (nbformat 4)."""
-
-import json
-import os
-
-
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
-
-def md(source):
-    """Return a nbformat-4 markdown cell dict."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {"cell_type": "markdown", "metadata": {}, "source": src}
-
-
-def code(source):
-    """Return a nbformat-4 code cell dict."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "code",
-        "execution_count": None,
-        "metadata": {"trusted": True},
-        "outputs": [],
-        "source": src,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Cells
-# ---------------------------------------------------------------------------
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from build_utils import md, code, write_notebook
 
 cells = []
 
@@ -1148,30 +1120,5 @@ cells.append(code(
 # Notebook assembly
 # ---------------------------------------------------------------------------
 
-notebook = {
-    "nbformat": 4,
-    "nbformat_minor": 5,
-    "metadata": {
-        "kernelspec": {
-            "display_name": "Python 3",
-            "language": "python",
-            "name": "python3",
-        },
-        "language_info": {
-            "name": "python",
-            "version": "3.10.0",
-        },
-    },
-    "cells": cells,
-}
 
-out_path = os.path.join(os.path.dirname(__file__), "nlp_disaster_tweets_guide.ipynb")
-with open(out_path, "w", encoding="utf-8") as f:
-    json.dump(notebook, f, indent=1, ensure_ascii=False)
-
-md_cells   = sum(1 for c in cells if c["cell_type"] == "markdown")
-code_cells = sum(1 for c in cells if c["cell_type"] == "code")
-print(f"Notebook written to: {out_path}")
-print(f"Total cells  : {len(cells)}")
-print(f"Markdown cells: {md_cells}")
-print(f"Code cells   : {code_cells}")
+write_notebook(cells, __file__, "nlp_disaster_tweets_guide.ipynb")

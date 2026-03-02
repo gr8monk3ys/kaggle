@@ -1,10 +1,6 @@
-import os
 import pytest
+import requests
 from unittest.mock import patch
-
-# Add scripts to path
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 
 
 def test_send_calls_telegram_api(monkeypatch):
@@ -52,3 +48,18 @@ def test_send_prints_stderr_on_api_failure(monkeypatch, capsys):
 
     captured = capsys.readouterr()
     assert "400" in captured.err or "Bad Request" in captured.err
+
+
+def test_send_handles_request_exception(monkeypatch, capsys):
+    """Network/request failures should be logged without raising."""
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "123456")
+
+    with patch("notify.requests.post", side_effect=requests.RequestException("timeout")):
+        import importlib
+        import notify
+        importlib.reload(notify)
+        notify.send("Transient failure")
+
+    captured = capsys.readouterr()
+    assert "request failed" in captured.err.lower()
