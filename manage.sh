@@ -32,6 +32,10 @@
 #   build-explore-notebooks - Generate rich EDA explore notebooks for datasets
 #   create-competition-entry - Scaffold a new competition entry from a slug
 #   metadata-tracker - Track metadata changes vs vote deltas over time
+#   upload-covers    - Upload cover images to Kaggle datasets via Playwright
+#   follow-users     - Follow Kaggle users to build visibility via Playwright
+#   upvote           - Upvote Kaggle content via Playwright
+#   post-comment     - Post comments on Kaggle threads via Playwright
 
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:$PATH"
@@ -687,6 +691,18 @@ case "${1:-status}" in
         ;;
     metadata-tracker)
         python3 metadata_tracker.py "${@:2}"
+        ;;
+    upload-covers)
+        python3 pi-automation/scripts/cover_image_upload.py "${@:2}"
+        ;;
+    follow-users)
+        python3 pi-automation/scripts/follow_users.py "${@:2}"
+        ;;
+    upvote)
+        python3 pi-automation/scripts/upvote_content.py "${@:2}"
+        ;;
+    post-comment)
+        python3 pi-automation/scripts/comment_thread.py "${@:2}"
         ;;
     help|-h|--help)
         usage
