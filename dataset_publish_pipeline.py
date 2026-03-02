@@ -7,14 +7,13 @@ import argparse
 import csv
 import io
 import json
-import re
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import dataset_usability
+from kaggle_utils import kaggle_command, summarize_subprocess_error
 
 
 BLUE = "\033[0;34m"
@@ -40,27 +39,6 @@ class PublishCandidate:
     blocked_reasons: list[str]
 
 
-def kaggle_command() -> list[str]:
-    if shutil.which("kaggle"):
-        return ["kaggle"]
-    return ["python3", "-m", "kaggle.cli"]
-
-
-def summarize_subprocess_error(*chunks: str) -> str:
-    lines: list[str] = []
-    for chunk in chunks:
-        for line in chunk.splitlines():
-            line = line.strip()
-            if line:
-                lines.append(line)
-    if not lines:
-        return "unknown error"
-    preferred = [
-        line
-        for line in lines
-        if re.search(r"(error|unauthorized|forbidden|denied|failed|exception|traceback)", line, re.IGNORECASE)
-    ]
-    return (preferred[-1] if preferred else lines[-1])[:220]
 
 
 def parse_live_refs_csv(raw_csv: str) -> set[str]:

@@ -1,58 +1,18 @@
 #!/usr/bin/env python3
 """Build script that generates gnn_practical_guide.ipynb (nbformat v4)."""
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from build_utils import md, code, write_notebook
 
-import json
-import os
-
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
-
-def md(source):
-    """Return a nbformat-v4 markdown cell dict."""
-    if isinstance(source, list):
-        source = "\n".join(source)
-    return {
-        "cell_type": "markdown",
-        "metadata": {},
-        "source": source.split("\n") if "\n" in source else [source],
-    }
-
-
-def code(source):
-    """Return a nbformat-v4 code cell dict with empty outputs."""
-    if isinstance(source, list):
-        source = "\n".join(source)
-    return {
-        "cell_type": "code",
-        "metadata": {},
-        "source": source.split("\n") if "\n" in source else [source],
-        "outputs": [],
-        "execution_count": None,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Fix cell sources so every line except the last ends with "\n"
-# (required by nbformat spec)
-# ---------------------------------------------------------------------------
 
 def _fix_source(lines):
-    """Ensure every line except the last carries a trailing newline."""
+    """Ensure every line except the last carries a trailing newline (nbformat spec)."""
     if not lines:
         return lines
-    fixed = []
-    for i, line in enumerate(lines):
-        if i < len(lines) - 1:
-            if not line.endswith("\n"):
-                line = line + "\n"
-        fixed.append(line)
-    return fixed
+    return [l if i == len(lines) - 1 else (l if l.endswith("\n") else l + "\n")
+            for i, l in enumerate(lines)]
 
-
-# ---------------------------------------------------------------------------
-# Build the cells list
-# ---------------------------------------------------------------------------
 
 cells = []
 
@@ -875,34 +835,5 @@ cells.append(md([
 for cell in cells:
     cell["source"] = _fix_source(cell["source"])
 
-notebook = {
-    "nbformat": 4,
-    "nbformat_minor": 5,
-    "metadata": {
-        "kernelspec": {
-            "display_name": "Python 3",
-            "language": "python",
-            "name": "python3"
-        },
-        "language_info": {
-            "name": "python",
-            "version": "3.10.0"
-        }
-    },
-    "cells": cells,
-}
 
-# ---------------------------------------------------------------------------
-# Write the notebook file
-# ---------------------------------------------------------------------------
-
-output_dir = os.path.dirname(os.path.abspath(__file__))
-output_path = os.path.join(output_dir, "gnn_practical_guide.ipynb")
-
-with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(notebook, f, indent=1, ensure_ascii=False)
-
-print(f"Notebook written to: {output_path}")
-print(f"Total cells: {len(cells)}")
-print(f"  Markdown cells: {sum(1 for c in cells if c['cell_type'] == 'markdown')}")
-print(f"  Code cells:     {sum(1 for c in cells if c['cell_type'] == 'code')}")
+write_notebook(cells, __file__, "gnn_practical_guide.ipynb")

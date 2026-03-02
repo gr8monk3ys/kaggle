@@ -1,22 +1,22 @@
 {
-  "id": "lorenzoscaturchio/github-repo-metrics-exploration",
-  "title": "GitHub Analytics: Predict Repository Popularity",
+  "id": "lorenzoscaturchio/github-repo-metrics-explorer-v2",
+  "title": "Github Repo Metrics Explorer V2",
   "code_file": "explore.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": false,
   "enable_gpu": false,
   "enable_internet": false,
-  "dataset_sources": ["lorenzoscaturchio/github-repo-metrics"],
+  "dataset_sources": [
+    "lorenzoscaturchio/github-repo-metrics"
+  ],
   "competition_sources": [],
   "kernel_sources": [],
   "keywords": [
-    "github",
-    "open source",
+    "software",
+    "programming",
+    "beginner",
     "regression",
-    "star prediction",
-    "eda",
-    "machine learning",
-    "software engineering"
+    "classification"
   ]
 }

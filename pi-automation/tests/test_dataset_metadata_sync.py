@@ -1,10 +1,11 @@
 import json
 import sys
+from datetime import date
+import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, "pi-automation/scripts")
 
 import dataset_metadata_sync as dms
 

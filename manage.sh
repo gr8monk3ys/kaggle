@@ -130,6 +130,13 @@ Commands:
                              Scaffold a new competition entry from a competition slug
   metadata-tracker <snapshot|annotate|report> [args...]
                              Track metadata changes vs vote deltas over time
+                             Detect stale notebooks, datasets, and outdated library versions
+  build-explore-notebooks [--push]
+                             Generate rich EDA explore notebooks for all datasets
+  create-competition-entry <slug> [--gpu] [--push]
+                             Scaffold a new competition entry from a competition slug
+  metadata-tracker <snapshot|annotate|report> [args...]
+                             Track metadata changes vs vote deltas over time
   help                      Show this message
 EOF
 }
@@ -545,6 +552,10 @@ cmd_build_all() {
 
 cmd_dataset_ui_sync() {
     python3 pi-automation/scripts/dataset_metadata_sync.py "$@"
+}
+
+cmd_stale_content() {
+    python3 stale_content_detector.py "$@"
 }
 
 # Main dispatcher
