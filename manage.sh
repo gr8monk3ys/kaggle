@@ -7,6 +7,7 @@
 #   push-all        - Push all notebooks and datasets to Kaggle
 #   push-nb         - Push all notebooks
 #   push-ds         - Push all datasets
+#   push-explore    - Push all dataset explore notebooks
 #   push            - Push a specific directory (e.g., ./manage.sh push med-gemma-challenge)
 #   validate        - Validate all kernel-metadata.json files before pushing
 #   votes           - Show vote counts with medal threshold dashboard
@@ -80,13 +81,14 @@ color_reset='\033[0m'
 
 usage() {
     cat <<EOF
-Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|stale-content|build-explore-notebooks|create-competition-entry|metadata-tracker|help}
+Usage: $0 {status|push-all|push-nb|push-ds|push-explore|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|stale-content|build-explore-notebooks|create-competition-entry|metadata-tracker|help}
 
 Commands:
   status                    Show notebooks/datasets and Kaggle account status
   push-all                  Push all notebooks and datasets
   push-nb                   Push all notebooks
   push-ds                   Push all datasets
+  push-explore              Push all dataset explore notebooks (datasets/*/kernel-metadata.json)
   push <dir>                Push a specific notebook/dataset directory
   validate [--pre-push]     Validate all kernel-metadata.json files (JSON, required fields, file existence)
   votes                     Show vote counts with bronze/silver/gold medal threshold dashboard
@@ -189,6 +191,7 @@ cmd_status() {
 
 cmd_push_all() {
     cmd_push_nb
+    cmd_push_explore
     cmd_push_ds
 }
 
@@ -219,6 +222,38 @@ cmd_push_nb() {
     done
     echo ""
     echo -e "Results: ${color_green}$success succeeded${color_reset}, ${color_red}$failed failed${color_reset}"
+}
+
+cmd_push_explore() {
+    echo -e "${color_blue}=== Pushing All Dataset Explore Notebooks ===${color_reset}"
+    echo -e "${color_yellow}Running pre-push validation...${color_reset}"
+    if ! cmd_validate; then
+        echo -e "${color_red}Fix validation errors before pushing.${color_reset}"
+        return 1
+    fi
+    echo ""
+    local success=0
+    local failed=0
+    local count=0
+    while IFS= read -r meta; do
+        local dir
+        dir="$(dirname "$meta")"
+        local rel="${dir#$KAGGLE_DIR/}"
+        ((count += 1))
+        echo -n "  Pushing $rel (explore)... "
+        if output=$(kaggle_cli kernels push -p "$dir" 2>&1); then
+            echo -e "${color_green}OK${color_reset}"
+            ((success += 1))
+        else
+            echo -e "${color_red}FAILED${color_reset}: $output"
+            ((failed += 1))
+        fi
+    done < <(find "$KAGGLE_DIR/datasets" -maxdepth 2 -name "kernel-metadata.json" | sort)
+    if [[ $count -eq 0 ]]; then
+        echo -e "  ${color_yellow}No explore notebooks found under datasets/${color_reset}"
+    fi
+    echo ""
+    echo -e "Results: ${color_green}$success succeeded${color_reset}, ${color_red}$failed failed${color_reset} (of $count explore notebooks)"
 }
 
 cmd_push_ds() {
@@ -585,6 +620,10 @@ case "${1:-status}" in
     push-ds)
         ensure_kaggle_ready
         cmd_push_ds
+        ;;
+    push-explore)
+        ensure_kaggle_ready
+        cmd_push_explore
         ;;
     push)
         ensure_kaggle_ready
