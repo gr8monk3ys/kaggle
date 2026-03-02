@@ -69,8 +69,18 @@ def kaggle_rating_to_10(rating: float) -> float:
 
 
 def parse_kaggle_datasets_csv(raw_csv: str) -> dict[str, float]:
+    lines = raw_csv.splitlines()
+    start_idx = None
+    for idx, line in enumerate(lines):
+        if line.strip().lower().startswith("ref,"):
+            start_idx = idx
+            break
+    if start_idx is None:
+        return {}
+
     ratings: dict[str, float] = {}
-    reader = csv.DictReader(io.StringIO(raw_csv))
+    csv_payload = "\n".join(lines[start_idx:]) + "\n"
+    reader = csv.DictReader(io.StringIO(csv_payload))
     for row in reader:
         ref = str(row.get("ref", "")).strip().lower()
         if not ref:
