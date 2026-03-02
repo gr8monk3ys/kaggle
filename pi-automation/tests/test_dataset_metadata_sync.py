@@ -267,3 +267,30 @@ def test_fill_file_description_editor_handles_create_then_textarea():
     page = _FileDescriptionPage()
     assert dms.fill_file_description_editor(page, "Generated file summary", 1000) is True
     assert page.editor.filled_value == "Generated file summary"
+
+
+def test_failed_sections_filters_only_failed():
+    result = dms.DatasetResult(
+        dataset_ref="owner/ds",
+        editor_url="https://example.com",
+        sections=[
+            dms.SectionResult(name="Authors", status="updated"),
+            dms.SectionResult(name="Coverage", status="failed"),
+            dms.SectionResult(name="License", status="skipped"),
+            dms.SectionResult(name="Provenance", status="failed"),
+        ],
+    )
+    failed = dms.failed_sections(result)
+    assert [item.name for item in failed] == ["Coverage", "Provenance"]
+
+
+def test_parse_args_retry_defaults():
+    args = dms.parse_args([])
+    assert args.retry_failed_datasets == 1
+    assert args.retry_delay_s == 5.0
+
+
+def test_parse_args_retry_overrides():
+    args = dms.parse_args(["--retry-failed-datasets", "3", "--retry-delay-s", "1.5"])
+    assert args.retry_failed_datasets == 3
+    assert args.retry_delay_s == 1.5
