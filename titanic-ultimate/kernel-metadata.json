@@ -1,6 +1,6 @@
 {
-  "id": "lorenzoscaturchio/titanic-ultimate-guide-top-5-percent",
-  "title": "Titanic Ultimate Guide: From Zero to Top 5%",
+  "id": "lorenzoscaturchio/titanic-ml-guide-zero-to-top-5-accuracy",
+  "title": "Titanic ML Guide: Zero to Top 5% Accuracy",
   "code_file": "titanic_ultimate_guide.ipynb",
   "language": "python",
   "kernel_type": "notebook",
@@ -10,5 +10,5 @@
   "competition_sources": ["titanic"],
   "dataset_sources": [],
   "kernel_sources": [],
-  "keywords": ["beginner", "classification", "tutorial", "feature engineering", "ensembling"]
+  "keywords": ["beginner", "classification", "ensembling"]
 }

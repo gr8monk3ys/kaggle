@@ -1,13 +1,13 @@
 {
-  "id": "lorenzoscaturchio/nlp-text-classification-complete-pipeline",
-  "title": "NLP Text Classification: TF-IDF to BERT",
+  "id": "lorenzoscaturchio/nlp-classification-pipeline-tf-idf-to-bert",
+  "title": "NLP Classification Pipeline: TF-IDF to BERT",
   "code_file": "nlp_text_classification.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": false,
   "enable_gpu": true,
   "enable_internet": true,
-  "keywords": ["nlp", "text classification", "bert", "tf-idf", "transformers", "machine learning", "tutorial", "natural language processing"],
+  "keywords": ["nlp", "classification", "bert", "transformers", "deep learning"],
   "dataset_sources": [],
   "kernel_sources": [],
   "competition_sources": []

@@ -42,6 +42,14 @@ KAGGLE_DIR="$(cd "$(dirname "$0")" && pwd)"
 KAGGLE_CREDENTIALS_DEFAULT="${HOME}/.kaggle/kaggle.json"
 KAGGLE_CREDENTIALS_LOCAL="${KAGGLE_DIR}/kaggle.json"
 
+# Source .env if present (for KAGGLE_EMAIL, KAGGLE_PASSWORD, etc.)
+if [[ -f "$KAGGLE_DIR/pi-automation/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$KAGGLE_DIR/pi-automation/.env"
+    set +a
+fi
+
 # Auto-discover notebook directories: any dir with kernel-metadata.json, excluding datasets/
 discover_notebook_dirs() {
     while IFS= read -r meta; do
@@ -408,7 +416,12 @@ CYAN   = "\033[0;36m"
 RESET  = "\033[0m"
 
 raw_lines = os.environ.get("RAW_CSV", "")
-rows = list(csv.DictReader(io.StringIO(raw_lines)))
+# Strip non-CSV warning lines the kaggle CLI writes to stdout
+csv_lines = "\n".join(
+    line for line in raw_lines.splitlines()
+    if not line.startswith("Warning:") and not line.startswith("/")
+)
+rows = list(csv.DictReader(io.StringIO(csv_lines)))
 
 if not rows:
     print("No kernels found.")
@@ -416,11 +429,11 @@ if not rows:
 
 # Find the votes column (different kaggle CLI versions use different names)
 vote_col = next(
-    (k for k in (rows[0] if rows else {}) if "vote" in k.lower() or "upvote" in k.lower()),
+    (k for k in (rows[0] if rows else {}) if k and ("vote" in k.lower() or "upvote" in k.lower())),
     None,
 )
 ref_col = next(
-    (k for k in (rows[0] if rows else {}) if "ref" in k.lower() or "title" in k.lower()),
+    (k for k in (rows[0] if rows else {}) if k and ("ref" in k.lower() or "title" in k.lower())),
     "ref",
 )
 
