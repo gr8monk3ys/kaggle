@@ -75,4 +75,10 @@ jobs:
           printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
           PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 doctor --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/doctor.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --scope all --min-score 95 --fail-under-threshold >/tmp/quality.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --strict --fail-under 85 >/tmp/dataset-usability.log
+          if [ -f discussion_scheduler.py ]; then
+            PYTHONPYCACHEPREFIX=/tmp/pycache python discussion_scheduler.py --health-check >/tmp/discussion-health.log
+          else
+            echo "discussion_scheduler.py --health-check skipped (file not present on this branch)." >/tmp/discussion-health.log
+          fi
           PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log
