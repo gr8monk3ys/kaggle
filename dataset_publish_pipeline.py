@@ -64,8 +64,18 @@ def summarize_subprocess_error(*chunks: str) -> str:
 
 
 def parse_live_refs_csv(raw_csv: str) -> set[str]:
+    lines = raw_csv.splitlines()
+    start_idx = None
+    for idx, line in enumerate(lines):
+        if line.strip().lower().startswith("ref,"):
+            start_idx = idx
+            break
+    if start_idx is None:
+        return set()
+
     refs: set[str] = set()
-    reader = csv.DictReader(io.StringIO(raw_csv))
+    csv_payload = "\n".join(lines[start_idx:]) + "\n"
+    reader = csv.DictReader(io.StringIO(csv_payload))
     for row in reader:
         ref = str(row.get("ref", "")).strip().lower()
         if ref:

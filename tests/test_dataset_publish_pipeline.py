@@ -35,6 +35,12 @@ def test_parse_live_refs_csv_extracts_refs():
     assert refs == {"owner/a", "owner/b"}
 
 
+def test_parse_live_refs_csv_ignores_preamble_warning():
+    raw = "Warning: outdated API\nref,title\nowner/a,A\n"
+    refs = pipeline.parse_live_refs_csv(raw)
+    assert refs == {"owner/a"}
+
+
 def test_summarize_subprocess_error_prefers_real_error_line():
     message = pipeline.summarize_subprocess_error(
         "warning one\nwarning two\n",

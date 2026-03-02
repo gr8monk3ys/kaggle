@@ -336,6 +336,16 @@ def test_fetch_kaggle_live_ratings_filters_non_owner_refs(monkeypatch):
     assert ratings == {"owner/a": 0.71, "owner/c": 0.81}
 
 
+def test_parse_kaggle_datasets_csv_ignores_preamble_warning():
+    raw = (
+        "Warning: Looks like you're using an outdated API Version\n"
+        "ref,title,size,lastUpdated,downloadCount,voteCount,usabilityRating\n"
+        "u/a,A,1,2026-02-24,0,0,0.81\n"
+    )
+    ratings = dataset_usability.parse_kaggle_datasets_csv(raw)
+    assert ratings == {"u/a": 0.81}
+
+
 def test_main_live_fetch_falls_back_to_csv_snapshot(tmp_path, monkeypatch):
     description = "Detailed description. " * 40
     readme = "\n".join(

@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import date
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -173,6 +174,30 @@ def locator_count(locator) -> int:
         return 0
 
 
+def first_available(*locators):
+    for locator in locators:
+        if locator is not None and locator_count(locator):
+            return locator
+    return None
+
+
+def is_login_prompt_visible(page) -> bool:
+    login_markers = (
+        page.get_by_role("link", name=re.compile(r"^sign in$", re.IGNORECASE)).first,
+        page.get_by_role("button", name=re.compile(r"^sign in$", re.IGNORECASE)).first,
+        page.get_by_role("link", name=re.compile(r"^register$", re.IGNORECASE)).first,
+        page.locator('a[href*="/account/login"]').first,
+    )
+    return any(locator_count(marker) for marker in login_markers)
+
+
+def is_authenticated(page) -> bool:
+    url = str(getattr(page, "url", "") or "").lower()
+    if "/account/login" in url:
+        return False
+    return not is_login_prompt_visible(page)
+
+
 def section_visible(page, title: str) -> bool:
     heading = page.get_by_role("heading", name=re.compile(rf"^{re.escape(title)}$", re.IGNORECASE)).first
     if locator_count(heading):
@@ -180,21 +205,51 @@ def section_visible(page, title: str) -> bool:
     return locator_count(page.get_by_text(re.compile(rf"^{re.escape(title)}$", re.IGNORECASE)).first) > 0
 
 
+def metadata_area_visible(page) -> bool:
+    expand_all = page.get_by_role(
+        "button",
+        name=re.compile(r"(expand|collapse)\s+all\s+metadata\s+sections", re.IGNORECASE),
+    ).first
+    if locator_count(expand_all):
+        return True
+    metadata_heading = page.get_by_role("heading", name=re.compile(r"^metadata$", re.IGNORECASE)).first
+    return locator_count(metadata_heading) > 0 and any(section_visible(page, title) for title in SECTION_TITLES)
+
+
+def wait_for_metadata_area(page, timeout_ms: int) -> bool:
+    deadline = time.time() + max(timeout_ms, 250) / 1000.0
+    while time.time() < deadline:
+        if metadata_area_visible(page):
+            return True
+        page.wait_for_timeout(250)
+    return metadata_area_visible(page)
+
+
 def find_editor_url(page, dataset_ref: str, timeout_ms: int) -> str:
     urls = [
         f"https://www.kaggle.com/datasets/{dataset_ref}/edit",
         f"https://www.kaggle.com/datasets/{dataset_ref}/settings",
+        f"https://www.kaggle.com/datasets/{dataset_ref}/metadata",
         f"https://www.kaggle.com/datasets/{dataset_ref}",
     ]
     for url in urls:
         page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
         page.wait_for_timeout(500)
-        if any(section_visible(page, title) for title in SECTION_TITLES):
+        if wait_for_metadata_area(page, min(timeout_ms, 4000)) and is_authenticated(page):
             return page.url
 
     # Last attempt: dataset page then click an edit/settings affordance.
     page.goto(f"https://www.kaggle.com/datasets/{dataset_ref}", wait_until="domcontentloaded", timeout=timeout_ms)
+    menu_button = first_available(
+        page.get_by_role("button", name=re.compile(r"more options for this dataset", re.IGNORECASE)).first,
+        page.get_by_role("button", name=re.compile(r"more options", re.IGNORECASE)).first,
+    )
+    if menu_button is not None:
+        menu_button.click(timeout=timeout_ms)
+        page.wait_for_timeout(350)
+
     edit_candidates = (
+        page.get_by_role("menuitem", name=re.compile(r"edit|settings|metadata", re.IGNORECASE)).first,
         page.get_by_role("button", name=re.compile(r"edit|settings|metadata", re.IGNORECASE)).first,
         page.get_by_role("link", name=re.compile(r"edit|settings|metadata", re.IGNORECASE)).first,
     )
@@ -202,33 +257,67 @@ def find_editor_url(page, dataset_ref: str, timeout_ms: int) -> str:
         if locator_count(candidate):
             candidate.click(timeout=timeout_ms)
             page.wait_for_timeout(800)
-            if any(section_visible(page, title) for title in SECTION_TITLES):
+            if wait_for_metadata_area(page, min(timeout_ms, 4000)) and is_authenticated(page):
                 return page.url
 
+    if not is_authenticated(page):
+        raise RuntimeError(
+            "Kaggle session appears signed out. Re-run with --manual-login (headed) to refresh storage state."
+        )
     raise RuntimeError(f"Could not find metadata editor for {dataset_ref}")
 
 
 def maybe_login(page, *, email: str, password: str, manual_login: bool, timeout_ms: int) -> None:
+    page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
+    page.wait_for_timeout(500)
+    if is_authenticated(page):
+        return
+
     page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
+    page.wait_for_timeout(500)
+    if is_authenticated(page):
+        return
 
-    email_input = page.locator('input[name="email"]').first
-    password_input = page.locator('input[name="password"]').first
-    if not (locator_count(email_input) and locator_count(password_input)):
-        return  # likely already authenticated
+    email_input = first_available(
+        page.locator('input[name="email"]').first,
+        page.locator('input[type="email"]').first,
+    )
+    password_input = first_available(
+        page.locator('input[name="password"]').first,
+        page.locator('input[type="password"]').first,
+    )
 
-    if email and password:
+    if email and password and email_input is not None and password_input is not None:
         email_input.fill(email, timeout=timeout_ms)
         password_input.fill(password, timeout=timeout_ms)
-        page.locator('button[type="submit"]').first.click(timeout=timeout_ms)
+        submit_button = first_available(
+            page.locator('button[type="submit"]').first,
+            page.get_by_role("button", name=re.compile(r"sign in|log in", re.IGNORECASE)).first,
+        )
+        if submit_button is not None:
+            submit_button.click(timeout=timeout_ms)
+        else:
+            page.keyboard.press("Enter")
         page.wait_for_timeout(1500)
-        return
+        page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(500)
+        if is_authenticated(page):
+            return
 
     if manual_login:
+        page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
         print("Manual login required: complete Kaggle login in the opened browser window.")
         input("Press Enter after login completes...")
-        return
+        page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(500)
+        if is_authenticated(page):
+            return
+        raise RuntimeError("Kaggle login still appears unauthenticated after manual login.")
 
-    raise RuntimeError("Kaggle login required but no credentials provided. Set KAGGLE_EMAIL and KAGGLE_PASSWORD.")
+    raise RuntimeError(
+        "Kaggle login required but session appears signed out. "
+        "Provide KAGGLE_EMAIL/KAGGLE_PASSWORD or run with --manual-login."
+    )
 
 
 def find_section_container(page, section_title: str):
@@ -243,24 +332,43 @@ def find_section_container(page, section_title: str):
 
 def open_section_editor(page, section_title: str, timeout_ms: int):
     container = find_section_container(page, section_title)
+    section_token = re.escape(section_title)
+    named_action = re.compile(
+        rf"(edit|expand|add).*\b{section_token}\b|\b{section_token}\b.*(edit|expand|add)",
+        re.IGNORECASE,
+    )
+    direct_actions = (
+        re.compile(rf"^edit\s+{section_token}$", re.IGNORECASE),
+        re.compile(rf"^expand\s+{section_token}$", re.IGNORECASE),
+        re.compile(rf"^add\s+{section_token}$", re.IGNORECASE),
+    )
     candidates = []
     if container is not None:
-        candidates.append(container.get_by_role("button", name=re.compile(r"^edit$", re.IGNORECASE)).first)
+        candidates.extend(
+            [
+                container.get_by_role("button", name=re.compile(r"^edit$", re.IGNORECASE)).first,
+                container.get_by_role("button", name=re.compile(r"^expand$", re.IGNORECASE)).first,
+                container.get_by_role("button", name=re.compile(r"^add$", re.IGNORECASE)).first,
+                container.get_by_role("button", name=named_action).first,
+            ]
+        )
+        for pattern in direct_actions:
+            candidates.append(container.get_by_role("button", name=pattern).first)
     candidates.extend(
         [
-            page.get_by_role(
-                "button",
-                name=re.compile(rf"edit.*{re.escape(section_title)}|{re.escape(section_title)}.*edit", re.IGNORECASE),
-            ).first,
+            page.get_by_role("button", name=named_action).first,
             page.get_by_role("button", name=re.compile(r"^edit$", re.IGNORECASE)).first,
         ]
     )
+    for pattern in direct_actions:
+        candidates.append(page.get_by_role("button", name=pattern).first)
     for candidate in candidates:
         if locator_count(candidate):
             candidate.click(timeout=timeout_ms)
             page.wait_for_timeout(400)
-            return container
-    return None
+            refreshed = find_section_container(page, section_title)
+            return refreshed if refreshed is not None else container
+    return container
 
 
 def active_form_scope(page, section_container):
@@ -308,12 +416,12 @@ def save_section(page, scope, apply: bool, timeout_ms: int) -> bool:
 def sync_authors(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
     container = open_section_editor(page, "Authors", timeout_ms)
     if container is None:
-        return SectionResult(name="Authors", status="skipped", detail="edit button not found")
+        return SectionResult(name="Authors", status="failed" if apply else "skipped", detail="section control not found")
     scope = active_form_scope(page, container)
     filled_name = fill_field(scope, ["Author Name", "Author"], payload.author_name, timeout_ms)
     filled_bio = fill_field(scope, ["Bio"], payload.author_bio, timeout_ms)
     if not (filled_name or filled_bio):
-        return SectionResult(name="Authors", status="skipped", detail="fields not found")
+        return SectionResult(name="Authors", status="failed" if apply else "skipped", detail="fields not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="Authors", status="failed", detail="save action not found")
     return SectionResult(name="Authors", status="updated" if apply else "planned")
@@ -322,14 +430,14 @@ def sync_authors(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) 
 def sync_coverage(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
     container = open_section_editor(page, "Coverage", timeout_ms)
     if container is None:
-        return SectionResult(name="Coverage", status="skipped", detail="edit button not found")
+        return SectionResult(name="Coverage", status="failed" if apply else "skipped", detail="section control not found")
     scope = active_form_scope(page, container)
     filled = False
     filled |= fill_field(scope, ["Temporal Coverage Start Date", "Start Date"], payload.temporal_start_date, timeout_ms)
     filled |= fill_field(scope, ["Temporal Coverage End Date", "End Date"], payload.temporal_end_date, timeout_ms)
     filled |= fill_field(scope, ["Geospatial Coverage"], payload.geospatial_coverage, timeout_ms)
     if not filled:
-        return SectionResult(name="Coverage", status="skipped", detail="fields not found")
+        return SectionResult(name="Coverage", status="failed" if apply else "skipped", detail="fields not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="Coverage", status="failed", detail="save action not found")
     return SectionResult(name="Coverage", status="updated" if apply else "planned")
@@ -340,11 +448,15 @@ def sync_doi(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> S
         return SectionResult(name="DOI Citation", status="skipped", detail="no DOI value in metadata")
     container = open_section_editor(page, "DOI Citation", timeout_ms)
     if container is None:
-        return SectionResult(name="DOI Citation", status="skipped", detail="edit button not found")
+        return SectionResult(
+            name="DOI Citation",
+            status="failed" if apply else "skipped",
+            detail="section control not found",
+        )
     scope = active_form_scope(page, container)
     filled = fill_field(scope, ["DOI \\(Digital Object Identifier\\)", "DOI"], payload.doi, timeout_ms)
     if not filled:
-        return SectionResult(name="DOI Citation", status="skipped", detail="DOI field not found")
+        return SectionResult(name="DOI Citation", status="failed" if apply else "skipped", detail="DOI field not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="DOI Citation", status="failed", detail="save action not found")
     return SectionResult(name="DOI Citation", status="updated" if apply else "planned")
@@ -353,14 +465,14 @@ def sync_doi(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> S
 def sync_provenance(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int) -> SectionResult:
     container = open_section_editor(page, "Provenance", timeout_ms)
     if container is None:
-        return SectionResult(name="Provenance", status="skipped", detail="edit button not found")
+        return SectionResult(name="Provenance", status="failed" if apply else "skipped", detail="section control not found")
     scope = active_form_scope(page, container)
     sources_text = "\n".join(payload.sources)
     filled = False
     filled |= fill_field(scope, ["Sources"], sources_text, timeout_ms)
     filled |= fill_field(scope, ["Collection Methodology"], payload.collection_methodology, timeout_ms)
     if not filled:
-        return SectionResult(name="Provenance", status="skipped", detail="fields not found")
+        return SectionResult(name="Provenance", status="failed" if apply else "skipped", detail="fields not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="Provenance", status="failed", detail="save action not found")
     return SectionResult(name="Provenance", status="updated" if apply else "planned")
@@ -372,11 +484,11 @@ def sync_citations(page, payload: DatasetUiPayload, apply: bool, timeout_ms: int
         return SectionResult(name="Citations", status="skipped", detail="no citation values in metadata")
     container = open_section_editor(page, "Citations", timeout_ms)
     if container is None:
-        return SectionResult(name="Citations", status="skipped", detail="edit button not found")
+        return SectionResult(name="Citations", status="failed" if apply else "skipped", detail="section control not found")
     scope = active_form_scope(page, container)
     filled = fill_field(scope, ["Citations", "Citation"], citation_text, timeout_ms)
     if not filled:
-        return SectionResult(name="Citations", status="skipped", detail="citation field not found")
+        return SectionResult(name="Citations", status="failed" if apply else "skipped", detail="citation field not found")
     if not save_section(page, scope, apply, timeout_ms):
         return SectionResult(name="Citations", status="failed", detail="save action not found")
     return SectionResult(name="Citations", status="updated" if apply else "planned")
@@ -430,6 +542,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def storage_state_has_kaggle_cookie(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        payload = load_json_object(path)
+    except Exception:
+        return False
+    cookies = payload.get("cookies")
+    if not isinstance(cookies, list):
+        return False
+    for item in cookies:
+        if isinstance(item, dict) and "kaggle.com" in str(item.get("domain", "")).lower():
+            return True
+    return False
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     dataset_dirs = parse_comma_set(args.dataset)
@@ -454,10 +582,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\nPlan written: {args.report_json}")
         return 0
 
+    state_path = args.storage_state.resolve()
+    if (
+        not args.email.strip()
+        and not args.password.strip()
+        and not args.manual_login
+        and not storage_state_has_kaggle_cookie(state_path)
+    ):
+        raise SystemExit(
+            "Kaggle login required: storage state has no Kaggle auth cookies and --no-manual-login was used. "
+            "Run once with --headed --manual-login to refresh login state."
+        )
+
     sync_playwright, PlaywrightTimeout = require_playwright()
     results: list[DatasetResult] = []
     with sync_playwright() as p:
-        state_path = args.storage_state.resolve()
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_arg = str(state_path) if state_path.exists() else None
         browser = p.chromium.launch(headless=not args.headed, slow_mo=args.slow_mo_ms)
