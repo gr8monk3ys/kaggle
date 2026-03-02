@@ -1,4 +1,14 @@
 {
-  "description": "Content URLs to upvote. Add items manually as you discover quality content.",
-  "items": []
+  "description": "Content URLs to upvote. Curated from top notebooks in active competitions.",
+  "source": "kaggle kernels list --competition <slug> --sort-by voteCount, 2026-03-02",
+  "items": [
+    {"url": "https://www.kaggle.com/code/ekrembayar/store-sales-ts-forecasting-a-comprehensive-guide", "type": "notebook", "note": "Store Sales top notebook, 2871 votes"},
+    {"url": "https://www.kaggle.com/code/samuelcortinhas/spaceship-titanic-a-complete-guide", "type": "notebook", "note": "Spaceship Titanic guide, 1982 votes"},
+    {"url": "https://www.kaggle.com/code/gunesevitan/nlp-with-disaster-tweets-eda-cleaning-and-bert", "type": "notebook", "note": "NLP Getting Started BERT, 4453 votes"},
+    {"url": "https://www.kaggle.com/code/andreshg/nlp-glove-bert-tf-idf-lstm-explained", "type": "notebook", "note": "NLP explained, 1541 votes"},
+    {"url": "https://www.kaggle.com/code/ferdinandberr/darts-forecasting-deep-learning-global-models", "type": "notebook", "note": "Darts forecasting, 678 votes"},
+    {"url": "https://www.kaggle.com/code/arunklenin/space-titanic-eda-advanced-feature-engineering", "type": "notebook", "note": "Feature engineering, 662 votes"},
+    {"url": "https://www.kaggle.com/code/faressayah/natural-language-processing-nlp-for-beginners", "type": "notebook", "note": "NLP for beginners, 1406 votes"},
+    {"url": "https://www.kaggle.com/code/ivanlydkin/time-series-course-a-practical-guide", "type": "notebook", "note": "Time series guide, 503 votes"}
+  ]
 }

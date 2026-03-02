@@ -1,4 +1,36 @@
 {
-  "description": "Kaggle usernames to follow. Curated from competition leaderboards and active discussion contributors.",
-  "users": []
+  "description": "Kaggle usernames to follow. Curated from competition leaderboards and active notebook authors (100-2000 vote range, recently active).",
+  "source": "kaggle kernels list --competition <slug> --sort-by voteCount, 2026-03-02",
+  "users": [
+    "ekrembayar",
+    "kashishrastogi",
+    "ferdinandberr",
+    "ivanlydkin",
+    "samuelcortinhas",
+    "arunklenin",
+    "viktortaran",
+    "lazer999",
+    "kdsharma",
+    "azminetoushikwasi",
+    "bhatnagardaksh",
+    "fernaandodantas",
+    "chanchal24",
+    "andreshg",
+    "vbmokin",
+    "faressayah",
+    "datafan07",
+    "nkitgupta",
+    "swarnabha",
+    "neerajmohan",
+    "marcovasquez",
+    "hamditarek",
+    "odins0n",
+    "hardikgarg03",
+    "maricinnamon",
+    "chongzhenjie",
+    "computervisi",
+    "arootda",
+    "eisgandar",
+    "usharengaraju"
+  ]
 }
