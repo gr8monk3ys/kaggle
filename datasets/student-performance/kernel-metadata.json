@@ -1,0 +1,22 @@
+{
+  "id": "lorenzoscaturchio/student-academic-performance-eda",
+  "title": "Student Academic Performance EDA",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "lorenzoscaturchio/student-academic-performance-dataset"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "keywords": [
+    "education",
+    "classification",
+    "regression",
+    "student analytics",
+    "eda"
+  ]
+}
