@@ -20,6 +20,72 @@ class _FakeLocator:
         return self._count
 
 
+class _EditableLocator(_FakeLocator):
+    def __init__(self, count: int = 0, *, fill_error: bool = False):
+        super().__init__(count=count)
+        self.fill_error = fill_error
+        self.filled_value: str | None = None
+
+    def fill(self, value: str, timeout=None):
+        if self.fill_error:
+            raise RuntimeError("not editable")
+        self.filled_value = value
+
+    def click(self, timeout=None):
+        return None
+
+    def press(self, key: str, timeout=None):
+        return None
+
+    def type(self, value: str, timeout=None):
+        self.filled_value = value
+
+
+class _FieldScope:
+    def __init__(self, label_locator: _EditableLocator, textbox_locator: _EditableLocator):
+        self._label_locator = label_locator
+        self._textbox_locator = textbox_locator
+
+    def get_by_label(self, pattern):
+        return self._label_locator
+
+    def get_by_role(self, role: str, name=None):
+        if role == "textbox":
+            return self._textbox_locator
+        return _FakeLocator(0)
+
+
+class _CreateButtonLocator(_EditableLocator):
+    def __init__(self, page):
+        super().__init__(count=1)
+        self._page = page
+
+    def click(self, timeout=None):
+        self._page.created = True
+
+
+class _FileDescriptionPage:
+    def __init__(self):
+        self.created = False
+        self.editor = _EditableLocator(count=1)
+        self.create_button = _CreateButtonLocator(self)
+
+    def get_by_role(self, role: str, name=None):
+        if role == "textbox":
+            return _FakeLocator(0)
+        if role == "button":
+            return self.create_button
+        return _FakeLocator(0)
+
+    def locator(self, selector: str):
+        if "textarea" in selector and self.created:
+            return self.editor
+        return _FakeLocator(0)
+
+    def wait_for_timeout(self, timeout_ms: int):
+        return None
+
+
 class _FakePage:
     def __init__(self, *, url: str, signed_out: bool):
         self.url = url
@@ -56,6 +122,20 @@ def test_build_payload_defaults_and_citation():
             "sources": ["Script A"],
             "collection_methodology": "Generated",
         },
+        "resources": [
+            {
+                "path": "data.csv",
+                "description": "Synthetic sample file",
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "feature_a",
+                            "description": "Feature A value",
+                        }
+                    ]
+                },
+            }
+        ],
     }
 
     payload = dms.build_payload(meta, "sample")
@@ -69,6 +149,10 @@ def test_build_payload_defaults_and_citation():
     assert payload.doi == ""
     assert payload.sources == ["Script A"]
     assert payload.collection_methodology == "Generated"
+    assert payload.license_name == "GPL-3.0"
+    assert payload.expected_update_frequency == "Monthly"
+    assert payload.resource_descriptions == [("data.csv", "Synthetic sample file")]
+    assert payload.column_descriptions == {"data.csv": {"feature_a": "Feature A value"}}
     assert payload.citations == [
         f"Scaturchio, Lorenzo ({date.today().year}). Sample Dataset. Kaggle Dataset. "
         "https://www.kaggle.com/datasets/owner/sample-dataset"
@@ -79,6 +163,18 @@ def test_build_payload_uses_force_doi():
     meta = {"id": "owner/ds", "title": "T"}
     payload = dms.build_payload(meta, "ds", force_doi="10.1234/example.doi")
     assert payload.doi == "10.1234/example.doi"
+
+
+def test_build_payload_uses_license_and_update_frequency():
+    meta = {
+        "id": "owner/ds",
+        "title": "Dataset",
+        "licenses": [{"name": "MIT"}],
+        "updateFrequency": "Weekly",
+    }
+    payload = dms.build_payload(meta, "ds")
+    assert payload.license_name == "MIT"
+    assert payload.expected_update_frequency == "Weekly"
 
 
 def test_discover_payloads_filters_dirs_and_refs(tmp_path: Path):

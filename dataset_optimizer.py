@@ -49,6 +49,7 @@ DEFAULT_AUTHOR_BIO = (
 )
 DEFAULT_GEOSPATIAL_COVERAGE = "Global (synthetic)"
 DEFAULT_DOI = "Not assigned"
+DEFAULT_UPDATE_FREQUENCY = "Monthly"
 DEFAULT_COLLECTION_METHODOLOGY = (
     "Programmatic synthetic generation using seeded statistical distributions "
     "and rule-based constraints to mimic realistic structure while avoiding "
@@ -140,6 +141,11 @@ def apply_metadata_defaults(meta: dict) -> tuple[dict, bool]:
     doi = str(meta.get("doi", "")).strip()
     if not doi:
         meta["doi"] = DEFAULT_DOI
+        changed = True
+
+    update_frequency = str(meta.get("updateFrequency", meta.get("update_frequency", ""))).strip()
+    if not update_frequency:
+        meta["updateFrequency"] = DEFAULT_UPDATE_FREQUENCY
         changed = True
 
     current_provenance = meta.get("provenance")
