@@ -1,0 +1,24 @@
+{
+  "completed": {
+    "discussions/getting-started/674545": {
+      "at": "2026-03-03T02:32:04.091146Z",
+      "detail": "Grandmaster guide - multi-category strategy advice"
+    },
+    "discussions/getting-started/679552": {
+      "at": "2026-03-03T02:32:04.091146Z",
+      "detail": "DS journey welcome - competition getting started tips"
+    },
+    "discussions/getting-started/678398": {
+      "at": "2026-03-03T02:32:04.091146Z",
+      "detail": "SVM/RF GridSearchCV - practical runtime optimization tips"
+    },
+    "discussions/getting-started/676037": {
+      "at": "2026-03-03T02:32:04.091146Z",
+      "detail": "Train/inference notebooks - sklearn Pipeline serialization advice"
+    },
+    "discussions/getting-started/674870": {
+      "at": "2026-03-03T02:32:04.091146Z",
+      "detail": "Dataset API tutorial - data card and cover image tips"
+    }
+  }
+}

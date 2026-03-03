@@ -2,13 +2,120 @@
   "description": "Content URLs to upvote. Curated from top notebooks in active competitions.",
   "source": "kaggle kernels list --competition <slug> --sort-by voteCount, 2026-03-02",
   "items": [
-    {"url": "https://www.kaggle.com/code/ekrembayar/store-sales-ts-forecasting-a-comprehensive-guide", "type": "notebook", "note": "Store Sales top notebook, 2871 votes"},
-    {"url": "https://www.kaggle.com/code/samuelcortinhas/spaceship-titanic-a-complete-guide", "type": "notebook", "note": "Spaceship Titanic guide, 1982 votes"},
-    {"url": "https://www.kaggle.com/code/gunesevitan/nlp-with-disaster-tweets-eda-cleaning-and-bert", "type": "notebook", "note": "NLP Getting Started BERT, 4453 votes"},
-    {"url": "https://www.kaggle.com/code/andreshg/nlp-glove-bert-tf-idf-lstm-explained", "type": "notebook", "note": "NLP explained, 1541 votes"},
-    {"url": "https://www.kaggle.com/code/ferdinandberr/darts-forecasting-deep-learning-global-models", "type": "notebook", "note": "Darts forecasting, 678 votes"},
-    {"url": "https://www.kaggle.com/code/arunklenin/space-titanic-eda-advanced-feature-engineering", "type": "notebook", "note": "Feature engineering, 662 votes"},
-    {"url": "https://www.kaggle.com/code/faressayah/natural-language-processing-nlp-for-beginners", "type": "notebook", "note": "NLP for beginners, 1406 votes"},
-    {"url": "https://www.kaggle.com/code/ivanlydkin/time-series-course-a-practical-guide", "type": "notebook", "note": "Time series guide, 503 votes"}
+    {
+      "url": "https://www.kaggle.com/code/ekrembayar/store-sales-ts-forecasting-a-comprehensive-guide",
+      "type": "notebook",
+      "note": "Store Sales top notebook, 2871 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/samuelcortinhas/spaceship-titanic-a-complete-guide",
+      "type": "notebook",
+      "note": "Spaceship Titanic guide, 1982 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/gunesevitan/nlp-with-disaster-tweets-eda-cleaning-and-bert",
+      "type": "notebook",
+      "note": "NLP Getting Started BERT, 4453 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/andreshg/nlp-glove-bert-tf-idf-lstm-explained",
+      "type": "notebook",
+      "note": "NLP explained, 1541 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/ferdinandberr/darts-forecasting-deep-learning-global-models",
+      "type": "notebook",
+      "note": "Darts forecasting, 678 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/arunklenin/space-titanic-eda-advanced-feature-engineering",
+      "type": "notebook",
+      "note": "Feature engineering, 662 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/faressayah/natural-language-processing-nlp-for-beginners",
+      "type": "notebook",
+      "note": "NLP for beginners, 1406 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/ivanlydkin/time-series-course-a-practical-guide",
+      "type": "notebook",
+      "note": "Time series guide, 503 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/serigne/stacked-regressions-top-4-on-leaderboard",
+      "type": "notebook",
+      "note": "House Prices stacked regressions, 14301 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/erikbruin/house-prices-lasso-xgboost-and-a-detailed-eda",
+      "type": "notebook",
+      "note": "House Prices LASSO+XGBoost EDA"
+    },
+    {
+      "url": "https://www.kaggle.com/code/juliencs/a-study-on-regression-applied-to-the-ames-dataset",
+      "type": "notebook",
+      "note": "Ames regression study, 2678 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/jesucristo/1-house-prices-solution-top-1",
+      "type": "notebook",
+      "note": "House Prices top 1% solution, 2550 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/lavanyashukla01/how-i-made-top-0-3-on-a-kaggle-competition",
+      "type": "notebook",
+      "note": "Top 0.3% guide, 2434 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/ekami66/detailed-exploratory-data-analysis-with-python",
+      "type": "notebook",
+      "note": "Detailed EDA Python, 2420 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/omarelgabry/a-journey-through-titanic",
+      "type": "notebook",
+      "note": "Journey through Titanic, 7509 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/helgejo/an-interactive-data-science-tutorial",
+      "type": "notebook",
+      "note": "Interactive DS tutorial, 6372 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/ash316/eda-to-prediction-dietanic",
+      "type": "notebook",
+      "note": "Titanic EDA to prediction, 6291 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/yassineghouzam/titanic-top-4-with-ensemble-modeling",
+      "type": "notebook",
+      "note": "Titanic ensemble top 4%, 5799 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/nadintamer/titanic-survival-predictions-beginner",
+      "type": "notebook",
+      "note": "Titanic beginner guide, 4995 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/yassineghouzam/introduction-to-cnn-keras-0-997-top-6",
+      "type": "notebook",
+      "note": "CNN Keras 99.7% MNIST, 16445 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/archaeocharlie/a-beginner-s-approach-to-classification",
+      "type": "notebook",
+      "note": "Beginner classification, 2490 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/ngbolin/mnist-dataset-digit-recognizer",
+      "type": "notebook",
+      "note": "MNIST digit recognizer, 1837 votes"
+    },
+    {
+      "url": "https://www.kaggle.com/code/elcaiseri/mnist-simple-cnn-keras-accuracy-0-99-top-1",
+      "type": "notebook",
+      "note": "MNIST CNN 99% Keras, 1248 votes"
+    }
   ]
 }

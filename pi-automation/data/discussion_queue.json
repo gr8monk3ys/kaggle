@@ -10,9 +10,9 @@
     "category": "EDA Findings",
     "expected_medal": "Silver",
     "scheduled_after": "2026-03-02T14:00:00+00:00",
-    "status": "scheduled",
+    "status": "skipped",
     "post_url": null,
-    "posted_at": null
+    "posted_at": "2026-03-03T02:21:00Z"
   },
   {
     "id": "draft_001",
@@ -25,9 +25,9 @@
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
     "scheduled_after": "2026-03-04T14:00:00+00:00",
-    "status": "scheduled",
-    "post_url": null,
-    "posted_at": null
+    "status": "posted",
+    "post_url": "https://www.kaggle.com/discussions/getting-started/679675",
+    "posted_at": "2026-03-03T02:22:00Z"
   },
   {
     "id": "draft_003",

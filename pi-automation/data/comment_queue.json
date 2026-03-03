@@ -1,4 +1,30 @@
 {
   "description": "Pre-written comments to post on Kaggle threads. All comments must be human-written.",
-  "comments": []
+  "comments": [
+    {
+      "thread_url": "https://www.kaggle.com/discussions/getting-started/674545",
+      "status": "posted",
+      "posted_at": "2026-03-03T02:29:00Z"
+    },
+    {
+      "thread_url": "https://www.kaggle.com/discussions/getting-started/679552",
+      "status": "posted",
+      "posted_at": "2026-03-03T02:30:00Z"
+    },
+    {
+      "thread_url": "https://www.kaggle.com/discussions/getting-started/678398",
+      "status": "posted",
+      "posted_at": "2026-03-03T02:31:00Z"
+    },
+    {
+      "thread_url": "https://www.kaggle.com/discussions/getting-started/676037",
+      "status": "posted",
+      "posted_at": "2026-03-03T02:32:00Z"
+    },
+    {
+      "thread_url": "https://www.kaggle.com/discussions/getting-started/674870",
+      "status": "posted",
+      "posted_at": "2026-03-03T02:33:00Z"
+    }
+  ]
 }
