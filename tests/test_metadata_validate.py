@@ -1,4 +1,4 @@
-"""Tests for kernel-metadata.json validation across the portfolio.
+"""Tests for notebook and dataset metadata validation across the portfolio.
 
 These tests verify both the structure of existing metadata files and
 the validation logic that manage.sh validate relies on.
@@ -22,8 +22,26 @@ def _find_kernel_metas():
     return list(ROOT.rglob("kernel-metadata.json"))
 
 
+def _find_dataset_metas():
+    """Return all dataset-metadata.json paths in the repo."""
+    return list(ROOT.rglob("dataset-metadata.json"))
+
+
 def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _patched_manage_script(tmp_path: Path) -> Path:
+    patched_manage = tmp_path / "manage.sh"
+    original = MANAGE.read_text(encoding="utf-8")
+    patched = original.replace(
+        'KAGGLE_DIR="$(cd "$(dirname "$0")" && pwd)"',
+        f'KAGGLE_DIR="{tmp_path}"',
+        1,
+    )
+    assert patched != original, "Failed to patch manage.sh test fixture"
+    patched_manage.write_text(patched, encoding="utf-8")
+    return patched_manage
 
 
 # ── Structural tests on real metadata files ───────────────────────────────────
@@ -106,6 +124,72 @@ def test_kernel_metadata_no_credentials(meta_path):
     )
 
 
+# ── Structural tests on real dataset metadata files ──────────────────────────
+
+
+@pytest.mark.parametrize("meta_path", _find_dataset_metas())
+def test_dataset_metadata_is_valid_json(meta_path):
+    """Every dataset-metadata.json in the repo must be parseable JSON."""
+    _load(meta_path)
+
+
+@pytest.mark.parametrize("meta_path", _find_dataset_metas())
+def test_dataset_metadata_required_fields(meta_path):
+    """id, title, licenses, resources must be present for Kaggle dataset pushes."""
+    meta = _load(meta_path)
+    required = ["id", "title", "licenses", "resources"]
+    missing = [f for f in required if f not in meta]
+    assert not missing, f"{meta_path.relative_to(ROOT)} missing fields: {missing}"
+
+
+@pytest.mark.parametrize("meta_path", _find_dataset_metas())
+def test_dataset_metadata_id_format(meta_path):
+    """Dataset ids must follow owner/slug format and contain no spaces."""
+    meta = _load(meta_path)
+    id_val = meta.get("id", "")
+    assert "/" in id_val, f"{meta_path.relative_to(ROOT)}: id '{id_val}' missing owner/ prefix"
+    assert " " not in id_val, f"{meta_path.relative_to(ROOT)}: id '{id_val}' contains spaces"
+
+
+@pytest.mark.parametrize("meta_path", _find_dataset_metas())
+def test_dataset_metadata_licenses_present(meta_path):
+    """Dataset metadata must define at least one named license."""
+    meta = _load(meta_path)
+    licenses = meta.get("licenses")
+    assert isinstance(licenses, list) and licenses, (
+        f"{meta_path.relative_to(ROOT)}: licenses must be a non-empty list"
+    )
+    for idx, item in enumerate(licenses, start=1):
+        assert isinstance(item, dict), (
+            f"{meta_path.relative_to(ROOT)}: license #{idx} must be an object"
+        )
+        assert item.get("name"), (
+            f"{meta_path.relative_to(ROOT)}: license #{idx} missing name"
+        )
+
+
+@pytest.mark.parametrize("meta_path", _find_dataset_metas())
+def test_dataset_metadata_resource_paths_exist(meta_path):
+    """Every declared dataset resource path must exist on disk."""
+    meta = _load(meta_path)
+    resources = meta.get("resources")
+    assert isinstance(resources, list) and resources, (
+        f"{meta_path.relative_to(ROOT)}: resources must be a non-empty list"
+    )
+    for idx, item in enumerate(resources, start=1):
+        assert isinstance(item, dict), (
+            f"{meta_path.relative_to(ROOT)}: resource #{idx} must be an object"
+        )
+        resource_path = item.get("path", "")
+        assert resource_path, (
+            f"{meta_path.relative_to(ROOT)}: resource #{idx} missing path"
+        )
+        target = meta_path.parent / resource_path
+        assert target.exists(), (
+            f"{meta_path.relative_to(ROOT)}: resource path '{resource_path}' not found"
+        )
+
+
 # ── validate subcommand integration test ─────────────────────────────────────
 
 
@@ -128,15 +212,7 @@ def test_manage_validate_fails_on_invalid_json(tmp_path):
     """manage.sh validate returns non-zero when JSON is malformed."""
     (tmp_path / "kernel-metadata.json").write_text("{bad json", encoding="utf-8")
     (tmp_path / "notebook.ipynb").write_text("{}", encoding="utf-8")
-    patched_manage = tmp_path / "manage.sh"
-    original = MANAGE.read_text(encoding="utf-8")
-    patched = original.replace(
-        'KAGGLE_DIR="$(cd "$(dirname "$0")" && pwd)"',
-        f'KAGGLE_DIR="{tmp_path}"',
-        1,
-    )
-    assert patched != original, "Failed to patch manage.sh test fixture"
-    patched_manage.write_text(patched, encoding="utf-8")
+    patched_manage = _patched_manage_script(tmp_path)
 
     result = subprocess.run(
         ["bash", str(patched_manage), "validate"],
@@ -147,6 +223,32 @@ def test_manage_validate_fails_on_invalid_json(tmp_path):
     )
     assert result.returncode != 0
     assert "invalid JSON" in result.stdout
+
+
+def test_manage_validate_fails_on_missing_dataset_resource(tmp_path):
+    """manage.sh validate returns non-zero when dataset metadata points to a missing file."""
+    (tmp_path / "dataset-metadata.json").write_text(
+        json.dumps(
+            {
+                "id": "owner/example-dataset",
+                "title": "Example Dataset",
+                "licenses": [{"name": "CC0-1.0"}],
+                "resources": [{"path": "missing.csv"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    patched_manage = _patched_manage_script(tmp_path)
+
+    result = subprocess.run(
+        ["bash", str(patched_manage), "validate"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "resource path 'missing.csv' not found" in result.stdout
 
 
 def test_validate_python_logic_invalid_json(tmp_path):
@@ -223,6 +325,8 @@ def test_manage_help_includes_new_commands():
     assert "validate" in result.stdout
     assert "link-competition" in result.stdout
     assert "votes" in result.stdout
+    assert "preflight" in result.stdout
+    assert "smoke-live" in result.stdout
 
 
 def test_manage_auto_discovery_finds_all_notebooks():

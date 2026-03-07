@@ -1071,7 +1071,17 @@ cells.append(code(
     "submission.head(10)"
 ))
 
-# ── 41. Key takeaways ─────────────────────────────────────────────────────
+# ── 41. Interpretation ─────────────────────────────────────────────────────
+cells.append(md(
+    "## Interpretation, Trade-offs, and Limitations\n"
+    "\n"
+    "- **Observation:** transformer gains come mainly from better contextual handling of ambiguous tweets rather than from memorising obvious keywords.\n"
+    "- **Interpretation:** character and TF-IDF models still matter because they capture misspellings, hashtags, and short-text sparsity efficiently.\n"
+    "- **Trade-off:** larger language models can add validation lift, but they cost more memory, training time, and inference budget.\n"
+    "- **Limitation:** public leaderboard feedback can reward brittle thresholds, so the main hypothesis should always be validated with cross-validated F1."
+))
+
+# ── 42. Key takeaways ─────────────────────────────────────────────────────
 cells.append(md(
     "---\n"
     "## Key Takeaways\n"
@@ -1099,7 +1109,7 @@ cells.append(md(
     "**If this notebook helped you, please upvote! Good luck with your submission.**"
 ))
 
-# ── 42. Version info ──────────────────────────────────────────────────────
+# ── 43. Version info ──────────────────────────────────────────────────────
 cells.append(code(
     "import platform, sys\n"
     "import sklearn\n"

@@ -1507,6 +1507,15 @@ cells.append(md(
 '| **Distillation** | Complexity | Soft labels from teacher | Deployment / inference speed |'
 ))
 
+cells.append(md(
+'## Interpretation, Trade-offs, and Limitations\n'
+'\n'
+'- **Observation:** ensemble gains are usually largest when base models make different mistakes rather than when they all score similarly on the same folds.\n'
+'- **Interpretation:** stacking works because the meta-learner can reweight model regimes, not because it magically fixes weak first-level models.\n'
+'- **Trade-off:** more models can improve validation, but they also increase leakage risk, training cost, and maintenance burden.\n'
+'- **Limitation:** leaderboard bumps are fragile when out-of-fold discipline is weak, so every ensemble hypothesis should start with strict validation.'
+))
+
 # ── Cell 54: Call to action ──────────────────────────────────────────
 cells.append(md(
 '---\n'

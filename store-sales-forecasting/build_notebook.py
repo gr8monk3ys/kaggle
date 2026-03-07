@@ -22,6 +22,15 @@ cells.append(md("""# Store Sales Time Series Forecasting with LightGBM
 5. Full submission pipeline with RMSLE evaluation
 """))
 
+cells.append(md("""## Objective & Evaluation Strategy
+
+**Objective:** forecast 15 days of store-family sales with a validation setup that mirrors the temporal structure of the Kaggle competition.
+
+**Evaluation:** optimize RMSLE on a held-out validation window and inspect residuals by store, family, and holiday regime before trusting leaderboard gains.
+
+**Hypothesis:** lagged demand, holiday context, and exogenous oil signals should explain most forecast lift because they capture recurring seasonal behavior.
+"""))
+
 cells.append(md("## 1. Setup & Data Loading"))
 
 cells.append(code("""import os, warnings, numpy as np, pandas as pd
@@ -391,6 +400,14 @@ cells.append(md("""## Key Takeaways
 - **RMSLE penalizes under-prediction** — clip negatives hard at 0
 - Add **promotion × lag interactions** as explicit features
 - Consider **Prophet** for trend decomposition as an ensemble component
+"""))
+
+cells.append(md("""## Interpretation, Trade-offs, and Limitations
+
+- **Observation:** most forecast gains come from disciplined temporal features rather than from exotic model architecture changes.
+- **Interpretation:** holiday flags improve edge cases, but only when they are aligned with local store behavior instead of treated as generic shocks.
+- **Trade-off:** richer lag stacks increase accuracy, yet they also make recursive forecasts more brittle when recent history is sparse.
+- **Limitation:** synthetic fallback data preserves workflow structure, but production conclusions should come from time-aware validation on the real competition files.
 """))
 
 

@@ -29,6 +29,15 @@ A comprehensive analysis of mental health attitudes in tech workplaces, answerin
 8. [Key Takeaways for HR](#takeaways)
 """))
 
+cells.append(md("""## Objective & Evaluation Strategy
+
+**Objective:** identify the workplace and demographic factors most associated with treatment-seeking, then build a transparent support-risk model.
+
+**Evaluation:** track ROC-AUC and classification quality on a held-out split, then compare errors across company size, remote work, and family-history segments.
+
+**Hypothesis:** family history, work interference, and access to benefits should explain the strongest variation because they combine personal risk and employer support context.
+"""))
+
 cells.append(md("## 1. Setup & Overview <a id='setup'></a>"))
 
 cells.append(code("""import numpy as np
@@ -381,6 +390,14 @@ cells.append(md("""## 8. Key Takeaways for HR <a id='takeaways'></a>
 3. **Normalize mental health days** — make them as acceptable as physical sick days
 4. **Anonymous pulse surveys** to track wellbeing without requiring disclosure
 5. **Benchmark against industry** — use datasets like this to compare your support scores
+"""))
+
+cells.append(md("""## Interpretation, Trade-offs, and Limitations
+
+- **Observation:** supportive policies correlate with treatment-seeking, but they may also reflect companies that already have healthier disclosure norms.
+- **Interpretation:** higher treatment rates are not automatically negative because they can indicate better access, trust, and awareness.
+- **Trade-off:** predictive models can help triage support programs, yet they risk oversimplifying sensitive personal context if used without care.
+- **Limitation:** survey responses are self-reported, so any HR hypothesis should be validated alongside qualitative feedback and privacy safeguards.
 """))
 
 # Write notebook

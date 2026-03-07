@@ -115,6 +115,44 @@ def test_generate_queue_prioritizes_high_priority_and_leaves_idea_unscheduled():
     assert by_id["draft_002"]["scheduled_after"] < by_id["draft_001"]["scheduled_after"]
 
 
+def test_generate_queue_preserves_skipped_status_outside_schedule():
+    drafts = [
+        {
+            "id": "draft_001",
+            "number": 1,
+            "title": "Skipped Draft",
+            "forum_url": "https://www.kaggle.com/discussions/general",
+            "body_section": "Draft 1",
+            "body_file": "discussion-drafts.md",
+            "priority": "medium",
+            "deadline": None,
+            "category": "",
+            "expected_medal": "",
+            "status": "skipped",
+        },
+        {
+            "id": "draft_002",
+            "number": 2,
+            "title": "Scheduled Draft",
+            "forum_url": "https://www.kaggle.com/discussions/general",
+            "body_section": "Draft 2",
+            "body_file": "discussion-drafts.md",
+            "priority": "medium",
+            "deadline": None,
+            "category": "",
+            "expected_medal": "",
+            "status": "ready",
+        },
+    ]
+
+    queue = discussion_scheduler.generate_queue(drafts, start_date=datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc))
+    by_id = {item["id"]: item for item in queue}
+
+    assert by_id["draft_001"]["status"] == "skipped"
+    assert by_id["draft_001"]["scheduled_after"] is None
+    assert by_id["draft_002"]["status"] == "scheduled"
+
+
 def test_build_ops_summary_reports_flow_health_metrics():
     now = datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
     queue = [
@@ -138,6 +176,20 @@ def test_build_ops_summary_reports_flow_health_metrics():
     assert summary["next_post_due"] is not None
     assert summary["schedule_horizon"] == (now + timedelta(days=2)).date().isoformat()
     assert summary["estimated_weeks_to_clear"] == 1
+
+
+def test_build_ops_summary_ignores_skipped_items_in_backlog_counts():
+    now = datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
+    queue = [
+        {"id": "draft_001", "status": "skipped", "scheduled_after": None},
+        {"id": "draft_002", "status": "scheduled", "scheduled_after": (now + timedelta(days=2)).isoformat()},
+    ]
+
+    summary = discussion_scheduler.build_ops_summary(queue, now=now)
+
+    assert summary["stage_counts"]["skipped"] == 1
+    assert summary["backlog_total"] == 1
+    assert summary["overdue_scheduled"] == 0
 
 
 def test_generate_queue_limits_scheduled_window_and_leaves_rest_ready():

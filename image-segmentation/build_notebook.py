@@ -1042,6 +1042,15 @@ cells.append(md(L(
 
 # ── 15. Further Reading ───────────────────────────────────────────────────
 cells.append(md(L(
+    "## Interpretation, Trade-offs, and Limitations",
+    "",
+    "- **Observation:** segmentation quality often improves more from cleaner masks and augmentation policy than from swapping one decoder for another.",
+    "- **Interpretation:** boundary-sensitive losses help small structures because they reward pixel-level precision instead of only region overlap.",
+    "- **Trade-off:** heavier ensembles and post-processing can lift scores, yet they also raise latency, memory use, and deployment complexity.",
+    "- **Limitation:** offline IoU gains do not always transfer if the validation split misses rare artifact patterns, so challenge-specific evaluation still matters."
+)))
+
+cells.append(md(L(
     '<a id="reading"></a>',
     "## Further Reading",
     "",
