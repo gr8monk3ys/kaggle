@@ -75,20 +75,23 @@ def fetch_live_refs(owner: str) -> tuple[set[str] | None, str | None]:
 
     refs: set[str] = set()
     errors: list[str] = []
+    lookup_succeeded = False
 
     mine_refs, mine_err = _run_dataset_list(["--mine", "--csv"])
     if mine_refs is not None:
+        lookup_succeeded = True
         refs.update(ref for ref in mine_refs if ref.startswith(f"{owner}/"))
     elif mine_err:
         errors.append(f"--mine: {mine_err}")
 
     search_refs, search_err = _run_dataset_list(["-s", owner, "--csv"])
     if search_refs is not None:
+        lookup_succeeded = True
         refs.update(ref for ref in search_refs if ref.startswith(f"{owner}/"))
     elif search_err:
         errors.append(f"-s {owner}: {search_err}")
 
-    if refs:
+    if lookup_succeeded:
         return refs, None
     if errors:
         return None, "; ".join(errors)

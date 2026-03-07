@@ -117,6 +117,22 @@ def test_fetch_live_refs_filters_non_owner_refs(monkeypatch):
     assert refs == {"owner/a", "owner/b"}
 
 
+def test_fetch_live_refs_returns_empty_set_for_owner_with_no_datasets(monkeypatch):
+    def fake_run(args):
+        if args == ["--mine", "--csv"]:
+            return set(), None
+        if args == ["-s", "owner", "--csv"]:
+            return set(), None
+        raise AssertionError(f"unexpected args: {args}")
+
+    monkeypatch.setattr(pipeline, "_run_dataset_list", fake_run)
+
+    refs, err = pipeline.fetch_live_refs("owner")
+
+    assert err is None
+    assert refs == set()
+
+
 def test_build_ui_sync_command_includes_refs_and_flags():
     cmd = pipeline.build_ui_sync_command(
         ["owner/a", "owner/b"],
