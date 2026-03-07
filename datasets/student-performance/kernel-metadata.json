@@ -11,11 +11,12 @@
     "lorenzoscaturchio/student-academic-performance-dataset"
   ],
   "kernel_sources": [],
+  "competition_sources": [],
   "keywords": [
     "education",
     "classification",
     "regression",
-    "clustering",
-    "beginner"
+    "student analytics",
+    "eda"
   ]
 }

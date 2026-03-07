@@ -11,11 +11,12 @@
     "lorenzoscaturchio/credit-card-fraud-detection-synthetic"
   ],
   "kernel_sources": [],
+  "competition_sources": [],
   "keywords": [
-    "business",
+    "fraud detection",
     "classification",
-    "binary classification",
-    "regression",
-    "clustering"
+    "anomaly detection",
+    "finance",
+    "eda"
   ]
 }

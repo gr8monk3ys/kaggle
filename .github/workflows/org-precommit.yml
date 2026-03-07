@@ -11,4 +11,4 @@ permissions: read-all
 
 jobs:
   precommit:
-    uses: gr8monk3ys/github/.github/workflows/reusable-precommit.yml@d9ca981dc738b842497fb293a8bf5ee3ee9beb34
+    uses: gr8monk3ys/github/.github/workflows/reusable-precommit.yml@4a306a94d72d10b8d7835d697521a469fc6deab1

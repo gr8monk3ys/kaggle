@@ -11,4 +11,4 @@ permissions: read-all
 
 jobs:
   trufflehog:
-    uses: gr8monk3ys/github/.github/workflows/reusable-trufflehog.yml@c23dda934900df22d45e268e1967390b1beaeab4
+    uses: gr8monk3ys/github/.github/workflows/reusable-trufflehog.yml@4a306a94d72d10b8d7835d697521a469fc6deab1
