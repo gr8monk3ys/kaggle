@@ -56,6 +56,16 @@ cells.append(md([
     "11. [Further Reading](#11-further-reading)",
 ]))
 
+cells.append(md([
+    "## Objective & Evaluation Strategy",
+    "",
+    "**Objective:** build a practical graph-learning workflow that translates from concept demos to Kaggle-ready node and graph prediction tasks.",
+    "",
+    "**Evaluation:** use validation accuracy, task-specific metrics, and downstream error analysis before reading too much into leaderboard movement.",
+    "",
+    "**Hypothesis:** architectures that respect neighborhood structure should outperform flat tabular baselines because relational context carries the strongest signal.",
+]))
+
 # ── Cell 4: Key Takeaway box ──────────────────────────────────────────────
 cells.append(md([
     "> **Key Takeaway** -- GNNs learn representations by *message passing*: each ",
@@ -799,6 +809,15 @@ cells.append(code([
 # ══════════════════════════════════════════════════════════════════════════
 # SECTION 11 -- Further Reading
 # ══════════════════════════════════════════════════════════════════════════
+
+cells.append(md([
+    "## Interpretation, Trade-offs, and Limitations",
+    "",
+    "- **Observation:** graph structure helps most when neighborhood information carries signal that ordinary row-wise models cannot capture.",
+    "- **Interpretation:** deeper GNN stacks can improve receptive field size, but they often oversmooth node states and blur class boundaries.",
+    "- **Trade-off:** attention-based models are expressive, yet they usually cost more memory and latency than simple message-passing layers.",
+    "- **Limitation:** synthetic demos validate mechanics, not benchmark dominance, so real-world validation should test sparsity, noise, and scale.",
+]))
 
 cells.append(md([
     "---",

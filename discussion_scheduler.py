@@ -52,7 +52,7 @@ RED = "\033[0;31m"
 BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
-VALID_STATUSES = {"idea", "ready", "scheduled", "posted", "won-medal", "pending"}
+VALID_STATUSES = {"idea", "ready", "scheduled", "posted", "won-medal", "pending", "skipped"}
 POSTABLE_STATUSES = {"ready", "scheduled", "pending"}
 PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
 POST_DAYS = {0, 2, 4}  # Mon, Wed, Fri
@@ -66,6 +66,8 @@ def normalize_status(value: str | None) -> str:
     normalized = value.strip().lower()
     if normalized == "pending":
         return "scheduled"
+    if normalized == "skipped":
+        return "skipped"
     if normalized in VALID_STATUSES:
         return normalized
     return "ready"
@@ -208,7 +210,7 @@ def generate_queue(
 
     for draft in sorted(drafts, key=sort_key):
         draft_status = normalize_status(draft.get("status"))
-        if draft_status in {"posted", "won-medal", "idea"}:
+        if draft_status in {"posted", "won-medal", "idea", "skipped"}:
             scheduled_after = None
             item_status = draft_status
         elif scheduled_count >= max_scheduled:
@@ -327,7 +329,7 @@ def update_draft(
     if status is not None:
         next_status = normalize_status(status)
         match_item["status"] = next_status
-        if next_status == "idea":
+        if next_status in {"idea", "skipped"}:
             match_item["scheduled_after"] = None
         if next_status in {"posted", "won-medal"} and not match_item.get("posted_at"):
             match_item["posted_at"] = now.isoformat()
@@ -493,7 +495,7 @@ def show_ops_report(queue: list[dict], n: int = 10) -> None:
 
     print(f"{BLUE}=== Draft Ops Report ==={RESET}\n")
     print("Stage counts:")
-    for status in ("idea", "ready", "scheduled", "posted", "won-medal"):
+    for status in ("idea", "ready", "scheduled", "posted", "won-medal", "skipped"):
         print(f"  - {status}: {counts.get(status, 0)}")
     print()
 

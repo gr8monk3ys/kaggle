@@ -21,6 +21,15 @@ cells.append(md("""# Spaceship Titanic: Complete ML Guide
 5. Full submission pipeline
 """))
 
+cells.append(md("""## Objective & Evaluation Strategy
+
+**Objective:** build a reproducible binary classification workflow for passenger transport outcomes with features that survive leaderboard shakeups.
+
+**Evaluation:** prioritize out-of-fold accuracy and ROC-AUC, then compare leaderboard movement only after validation remains stable.
+
+**Hypothesis:** CryoSleep, cabin deck, and spend behavior should dominate early signal because they encode the strongest behavioral story in the manifest.
+"""))
+
 # ── 1. Imports & data loading ──────────────────────────────────────────────────
 cells.append(md("## 1. Setup & Data Loading"))
 
@@ -470,6 +479,14 @@ cells.append(md("""## Key Takeaways
 - Target encoding for high-cardinality features
 - Pseudo-labeling on test set
 - Stacking with a meta-learner
+"""))
+
+cells.append(md("""## Interpretation, Trade-offs, and Limitations
+
+- **Observation:** the highest-gain features are interpretable, which makes post-hoc debugging much easier than relying on opaque interaction explosions.
+- **Interpretation:** strong spend-based signals help validation, but they may overfit if missing-value handling leaks route-specific artifacts.
+- **Trade-off:** larger boosted ensembles can add a few basis points, yet they cost more iteration time and make threshold tuning harder.
+- **Limitation:** synthetic fallback data is useful for notebook continuity, but real competition validation should remain the source of truth.
 """))
 
 # ── Write notebook ─────────────────────────────────────────────────────────────

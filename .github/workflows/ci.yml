@@ -13,6 +13,8 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPYCACHEPREFIX: /tmp/pycache
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,18 +49,34 @@ jobs:
           bash -n manage.sh
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m py_compile $(find . -maxdepth 4 -type f -name '*.py' | sort)
 
-      - name: Unit tests
+      - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pytest-cov requests
+          python -m pip install pytest pytest-cov pytest-mock requests
+
+      - name: Prepare preflight fixtures
+        run: |
+          set -euo pipefail
+          printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
+          printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
+          printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
+
+      - name: Repository preflight
+        run: |
+          set -euo pipefail
+          bash manage.sh preflight \
+            --no-pytest \
+            --today 2026-03-07 \
+            --strict-doctor \
+            --kernels-csv /tmp/kernels.csv \
+            --datasets-csv /tmp/datasets.csv \
+            --competitions-csv /tmp/competitions.csv
+
+      - name: Unit tests with coverage
+        run: |
           pytest -q --cov=. --cov-report=term-missing:skip-covered --cov-config=.coveragerc
 
-      - name: Pi automation unit tests
-        run: |
-          python -m pip install requests pytest pytest-mock pytest-cov
-          pytest pi-automation/tests/ -q
-
-      - name: Smoke tests
+      - name: Script smoke tests
         run: |
           set -euo pipefail
           PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/ai-research-trends/create_dataset.py >/tmp/ai-research.log
@@ -70,22 +88,6 @@ jobs:
           PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 weekly-plan >/tmp/weekly-plan.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 pace >/tmp/pace.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 sync-template --out-dir /tmp/medal_ops_sync_inputs >/tmp/sync-template.log
-          printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
-          printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
-          printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
-          PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_ci --today 2026-02-22 doctor --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/doctor.log
-          if [ "${GITHUB_REF:-}" = "refs/heads/main" ] || [ "${GITHUB_REF:-}" = "refs/heads/master" ]; then
-            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --scope all --min-score 95 --fail-under-threshold >/tmp/quality.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --strict --fail-under 85 >/tmp/dataset-usability.log
-          else
-            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --scope all --min-score 78 >/tmp/quality.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_ci --today 2026-02-22 --fail-under 85 >/tmp/dataset-usability.log
-          fi
-          if [ -f discussion_scheduler.py ]; then
-            PYTHONPYCACHEPREFIX=/tmp/pycache python discussion_scheduler.py --health-check --max-overdue-scheduled 0 --max-days-until-next-post 14 >/tmp/draft-ops.log
-          else
-            echo "discussion_scheduler.py --health-check skipped (file not present on this branch)." >/tmp/draft-ops.log
-          fi
           PYTHONPYCACHEPREFIX=/tmp/pycache python stale_content_detector.py --today 2026-02-22 >/tmp/stale-content.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_explore_generator.py --dir datasets/credit-card-fraud >/tmp/explore-gen.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python competition_entry.py --help >/tmp/comp-entry.log

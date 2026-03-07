@@ -134,16 +134,88 @@ def _cell_title(meta: dict, analysis: dict) -> list[dict]:
     header += """
 
 ## Table of Contents
-1. [Setup & Data Loading](#setup)
-2. [Data Overview](#overview)
-3. [Missing Data Analysis](#missing)
-4. [Numeric Distributions](#distributions)
-5. [Categorical Analysis](#categorical)
-6. [Correlation Analysis](#correlations)
-7. [Target Analysis](#target)
-8. [Key Findings](#findings)"""
+1. [Objective & Evaluation Plan](#objective)
+2. [Setup & Data Loading](#setup)
+3. [Data Overview](#overview)
+4. [Missing Data Analysis](#missing)
+5. [Numeric Distributions](#distributions)
+6. [Categorical Analysis](#categorical)
+7. [Correlation Analysis](#correlations)
+8. [Target Analysis](#target)
+9. [Evaluation Readiness](#evaluation)
+10. [Key Findings](#findings)"""
 
     return [md(header)]
+
+
+def _infer_modeling_plan(analysis: dict, classified: dict) -> tuple[str, str, str, str]:
+    """Infer a lightweight modeling recommendation from dataset analysis."""
+    target = classified["target"]
+    if target:
+        target_meta = next((col for col in analysis.get("columns", []) if col["name"] == target), {})
+        dtype = str(target_meta.get("dtype", "")).lower()
+        n_unique = int(target_meta.get("n_unique", 0) or 0)
+        if dtype in {"integer", "float"} and n_unique > 20:
+            return (
+                "regression",
+                "RMSE / MAE",
+                "time-aware split or K-fold validation depending on row ordering",
+                f"`{target}` behaves like a continuous target, so a regression baseline is the clean starting point.",
+            )
+        return (
+            "classification",
+            "F1 / ROC-AUC for imbalance, accuracy for balanced classes",
+            "stratified train/validation split with class-ratio checks",
+            f"`{target}` looks like a discrete target, so classification is the most defensible objective.",
+        )
+
+    if classified["numeric"]:
+        return (
+            "unsupervised exploration + candidate regression/classification framing",
+            "define metric after target selection",
+            "hold out a small validation slice once a target is chosen",
+            "There is no obvious target yet, so the immediate goal is to surface hypotheses and shortlist modeling targets.",
+        )
+
+    return (
+        "text/categorical exploration",
+        "define metric after labeling a downstream task",
+        "label a pilot sample before choosing validation",
+        "This bundle is strongest for discovery, retrieval, and taxonomy design before supervised modeling.",
+    )
+
+
+def _cell_objective_and_evaluation(meta: dict, analysis: dict, classified: dict) -> list[dict]:
+    """Generate notebook framing for objective, evaluation, and hypotheses."""
+    rows = analysis.get("rows", 0)
+    target = classified["target"] or "not yet fixed"
+    task, metric, validation, framing = _infer_modeling_plan(analysis, classified)
+
+    return [
+        md(
+            "## 1. Objective & Evaluation Plan <a id='objective'></a>\n\n"
+            f"**Objective:** turn `{meta.get('title', 'this dataset')}` into a reproducible `{task}` workflow.\n\n"
+            f"**Evaluation / validation:** use **{metric}** with **{validation}**.\n\n"
+            f"**Candidate target:** `{target}`.\n\n"
+            f"**Working hypothesis:** {framing}\n\n"
+            "This section makes the modeling goal explicit so later findings can be interpreted in terms of metrics, "
+            "trade-offs, and deployment limitations rather than isolated charts."
+        ),
+        code(
+            f"""TARGET_COL = {target!r}
+MODELING_TASK = {task!r}
+PRIMARY_METRIC = {metric!r}
+VALIDATION_PLAN = {validation!r}
+
+print("Objective framing")
+print("-" * 60)
+print(f"Rows available      : {rows:,}")
+print(f"Candidate target    : {{TARGET_COL}}")
+print(f"Modeling task       : {{MODELING_TASK}}")
+print(f"Primary metric      : {{PRIMARY_METRIC}}")
+print(f"Validation approach : {{VALIDATION_PLAN}}")"""
+        ),
+    ]
 
 
 def _cell_setup(ds_dir: Path, analysis: dict) -> list[dict]:
@@ -169,13 +241,16 @@ def _cell_setup(ds_dir: Path, analysis: dict) -> list[dict]:
     read_func = "pd.read_csv" if file_name.endswith(".csv") else "pd.read_parquet"
 
     return [
-        md("## 1. Setup & Data Loading <a id='setup'></a>"),
+        md("## 2. Setup & Data Loading <a id='setup'></a>"),
         code(f"""import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 warnings.filterwarnings('ignore')
+
+SEED = 42
+np.random.seed(SEED)
 
 plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['figure.dpi'] = 100
@@ -196,7 +271,7 @@ df.head()"""),
 def _cell_overview(analysis: dict) -> list[dict]:
     """Generate data overview cells."""
     return [
-        md("## 2. Data Overview <a id='overview'></a>"),
+        md("## 3. Data Overview <a id='overview'></a>"),
         code("""print("Column Types:")
 print(df.dtypes.value_counts().to_string())
 print(f"\\nDuplicate rows: {df.duplicated().sum():,}")
@@ -209,7 +284,7 @@ df.describe().round(2)"""),
 def _cell_missing_data() -> list[dict]:
     """Generate missing data visualization cells."""
     return [
-        md("## 3. Missing Data Analysis <a id='missing'></a>"),
+        md("## 4. Missing Data Analysis <a id='missing'></a>"),
         code("""missing = df.isnull().sum()
 missing_pct = (missing / len(df) * 100).round(1)
 missing_df = pd.DataFrame({'count': missing, 'percent': missing_pct})
@@ -237,7 +312,7 @@ def _cell_distributions(classified: dict) -> list[dict]:
     numeric = classified["numeric"]
     if not numeric:
         return [
-            md("## 4. Numeric Distributions <a id='distributions'></a>"),
+            md("## 5. Numeric Distributions <a id='distributions'></a>"),
             md("*No numeric columns detected for distribution plots.*"),
         ]
 
@@ -245,7 +320,7 @@ def _cell_distributions(classified: dict) -> list[dict]:
     cols_str = str(numeric[:12])
 
     return [
-        md("## 4. Numeric Distributions <a id='distributions'></a>"),
+        md("## 5. Numeric Distributions <a id='distributions'></a>"),
         code(f"""NUMERIC_COLS = {cols_str}
 
 n = len(NUMERIC_COLS)
@@ -293,14 +368,14 @@ def _cell_categorical(classified: dict) -> list[dict]:
     categorical = classified["categorical"]
     if not categorical:
         return [
-            md("## 5. Categorical Analysis <a id='categorical'></a>"),
+            md("## 6. Categorical Analysis <a id='categorical'></a>"),
             md("*No low-cardinality categorical columns detected.*"),
         ]
 
     cols_str = str(categorical[:8])
 
     return [
-        md("## 5. Categorical Analysis <a id='categorical'></a>"),
+        md("## 6. Categorical Analysis <a id='categorical'></a>"),
         code(f"""CAT_COLS = {cols_str}
 
 n = len(CAT_COLS)
@@ -341,14 +416,14 @@ def _cell_correlations(classified: dict) -> list[dict]:
     numeric = classified["numeric"]
     if len(numeric) < 2:
         return [
-            md("## 6. Correlation Analysis <a id='correlations'></a>"),
+            md("## 7. Correlation Analysis <a id='correlations'></a>"),
             md("*Need at least 2 numeric columns for correlation analysis.*"),
         ]
 
     cols_str = str(numeric[:15])
 
     return [
-        md("## 6. Correlation Analysis <a id='correlations'></a>"),
+        md("## 7. Correlation Analysis <a id='correlations'></a>"),
         code(f"""CORR_COLS = {cols_str}
 
 corr = df[CORR_COLS].corr()
@@ -382,12 +457,12 @@ def _cell_target(classified: dict) -> list[dict]:
     target = classified["target"]
     if not target:
         return [
-            md("## 7. Target Analysis <a id='target'></a>"),
+            md("## 8. Target Analysis <a id='target'></a>"),
             md("*No standard target column detected. Explore potential targets manually.*"),
         ]
 
     return [
-        md(f"## 7. Target Analysis <a id='target'></a>\n\nDetected target column: **`{target}`**"),
+        md(f"## 8. Target Analysis <a id='target'></a>\n\nDetected target column: **`{target}`**"),
         code(f"""target_col = '{target}'
 
 print(f"Target: {{target_col}}")
@@ -434,10 +509,52 @@ else:
     ]
 
 
+def _cell_evaluation_readiness(analysis: dict, classified: dict) -> list[dict]:
+    """Generate a pre-modeling evaluation checklist."""
+    task, metric, validation, _ = _infer_modeling_plan(analysis, classified)
+    target = classified["target"] or "manual selection required"
+    high_cardinality = classified["high_cardinality"][:5]
+    text_hint = ", ".join(high_cardinality) if high_cardinality else "none flagged"
+
+    return [
+        md(
+            "## 9. Evaluation Readiness <a id='evaluation'></a>\n\n"
+            "Before modeling, translate the EDA into a validation plan. This keeps metric choices, leakage checks, "
+            "and leaderboard expectations aligned with the problem structure."
+        ),
+        code(
+            f"""TARGET_COL = {target!r}
+MODELING_TASK = {task!r}
+PRIMARY_METRIC = {metric!r}
+VALIDATION_PLAN = {validation!r}
+HIGH_CARD_TEXT = {text_hint!r}
+
+print("Evaluation readiness checklist")
+print("-" * 60)
+print(f"Target candidate         : {{TARGET_COL}}")
+print(f"Modeling task            : {{MODELING_TASK}}")
+print(f"Primary metric           : {{PRIMARY_METRIC}}")
+print(f"Validation plan          : {{VALIDATION_PLAN}}")
+print(f"High-cardinality columns : {{HIGH_CARD_TEXT}}")
+print("\\nRecommended baseline stack:")
+if MODELING_TASK == "classification":
+    print("- LogisticRegression / LightGBMClassifier with stratified validation")
+elif MODELING_TASK == "regression":
+    print("- Ridge / LightGBMRegressor with error analysis on residual tails")
+else:
+    print("- Clustering, retrieval, or weak-label experiments before supervised modeling")
+print("\\nRisk checks:")
+print("- Verify no leakage columns encode the target directly")
+print("- Compare train/validation distributions before reading leaderboard movement")
+print("- Document trade-offs, caveats, and limitations before feature expansion")"""
+        ),
+    ]
+
+
 def _cell_quality_summary(analysis: dict) -> list[dict]:
     """Generate a data quality summary cell."""
     return [
-        md("## 8. Key Findings <a id='findings'></a>"),
+        md("## 10. Key Findings <a id='findings'></a>"),
         code("""# Data quality summary
 print("=" * 60)
 print("DATA QUALITY SUMMARY")
@@ -462,7 +579,14 @@ if len(numeric_cols) > 0:
         outliers = (z.abs() > 3).sum()
         if outliers > 0:
             print(f"  {col}: {outliers:,} rows ({outliers/len(df)*100:.1f}%)")"""),
-        md("""### Next Steps
+        md("""### Insights, Trade-offs, and Next Steps
+- **Insight:** the strongest opportunity usually comes from the small set of columns with the clearest business interpretation.
+- **Observation:** missingness, skew, and high-cardinality text fields often drive the most useful feature engineering decisions.
+- **Trade-off:** richer feature sets can improve metrics, but they also increase leakage risk and maintenance cost.
+- **Limitation:** EDA alone cannot prove causality, so validation and error analysis should confirm every major hypothesis.
+- **Hypothesis:** targeted feature engineering on the most informative fields should outperform a naive all-columns baseline.
+
+### Next Steps
 - Feature engineering: create interaction terms from correlated features
 - Handle missing values: imputation strategy depends on missingness pattern (MCAR/MAR/MNAR)
 - Scale numeric features before modeling (StandardScaler or RobustScaler for outliers)
@@ -511,6 +635,7 @@ def generate_explore_notebook(ds_dir: Path) -> list[dict]:
     # Build cells
     cells: list[dict] = []
     cells.extend(_cell_title(meta, analysis))
+    cells.extend(_cell_objective_and_evaluation(meta, analysis, classified))
     cells.extend(_cell_setup(ds_dir, analysis))
     cells.extend(_cell_overview(analysis))
     cells.extend(_cell_missing_data())
@@ -518,6 +643,7 @@ def generate_explore_notebook(ds_dir: Path) -> list[dict]:
     cells.extend(_cell_categorical(classified))
     cells.extend(_cell_correlations(classified))
     cells.extend(_cell_target(classified))
+    cells.extend(_cell_evaluation_readiness(analysis, classified))
     cells.extend(_cell_quality_summary(analysis))
 
     return cells

@@ -1,6 +1,6 @@
 {
-  "id": "lorenzoscaturchio/job-postings-nlp-salary-eda",
-  "title": "Job Postings NLP Salary EDA",
+  "id": "lorenzoscaturchio/job-postings-nlp-salary-prediction-eda",
+  "title": "Job Postings NLP Salary Prediction EDA",
   "code_file": "explore.ipynb",
   "language": "python",
   "kernel_type": "notebook",
