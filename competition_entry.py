@@ -106,8 +106,8 @@ def fetch_competition_info(slug: str) -> dict | None:
             return None
 
         for row in csv.DictReader(io.StringIO(result.stdout)):
-            ref = row.get("ref", "")
-            if slug in ref:
+            ref = str(row.get("ref", "")).strip().lower()
+            if ref == slug:
                 return row
 
     except Exception:
