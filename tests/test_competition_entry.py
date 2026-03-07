@@ -62,6 +62,35 @@ class TestDetectCategory:
 
 
 # ---------------------------------------------------------------------------
+# Competition metadata fetching
+# ---------------------------------------------------------------------------
+
+class TestFetchCompetitionInfo:
+    def test_matches_slug_exactly_not_by_prefix(self, monkeypatch):
+        csv_payload = (
+            "ref,title\n"
+            "playground-series-s4e10,Episode 10\n"
+            "playground-series-s4e1,Episode 1\n"
+        )
+
+        def fake_run(*args, **kwargs):
+            class Result:
+                returncode = 0
+                stdout = csv_payload
+
+            return Result()
+
+        monkeypatch.setattr(entry.subprocess, "run", fake_run)
+        monkeypatch.setattr(entry, "kaggle_command", lambda: ["kaggle"])
+
+        info = entry.fetch_competition_info("playground-series-s4e1")
+
+        assert info is not None
+        assert info["ref"] == "playground-series-s4e1"
+        assert info["title"] == "Episode 1"
+
+
+# ---------------------------------------------------------------------------
 # Kernel metadata generation
 # ---------------------------------------------------------------------------
 
