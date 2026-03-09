@@ -1,6 +1,6 @@
 {
-  "id": "lorenzoscaturchio/credit-card-fraud-detection-eda",
-  "title": "Credit Card Fraud Detection EDA",
+  "id": "lorenzoscaturchio/credit-card-fraud-eda-detection",
+  "title": "Credit Card Fraud: EDA & Detection",
   "code_file": "explore.ipynb",
   "language": "python",
   "kernel_type": "notebook",

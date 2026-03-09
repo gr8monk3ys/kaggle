@@ -1,25 +1,9 @@
 #!/usr/bin/env python3
 """Build the ensemble_stacking_guide.ipynb notebook."""
-import json
-import os
-
-def md(source):
-    """Create a markdown cell."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {"cell_type": "markdown", "metadata": {}, "source": src}
-
-def code(source):
-    """Create a code cell."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "code",
-        "metadata": {"trusted": True},
-        "source": src,
-        "outputs": [],
-        "execution_count": None
-    }
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from build_utils import md, code, write_notebook
 
 cells = []
 
@@ -1523,6 +1507,15 @@ cells.append(md(
 '| **Distillation** | Complexity | Soft labels from teacher | Deployment / inference speed |'
 ))
 
+cells.append(md(
+'## Interpretation, Trade-offs, and Limitations\n'
+'\n'
+'- **Observation:** ensemble gains are usually largest when base models make different mistakes rather than when they all score similarly on the same folds.\n'
+'- **Interpretation:** stacking works because the meta-learner can reweight model regimes, not because it magically fixes weak first-level models.\n'
+'- **Trade-off:** more models can improve validation, but they also increase leakage risk, training cost, and maintenance burden.\n'
+'- **Limitation:** leaderboard bumps are fragile when out-of-fold discipline is weak, so every ensemble hypothesis should start with strict validation.'
+))
+
 # ── Cell 54: Call to action ──────────────────────────────────────────
 cells.append(md(
 '---\n'
@@ -1551,33 +1544,5 @@ cells.append(md(
 ))
 
 # ── Build the notebook ──────────────────────────────────────────────
-notebook = {
-    "metadata": {
-        "kernelspec": {
-            "display_name": "Python 3",
-            "language": "python",
-            "name": "python3"
-        },
-        "language_info": {
-            "name": "python",
-            "version": "3.10.12",
-            "mimetype": "text/x-python",
-            "codemirror_mode": {"name": "ipython", "version": 3},
-            "pygments_lexer": "ipython3",
-            "nbconvert_exporter": "python",
-            "file_extension": ".py"
-        }
-    },
-    "nbformat": 4,
-    "nbformat_minor": 4,
-    "cells": cells
-}
 
-output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ensemble_stacking_guide.ipynb")
-with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(notebook, f, indent=1)
-
-print(f"Notebook written to {output_path}")
-print(f"Total cells: {len(cells)}")
-print(f"Markdown cells: {sum(1 for c in cells if c['cell_type'] == 'markdown')}")
-print(f"Code cells: {sum(1 for c in cells if c['cell_type'] == 'code')}")
+write_notebook(cells, __file__, "ensemble_stacking_guide.ipynb")

@@ -7,14 +7,13 @@ import argparse
 import csv
 import io
 import json
-import re
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import dataset_usability
+from kaggle_utils import kaggle_command, summarize_subprocess_error
 
 
 BLUE = "\033[0;34m"
@@ -38,31 +37,6 @@ class PublishCandidate:
     live_state: str  # draft | live | unknown
     eligible: bool
     blocked_reasons: list[str]
-
-
-def kaggle_command() -> list[str]:
-    if shutil.which("kaggle"):
-        return ["kaggle"]
-    return ["python3", "-m", "kaggle.cli"]
-
-
-def summarize_subprocess_error(*chunks: str) -> str:
-    lines: list[str] = []
-    for chunk in chunks:
-        for line in chunk.splitlines():
-            line = line.strip()
-            if line:
-                lines.append(line)
-    if not lines:
-        return "unknown error"
-    preferred = [
-        line
-        for line in lines
-        if re.search(r"(error|unauthorized|forbidden|denied|failed|exception|traceback)", line, re.IGNORECASE)
-    ]
-    return (preferred[-1] if preferred else lines[-1])[:220]
-
-
 def parse_live_refs_csv(raw_csv: str) -> set[str]:
     lines = raw_csv.splitlines()
     start_idx = None
@@ -97,20 +71,23 @@ def fetch_live_refs(owner: str) -> tuple[set[str] | None, str | None]:
 
     refs: set[str] = set()
     errors: list[str] = []
+    lookup_succeeded = False
 
     mine_refs, mine_err = _run_dataset_list(["--mine", "--csv"])
     if mine_refs is not None:
+        lookup_succeeded = True
         refs.update(ref for ref in mine_refs if ref.startswith(f"{owner}/"))
     elif mine_err:
         errors.append(f"--mine: {mine_err}")
 
     search_refs, search_err = _run_dataset_list(["-s", owner, "--csv"])
     if search_refs is not None:
+        lookup_succeeded = True
         refs.update(ref for ref in search_refs if ref.startswith(f"{owner}/"))
     elif search_err:
         errors.append(f"-s {owner}: {search_err}")
 
-    if refs:
+    if lookup_succeeded:
         return refs, None
     if errors:
         return None, "; ".join(errors)

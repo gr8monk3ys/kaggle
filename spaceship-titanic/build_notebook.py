@@ -1,14 +1,12 @@
+#!/usr/bin/env python3
 """Build spaceship_titanic_guide.ipynb from structured cell definitions."""
-import json, os
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from build_utils import md, code, write_notebook
 
-OUTPUT = os.path.join(os.path.dirname(__file__), "spaceship_titanic_guide.ipynb")
 cells = []
-
-def md(src): cells.append({"cell_type":"markdown","metadata":{},"source":[src]})
-def code(src): cells.append({"cell_type":"code","execution_count":None,"metadata":{},"outputs":[],"source":[src]})
-
-# ── Title ──────────────────────────────────────────────────────────────────────
-md("""# Spaceship Titanic: Complete ML Guide
+cells.append(md("""# Spaceship Titanic: Complete ML Guide
 **Competition:** [Spaceship Titanic](https://www.kaggle.com/competitions/spaceship-titanic)
 **Task:** Binary classification — predict which passengers were transported to an alternate dimension
 **Author:** Lorenzo Scaturchio
@@ -21,12 +19,21 @@ md("""# Spaceship Titanic: Complete ML Guide
 3. XGBoost + LightGBM + CatBoost ensemble
 4. Optuna hyperparameter tuning
 5. Full submission pipeline
-""")
+"""))
+
+cells.append(md("""## Objective & Evaluation Strategy
+
+**Objective:** build a reproducible binary classification workflow for passenger transport outcomes with features that survive leaderboard shakeups.
+
+**Evaluation:** prioritize out-of-fold accuracy and ROC-AUC, then compare leaderboard movement only after validation remains stable.
+
+**Hypothesis:** CryoSleep, cabin deck, and spend behavior should dominate early signal because they encode the strongest behavioral story in the manifest.
+"""))
 
 # ── 1. Imports & data loading ──────────────────────────────────────────────────
-md("## 1. Setup & Data Loading")
+cells.append(md("## 1. Setup & Data Loading"))
 
-code("""import os, warnings, numpy as np, pandas as pd
+cells.append(code("""import os, warnings, numpy as np, pandas as pd
 import matplotlib.pyplot as plt, seaborn as sns
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -39,9 +46,9 @@ plt.rcParams.update({'figure.figsize': (12, 5), 'font.size': 11})
 sns.set_style('whitegrid')
 SEED = 42
 np.random.seed(SEED)
-print('Libraries loaded.')""")
+print('Libraries loaded.')"""))
 
-code("""# ── Data loading with synthetic fallback ─────────────────────────────────────
+cells.append(code("""# ── Data loading with synthetic fallback ─────────────────────────────────────
 TRAIN_PATH = '/kaggle/input/spaceship-titanic/train.csv'
 TEST_PATH  = '/kaggle/input/spaceship-titanic/test.csv'
 
@@ -98,24 +105,24 @@ else:
     print('Using synthetic data.')
 
 print(f'Train: {train.shape}  |  Test: {test.shape}')
-train.head(3)""")
+train.head(3)"""))
 
 # ── 2. EDA ─────────────────────────────────────────────────────────────────────
-md("""## 2. Exploratory Data Analysis
+cells.append(md("""## 2. Exploratory Data Analysis
 
 Key domain insight: **CryoSleep** passengers were suspended for the voyage — they could not use any amenities, so their spend columns are always 0. This is a near-perfect feature.
-""")
+"""))
 
-code("""# Missing values
+cells.append(code("""# Missing values
 missing = pd.DataFrame({
     'train': train.isnull().sum(),
     'test':  test.isnull().sum()
 })
 missing = missing[missing.sum(axis=1) > 0]
 print('Columns with missing values:')
-print(missing)""")
+print(missing)"""))
 
-code("""# Target distribution
+cells.append(code("""# Target distribution
 transported_rate = train['Transported'].mean()
 print(f'Transported rate: {transported_rate:.1%}  (well balanced)')
 
@@ -147,9 +154,9 @@ for i, v in enumerate(hp_cross.values):
     axes[2].text(i, v+0.02, f'{v:.1%}', ha='center', fontweight='bold')
 
 plt.tight_layout()
-plt.show()""")
+plt.show()"""))
 
-code("""# Cabin deck analysis
+cells.append(code("""# Cabin deck analysis
 train_eda = train.copy()
 train_eda['Deck'] = train_eda['Cabin'].str.split('/').str[0]
 deck_transport = train_eda.groupby('Deck')['Transported'].mean().sort_values(ascending=False)
@@ -177,9 +184,9 @@ axes[1].set_ylabel('Transport Rate')
 axes[1].set_ylim(0, 1)
 
 plt.tight_layout()
-plt.show()""")
+plt.show()"""))
 
-code("""# Age distribution by Transported
+cells.append(code("""# Age distribution by Transported
 fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 for transported, label, color in [(True,'Transported','#2ecc71'),(False,'Not Transported','#e74c3c')]:
     axes[0].hist(train[train['Transported']==transported]['Age'].dropna(),
@@ -196,10 +203,10 @@ axes[1].set_xlabel('Transport Rate')
 axes[1].set_xlim(0, 1)
 plt.tight_layout()
 plt.show()
-print('Key insight: TRAPPIST-1e passengers transported most often (~65%)')""")
+print('Key insight: TRAPPIST-1e passengers transported most often (~65%)')"""))
 
 # ── 3. Feature Engineering ─────────────────────────────────────────────────────
-md("""## 3. Feature Engineering
+cells.append(md("""## 3. Feature Engineering
 
 The most impactful features beyond the raw columns:
 - **Deck / Side** parsed from Cabin
@@ -208,9 +215,9 @@ The most impactful features beyond the raw columns:
 - **TotalSpend / log(TotalSpend+1)** — high spenders rarely transported
 - **CryoSpend interaction** — enforces the domain rule
 - **AgeGroup** — children < 13 transported at higher rate
-""")
+"""))
 
-code("""def engineer_features(df):
+cells.append(code("""def engineer_features(df):
     df = df.copy()
 
     # Parse Cabin → Deck, CabinNum, Side
@@ -268,12 +275,12 @@ y = train_fe[TARGET].astype(int)
 X_test = test_fe[FEATURES]
 
 print(f'Features: {len(FEATURES)}')
-print(FEATURES)""")
+print(FEATURES)"""))
 
 # ── 4. Baseline models ──────────────────────────────────────────────────────────
-md("## 4. Baseline Models")
+cells.append(md("## 4. Baseline Models"))
 
-code("""from sklearn.model_selection import StratifiedKFold, cross_val_score
+cells.append(code("""from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 CV = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
 
@@ -286,12 +293,12 @@ baselines = {
 print('5-fold CV Accuracy:')
 for name, model in baselines.items():
     score = cross_val_score(model, X, y, cv=CV, scoring='accuracy', n_jobs=-1)
-    print(f'  {name:<25} {score.mean():.4f} ± {score.std():.4f}')""")
+    print(f'  {name:<25} {score.mean():.4f} ± {score.std():.4f}')"""))
 
 # ── 5. XGBoost + LightGBM ──────────────────────────────────────────────────────
-md("## 5. Gradient Boosting Models")
+cells.append(md("## 5. Gradient Boosting Models"))
 
-code("""try:
+cells.append(code("""try:
     import xgboost as xgb
     XGB_AVAILABLE = True
 except ImportError:
@@ -334,12 +341,12 @@ for fold, (tr_idx, va_idx) in enumerate(CV.split(X, y)):
 if xgb_scores:
     print(f'XGBoost CV Accuracy: {np.mean(xgb_scores):.4f} ± {np.std(xgb_scores):.4f}')
 if lgb_scores:
-    print(f'LightGBM CV Accuracy: {np.mean(lgb_scores):.4f} ± {np.std(lgb_scores):.4f}')""")
+    print(f'LightGBM CV Accuracy: {np.mean(lgb_scores):.4f} ± {np.std(lgb_scores):.4f}')"""))
 
 # ── 6. Feature importance ───────────────────────────────────────────────────────
-md("## 6. Feature Importance")
+cells.append(md("## 6. Feature Importance"))
 
-code("""if XGB_AVAILABLE:
+cells.append(code("""if XGB_AVAILABLE:
     xgb_final = xgb.XGBClassifier(
         n_estimators=500, learning_rate=0.05, max_depth=6,
         subsample=0.8, colsample_bytree=0.8, use_label_encoder=False,
@@ -358,15 +365,15 @@ code("""if XGB_AVAILABLE:
 
     print('\\nTop 5 most important features:')
     for feat, imp in top20.head().items():
-        print(f'  {feat:<25} {imp:.4f}')""")
+        print(f'  {feat:<25} {imp:.4f}')"""))
 
 # ── 7. Optuna tuning ────────────────────────────────────────────────────────────
-md("""## 7. Hyperparameter Tuning with Optuna
+cells.append(md("""## 7. Hyperparameter Tuning with Optuna
 
 A quick 30-trial search to improve XGBoost performance.
-""")
+"""))
 
-code("""try:
+cells.append(code("""try:
     import optuna
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -393,12 +400,12 @@ code("""try:
     print(f'Best CV accuracy: {study.best_value:.4f}')
     print(f'Best params: {study.best_params}')
 except ImportError:
-    print('optuna not available — skipping tuning')""")
+    print('optuna not available — skipping tuning')"""))
 
 # ── 8. Ensemble ─────────────────────────────────────────────────────────────────
-md("## 8. Final Ensemble")
+cells.append(md("## 8. Final Ensemble"))
 
-code("""# Soft-vote ensemble: XGB + LGB + RF
+cells.append(code("""# Soft-vote ensemble: XGB + LGB + RF
 oof_preds = np.zeros(len(X))
 test_preds = np.zeros(len(X_test))
 
@@ -442,22 +449,22 @@ for fold, (tr_idx, va_idx) in enumerate(CV.split(X, y)):
     test_preds        += test_fold / n_models / CV.n_splits
 
 oof_acc = accuracy_score(y, (oof_preds > 0.5).astype(int))
-print(f'Ensemble OOF Accuracy: {oof_acc:.4f}')""")
+print(f'Ensemble OOF Accuracy: {oof_acc:.4f}')"""))
 
 # ── 9. Submission ───────────────────────────────────────────────────────────────
-md("## 9. Generate Submission")
+cells.append(md("## 9. Generate Submission"))
 
-code("""sub = pd.DataFrame({
+cells.append(code("""sub = pd.DataFrame({
     'PassengerId': test['PassengerId'],
     'Transported': (test_preds > 0.5)
 })
 sub.to_csv('submission.csv', index=False)
 print('submission.csv written.')
 print(sub['Transported'].value_counts())
-sub.head()""")
+sub.head()"""))
 
 # ── 10. Key takeaways ───────────────────────────────────────────────────────────
-md("""## Key Takeaways
+cells.append(md("""## Key Takeaways
 
 | Insight | Impact |
 |---------|--------|
@@ -472,21 +479,16 @@ md("""## Key Takeaways
 - Target encoding for high-cardinality features
 - Pseudo-labeling on test set
 - Stacking with a meta-learner
-""")
+"""))
+
+cells.append(md("""## Interpretation, Trade-offs, and Limitations
+
+- **Observation:** the highest-gain features are interpretable, which makes post-hoc debugging much easier than relying on opaque interaction explosions.
+- **Interpretation:** strong spend-based signals help validation, but they may overfit if missing-value handling leaks route-specific artifacts.
+- **Trade-off:** larger boosted ensembles can add a few basis points, yet they cost more iteration time and make threshold tuning harder.
+- **Limitation:** synthetic fallback data is useful for notebook continuity, but real competition validation should remain the source of truth.
+"""))
 
 # ── Write notebook ─────────────────────────────────────────────────────────────
-nb = {
-    "nbformat": 4, "nbformat_minor": 5,
-    "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
-                 "language_info": {"name": "python", "version": "3.10.0"}},
-    "cells": cells
-}
-with open(OUTPUT, "w") as f:
-    json.dump(nb, f, indent=1)
 
-md_count  = sum(1 for c in cells if c["cell_type"] == "markdown")
-code_count = sum(1 for c in cells if c["cell_type"] == "code")
-print(f"Notebook written to {OUTPUT}")
-print(f"Total cells: {len(cells)}")
-print(f"  Markdown cells: {md_count}")
-print(f"  Code cells:     {code_count}")
+write_notebook(cells, __file__, "spaceship_titanic_guide.ipynb")

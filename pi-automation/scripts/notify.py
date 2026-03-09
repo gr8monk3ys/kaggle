@@ -17,11 +17,15 @@ def send(message: str) -> None:
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
-    response = requests.post(
-        url,
-        json={"chat_id": chat_id, "text": message, "parse_mode": "Markdown"},
-        timeout=10,
-    )
+    try:
+        response = requests.post(
+            url,
+            json={"chat_id": chat_id, "text": message, "parse_mode": "Markdown"},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        print(f"Telegram API request failed: {exc}", file=sys.stderr)
+        return
 
     if response.status_code != 200:
         print(f"Telegram API error {response.status_code}: {response.text}", file=sys.stderr)

@@ -16,6 +16,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from kaggle_utils import kaggle_command, parse_iso_date, resolve_today, summarize_subprocess_error
+
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 
@@ -35,20 +37,6 @@ class DatasetScore:
     kaggle_score_10: float | None = None
 
 
-def parse_iso_date(text: str) -> date | None:
-    try:
-        return datetime.strptime(text.strip(), "%Y-%m-%d").date()
-    except ValueError:
-        return None
-
-
-def resolve_today(today_override: str | None) -> date:
-    if today_override is None:
-        return date.today()
-    parsed = parse_iso_date(today_override)
-    if not parsed:
-        raise SystemExit(f"Invalid --today value: {today_override}")
-    return parsed
 
 
 def load_json(path: Path) -> dict[str, Any] | None:
@@ -78,20 +66,6 @@ def kaggle_rating_to_10(rating: float) -> float:
     return max(0.0, min(10.0, round(rating * 10.0, 1)))
 
 
-def kaggle_command() -> list[str]:
-    if shutil.which("kaggle"):
-        return ["kaggle"]
-    return ["python3", "-m", "kaggle.cli"]
-
-
-def summarize_subprocess_error(*chunks: str) -> str:
-    lines: list[str] = []
-    for chunk in chunks:
-        for line in chunk.splitlines():
-            line = line.strip()
-            if line:
-                lines.append(line)
-    return lines[-1][:220] if lines else "unknown error"
 
 
 def parse_kaggle_datasets_csv(raw_csv: str) -> dict[str, float]:

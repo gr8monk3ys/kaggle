@@ -1,28 +1,9 @@
 #!/usr/bin/env python3
 """Build the nlp_text_classification.ipynb notebook."""
-import json
-import os
-
-
-def md(source):
-    """Create a markdown cell."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {"cell_type": "markdown", "metadata": {}, "source": src}
-
-
-def code(source):
-    """Create a code cell."""
-    lines = source.split("\n")
-    src = [line + "\n" for line in lines[:-1]] + [lines[-1]]
-    return {
-        "cell_type": "code",
-        "metadata": {"trusted": True},
-        "source": src,
-        "outputs": [],
-        "execution_count": None,
-    }
-
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from build_utils import md, code, write_notebook
 
 cells = []
 
@@ -1561,38 +1542,5 @@ cells.append(md(
 ))
 
 # ── Assemble notebook ─────────────────────────────────────────────────────────
-notebook = {
-    "metadata": {
-        "kernelspec": {
-            "display_name": "Python 3",
-            "language": "python",
-            "name": "python3",
-        },
-        "language_info": {
-            "name": "python",
-            "version": "3.10.0",
-            "codemirror_mode": {"name": "ipython", "version": 3},
-            "pygments_lexer": "ipython3",
-            "nbconvert_exporter": "python",
-            "file_extension": ".py",
-        },
-    },
-    "nbformat": 4,
-    "nbformat_minor": 4,
-    "cells": cells,
-}
 
-output_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "nlp_text_classification.ipynb"
-)
-with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(notebook, f, indent=1)
-
-print("Notebook written to", output_path)
-print("Total cells:", len(cells))
-print()
-print("Cell breakdown:")
-md_count   = sum(1 for c in cells if c["cell_type"] == "markdown")
-code_count = sum(1 for c in cells if c["cell_type"] == "code")
-print("  Markdown cells :", md_count)
-print("  Code cells     :", code_count)
+write_notebook(cells, __file__, "nlp_text_classification.ipynb")

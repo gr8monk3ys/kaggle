@@ -31,6 +31,15 @@ This notebook walks through a complete ML pipeline on 50K Spotify-style tracks:
 8. [Key Takeaways](#takeaways)
 """))
 
+cells.append(md("""## Objective & Evaluation Strategy
+
+**Objective:** understand which audio features separate genres and estimate how far content-only features can go for popularity modeling.
+
+**Evaluation:** compare multi-class classification accuracy for genre prediction, regression error for popularity, and cluster coherence for mood discovery.
+
+**Hypothesis:** acousticness, energy, loudness, and tempo should explain most of the useful variation because they capture repeatable production patterns across genres.
+"""))
+
 cells.append(md("## 1. Setup & Data Loading <a id='setup'></a>"))
 
 cells.append(code("""import numpy as np
@@ -370,6 +379,14 @@ cells.append(md("""## 8. Key Takeaways <a id='takeaways'></a>
 - Add artist-level features (follower count, genre expertise)
 - Use collaborative filtering signals for popularity modeling
 - Try Contrastive Learning for audio embedding
+"""))
+
+cells.append(md("""## Interpretation, Trade-offs, and Limitations
+
+- **Observation:** audio features are strong for genre structure, but they explain only part of commercial popularity.
+- **Interpretation:** recency and production style dominate several clusters because they proxy the way streaming catalogs are curated.
+- **Trade-off:** content-only models are easy to reproduce, yet they leave out social, playlist, and artist-network effects that often matter most.
+- **Limitation:** synthetic track metadata is ideal for experimentation, but real production decisions should validate the same hypotheses on live catalog data.
 """))
 
 # Write notebook

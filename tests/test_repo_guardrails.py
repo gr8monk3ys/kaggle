@@ -47,6 +47,7 @@ def test_manage_help_available():
     assert "sync" in result.stdout
     assert "sync-template" in result.stdout
     assert "doctor" in result.stdout
+    assert "preflight" in result.stdout
     assert "quality" in result.stdout
     assert "dataset-usability" in result.stdout
     assert "usability-tracker" in result.stdout
@@ -55,6 +56,7 @@ def test_manage_help_available():
     assert "campaign-execute" in result.stdout
     assert "usability-benchmark" in result.stdout
     assert "publish-datasets" in result.stdout
+    assert "smoke-live" in result.stdout
     assert "auth-doctor" in result.stdout
     assert "draft-ops" in result.stdout
     assert "draft-set" in result.stdout
@@ -92,12 +94,30 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "Open or update incident issue" in content
 
 
-def test_ci_workflow_runs_notebook_quality_gate():
+def test_ci_workflow_runs_preflight_gate_and_script_smokes():
     workflow = ROOT / ".github" / "workflows" / "ci.yml"
     assert workflow.exists()
     content = workflow.read_text(encoding="utf-8")
-    assert "notebook_quality.py" in content
-    assert "--fail-under-threshold" in content
-    assert "dataset_usability.py" in content
-    assert "--fail-under 85" in content
-    assert "discussion_scheduler.py --health-check" in content
+    assert "bash manage.sh preflight" in content
+    assert "--strict-doctor" in content
+    assert "--no-pytest" in content
+    assert "pytest -q --cov=." in content
+    assert "dataset_explore_generator.py" in content
+    assert "competition_entry.py --help" in content
+
+
+def test_live_smoke_workflow_exists_and_is_manual():
+    workflow = ROOT / ".github" / "workflows" / "live-smoke.yml"
+    assert workflow.exists(), "Expected live smoke workflow to exist."
+
+    content = workflow.read_text(encoding="utf-8")
+    assert "name: Live Smoke" in content
+    assert "workflow_dispatch:" in content
+    assert "schedule:" not in content
+    assert "discussion_mode:" in content
+    assert "include_live_datasets:" in content
+    assert "kaggle-live-smoke" in content
+    assert "bash manage.sh" in content
+    assert "smoke-live" in content
+    assert "--check-discussion-login" in content
+    assert "--no-discussion" in content

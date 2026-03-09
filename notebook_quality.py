@@ -13,6 +13,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from kaggle_utils import parse_iso_date, resolve_today
+
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 
@@ -125,20 +127,6 @@ class NotebookScore:
     error: str | None = None
 
 
-def parse_iso_date(text: str) -> date | None:
-    try:
-        return datetime.strptime(text.strip(), "%Y-%m-%d").date()
-    except ValueError:
-        return None
-
-
-def resolve_today(today_override: str | None) -> date:
-    if today_override is None:
-        return date.today()
-    parsed = parse_iso_date(today_override)
-    if not parsed:
-        raise SystemExit(f"Invalid --today value: {today_override}")
-    return parsed
 
 
 def source_to_text(source: Any) -> str:
