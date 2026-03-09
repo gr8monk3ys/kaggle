@@ -12,7 +12,7 @@ _repo = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent
 sys.path.insert(0, str(_repo))
 
 import notify
-from medal_ops import ParsedDeadline, parse_active_competitions
+from kaggle_portfolio.ops.medal_ops import ParsedDeadline, parse_active_competitions
 
 REPO = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent)))
 TRACKER_PATH = REPO / "grandmaster-tracker.md"

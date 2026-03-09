@@ -1,4 +1,4 @@
-import notebook_pipeline
+from kaggle_portfolio.notebooks import notebook_pipeline
 
 
 def test_score_notebook_dir_returns_non_zero_for_valid_notebook(
@@ -28,11 +28,16 @@ def test_score_notebook_dir_returns_non_zero_for_valid_notebook(
 
 def test_discover_build_scripts_includes_underscore_variant(repo_root):
     scripts = notebook_pipeline.discover_build_scripts(repo_root)
-    assert (repo_root / "timeseries-transformers" / "_build_notebook.py") in scripts
+    assert (repo_root / "projects" / "educational" / "timeseries-transformers" / "_build_notebook.py") in scripts
 
 
 def test_kaggle_command_falls_back_to_module_cli(monkeypatch):
-    import kaggle_utils
-    monkeypatch.setattr(kaggle_utils.shutil, "which", lambda _: None)
+    from kaggle_portfolio.shared import kaggle_utils
+    monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
+    monkeypatch.setattr(
+        kaggle_utils.importlib.util,
+        "find_spec",
+        lambda name: object() if name == "kaggle.cli" else None,
+    )
     cmd = kaggle_utils.kaggle_command()
     assert cmd[1:] == ["-m", "kaggle.cli"]

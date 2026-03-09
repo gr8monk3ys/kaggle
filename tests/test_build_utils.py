@@ -1,4 +1,4 @@
-"""Tests for build_utils.py — shared notebook cell factory and writer."""
+"""Tests for the shared notebook cell factory and writer."""
 import json
 from pathlib import Path
 
@@ -6,7 +6,7 @@ import pytest
 
 from conftest import ROOT
 
-import build_utils
+from kaggle_portfolio.shared import build_utils
 
 
 # ── md() cell factory ─────────────────────────────────────────────────────────
@@ -122,15 +122,15 @@ def test_write_notebook_no_exporter_key_in_plain_text(tmp_path, repo_root):
     raw = Path(out).read_text(encoding="utf-8")
     # The literal string would be split across the variable assignment in build_utils.py
     assert "nbconvert_exporter" in raw  # key is in the file...
-    # ...but build_utils.py itself does not contain the literal undivided string
-    src = (repo_root / "build_utils.py").read_text(encoding="utf-8")
+    # ...but the shared utility module itself does not contain the literal undivided string
+    src = (repo_root / "kaggle_portfolio" / "shared" / "build_utils.py").read_text(encoding="utf-8")
     assert '"nbconvert_exporter"' not in src  # uses string concatenation trick
 
 
 # ── build_notebook.py import smoke tests ─────────────────────────────────────
 
 def _build_scripts_using_imports():
-    """Return all build_notebook.py paths that should import from build_utils."""
+    """Return all build_notebook.py paths that should import from shared build_utils."""
     excluded = {"datasets/mental-health-tech", "datasets/spotify-tracks"}
     for p in ROOT.rglob("build_notebook.py"):
         rel = str(p.relative_to(ROOT).parent)
@@ -140,10 +140,10 @@ def _build_scripts_using_imports():
 
 @pytest.mark.parametrize("script", _build_scripts_using_imports())
 def test_build_notebook_uses_build_utils_import(script):
-    """Each refactored build_notebook.py must import from build_utils, not define md/code locally."""
+    """Each refactored build_notebook.py must import the shared build_utils helpers."""
     src = script.read_text(encoding="utf-8")
-    assert "from build_utils import" in src, \
-        f"{script.relative_to(ROOT)}: missing 'from build_utils import'"
+    assert "from kaggle_portfolio.shared.build_utils import" in src, \
+        f"{script.relative_to(ROOT)}: missing shared build_utils import"
     # Must NOT define md or code locally (as functions or lambdas)
     import ast
     try:

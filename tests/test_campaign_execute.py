@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import campaign_execute
+from kaggle_portfolio.campaigns import campaign_execute
 
 
 def _action(

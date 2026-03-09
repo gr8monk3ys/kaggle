@@ -34,7 +34,7 @@ Progress is tracked in [`grandmaster-tracker.md`](./grandmaster-tracker.md).
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| **Python** | 3.9+ | Notebooks, `medal_ops.py`, `notebook_quality.py` |
+| **Python** | 3.9+ | Notebooks, `manage.sh`, and `kaggle_portfolio` modules |
 | **Kaggle CLI** | latest | `pip install kaggle` -- push/pull notebooks and datasets |
 | **Bash** | 3.2+ (macOS default OK) | `manage.sh` CLI |
 | **GPU** (optional) | CUDA-capable or Kaggle T4/P100 | Required for LLM fine-tuning, image segmentation, and competition GPU notebooks |
@@ -87,6 +87,7 @@ chmod +x manage.sh
 
 ```bash
 ./manage.sh scorecard     # Medal operations scorecard
+./manage.sh badge-plan    # Ordered badge roadmap from current tracker state
 ./manage.sh weekly-plan   # Weekly execution plan
 ./manage.sh pace          # Velocity and ETA analysis
 ./manage.sh doctor        # Preflight environment checks
@@ -99,15 +100,15 @@ chmod +x manage.sh
 
 | Project | Competition | Teams | Approach | Framework | GPU |
 |---------|-------------|-------|----------|-----------|-----|
-| [med-gemma-challenge](./med-gemma-challenge) | Medical AI (MedGemma Impact) | 58 | MedGemma 4B chest X-ray triage with LoRA fine-tuning | PyTorch, HuggingFace, PEFT | Yes |
-| [akkadian-translation](./akkadian-translation) | Ancient Language (Deep Past) | 1,321 | ByT5 seq2seq translation of Akkadian cuneiform | HuggingFace Transformers, ByT5 | Yes |
-| [vesuvius-surface](./vesuvius-surface) | Scroll Detection (Vesuvius 2) | 759 | 3D U-Net volumetric segmentation | PyTorch, segmentation_models_pytorch | No |
-| [spaceship-titanic](./spaceship-titanic) | Spaceship Titanic | -- | Binary classification with feature engineering | XGBoost, scikit-learn | No |
-| [titanic-ultimate](./titanic-ultimate) | Titanic | -- | End-to-end guide: EDA to top 5% | scikit-learn, XGBoost, ensemble | No |
-| [store-sales-forecasting](./store-sales-forecasting) | Store Sales Time Series | -- | Time series forecasting with LightGBM | LightGBM, pandas | No |
-| [nlp-disaster-tweets](./nlp-disaster-tweets) | NLP Disaster Tweets | -- | BERT-based text classification | HuggingFace, BERT | Yes |
-| [house-prices](./house-prices) | House Prices Regression | -- | EDA + feature engineering + stacked ensemble | XGBoost, LightGBM, scikit-learn | No |
-| [digit-recognizer](./digit-recognizer) | Digit Recognizer (MNIST) | -- | CNN from scratch to 99%+ accuracy | PyTorch | No |
+| [med-gemma-challenge](./projects/competitions/med-gemma-challenge) | Medical AI (MedGemma Impact) | 58 | MedGemma 4B chest X-ray triage with LoRA fine-tuning | PyTorch, HuggingFace, PEFT | Yes |
+| [akkadian-translation](./projects/competitions/akkadian-translation) | Ancient Language (Deep Past) | 1,321 | ByT5 seq2seq translation of Akkadian cuneiform | HuggingFace Transformers, ByT5 | Yes |
+| [vesuvius-surface](./projects/competitions/vesuvius-surface) | Scroll Detection (Vesuvius 2) | 759 | 3D U-Net volumetric segmentation | PyTorch, segmentation_models_pytorch | No |
+| [spaceship-titanic](./projects/competitions/spaceship-titanic) | Spaceship Titanic | -- | Binary classification with feature engineering | XGBoost, scikit-learn | No |
+| [titanic-ultimate](./projects/competitions/titanic-ultimate) | Titanic | -- | End-to-end guide: EDA to top 5% | scikit-learn, XGBoost, ensemble | No |
+| [store-sales-forecasting](./projects/competitions/store-sales-forecasting) | Store Sales Time Series | -- | Time series forecasting with LightGBM | LightGBM, pandas | No |
+| [nlp-disaster-tweets](./projects/competitions/nlp-disaster-tweets) | NLP Disaster Tweets | -- | BERT-based text classification | HuggingFace, BERT | Yes |
+| [house-prices](./projects/competitions/house-prices) | House Prices Regression | -- | EDA + feature engineering + stacked ensemble | XGBoost, LightGBM, scikit-learn | No |
+| [digit-recognizer](./projects/competitions/digit-recognizer) | Digit Recognizer (MNIST) | -- | CNN from scratch to 99%+ accuracy | PyTorch | No |
 
 ---
 
@@ -115,21 +116,24 @@ chmod +x manage.sh
 
 | Notebook | Topic | Key Techniques | Framework / Libraries | GPU |
 |----------|-------|----------------|-----------------------|-----|
-| [feature-engineering](./feature-engineering) | Feature Engineering Masterclass | 50 techniques across 8 categories | pandas, scikit-learn | No |
-| [attention-guide](./attention-guide) | Attention Mechanisms | Bahdanau to Transformer, PyTorch implementations | PyTorch | No |
-| [llm-finetuning](./llm-finetuning) | LLM Fine-Tuning | LoRA/QLoRA, 4-bit quantization, vLLM deployment | HuggingFace, PEFT, BitsAndBytes | Yes |
-| [image-segmentation](./image-segmentation) | Segmentation Masterclass | U-Net to SegFormer, Dice/Focal/Tversky losses | PyTorch, segmentation_models_pytorch | Yes |
-| [timeseries-transformers](./timeseries-transformers) | Time Series Forecasting | Temporal Fusion Transformer, Informer, Autoformer | PyTorch, HuggingFace | Yes |
-| [ensemble-stacking](./ensemble-stacking) | Ensemble Methods | Competition-winning stacking, blending, model averaging | XGBoost, LightGBM, CatBoost | No |
-| [rag-from-scratch](./rag-from-scratch) | RAG Systems | Building retrieval-augmented generation from scratch | LangChain, vector databases, embeddings | No |
-| [graph-neural-networks](./graph-neural-networks) | Graph Neural Networks | GNN practical guide for structured data | PyTorch Geometric | No |
-| [financial-analysis](./financial-analysis) | Financial Analysis | Stock market prediction, LSTM, technical analysis | PyTorch, pandas | No |
-| [fraud-detection](./fraud-detection) | Fraud Detection | Explainable ML for credit card fraud, SMOTE | XGBoost, Random Forest, SHAP | No |
-| [eda-tutorial](./eda-tutorial) | EDA Best Practices | End-to-end ML pipeline, house price prediction | scikit-learn, XGBoost, matplotlib | No |
-| [competition-template](./competition-template) | Competition Template | Standardized ML pipeline for rapid competition entry | scikit-learn, XGBoost | No |
-| [shap-explainability](./shap-explainability) | SHAP Explainability | Model interpretability masterclass | SHAP, XGBoost, scikit-learn | No |
-| [optuna-guide](./optuna-guide) | Hyperparameter Optimization | Bayesian optimization with Optuna | Optuna, XGBoost, LightGBM | No |
-| [nlp-text-classification](./nlp-text-classification) | NLP Text Classification | TF-IDF to BERT, full NLP pipeline | HuggingFace, BERT, scikit-learn | Yes |
+| [feature-engineering](./projects/educational/feature-engineering) | Feature Engineering Masterclass | 50 techniques across 8 categories | pandas, scikit-learn | No |
+| [attention-guide](./projects/educational/attention-guide) | Attention Mechanisms | Bahdanau to Transformer, PyTorch implementations | PyTorch | No |
+| [llm-finetuning](./projects/educational/llm-finetuning) | LLM Fine-Tuning | LoRA/QLoRA, 4-bit quantization, vLLM deployment | HuggingFace, PEFT, BitsAndBytes | Yes |
+| [image-segmentation](./projects/educational/image-segmentation) | Segmentation Masterclass | U-Net to SegFormer, Dice/Focal/Tversky losses | PyTorch, segmentation_models_pytorch | Yes |
+| [timeseries-transformers](./projects/educational/timeseries-transformers) | Time Series Forecasting | Temporal Fusion Transformer, Informer, Autoformer | PyTorch, HuggingFace | Yes |
+| [ensemble-stacking](./projects/educational/ensemble-stacking) | Ensemble Methods | Competition-winning stacking, blending, model averaging | XGBoost, LightGBM, CatBoost | No |
+| [rag-from-scratch](./projects/educational/rag-from-scratch) | RAG Systems | Building retrieval-augmented generation from scratch | LangChain, vector databases, embeddings | No |
+| [graph-neural-networks](./projects/educational/graph-neural-networks) | Graph Neural Networks | GNN practical guide for structured data | PyTorch Geometric | No |
+| [financial-analysis](./projects/educational/financial-analysis) | Financial Analysis | Stock market prediction, LSTM, technical analysis | PyTorch, pandas | No |
+| [fraud-detection](./projects/educational/fraud-detection) | Fraud Detection | Explainable ML for credit card fraud, SMOTE | XGBoost, Random Forest, SHAP | No |
+| [eda-tutorial](./projects/educational/eda-tutorial) | EDA Best Practices | End-to-end ML pipeline, house price prediction | scikit-learn, XGBoost, matplotlib | No |
+| [competition-template](./projects/educational/competition-template) | Competition Template | Standardized ML pipeline for rapid competition entry | scikit-learn, XGBoost | No |
+| [shap-explainability](./projects/educational/shap-explainability) | SHAP Explainability | Model interpretability masterclass | SHAP, XGBoost, scikit-learn | No |
+| [optuna-guide](./projects/educational/optuna-guide) | Hyperparameter Optimization | Bayesian optimization with Optuna | Optuna, XGBoost, LightGBM | No |
+| [nlp-text-classification](./projects/educational/nlp-text-classification) | NLP Text Classification | TF-IDF to BERT, full NLP pipeline | HuggingFace, BERT, scikit-learn | Yes |
+| [student-performance-r-analysis](./projects/educational/student-performance-r-analysis) | Student Performance in R | GPA driver analysis and fairness-oriented inspection | R, dplyr, ggplot2 | No |
+| [mental-health-tech-r-report](./projects/educational/mental-health-tech-r-report) | Mental Health in Tech Report | Policy-focused R Markdown report for treatment-seeking patterns | R Markdown, dplyr, ggplot2 | No |
+| [tabular-eda-utilities](./projects/educational/tabular-eda-utilities) | Tabular EDA Utilities | Reusable profiling helpers used by the Student Performance explorer and other tabular notebooks | Python | No |
 
 ---
 
@@ -187,6 +191,7 @@ chmod +x manage.sh
 | `competitions` | List active medal-eligible featured and research competitions | Yes |
 | `link-competition <dir> <slug>` | Add `competition_sources` to a notebook and re-push | Yes |
 | `scorecard` | Generate medal operations scorecard (writes to `medal_ops/reports/`) | No |
+| `badge-plan` | Generate an ordered Kaggle badge roadmap report from the current tracker state | No |
 | `weekly-plan` | Generate weekly execution plan report | No |
 | `pace` | Generate velocity and ETA pace analysis from historical snapshots | No |
 | `sync` | Sync tracker metrics from live Kaggle CLI data or CSV exports | Depends |
@@ -286,7 +291,7 @@ GitHub Actions is split into three layers:
 The daily health workflow runs automated checks:
 
 - **Schedule**: Daily at 09:10 UTC
-- **Checks performed**: `doctor --strict`, `quality --fail-under-threshold`, `dataset-usability --strict`, `dataset-usability --daily-tracker`, `discussion_scheduler.py --health-check`, `sync --dry-run`
+- **Checks performed**: `doctor --strict`, `quality --fail-under-threshold`, `dataset-usability --strict`, `dataset-usability --daily-tracker`, `post-discussion --health-check`, `sync --dry-run`
 - **On failure**: Opens (or updates) a GitHub issue with logs and run link
 - **On recovery**: Automatically closes the incident issue
 - **Quality gate**: Minimum notebook quality score of 95 (configurable)
@@ -333,10 +338,16 @@ kaggle/
 │       ├── ci.yml                      # PR/push CI with preflight + pytest + smoke tests
 │       ├── live-smoke.yml              # Manual authenticated live smoke checks
 │       └── medal-ops-health.yml        # Daily portfolio health checks
-├── manage.sh                           # CLI for all Kaggle operations
-├── medal_ops.py                        # Scorecard, weekly-plan, pace, sync, doctor
-├── notebook_quality.py                 # Notebook quality scoring engine
-├── build_utils.py                      # Shared notebook build utilities
+├── manage.sh                           # Thin CLI wrapper
+├── kaggle_portfolio/                   # Main Python package
+│   ├── cli.py                          # Central command entrypoint
+│   ├── manage_commands.py              # Command registry and dispatch
+│   ├── campaigns/                      # Campaign planning + execution
+│   ├── datasets/                       # Dataset quality/publish/build tooling
+│   ├── notebooks/                      # Notebook/competition orchestration
+│   ├── ops/                            # Repo health, auth, tracker, scheduling
+│   ├── quality/                        # Notebook quality scoring
+│   └── shared/                         # Shared helpers (Kaggle + notebook utils)
 ├── grandmaster-tracker.md              # Progress across all 4 GM categories
 ├── competition-scout-report.md         # Active competition analysis
 ├── discussion-engagement-strategy.md   # 12-week community engagement plan
@@ -344,33 +355,36 @@ kaggle/
 ├── DISCUSSION_POSTS_READY.md           # Ready-to-post discussion index
 ├── kaggle.json.example                 # Credential template (never commit real keys)
 │
-├── Competition Entries (9 competitions)
-│   ├── med-gemma-challenge/            # MedGemma 4B chest X-ray triage (LoRA)
-│   ├── akkadian-translation/           # ByT5 seq2seq ancient language translation
-│   ├── vesuvius-surface/               # 3D U-Net volumetric segmentation
-│   ├── spaceship-titanic/              # Binary classification with feature engineering
-│   ├── titanic-ultimate/               # Titanic: From Zero to Top 5%
-│   ├── store-sales-forecasting/        # Time series forecasting with LightGBM
-│   ├── nlp-disaster-tweets/            # BERT-based disaster tweet classification
-│   ├── house-prices/                   # House Prices: EDA + Feature Engineering
-│   └── digit-recognizer/              # CNN from Scratch to 99%+
-│
-├── Educational Notebooks (15 topics)
-│   ├── feature-engineering/            # 50 techniques across 8 categories
-│   ├── attention-guide/                # Bahdanau to Transformer walkthrough
-│   ├── llm-finetuning/                # LoRA/QLoRA practical guide
-│   ├── image-segmentation/             # U-Net to SegFormer masterclass
-│   ├── timeseries-transformers/        # Transformer time series forecasting
-│   ├── ensemble-stacking/             # Competition-winning ensemble methods
-│   ├── rag-from-scratch/              # RAG from first principles
-│   ├── graph-neural-networks/         # GNN practical guide
-│   ├── financial-analysis/            # Financial time-series prediction
-│   ├── fraud-detection/               # Explainable fraud detection
-│   ├── eda-tutorial/                  # EDA best practices
-│   ├── competition-template/          # Standardized ML pipeline template
-│   ├── shap-explainability/           # SHAP Model Explainability Masterclass
-│   ├── optuna-guide/                  # Optuna Hyperparameter Optimization
-│   └── nlp-text-classification/       # NLP: TF-IDF to BERT
+├── projects/
+│   ├── competitions/                  # Competition entry notebooks
+│   │   ├── med-gemma-challenge/       # MedGemma 4B chest X-ray triage (LoRA)
+│   │   ├── akkadian-translation/      # ByT5 seq2seq ancient language translation
+│   │   ├── vesuvius-surface/          # 3D U-Net volumetric segmentation
+│   │   ├── spaceship-titanic/         # Binary classification with feature engineering
+│   │   ├── titanic-ultimate/          # Titanic: From Zero to Top 5%
+│   │   ├── store-sales-forecasting/   # Time series forecasting with LightGBM
+│   │   ├── nlp-disaster-tweets/       # BERT-based disaster tweet classification
+│   │   ├── house-prices/              # House Prices: EDA + Feature Engineering
+│   │   └── digit-recognizer/          # CNN from Scratch to 99%+
+│   └── educational/                   # Educational / tutorial notebooks
+│       ├── feature-engineering/       # 50 techniques across 8 categories
+│       ├── attention-guide/           # Bahdanau to Transformer walkthrough
+│       ├── llm-finetuning/            # LoRA/QLoRA practical guide
+│       ├── image-segmentation/        # U-Net to SegFormer masterclass
+│       ├── timeseries-transformers/   # Transformer time series forecasting
+│       ├── ensemble-stacking/         # Competition-winning ensemble methods
+│       ├── rag-from-scratch/          # RAG from first principles
+│       ├── graph-neural-networks/     # GNN practical guide
+│       ├── financial-analysis/        # Financial time-series prediction
+│       ├── fraud-detection/           # Explainable fraud detection
+│       ├── eda-tutorial/              # EDA best practices
+│       ├── competition-template/      # Standardized ML pipeline template
+│       ├── shap-explainability/       # SHAP Model Explainability Masterclass
+│       ├── optuna-guide/              # Optuna Hyperparameter Optimization
+│       ├── nlp-text-classification/   # NLP: TF-IDF to BERT
+│       ├── student-performance-r-analysis/ # R notebook for GPA driver analysis
+│       ├── mental-health-tech-r-report/    # R Markdown policy report
+│       └── tabular-eda-utilities/          # Reusable tabular EDA helper script
 │
 ├── datasets/                           # 10 custom Kaggle datasets
 │   ├── ml-interview-qa/               # 500+ ML/DS interview Q&A

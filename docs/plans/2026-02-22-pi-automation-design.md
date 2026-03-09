@@ -10,8 +10,8 @@
 
 The repo already has:
 - `manage.sh` — push, sync, doctor, quality, scorecard, weekly-plan, pace
-- `medal_ops.py` — parses tracker, generates reports, syncs live data
-- `notebook_quality.py` — scores notebooks against rubric
+- `kaggle_portfolio.ops.medal_ops` — parses tracker, generates reports, syncs live data
+- `kaggle_portfolio.quality.notebook_quality` — scores notebooks against rubric
 - `.github/workflows/medal-ops-health.yml` — daily CI health check (GitHub Actions)
 
 What's missing: a persistent local agent that runs on the Pi, handles live Kaggle API calls (CI runs offline-fixture), posts discussions via browser automation, and notifies via Telegram.
@@ -178,7 +178,7 @@ KAGGLE_PASSWORD=xxxx        # for Playwright login
 
 This needs to happen today, not via Pi automation. Steps:
 1. Check the competition's `sample_submission.csv` to understand the expected output format
-2. Review the local `med-gemma-challenge/` notebook to see what it currently outputs
+2. Review the local `projects/competitions/med-gemma-challenge/` notebook to see what it currently outputs
 3. Push the notebook to Kaggle and run it on Kaggle GPUs
 4. Download the output `submission.csv`
 5. Submit via `kaggle competitions submit`

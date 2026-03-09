@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import discussion_scheduler
+from kaggle_portfolio.ops import discussion_scheduler
 
 
 def test_parse_drafts_uses_draft_label_for_body_section(tmp_path):

@@ -1,6 +1,6 @@
 import sys
 
-import notebook_quality
+from kaggle_portfolio.quality import notebook_quality
 
 
 def test_discover_notebooks_scope_filter(tmp_path, md_cell, code_cell, write_kernel_bundle):

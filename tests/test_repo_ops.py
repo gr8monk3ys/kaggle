@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from types import SimpleNamespace
 
-import repo_ops
+from kaggle_portfolio.ops import repo_ops
 
 
 def test_build_preflight_steps_includes_expected_defaults():
@@ -21,7 +21,13 @@ def test_build_preflight_steps_includes_expected_defaults():
         "pytest",
     ]
     assert steps[0].cmd == ["bash", str(repo_ops.ROOT / "manage.sh"), "validate"]
-    assert steps[1].cmd[:4] == [sys.executable, str(repo_ops.ROOT / "medal_ops.py"), "--output-root", "/tmp/kaggle-preflight"]
+    assert steps[1].cmd[:5] == [
+        sys.executable,
+        "-m",
+        "kaggle_portfolio.ops.medal_ops",
+        "--output-root",
+        "/tmp/kaggle-preflight",
+    ]
     assert "--strict" not in steps[1].cmd
     assert "--fail-under-threshold" in steps[2].cmd
     assert "--fail-under" in steps[3].cmd

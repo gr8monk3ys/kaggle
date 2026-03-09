@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import dataset_explore_generator as gen
+from kaggle_portfolio.datasets import dataset_explore_generator as gen
 
 
 # ---------------------------------------------------------------------------

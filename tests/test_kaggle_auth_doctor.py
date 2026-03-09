@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import kaggle_auth_doctor
+from kaggle_portfolio.ops import kaggle_auth_doctor
 
 
 def test_resolve_credentials_prefers_environment(monkeypatch):

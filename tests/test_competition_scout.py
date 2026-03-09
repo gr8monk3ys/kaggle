@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-import kaggle_utils
-import competition_scout
+from kaggle_portfolio.notebooks import competition_scout
+from kaggle_portfolio.shared import kaggle_utils
 
 
 def test_kaggle_command_falls_back_to_module_cli(monkeypatch):
-    monkeypatch.setattr(kaggle_utils.shutil, "which", lambda _: None)
+    monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
+    monkeypatch.setattr(
+        kaggle_utils.importlib.util,
+        "find_spec",
+        lambda name: object() if name == "kaggle.cli" else None,
+    )
     cmd = kaggle_utils.kaggle_command()
     assert cmd[1:] == ["-m", "kaggle.cli"]
 

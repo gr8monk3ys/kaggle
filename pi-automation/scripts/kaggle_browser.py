@@ -2,7 +2,7 @@
 """Shared Kaggle Playwright browser infrastructure.
 
 Extracts common login, locator helpers, anti-bot delays, argparse flags, and
-tracker persistence from dataset_metadata_sync.py / campaign_execute.py so all
+tracker persistence used by dataset metadata sync and campaign execution so all
 social-engagement scripts share one code path.
 """
 
