@@ -98,6 +98,8 @@ def build_preflight_steps(args: argparse.Namespace) -> list[Step]:
         "--max-days-until-next-post",
         str(args.max_days_until_next_post),
     ]
+    if args.today:
+        draft_cmd.extend(["--today", args.today])
 
     steps = [
         Step("metadata-validate", ["bash", str(ROOT / "manage.sh"), "validate"]),

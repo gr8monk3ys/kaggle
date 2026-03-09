@@ -622,6 +622,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Show stage counts and prioritized backlog view.")
     parser.add_argument("--health-check", action="store_true",
                         help="Run stale-draft SLA checks and exit non-zero on violation.")
+    parser.add_argument("--today", default=None,
+                        help="Optional YYYY-MM-DD override used by health-check for deterministic runs.")
     parser.add_argument("--max-overdue-scheduled", type=int, default=0,
                         help="SLA: maximum allowed overdue scheduled drafts (default 0).")
     parser.add_argument("--max-days-until-next-post", type=int, default=7,
@@ -644,6 +646,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--max-overdue-scheduled must be >= 0")
     if args.max_days_until_next_post < 0:
         parser.error("--max-days-until-next-post must be >= 0")
+    if args.today is not None and parse_iso_date(args.today) is None:
+        parser.error("--today must be YYYY-MM-DD")
 
     mode_count = sum([
         1 if args.dry_run else 0,
@@ -712,10 +716,15 @@ def main(argv: list[str] | None = None) -> int:
         show_ops_report(queue)
         return 0
     if args.health_check:
+        now_override = None
+        if args.today is not None:
+            today = parse_iso_date(args.today)
+            now_override = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
         return run_health_check(
             queue,
             max_overdue_scheduled=args.max_overdue_scheduled,
             max_days_until_next_post=args.max_days_until_next_post,
+            now=now_override,
         )
 
     return do_post(queue, schedule_weeks=args.schedule_weeks)

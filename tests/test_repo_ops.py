@@ -49,7 +49,9 @@ def test_build_preflight_steps_can_skip_pytest_and_pass_csv_args():
     steps = repo_ops.build_preflight_steps(args)
     assert [step.name for step in steps][-1] == "draft-ops"
     doctor_cmd = steps[1].cmd
+    draft_cmd = steps[4].cmd
     assert "--today" in doctor_cmd and "2026-03-07" in doctor_cmd
+    assert "--today" in draft_cmd and "2026-03-07" in draft_cmd
     assert "--strict" in doctor_cmd
     assert "--require-kaggle" in doctor_cmd
     assert "--kernels-csv" in doctor_cmd and "kernels.csv" in doctor_cmd

@@ -9,8 +9,8 @@
     "deadline": null,
     "category": "EDA Findings",
     "expected_medal": "Silver",
-    "scheduled_after": "2026-03-02T14:00:00+00:00",
-    "status": "scheduled",
+    "scheduled_after": null,
+    "status": "ready",
     "post_url": null,
     "posted_at": null
   },
@@ -24,8 +24,8 @@
     "deadline": null,
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-03-04T14:00:00+00:00",
-    "status": "scheduled",
+    "scheduled_after": null,
+    "status": "ready",
     "post_url": null,
     "posted_at": null
   },
@@ -39,8 +39,8 @@
     "deadline": null,
     "category": "EDA Findings",
     "expected_medal": "Silver",
-    "scheduled_after": "2026-03-06T14:00:00+00:00",
-    "status": "scheduled",
+    "scheduled_after": null,
+    "status": "ready",
     "post_url": null,
     "posted_at": null
   },
