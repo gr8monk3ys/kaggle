@@ -66,7 +66,7 @@ def _classify_columns(analysis: dict) -> dict:
         total = col["total"]
 
         # Detect ID-like columns
-        if name.lower().endswith("_id") or name.lower() == "id" or n_unique == total:
+        if name.lower().endswith("_id") or name.lower() == "id":
             id_like.append(name)
             continue
 

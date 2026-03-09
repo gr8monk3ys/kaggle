@@ -209,12 +209,14 @@ def gen_spotify(data_dir):
     dance_col = next((c for c in df.columns if "dance" in c.lower()), None)
     pop_col = next((c for c in df.columns if "popular" in c.lower()), None)
     if energy_col and dance_col and pop_col:
-        sample = df.dropna(subset=[energy_col, dance_col, pop_col]).sample(min(2000, len(df)))
-        scatter = ax.scatter(sample[energy_col], sample[dance_col],
-                             c=sample[pop_col], cmap="coolwarm", alpha=0.5, s=15)
-        fig.colorbar(scatter, ax=ax, label="Popularity")
-        style_ax(ax, "Spotify Tracks: Energy vs Danceability",
-                 "Energy", "Danceability")
+        filtered = df.dropna(subset=[energy_col, dance_col, pop_col])
+        if not filtered.empty:
+            sample = filtered.sample(min(2000, len(filtered)))
+            scatter = ax.scatter(sample[energy_col], sample[dance_col],
+                                 c=sample[pop_col], cmap="coolwarm", alpha=0.5, s=15)
+            fig.colorbar(scatter, ax=ax, label="Popularity")
+            style_ax(ax, "Spotify Tracks: Energy vs Danceability",
+                     "Energy", "Danceability")
     elif energy_col:
         ax.hist(df[energy_col].dropna(), bins=50, color=ACCENT_COLORS[1], alpha=0.7, edgecolor="#333")
         style_ax(ax, "Spotify Track Energy Distribution", "Energy", "Count")
@@ -227,14 +229,16 @@ def gen_student_performance(data_dir):
     gpa_col = next((c for c in df.columns if "gpa" in c.lower() or "grade" in c.lower() or "score" in c.lower()), None)
     study_col = next((c for c in df.columns if "study" in c.lower() or "hours" in c.lower()), None)
     if gpa_col and study_col:
-        sample = df.dropna(subset=[gpa_col, study_col]).sample(min(2000, len(df)))
-        ax.scatter(sample[study_col], sample[gpa_col], alpha=0.3, s=15, color=ACCENT_COLORS[0])
-        z = np.polyfit(sample[study_col], sample[gpa_col], 1)
-        p = np.poly1d(z)
-        x_line = np.linspace(sample[study_col].min(), sample[study_col].max(), 100)
-        ax.plot(x_line, p(x_line), color=ACCENT_COLORS[3], linewidth=2.5, linestyle="--")
-        style_ax(ax, "Study Hours vs GPA (with Trend Line)",
-                 "Study Hours per Week", "GPA")
+        filtered = df.dropna(subset=[gpa_col, study_col])
+        if not filtered.empty:
+            sample = filtered.sample(min(2000, len(filtered)))
+            ax.scatter(sample[study_col], sample[gpa_col], alpha=0.3, s=15, color=ACCENT_COLORS[0])
+            z = np.polyfit(sample[study_col], sample[gpa_col], 1)
+            p = np.poly1d(z)
+            x_line = np.linspace(sample[study_col].min(), sample[study_col].max(), 100)
+            ax.plot(x_line, p(x_line), color=ACCENT_COLORS[3], linewidth=2.5, linestyle="--")
+            style_ax(ax, "Study Hours vs GPA (with Trend Line)",
+                     "Study Hours per Week", "GPA")
     elif gpa_col:
         ax.hist(df[gpa_col].dropna(), bins=40, color=ACCENT_COLORS[0], alpha=0.7, edgecolor="#333")
         style_ax(ax, "GPA Distribution", "GPA", "Count")
