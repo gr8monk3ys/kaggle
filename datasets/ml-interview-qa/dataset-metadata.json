@@ -2,7 +2,7 @@
   "title": "ML/DS Interview Questions & Answers (500+)",
   "id": "lorenzoscaturchio/ml-interview-qa",
   "subtitle": "500+ ML/DS interview Q&A with 10 categories and 3 difficulty levels",
-  "description": "502 machine learning and data science interview questions with expert-level answers (50\u2013200 words each), tagged across 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Three difficulty levels (easy/medium/hard) and company_tags linking questions to Google, Meta, Amazon, Microsoft, Apple, and others.\n\nBuilt for: interview preparation and study, LLM fine-tuning on technical Q&A, text classification by category or difficulty, RAG system prototyping with a structured knowledge base, and embedding similarity search. The company_tags field enables targeted preparation for specific employers.\n\nNotable features: answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category; the mix of conceptual, coding, and system design questions reflects real interview breadth. All content is synthetic.",
+  "description": "502 machine learning and data science interview questions with expert-level answers (50–200 words each), tagged across 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Three difficulty levels (easy/medium/hard) and company_tags linking questions to Google, Meta, Amazon, Microsoft, Apple, and others.\n\nBuilt for: interview preparation and study, LLM fine-tuning on technical Q&A, text classification by category or difficulty, RAG system prototyping with a structured knowledge base, and embedding similarity search. The company_tags field enables targeted preparation for specific employers.\n\nNotable features: answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category; the mix of conceptual, coding, and system design questions reflects real interview breadth. All content is synthetic.",
   "licenses": [
     {
       "name": "GPL-3.0"
@@ -95,6 +95,5 @@
   },
   "citations": [
     "Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (500+). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa"
-  ],
-  "updateFrequency": "Monthly"
+  ]
 }

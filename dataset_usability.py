@@ -8,6 +8,7 @@ from collections import Counter
 import csv
 import io
 import json
+import os
 import shutil
 import statistics
 import subprocess
@@ -95,18 +96,8 @@ def summarize_subprocess_error(*chunks: str) -> str:
 
 
 def parse_kaggle_datasets_csv(raw_csv: str) -> dict[str, float]:
-    lines = raw_csv.splitlines()
-    start_idx = None
-    for idx, line in enumerate(lines):
-        if line.strip().lower().startswith("ref,"):
-            start_idx = idx
-            break
-    if start_idx is None:
-        return {}
-
     ratings: dict[str, float] = {}
-    csv_payload = "\n".join(lines[start_idx:]) + "\n"
-    reader = csv.DictReader(io.StringIO(csv_payload))
+    reader = csv.DictReader(io.StringIO(raw_csv))
     for row in reader:
         ref = str(row.get("ref", "")).strip().lower()
         if not ref:
@@ -123,20 +114,6 @@ def load_live_ratings_csv(path: Path) -> dict[str, float]:
     if not path.exists():
         raise SystemExit(f"Live ratings CSV not found: {path}")
     return parse_kaggle_datasets_csv(path.read_text(encoding="utf-8"))
-
-
-def write_live_ratings_csv(path: Path, ratings: dict[str, float]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["ref", "usabilityRating"])
-        writer.writeheader()
-        for ref in sorted(ratings):
-            writer.writerow(
-                {
-                    "ref": ref,
-                    "usabilityRating": f"{ratings[ref]:.6f}".rstrip("0").rstrip("."),
-                }
-            )
 
 
 def infer_owner_from_scores(scores: list[DatasetScore]) -> str | None:
@@ -161,22 +138,20 @@ def _run_kaggle_dataset_list(args: list[str]) -> tuple[dict[str, float] | None, 
 
 
 def fetch_kaggle_live_ratings(owner: str) -> tuple[dict[str, float], str | None]:
-    owner = owner.strip().lower()
-    if not owner:
-        return {}, "owner is required"
-
     ratings: dict[str, float] = {}
     errors: list[str] = []
 
-    mine_ratings, mine_err = _run_kaggle_dataset_list(["--mine", "--csv"])
-    if mine_ratings is not None:
-        ratings.update({ref: rating for ref, rating in mine_ratings.items() if ref.startswith(f"{owner}/")})
-    elif mine_err:
-        errors.append(f"--mine: {mine_err}")
+    env_user = os.environ.get("KAGGLE_USERNAME", "").strip().lower()
+    if env_user == owner:
+        mine_ratings, mine_err = _run_kaggle_dataset_list(["--mine", "--csv"])
+        if mine_ratings is not None:
+            ratings.update(mine_ratings)
+        elif mine_err:
+            errors.append(f"--mine: {mine_err}")
 
     search_ratings, search_err = _run_kaggle_dataset_list(["-s", owner, "--csv"])
     if search_ratings is not None:
-        ratings.update({ref: rating for ref, rating in search_ratings.items() if ref.startswith(f"{owner}/")})
+        ratings.update(search_ratings)
     elif search_err:
         errors.append(f"-s {owner}: {search_err}")
 
@@ -717,16 +692,6 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Exit non-zero when any dataset live rating is below --alert-under.",
     )
-    parser.add_argument(
-        "--write-live-ratings-csv",
-        default=None,
-        help="Optional path to persist fetched live ratings CSV (`ref,usabilityRating`).",
-    )
-    parser.add_argument(
-        "--fallback-live-ratings-csv",
-        default=None,
-        help="Optional CSV used when --live fetch fails.",
-    )
     return parser.parse_args()
 
 
@@ -762,30 +727,10 @@ def main() -> int:
             live_ratings, live_error = fetch_kaggle_live_ratings(owner)
             if live_error:
                 print(f"Warning: live Kaggle rating lookup failed: {live_error}")
-                fallback_path = Path(args.fallback_live_ratings_csv).resolve() if args.fallback_live_ratings_csv else None
-                if fallback_path is not None and fallback_path.exists():
-                    fallback_ratings = load_live_ratings_csv(fallback_path)
-                    scores = attach_kaggle_live_ratings(scores, fallback_ratings)
-                    live_loaded = True
-                    print(f"Fallback live ratings loaded from CSV: {len(fallback_ratings)} refs ({fallback_path})")
             else:
                 scores = attach_kaggle_live_ratings(scores, live_ratings)
                 live_loaded = True
                 print(f"Live Kaggle ratings loaded for owner '{owner}': {len(live_ratings)} refs")
-                if args.write_live_ratings_csv:
-                    local_refs = {
-                        (item.dataset_ref or "").strip().lower()
-                        for item in scores
-                        if item.dataset_ref
-                    }
-                    filtered = {
-                        ref: rating
-                        for ref, rating in live_ratings.items()
-                        if ref in local_refs
-                    }
-                    write_path = Path(args.write_live_ratings_csv).resolve()
-                    write_live_ratings_csv(write_path, filtered)
-                    print(f"Live ratings CSV written: {write_path}")
         else:
             print("Warning: unable to infer Kaggle owner for --live lookup; skipping live join.")
 
