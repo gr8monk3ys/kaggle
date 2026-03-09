@@ -2,8 +2,21 @@
 """Build spaceship_titanic_guide.ipynb from structured cell definitions."""
 import sys as _sys
 import os as _os
-_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
-from build_utils import md, code, write_notebook
+
+
+def _find_repo_root(start_dir):
+    current = _os.path.abspath(start_dir)
+    while True:
+        if _os.path.exists(_os.path.join(current, "manage.sh")) and _os.path.isdir(_os.path.join(current, "kaggle_portfolio")):
+            return current
+        parent = _os.path.dirname(current)
+        if parent == current:
+            return _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+        current = parent
+
+
+_sys.path.insert(0, _find_repo_root(_os.path.dirname(_os.path.abspath(__file__))))
+from kaggle_portfolio.shared.build_utils import md, code, write_notebook
 
 cells = []
 cells.append(md("""# Spaceship Titanic: Complete ML Guide
@@ -451,6 +464,46 @@ for fold, (tr_idx, va_idx) in enumerate(CV.split(X, y)):
 oof_acc = accuracy_score(y, (oof_preds > 0.5).astype(int))
 print(f'Ensemble OOF Accuracy: {oof_acc:.4f}')"""))
 
+cells.append(md("""## 8.1 Segment-Level Validation Audit
+
+Leaderboard movement is only useful if the model behaves consistently across the passenger groups that matter operationally. This audit shows where the ensemble still misses too often.
+"""))
+
+cells.append(code("""audit = train[['CryoSleep', 'HomePlanet', 'VIP', 'PassengerId']].copy()
+audit['Deck'] = train['Cabin'].fillna('Unknown/0/P').str.split('/').str[0]
+audit['Actual'] = y.values
+audit['Predicted'] = (oof_preds > 0.5).astype(int)
+audit['Correct'] = (audit['Actual'] == audit['Predicted']).astype(int)
+
+segment_tables = {
+    'CryoSleep': audit.groupby('CryoSleep')['Correct'].agg(['mean', 'count']).sort_values('mean'),
+    'HomePlanet': audit.groupby('HomePlanet')['Correct'].agg(['mean', 'count']).sort_values('mean'),
+    'Deck': audit.groupby('Deck')['Correct'].agg(['mean', 'count']).sort_values('mean'),
+}
+
+for name, table in segment_tables.items():
+    table = table.rename(columns={'mean': 'accuracy'})
+    table['error_rate'] = 1 - table['accuracy']
+    print(f'\\n{name} validation audit')
+    print(table.head(6).round(3))
+
+deck_error = (1 - segment_tables['Deck']['mean']).sort_values(ascending=False).head(8)
+planet_error = (1 - segment_tables['HomePlanet']['mean']).sort_values(ascending=False)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+axes[0].bar(deck_error.index.astype(str), deck_error.values, color=sns.color_palette('rocket', len(deck_error)))
+axes[0].set_title('Highest Error Rate by Deck')
+axes[0].set_ylabel('Misclassification Rate')
+axes[0].set_ylim(0, max(deck_error.max() * 1.15, 0.1))
+
+axes[1].bar(planet_error.index.astype(str), planet_error.values, color=sns.color_palette('mako', len(planet_error)))
+axes[1].set_title('Misclassification Rate by Home Planet')
+axes[1].set_ylabel('Misclassification Rate')
+axes[1].set_ylim(0, max(planet_error.max() * 1.15, 0.1))
+
+plt.tight_layout()
+plt.show()"""))
+
 # ── 9. Submission ───────────────────────────────────────────────────────────────
 cells.append(md("## 9. Generate Submission"))
 
@@ -462,6 +515,30 @@ sub.to_csv('submission.csv', index=False)
 print('submission.csv written.')
 print(sub['Transported'].value_counts())
 sub.head()"""))
+
+cells.append(md("""## 9.1 Submission Quality Checks
+
+Before uploading, validate the submission artifact the same way you would validate a production output file: correct row count, unique IDs, no missing values, and binary predictions only.
+"""))
+
+cells.append(code("""expected_rows = len(test)
+submission_checks = {
+    'row_count_matches_test': len(sub) == expected_rows,
+    'passenger_id_unique': sub['PassengerId'].is_unique,
+    'no_missing_passenger_id': sub['PassengerId'].notna().all(),
+    'no_missing_labels': sub['Transported'].notna().all(),
+    'binary_labels_only': set(sub['Transported'].astype(bool).unique()).issubset({True, False}),
+}
+
+qa_report = pd.Series(submission_checks, name='passed')
+print(qa_report)
+
+if not qa_report.all():
+    failed = qa_report[~qa_report].index.tolist()
+    raise ValueError(f'Submission QA failed: {failed}')
+
+print('\\nSubmission QA passed. submission.csv is ready for Kaggle upload.')
+sub.sample(5, random_state=SEED)"""))
 
 # ── 10. Key takeaways ───────────────────────────────────────────────────────────
 cells.append(md("""## Key Takeaways
