@@ -1,6 +1,6 @@
 {
-  "id": "lorenzoscaturchio/student-academic-performance-eda",
-  "title": "Student Academic Performance EDA",
+  "id": "lorenzoscaturchio/student-performance-academic-eda",
+  "title": "Student Performance: Academic EDA",
   "code_file": "explore.ipynb",
   "language": "python",
   "kernel_type": "notebook",

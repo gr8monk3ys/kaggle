@@ -1181,6 +1181,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--retry-delay-s cannot be negative")
     if args.max_datasets > 0:
         payloads = payloads[: args.max_datasets]
+ 
 
     print(f"Selected {len(payloads)} dataset(s):")
     for payload in payloads:
@@ -1299,7 +1300,6 @@ def main(argv: list[str] | None = None) -> int:
 
             if result is not None:
                 results.append(result)
-
             if args.sleep_between_datasets_s > 0 and idx < len(payloads) - 1:
                 print(f"  [pause] sleeping {args.sleep_between_datasets_s:.1f}s before next dataset")
                 time.sleep(args.sleep_between_datasets_s)

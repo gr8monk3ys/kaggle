@@ -1,8 +1,4 @@
-import sys
 from datetime import date
-
-sys.path.insert(0, "pi-automation/scripts")
-sys.path.insert(0, ".")  # repo root — for medal_ops import
 
 import deadline_alert
 

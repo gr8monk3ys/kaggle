@@ -1,23 +1,22 @@
 {
-  "id": "lorenzoscaturchio/ecommerce-behavior-exploration",
-  "title": "E-Commerce Analytics: Customer Segmentation & Churn",
+  "id": "lorenzoscaturchio/ecommerce-behavior-explorer-v2",
+  "title": "Ecommerce Behavior Explorer V2",
   "code_file": "explore.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": false,
   "enable_gpu": false,
   "enable_internet": false,
-  "dataset_sources": ["lorenzoscaturchio/ecommerce-behavior"],
+  "dataset_sources": [
+    "lorenzoscaturchio/ecommerce-behavior"
+  ],
   "competition_sources": [],
   "kernel_sources": [],
   "keywords": [
-    "e-commerce",
-    "customer segmentation",
-    "churn prediction",
-    "recommendation systems",
-    "rfm analysis",
+    "business",
+    "classification",
     "clustering",
-    "eda",
-    "business analytics"
+    "regression",
+    "beginner"
   ]
 }

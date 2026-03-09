@@ -7,5 +7,7 @@
   "is_private": false,
   "enable_gpu": false,
   "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [],
   "keywords": ["deep learning", "tutorial"]
 }

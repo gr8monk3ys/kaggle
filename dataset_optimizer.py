@@ -26,10 +26,11 @@ import argparse
 import csv
 import json
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+from kaggle_utils import kaggle_command, summarize_subprocess_error
 
 ROOT = Path(__file__).parent
 DATASETS_DIR = ROOT / "datasets"
@@ -56,30 +57,6 @@ DEFAULT_COLLECTION_METHODOLOGY = (
 )
 
 
-def kaggle_command() -> list[str]:
-    """Return a runnable Kaggle CLI command prefix."""
-    if shutil.which("kaggle"):
-        return ["kaggle"]
-    return [sys.executable, "-m", "kaggle.cli"]
-
-
-def summarize_subprocess_error(*chunks: str) -> str:
-    """Return a compact, human-meaningful error summary from subprocess output."""
-    lines: list[str] = []
-    for chunk in chunks:
-        for line in chunk.splitlines():
-            line = line.strip()
-            if line:
-                lines.append(line)
-    if not lines:
-        return "unknown error"
-    preferred = [
-        line
-        for line in lines
-        if re.search(r"(error|unauthorized|forbidden|denied|failed|exception|traceback)", line, re.IGNORECASE)
-    ]
-    # Prefer explicit failure lines; otherwise fall back to the latest emitted line.
-    return (preferred[-1] if preferred else lines[-1])[:220]
 
 
 def infer_temporal_coverage(meta: dict) -> tuple[str, str]:

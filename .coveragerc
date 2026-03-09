@@ -1,0 +1,19 @@
+[run]
+source = .
+omit =
+    .venv/*
+    */build_notebook.py
+    */create_dataset.py
+    */_build_notebook.py
+    pi-automation/*
+    datasets/*/explore.ipynb
+    tests/*
+    .playwright-cli/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__
+    raise NotImplementedError
+show_missing = true
+skip_covered = true

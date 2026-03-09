@@ -8,7 +8,7 @@
 #   push-nb         - Push all notebooks
 #   push-ds         - Push all datasets
 #   push            - Push a specific directory (e.g., ./manage.sh push med-gemma-challenge)
-#   validate        - Validate all kernel-metadata.json files before pushing
+#   validate        - Validate notebook and dataset metadata before pushing
 #   votes           - Show vote counts with medal threshold dashboard
 #   competitions    - List active medal-eligible competitions
 #   link-competition - Link a notebook to a competition (e.g., ./manage.sh link-competition spaceship-titanic spaceship-titanic)
@@ -18,6 +18,7 @@
 #   sync            - Sync tracker metrics from live Kaggle CLI data
 #   sync-template   - Generate CSV templates and export helper for offline sync
 #   doctor          - Run preflight checks for tracker/env/sync readiness
+#   preflight       - Run the core repo gates in one command
 #   quality         - Score notebook quality and enforce minimum threshold
 #   dataset-usability - Score dataset usability and generate reports
 #   usability-tracker - Run daily live usability tracker with 0.8 gate, 1.0 target
@@ -29,6 +30,15 @@
 #   auth-doctor     - Validate Kaggle credentials and upload auth
 #   draft-set       - Update a queued draft status/priority/deadline
 #   dataset-ui-sync - Sync dataset UI-only metadata fields using Playwright (supports throttling)
+#   stale-content   - Detect stale notebooks, datasets, and outdated library versions
+#   build-explore-notebooks - Generate rich EDA explore notebooks for datasets
+#   create-competition-entry - Scaffold a new competition entry from a slug
+#   metadata-tracker - Track metadata changes vs vote deltas over time
+#   upload-covers    - Upload cover images to Kaggle datasets via Playwright
+#   follow-users     - Follow Kaggle users to build visibility via Playwright
+#   upvote           - Upvote Kaggle content via Playwright
+#   post-comment     - Post comments on Kaggle threads via Playwright
+#   smoke-live      - Safely exercise live Kaggle publish/post prerequisites
 
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:$PATH"
@@ -36,6 +46,14 @@ export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/
 KAGGLE_DIR="$(cd "$(dirname "$0")" && pwd)"
 KAGGLE_CREDENTIALS_DEFAULT="${HOME}/.kaggle/kaggle.json"
 KAGGLE_CREDENTIALS_LOCAL="${KAGGLE_DIR}/kaggle.json"
+
+# Source .env if present (for KAGGLE_EMAIL, KAGGLE_PASSWORD, etc.)
+if [[ -f "$KAGGLE_DIR/pi-automation/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$KAGGLE_DIR/pi-automation/.env"
+    set +a
+fi
 
 # Auto-discover notebook directories: any dir with kernel-metadata.json, excluding datasets/
 discover_notebook_dirs() {
@@ -76,7 +94,7 @@ color_reset='\033[0m'
 
 usage() {
     cat <<EOF
-Usage: $0 {status|push-all|push-nb|push-ds|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|help}
+Usage: $0 {status|push-all|push-nb|push-ds|push-explore|push|validate|votes|competitions|link-competition|scorecard|weekly-plan|pace|sync|sync-template|doctor|preflight|quality|dataset-usability|usability-tracker|campaign-pack|campaign-run|campaign-execute|usability-benchmark|publish-datasets|auth-doctor|build-all|optimize-datasets|post-discussion|draft-ops|draft-set|dataset-ui-sync|promote-notebooks|scout|stale-content|build-explore-notebooks|create-competition-entry|metadata-tracker|smoke-live|help}
 
 Commands:
   status                    Show notebooks/datasets and Kaggle account status
@@ -84,7 +102,7 @@ Commands:
   push-nb                   Push all notebooks
   push-ds                   Push all datasets
   push <dir>                Push a specific notebook/dataset directory
-  validate [--pre-push]     Validate all kernel-metadata.json files (JSON, required fields, file existence)
+  validate [dir]            Validate kernel-metadata.json and dataset-metadata.json files
   votes                     Show vote counts with bronze/silver/gold medal threshold dashboard
   competitions              List active medal-eligible competitions
   link-competition <dir> <slug>  Add competition_sources to a notebook and re-push
@@ -94,6 +112,7 @@ Commands:
   sync                      Sync tracker metrics from live Kaggle CLI data
   sync-template             Generate CSV templates + export helper for offline sync
   doctor                    Run preflight checks (tracker, sync inputs, environment)
+  preflight [--no-pytest]   Run the core repo gates: validate, doctor, quality, usability, draft SLA, tests
   quality                   Score notebook quality against rubric
   dataset-usability         Score dataset usability and generate reports
   usability-tracker         Daily live tracker with threshold alerts and ranked action queue
@@ -113,15 +132,25 @@ Commands:
                             Post next queued discussion draft or rebuild queue window
   draft-ops                  Show draft backlog stage counts + priority queue
   draft-set <id> [--status STATUS] [--priority PRIORITY] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]
-                            Update draft metadata and rebalance queue schedule window
+                             Update draft metadata and rebalance queue schedule window
   dataset-ui-sync [--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]
-                  [--max-datasets N] [--sleep-between-datasets-s SEC]
+                   [--max-datasets N] [--sleep-between-datasets-s SEC]
                   [--retry-failed-datasets N] [--retry-delay-s SEC]
-                            Sync Kaggle UI-only dataset sections
+                             Sync Kaggle UI-only dataset sections
                             (Authors/Coverage/DOI/Provenance/Citations/License/Update Frequency/File Info)
                             Use throttling flags to reduce request bursts and avoid Kaggle rate-limit toasts.
   promote-notebooks [--auto]   Generate notebook promotion plan for competition forums
   scout [--update]          Scout active competitions ranked by medal opportunity
+  stale-content [--max-nb-age N] [--max-ds-age N]
+                             Detect stale notebooks, datasets, and outdated library versions
+  build-explore-notebooks [--push]
+                             Generate rich EDA explore notebooks for all datasets
+  create-competition-entry <slug> [--gpu] [--push]
+                             Scaffold a new competition entry from a competition slug
+  metadata-tracker <snapshot|annotate|report> [args...]
+                            Track metadata changes vs vote deltas over time
+  smoke-live [--owner OWNER] [--check-discussion-login]
+                            Safely exercise live Kaggle publish/post prerequisites without mutating Kaggle state
   help                      Show this message
 EOF
 }
@@ -244,7 +273,19 @@ cmd_push_ds() {
 
 cmd_push() {
     local target="$1"
-    local path="$KAGGLE_DIR/$target"
+    local path="$target"
+    if [[ "$target" != /* ]]; then
+        path="$KAGGLE_DIR/$target"
+    fi
+    if [[ ! -e "$path" ]]; then
+        echo -e "${color_red}Error:${color_reset} path not found: $target" >&2
+        return 1
+    fi
+    echo -e "${color_yellow}Running validation for $target...${color_reset}"
+    if ! cmd_validate "$path"; then
+        echo -e "${color_red}Fix validation errors before pushing.${color_reset}"
+        return 1
+    fi
     # Prefer dataset pushes when both metadata files exist (common in datasets/* with explore notebooks).
     if [[ -f "$path/dataset-metadata.json" ]]; then
         echo "Pushing dataset: $target"
@@ -260,73 +301,204 @@ cmd_push() {
 }
 
 cmd_validate() {
-    local pre_push="${1:-}"
-    local errors=0
-    local checked=0
-
-    echo -e "${color_blue}=== Validating kernel-metadata.json files ===${color_reset}"
-    echo ""
-
-    while IFS= read -r meta; do
-        local rel="${meta#$KAGGLE_DIR/}"
-        local dir
-        dir="$(dirname "$meta")"
-        ((checked += 1))
-
-        # 1. JSON syntax
-        if ! python3 -c "import json,sys; json.load(open('$meta'))" 2>/dev/null; then
-            echo -e "  ${color_red}FAIL${color_reset} $rel — invalid JSON"
-            ((errors += 1))
-            continue
+    local scope="${1:-}"
+    local scope_path=""
+    if [[ -n "$scope" ]]; then
+        scope_path="$scope"
+        if [[ "$scope" != /* ]]; then
+            scope_path="$KAGGLE_DIR/$scope"
         fi
-
-        local id title code_file
-        id=$(python3 -c "import json; d=json.load(open('$meta')); print(d.get('id',''))" 2>/dev/null)
-        title=$(python3 -c "import json; d=json.load(open('$meta')); print(d.get('title',''))" 2>/dev/null)
-        code_file=$(python3 -c "import json; d=json.load(open('$meta')); print(d.get('code_file',''))" 2>/dev/null)
-
-        local file_errors=()
-
-        # 2. Required fields
-        [[ -z "$id" ]]        && file_errors+=("missing 'id'")
-        [[ -z "$title" ]]     && file_errors+=("missing 'title'")
-        [[ -z "$code_file" ]] && file_errors+=("missing 'code_file'")
-
-        # 3. Title length (6–70 chars)
-        local title_len=${#title}
-        [[ $title_len -gt 0 && ($title_len -lt 6 || $title_len -gt 70) ]] \
-            && file_errors+=("title length $title_len (must be 6-70)")
-
-        # 4. code_file must exist in the same directory
-        if [[ -n "$code_file" && ! -f "$dir/$code_file" ]]; then
-            file_errors+=("code_file '$code_file' not found in $(basename "$dir")/")
+        if [[ ! -e "$scope_path" ]]; then
+            echo -e "${color_red}Error:${color_reset} validation target not found: $scope" >&2
+            return 1
         fi
-
-        # 5. No credentials in the metadata file
-        if grep -qiE '(password|secret|api_key|KGAT_|kaggle_token)' "$meta" 2>/dev/null; then
-            file_errors+=("possible credential in metadata — review before pushing")
-        fi
-
-        if [[ ${#file_errors[@]} -eq 0 ]]; then
-            echo -e "  ${color_green}OK${color_reset}   $rel"
-        else
-            echo -e "  ${color_red}FAIL${color_reset} $rel"
-            for err in "${file_errors[@]}"; do
-                echo -e "       ${color_yellow}→${color_reset} $err"
-            done
-            ((errors += 1))
-        fi
-    done < <(find "$KAGGLE_DIR" -maxdepth 3 -name "kernel-metadata.json" | sort)
-
-    echo ""
-    echo "Checked $checked files — ${errors} error(s)"
-
-    if [[ $errors -gt 0 ]]; then
-        echo -e "${color_red}Validation FAILED. Fix errors before pushing.${color_reset}"
-        return 1
     fi
-    echo -e "${color_green}All metadata files valid.${color_reset}"
-    return 0
+
+    echo -e "${color_blue}=== Validating metadata files ===${color_reset}"
+    echo ""
+    VALIDATE_ROOT="$KAGGLE_DIR" VALIDATE_SCOPE="$scope_path" python3 - <<'PY'
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+
+ROOT = Path(os.environ["VALIDATE_ROOT"]).resolve()
+SCOPE_RAW = os.environ.get("VALIDATE_SCOPE", "").strip()
+SCOPE = Path(SCOPE_RAW).resolve() if SCOPE_RAW else None
+METADATA_NAMES = {"kernel-metadata.json", "dataset-metadata.json"}
+SKIP_DIRS = {".git", ".venv", ".pytest_cache", ".playwright-cli", ".playwright-mcp", "__pycache__"}
+SUSPICIOUS_PATTERN = re.compile(r"(password|secret|api_key|kgat_|kaggle_token)", re.IGNORECASE)
+
+
+def in_scope(path: Path) -> bool:
+    resolved = path.resolve()
+    if SCOPE is None:
+        return True
+    if SCOPE.is_file():
+        return resolved == SCOPE
+    try:
+        resolved.relative_to(SCOPE)
+    except ValueError:
+        return False
+    return True
+
+
+def iter_metadata_files(root: Path) -> list[Path]:
+    files: list[Path] = []
+    for path in root.rglob("*-metadata.json"):
+        if path.name not in METADATA_NAMES:
+            continue
+        if any(part in SKIP_DIRS for part in path.parts):
+            continue
+        if in_scope(path):
+            files.append(path)
+    return sorted(files)
+
+
+def rel_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def validate_kernel(path: Path, payload: dict, raw_text: str) -> list[str]:
+    errors: list[str] = []
+    required = ("id", "title", "code_file", "language", "kernel_type", "is_private")
+    for field in required:
+        if field not in payload:
+            errors.append(f"missing '{field}'")
+
+    ident = str(payload.get("id", "")).strip()
+    title = str(payload.get("title", "")).strip()
+    code_file = str(payload.get("code_file", "")).strip()
+
+    if "id" in payload and not ident:
+        errors.append("missing 'id'")
+    elif ident and ("/" not in ident or " " in ident):
+        errors.append(f"id '{ident}' must use owner/slug format with no spaces")
+
+    if "title" in payload and not title:
+        errors.append("missing 'title'")
+    elif title and not 6 <= len(title) <= 70:
+        errors.append(f"title length {len(title)} (must be 6-70)")
+
+    if "code_file" in payload and not code_file:
+        errors.append("missing 'code_file'")
+    elif code_file and not (path.parent / code_file).exists():
+        errors.append(f"code_file '{code_file}' not found in {path.parent.name}/")
+
+    for field in ("dataset_sources", "kernel_sources"):
+        value = payload.get(field)
+        if value is not None and not isinstance(value, list):
+            errors.append(f"'{field}' must be a list")
+
+    if SUSPICIOUS_PATTERN.search(raw_text):
+        errors.append("possible credential in metadata — review before pushing")
+    return errors
+
+
+def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
+    errors: list[str] = []
+    required = ("id", "title", "licenses", "resources")
+    for field in required:
+        if field not in payload:
+            errors.append(f"missing '{field}'")
+
+    ident = str(payload.get("id", "")).strip()
+    title = str(payload.get("title", "")).strip()
+    licenses = payload.get("licenses")
+    resources = payload.get("resources")
+
+    if "id" in payload and not ident:
+        errors.append("missing 'id'")
+    elif ident and ("/" not in ident or " " in ident):
+        errors.append(f"id '{ident}' must use owner/slug format with no spaces")
+
+    if "title" in payload and not title:
+        errors.append("missing 'title'")
+
+    if not isinstance(licenses, list) or not licenses:
+        errors.append("missing non-empty 'licenses' list")
+    else:
+        for index, item in enumerate(licenses, start=1):
+            if not isinstance(item, dict) or not str(item.get("name", "")).strip():
+                errors.append(f"license #{index} missing 'name'")
+
+    if not isinstance(resources, list) or not resources:
+        errors.append("missing non-empty 'resources' list")
+    else:
+        for index, item in enumerate(resources, start=1):
+            if not isinstance(item, dict):
+                errors.append(f"resource #{index} must be an object")
+                continue
+            resource_path = str(item.get("path", "")).strip()
+            if not resource_path:
+                errors.append(f"resource #{index} missing 'path'")
+                continue
+            if not (path.parent / resource_path).exists():
+                errors.append(f"resource path '{resource_path}' not found in {path.parent.name}/")
+
+    if SUSPICIOUS_PATTERN.search(raw_text):
+        errors.append("possible credential in metadata — review before pushing")
+    return errors
+
+
+checked = 0
+errors = 0
+files = iter_metadata_files(ROOT)
+
+if not files:
+    print("No metadata files found to validate.")
+    raise SystemExit(1)
+
+for meta in files:
+    checked += 1
+    rel = rel_path(meta)
+    try:
+        raw = meta.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"  FAIL {rel}")
+        print(f"       → unreadable file: {exc}")
+        errors += 1
+        continue
+
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        print(f"  FAIL {rel} — invalid JSON")
+        errors += 1
+        continue
+
+    if not isinstance(payload, dict):
+        print(f"  FAIL {rel}")
+        print("       → metadata must be a JSON object")
+        errors += 1
+        continue
+
+    if meta.name == "kernel-metadata.json":
+        file_errors = validate_kernel(meta, payload, raw)
+    else:
+        file_errors = validate_dataset(meta, payload, raw)
+
+    if not file_errors:
+        print(f"  OK   {rel}")
+        continue
+
+    print(f"  FAIL {rel}")
+    for err in file_errors:
+        print(f"       → {err}")
+    errors += 1
+
+print("")
+print(f"Checked {checked} files — {errors} error(s)")
+if errors:
+    print("Validation FAILED. Fix errors before pushing.")
+    raise SystemExit(1)
+print("All metadata files valid.")
+PY
 }
 
 cmd_votes() {
@@ -362,7 +534,12 @@ CYAN   = "\033[0;36m"
 RESET  = "\033[0m"
 
 raw_lines = os.environ.get("RAW_CSV", "")
-rows = list(csv.DictReader(io.StringIO(raw_lines)))
+# Strip non-CSV warning lines the kaggle CLI writes to stdout
+csv_lines = "\n".join(
+    line for line in raw_lines.splitlines()
+    if not line.startswith("Warning:") and not line.startswith("/")
+)
+rows = list(csv.DictReader(io.StringIO(csv_lines)))
 
 if not rows:
     print("No kernels found.")
@@ -370,11 +547,11 @@ if not rows:
 
 # Find the votes column (different kaggle CLI versions use different names)
 vote_col = next(
-    (k for k in (rows[0] if rows else {}) if "vote" in k.lower() or "upvote" in k.lower()),
+    (k for k in (rows[0] if rows else {}) if k and ("vote" in k.lower() or "upvote" in k.lower())),
     None,
 )
 ref_col = next(
-    (k for k in (rows[0] if rows else {}) if "ref" in k.lower() or "title" in k.lower()),
+    (k for k in (rows[0] if rows else {}) if k and ("ref" in k.lower() or "title" in k.lower())),
     "ref",
 )
 
@@ -500,6 +677,10 @@ cmd_doctor() {
     python3 medal_ops.py doctor "$@"
 }
 
+cmd_preflight() {
+    python3 repo_ops.py preflight "$@"
+}
+
 cmd_quality() {
     python3 notebook_quality.py "$@"
 }
@@ -551,6 +732,14 @@ cmd_build_all() {
 
 cmd_dataset_ui_sync() {
     python3 pi-automation/scripts/dataset_metadata_sync.py "$@"
+}
+
+cmd_stale_content() {
+    python3 stale_content_detector.py "$@"
+}
+
+cmd_smoke_live() {
+    python3 repo_ops.py smoke-live "$@"
 }
 
 # Main dispatcher
@@ -608,6 +797,9 @@ case "${1:-status}" in
     doctor)
         cmd_doctor "${@:2}"
         ;;
+    preflight)
+        cmd_preflight "${@:2}"
+        ;;
     quality)
         cmd_quality "${@:2}"
         ;;
@@ -660,6 +852,33 @@ case "${1:-status}" in
         ;;
     scout)
         python3 competition_scout.py "${@:2}"
+        ;;
+    stale-content)
+        cmd_stale_content "${@:2}"
+        ;;
+    build-explore-notebooks)
+        python3 dataset_explore_generator.py --all "${@:2}"
+        ;;
+    create-competition-entry)
+        python3 competition_entry.py "${@:2}"
+        ;;
+    metadata-tracker)
+        python3 metadata_tracker.py "${@:2}"
+        ;;
+    smoke-live)
+        cmd_smoke_live "${@:2}"
+        ;;
+    upload-covers)
+        python3 pi-automation/scripts/cover_image_upload.py "${@:2}"
+        ;;
+    follow-users)
+        python3 pi-automation/scripts/follow_users.py "${@:2}"
+        ;;
+    upvote)
+        python3 pi-automation/scripts/upvote_content.py "${@:2}"
+        ;;
+    post-comment)
+        python3 pi-automation/scripts/comment_thread.py "${@:2}"
         ;;
     help|-h|--help)
         usage
