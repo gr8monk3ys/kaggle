@@ -1,0 +1,26 @@
+{
+  "id": "lorenzoscaturchio/feature-engineering-cookbook-50-techniques",
+  "title": "Feature Engineering Cookbook: 50+ Techniques for ML",
+  "code_file": "feature_engineering_cookbook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "feature engineering",
+    "machine learning",
+    "data preprocessing",
+    "encoding",
+    "scaling",
+    "feature selection",
+    "pandas",
+    "scikit-learn",
+    "kaggle",
+    "tutorial",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

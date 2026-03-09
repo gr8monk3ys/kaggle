@@ -1,0 +1,14 @@
+{
+  "id": "lorenzoscaturchio/optuna-tuning-a-practical-kaggle-guide",
+  "title": "Optuna Tuning: A Practical Kaggle Guide",
+  "code_file": "optuna_hyperparameter_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["optuna", "optimization", "xgboost", "lightgbm"],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

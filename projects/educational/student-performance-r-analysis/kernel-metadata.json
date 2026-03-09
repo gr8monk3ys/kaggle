@@ -1,0 +1,22 @@
+{
+  "id": "lorenzoscaturchio/student-performance-in-r-gpa-drivers",
+  "title": "Student Performance in R: GPA Drivers",
+  "code_file": "student_performance_r_analysis.ipynb",
+  "language": "r",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "r",
+    "education",
+    "regression",
+    "classification",
+    "beginner"
+  ],
+  "dataset_sources": [
+    "lorenzoscaturchio/student-academic-performance-dataset"
+  ],
+  "kernel_sources": [],
+  "competition_sources": []
+}

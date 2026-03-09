@@ -1,0 +1,27 @@
+{
+  "id": "lorenzoscaturchio/ensemble-stacking-guide-win-kaggle-competitions",
+  "title": "Ensemble & Stacking Guide: Win Kaggle Competitions",
+  "code_file": "ensemble_stacking_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "ensemble",
+    "stacking",
+    "blending",
+    "model averaging",
+    "kaggle",
+    "competitions",
+    "xgboost",
+    "lightgbm",
+    "catboost",
+    "machine learning",
+    "tutorial",
+    "education"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}
