@@ -1,83 +1,66 @@
 # GitHub Repository Metrics Dataset (5K+ Repos)
 
-> 5,500 repos with 29 features: stars, forks, CI/CD, community health
+> 5,500 synthetic repositories with popularity, activity, and community-health signals for software analytics.
 
-**License:** GPL-3.0  
+**Kaggle dataset:** [lorenzoscaturchio/github-repo-metrics](https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics)  
+**Companion notebook:** [Github Repo Metrics Explorer V2](https://www.kaggle.com/code/lorenzoscaturchio/github-repo-metrics-explorer-v2)  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/github-repo-metrics](https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics)  
+## Why this dataset is useful
 
-## Description
+This dataset is designed for practical software-analytics work: predicting stars or forks, segmenting repositories by health, and exploring how engineering signals relate to popularity. It combines traction metrics, maintenance signals, and community features in one table so you can move directly from EDA to modeling.
 
-5,500 GitHub repositories across 12 programming languages with 29 features spanning three dimensions: popularity (stars, forks, watchers), activity (open/closed issues, PRs, commits, releases), and community health (CI/CD, test coverage, code of conduct, contributing guide, wiki, discussions).
+All records are synthetic but structurally realistic. The table covers repositories created from 2014 through 2025 and includes both product-style indicators like releases and README length and governance indicators like CI, contributing guides, code of conduct, wiki, and discussions.
 
-Built for: star count prediction (regression benchmark), open source project health classification, language-based popularity analysis, CI/CD adoption study, and software engineering research. The combination of popularity and health signals makes it particularly useful for studying what separates high-traction projects from abandoned ones.
+## File Summary
 
-Notable features: test_coverage percentage is included where available; has_ci distinguishes automated from manual workflows; topics field enables NLP analysis of project categorization. Spans repositories created from 2014 to 2025. All data is synthetic.
+- `github_repos.csv`
+- Rows: `5,500`
+- Columns: `29`
+- File size: `0.99 MB`
+- Coverage: `2014-01-01` to `2025-12-31`
+- Geography: `Global (synthetic)`
 
-## Tags
+## Column Groups
 
-`software`, `programming`, `beginner`, `regression`, `classification`
+### Repository identity
 
-## Authors
+- `repo_name`, `language`, `description`, `license`, `topics`
+- `created_date`, `last_commit_date`, `default_branch`
 
-- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
+### Popularity and activity
 
-## Coverage
+- `stars`, `forks`, `watchers`
+- `open_issues`, `closed_issues`
+- `open_pull_requests`, `merged_pull_requests`
+- `contributors`, `commits`, `releases`
 
-- Temporal: 2014-01-01 to 2025-12-31
-- Geospatial: Global (synthetic)
+### Community health and maintenance
 
-## DOI and Citations
+- `readme_length`, `has_ci`, `test_coverage`
+- `has_code_of_conduct`, `has_contributing_guide`
+- `has_wiki`, `has_pages`, `has_discussions`
+- `is_archived`, `is_fork`, `size_kb`
 
-- DOI: Not assigned
-- Scaturchio, Lorenzo (2026). GitHub Repository Metrics Dataset (5K+ Repos). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics
+## Practical Use Cases
+
+- Popularity regression for stars, forks, or watchers
+- Repository-health classification and segmentation
+- Language-mix analysis across software categories
+- CI/CD adoption studies and OSS governance exploration
+- Feature-importance demos for tabular models in software engineering contexts
+
+## Linked Kaggle Assets
+
+- Dataset page: <https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics>
+- Explore notebook: <https://www.kaggle.com/code/lorenzoscaturchio/github-repo-metrics-explorer-v2>
 
 ## Provenance
 
-- Source: Synthetic data generation scripts in this repository
-- Source: Public domain schemas and domain conventions for educational simulation
-- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
+- Synthetic data generated from repository scripts in this project
+- Built from public schema conventions and OSS platform patterns
+- Intended for education, benchmarking, demos, and exploratory research
 
-## github_repos.csv
+## Citation
 
-**Rows:** 5,000  |  **Columns:** 29  |  **Size:** 969.5 KB
-
-| Column | Type | Null% | Unique | Sample values |
-|--------|------|-------|--------|---------------|
-| `repo_name` | string | 0.0% | 5,000 | `serve-ml`, `easy-link`, `go-graph-agent` |
-| `language` | string | 0.0% | 19 | `Ruby`, `TypeScript`, `Python` |
-| `description` | string | 0.0% | 2,232 | `server framework for building authentication`, `Scalable pipeline for database management`, `lightweight dashboard built with Kotlin` |
-| `stars` | integer | 0.0% | 297 | `13`, `32`, `2` |
-| `forks` | integer | 0.0% | 128 | `0`, `3`, `4` |
-| `watchers` | integer | 0.0% | 85 | `0`, `2`, `3` |
-| `open_issues` | integer | 0.0% | 54 | `0`, `2`, `4` |
-| `closed_issues` | integer | 0.0% | 187 | `99`, `19`, `10` |
-| `open_pull_requests` | integer | 0.0% | 25 | `0`, `1`, `2` |
-| `merged_pull_requests` | integer | 0.0% | 127 | `10`, `36`, `4` |
-| `contributors` | integer | 0.0% | 24 | `1`, `6`, `5` |
-| `commits` | integer | 0.0% | 1,472 | `200`, `1167`, `10` |
-| `releases` | integer | 0.0% | 106 | `0`, `2`, `1` |
-| `license` | string | 0.0% | 10 | `MIT`, `None`, `GPL-3.0` |
-| `topics` | string | 0.0% | 4,260 | `api|automation|devops|rails|deep-learning`, `angular|react|web|api`, `mobile|desktop` |
-| `created_date` | string | 0.0% | 1,859 | `2024-09-14`, `2022-12-18`, `2024-12-13` |
-| `last_commit_date` | string | 0.0% | 247 | `2024-12-27`, `2024-12-19`, `2024-12-26` |
-| `readme_length` | integer | 0.0% | 2,928 | `1282`, `1902`, `1251` |
-| `has_ci` | integer | 0.0% | 2 | `0`, `1` |
-| `test_coverage` | float | 68.9% | 674 | `73.5`, `44.0`, `90.8` |
-| `has_code_of_conduct` | integer | 0.0% | 2 | `0`, `1` |
-| `has_contributing_guide` | integer | 0.0% | 2 | `0`, `1` |
-| `has_wiki` | integer | 0.0% | 2 | `0`, `1` |
-| `has_pages` | integer | 0.0% | 2 | `0`, `1` |
-| `has_discussions` | integer | 0.0% | 2 | `0`, `1` |
-| `default_branch` | string | 0.0% | 3 | `main`, `develop`, `master` |
-| `is_archived` | integer | 0.0% | 2 | `0`, `1` |
-| `is_fork` | integer | 0.0% | 2 | `0`, `1` |
-| `size_kb` | integer | 0.0% | 4,242 | `497`, `4622`, `2148` |
-
-## Suggested Use Cases
-
-- Text classification (TF-IDF, BERT embeddings)
-- Named entity recognition or topic modeling
-
----
-*Generated by `dataset_optimizer.py` — dataset_optimizer.py*
+Scaturchio, Lorenzo (2026). *GitHub Repository Metrics Dataset (5K+ Repos).* Kaggle Dataset. <https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics>

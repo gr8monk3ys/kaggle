@@ -12,6 +12,8 @@ cells = []
 cells.append(md("""# 🎵 Spotify Tracks: EDA & Popularity Prediction
 > **50,000 tracks · 20 genres · 21 audio features** | [Dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)
 
+**March 2026 refresh:** clearer first-screen summary, explicit dataset cross-links, and a faster path to the modeling sections.
+
 ## TL;DR
 This notebook walks through a complete ML pipeline on 50K Spotify-style tracks:
 1. **Feature distributions** — what makes genres distinct acoustically
@@ -40,9 +42,20 @@ cells.append(md("""## Objective & Evaluation Strategy
 **Hypothesis:** acousticness, energy, loudness, and tempo should explain most of the useful variation because they capture repeatable production patterns across genres.
 """))
 
+cells.append(md("""## Key Takeaways Before the Code
+
+- Genre separation is easier than popularity prediction because audio features encode production style more directly than listener behavior.
+- Popularity is still worth modeling because the errors reveal where metadata-free recommendation systems break down.
+- The most reusable outputs here are not just scores: the feature ranking, mood clusters, and cross-genre acoustic profiles all transfer well to downstream demos.
+
+**Dataset page:** [Spotify Tracks: Audio Features (50K Songs)](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)
+"""))
+
 cells.append(md("## 1. Setup & Data Loading <a id='setup'></a>"))
 
-cells.append(code("""import numpy as np
+cells.append(code("""from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -54,12 +67,74 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Kaggle path
-import os
-DATA_DIR = '/kaggle/input/spotify-tracks-audio-features-50k'
-if not os.path.exists(DATA_DIR):
-    DATA_DIR = '.'   # local fallback
-
-df = pd.read_csv(f'{DATA_DIR}/spotify_tracks.csv')
+candidate_paths = [
+    Path('/kaggle/input/spotify-tracks-audio-features-50k/spotify_tracks.csv'),
+    *Path('/kaggle/input').glob('*/spotify_tracks.csv'),
+    Path('spotify_tracks.csv'),
+]
+csv_path = next((path for path in candidate_paths if path.exists()), None)
+if csv_path is None:
+    print('spotify_tracks.csv not mounted; generating a synthetic fallback dataset')
+    rng = np.random.default_rng(42)
+    genre_params = {
+        'pop': (0.72, 0.70, 0.15, 0.06, 0.65, 118, -5.5),
+        'hip-hop': (0.82, 0.68, 0.10, 0.22, 0.55, 95, -6.0),
+        'rock': (0.50, 0.82, 0.12, 0.05, 0.50, 130, -5.0),
+        'metal': (0.35, 0.93, 0.05, 0.06, 0.35, 148, -4.0),
+        'electronic': (0.78, 0.85, 0.05, 0.05, 0.60, 128, -5.5),
+        'classical': (0.25, 0.25, 0.88, 0.04, 0.45, 108, -15.0),
+        'jazz': (0.55, 0.40, 0.65, 0.05, 0.60, 120, -12.0),
+        'r&b': (0.75, 0.62, 0.22, 0.08, 0.60, 100, -7.0),
+        'country': (0.60, 0.62, 0.48, 0.04, 0.68, 116, -7.5),
+        'folk': (0.45, 0.38, 0.82, 0.04, 0.55, 112, -12.0),
+        'reggae': (0.72, 0.58, 0.30, 0.07, 0.78, 90, -9.0),
+        'latin': (0.82, 0.75, 0.18, 0.07, 0.80, 110, -6.5),
+        'indie': (0.55, 0.60, 0.38, 0.05, 0.52, 122, -8.0),
+        'blues': (0.52, 0.50, 0.55, 0.05, 0.55, 105, -11.0),
+        'soul': (0.68, 0.58, 0.35, 0.06, 0.65, 98, -8.5),
+        'punk': (0.45, 0.90, 0.06, 0.08, 0.45, 168, -5.0),
+        'drum-and-bass': (0.75, 0.90, 0.03, 0.04, 0.50, 174, -6.0),
+        'ambient': (0.25, 0.18, 0.55, 0.03, 0.35, 80, -18.0),
+        'gospel': (0.60, 0.65, 0.42, 0.07, 0.82, 108, -8.0),
+        'k-pop': (0.78, 0.78, 0.12, 0.07, 0.70, 124, -5.5),
+    }
+    genre_list = list(genre_params)
+    weights = np.array([0.15, 0.13, 0.12, 0.05, 0.08, 0.05, 0.05, 0.07, 0.06, 0.04,
+                        0.03, 0.04, 0.04, 0.02, 0.03, 0.02, 0.02, 0.03, 0.02, 0.05])
+    weights = weights / weights.sum()
+    n_rows = 50000
+    genres = rng.choice(genre_list, size=n_rows, p=weights)
+    params = np.array([genre_params[g] for g in genres])
+    years = rng.integers(2000, 2025, size=n_rows)
+    popularity = np.clip(rng.exponential(18, size=n_rows) + (years - 2000) / 24 * 10 + rng.normal(0, 4, size=n_rows), 0, 100).round().astype(int)
+    df = pd.DataFrame({
+        'track_id': [f'track_{i:06d}' for i in range(n_rows)],
+        'track_name': [f'Track {i:05d}' for i in range(n_rows)],
+        'artist_name': [f'Artist {i % 1200:04d}' for i in range(n_rows)],
+        'album_name': [f'Album {i % 450:03d}' for i in range(n_rows)],
+        'release_year': years,
+        'genre': genres,
+        'popularity': popularity,
+        'duration_ms': np.clip(rng.normal(210000, 45000, size=n_rows), 90000, 600000).astype(int),
+        'explicit': rng.random(n_rows) < 0.14,
+        'danceability': np.clip(rng.normal(params[:, 0], 0.12), 0, 1),
+        'energy': np.clip(rng.normal(params[:, 1], 0.12), 0, 1),
+        'loudness': np.clip(rng.normal(params[:, 6], 3.0), -60, 0),
+        'speechiness': np.clip(rng.normal(params[:, 3], 0.04), 0, 1),
+        'acousticness': np.clip(rng.normal(params[:, 2], 0.12), 0, 1),
+        'instrumentalness': np.clip(rng.beta(1.5, 8.0, size=n_rows), 0, 1),
+        'liveness': np.clip(rng.normal(0.18, 0.10, size=n_rows), 0, 1),
+        'valence': np.clip(rng.normal(params[:, 4], 0.15), 0, 1),
+        'tempo': np.clip(rng.normal(params[:, 5], 15), 50, 220),
+        'key': rng.integers(0, 12, size=n_rows),
+        'mode': rng.integers(0, 2, size=n_rows),
+        'time_signature': rng.choice([3, 4, 5, 6, 7], size=n_rows, p=[0.06, 0.88, 0.03, 0.02, 0.01]),
+    })
+    DATA_DIR = '.'
+else:
+    DATA_DIR = str(csv_path.parent)
+    df = pd.read_csv(csv_path)
+    print(f"Loaded from: {csv_path}")
 print(f"Shape: {df.shape}")
 df.head()"""))
 

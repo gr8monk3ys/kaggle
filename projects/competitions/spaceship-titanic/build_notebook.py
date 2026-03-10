@@ -238,6 +238,7 @@ cells.append(code("""def engineer_features(df):
     df['Deck']     = cabin_parts[0]
     df['CabinNum'] = pd.to_numeric(cabin_parts[1], errors='coerce')
     df['Side']     = cabin_parts[2]
+    df['CabinNum'] = df['CabinNum'].fillna(-1)
 
     # Group features from PassengerId
     df['GroupId']   = df['PassengerId'].str.split('_').str[0].astype(int)
@@ -269,7 +270,8 @@ cells.append(code("""def engineer_features(df):
     # Label encode categoricals
     cat_cols = ['HomePlanet','Destination','Deck','Side','AgeGroup']
     for c in cat_cols:
-        df[c] = df[c].fillna('Unknown')
+        # AgeGroup is categorical after pd.cut; convert first so fillna can add Unknown safely.
+        df[c] = df[c].astype(object).fillna('Unknown')
         df[c] = LabelEncoder().fit_transform(df[c].astype(str))
 
     # Drop original columns
