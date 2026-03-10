@@ -1,7 +1,7 @@
 import os
 from datetime import date
 
-import medal_ops
+from kaggle_portfolio.ops import medal_ops
 import pytest
 
 
@@ -50,8 +50,10 @@ SAMPLE_TRACKER = """
 | Tier | Grandmaster (5 gold) | Novice |
 | Total datasets | 6+ | 4 (on Kaggle) |
 | Gold medals (50+ votes) | 5 | 0 |
+| Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 0 |
 | Total votes | — | 0 |
+| Total downloads | — | 0 |
 
 ### Discussion
 | Status | Target | Current |
@@ -102,6 +104,37 @@ def test_weekly_plan_contains_kpis_and_cadence():
     assert "KPI Targets" in md
 
 
+def test_badge_plan_contains_ordered_phases():
+    snapshot = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 22))
+    md = medal_ops.generate_badge_plan_markdown(snapshot)
+
+    assert "Kaggle Badge Roadmap" in md
+    assert "Phase 1: Same-Day Wins" in md
+    assert "Phase 6: Seasonal Or Availability-Dependent" in md
+    assert "Current live tracker basis" in md
+    assert "Start a 7-day submission streak" in md
+
+
+def test_parse_args_accepts_shared_flags_after_subcommand(monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "medal_ops.py",
+            "badge-plan",
+            "--output-root",
+            "custom-out",
+            "--today",
+            "2026-03-09",
+        ],
+    )
+
+    args = medal_ops.parse_args()
+
+    assert args.command == "badge-plan"
+    assert args.output_root == "custom-out"
+    assert args.today == "2026-03-09"
+
+
 def test_pace_report_computes_velocity():
     first = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 15))
     second = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 22))
@@ -133,9 +166,16 @@ def test_apply_tracker_sync_updates_summary_metrics():
         "notebooks_count": 42,
         "notebooks_total_votes": 77,
         "notebooks_vote_key": "totalVotes",
+        "notebooks_gold": 1,
+        "notebooks_silver": 2,
+        "notebooks_bronze": 3,
         "datasets_count": 12,
         "datasets_total_votes": 34,
         "datasets_vote_key": "voteCount",
+        "datasets_total_downloads": 987,
+        "datasets_gold": 0,
+        "datasets_silver": 1,
+        "datasets_bronze": 4,
         "competitions_entered": 5,
         "competitions_entered_key": "userHasEntered",
     }
@@ -149,11 +189,18 @@ def test_apply_tracker_sync_updates_summary_metrics():
 
     assert notebooks["total_notebooks"] == 42
     assert notebooks["total_votes"] == 77
+    assert notebooks["gold"] == 1
+    assert notebooks["silver"] == 2
+    assert notebooks["bronze"] == 3
     assert datasets["total_datasets"] == 12
     assert datasets["total_votes"] == 34
+    assert datasets["gold"] == 0
+    assert datasets["silver"] == 1
+    assert datasets["bronze"] == 4
     assert competitions["entered"] == 5
     assert "Notebooks.Total votes" in changes["changed_fields"]
     assert "Datasets.Total votes" in changes["changed_fields"]
+    assert "Datasets.Total downloads" in changes["changed_fields"]
 
 
 def test_generate_sync_markdown_includes_change_summary():
@@ -190,11 +237,11 @@ def test_fetch_metrics_from_csv(tmp_path):
     competitions_csv = tmp_path / "competitions.csv"
 
     kernels_csv.write_text(
-        "title,totalVotes\nA,10\nB,3\n",
+        "title,totalVotes\nA,10\nB,25\nC,55\nD,3\n",
         encoding="utf-8",
     )
     datasets_csv.write_text(
-        "title,voteCount\nD1,2\nD2,7\n",
+        "title,voteCount,downloadCount\nD1,2,20\nD2,7,30\nD3,21,40\n",
         encoding="utf-8",
     )
     competitions_csv.write_text(
@@ -204,10 +251,17 @@ def test_fetch_metrics_from_csv(tmp_path):
 
     live = medal_ops.fetch_metrics_from_csv(kernels_csv, datasets_csv, competitions_csv)
 
-    assert live["notebooks_count"] == 2
-    assert live["notebooks_total_votes"] == 13
-    assert live["datasets_count"] == 2
-    assert live["datasets_total_votes"] == 9
+    assert live["notebooks_count"] == 4
+    assert live["notebooks_total_votes"] == 93
+    assert live["notebooks_bronze"] == 1
+    assert live["notebooks_silver"] == 1
+    assert live["notebooks_gold"] == 1
+    assert live["datasets_count"] == 3
+    assert live["datasets_total_votes"] == 30
+    assert live["datasets_total_downloads"] == 90
+    assert live["datasets_bronze"] == 1
+    assert live["datasets_silver"] == 1
+    assert live["datasets_gold"] == 0
     assert live["competitions_entered"] == 2
 
 
@@ -248,6 +302,90 @@ def test_fetch_metrics_from_csv_requires_entered_column_when_competitions_presen
 
     with pytest.raises(SystemExit, match="missing an entered column"):
         medal_ops.fetch_metrics_from_csv(kernels_csv, datasets_csv, competitions_csv=competitions_csv)
+
+
+def test_run_kaggle_csv_paginated_without_page_size_uses_default(monkeypatch):
+    seen_args: list[list[str]] = []
+
+    def fake_run_kaggle_csv(args: list[str]) -> tuple[list[dict[str, str]], list[str]]:
+        seen_args.append(args)
+        page = int(args[-1])
+        if page == 1:
+            return ([{"voteCount": "1"}] * medal_ops.DEFAULT_KAGGLE_PAGE_SIZE, ["voteCount"])
+        return ([{"voteCount": "2"}], ["voteCount"])
+
+    monkeypatch.setattr(medal_ops, "run_kaggle_csv", fake_run_kaggle_csv)
+
+    rows, fieldnames = medal_ops.run_kaggle_csv_paginated(["datasets", "list", "-m"])
+
+    assert len(rows) == medal_ops.DEFAULT_KAGGLE_PAGE_SIZE + 1
+    assert fieldnames == ["voteCount"]
+    assert seen_args == [
+        ["datasets", "list", "-m", "--page", "1"],
+        ["datasets", "list", "-m", "--page", "2"],
+    ]
+
+
+def test_fetch_live_kaggle_metrics_uses_entered_group(monkeypatch):
+    calls: list[tuple[list[str], int | None]] = []
+
+    def fake_run_kaggle_csv_paginated(
+        args: list[str], *, page_size: int | None = None
+    ) -> tuple[list[dict[str, str]], list[str]]:
+        calls.append((args, page_size))
+        if args[:3] == ["kernels", "list", "--mine"]:
+            return ([{"totalVotes": "5"}, {"totalVotes": "25"}], ["totalVotes"])
+        if args[:3] == ["datasets", "list", "-m"]:
+            return (
+                [{"voteCount": "7", "downloadCount": "11"}, {"voteCount": "23", "downloadCount": "13"}],
+                ["voteCount", "downloadCount"],
+            )
+        if args[:4] == ["competitions", "list", "--group", "entered"]:
+            return ([{"userHasEntered": "True"}, {"userHasEntered": "True"}], ["userHasEntered"])
+        raise AssertionError(f"Unexpected args: {args}")
+
+    monkeypatch.setattr(medal_ops, "has_kaggle_cli", lambda: True)
+    monkeypatch.setattr(medal_ops, "run_kaggle_csv_paginated", fake_run_kaggle_csv_paginated)
+
+    live = medal_ops.fetch_live_kaggle_metrics()
+
+    assert live["notebooks_count"] == 2
+    assert live["notebooks_total_votes"] == 30
+    assert live["notebooks_bronze"] == 1
+    assert live["notebooks_silver"] == 1
+    assert live["datasets_count"] == 2
+    assert live["datasets_total_votes"] == 30
+    assert live["datasets_total_downloads"] == 24
+    assert live["datasets_bronze"] == 1
+    assert live["datasets_silver"] == 1
+    assert live["competitions_entered"] == 2
+    assert live["competitions_entered_key"] == "group=entered"
+    assert calls == [
+        (["kernels", "list", "--mine"], 100),
+        (["datasets", "list", "-m"], None),
+        (["competitions", "list", "--group", "entered"], 100),
+    ]
+
+
+def test_has_kaggle_credentials_accepts_environment(monkeypatch):
+    monkeypatch.setenv("KAGGLE_USERNAME", "env-user")
+    monkeypatch.setenv("KAGGLE_KEY", "env-key-123")
+
+    ok, sources = medal_ops.has_kaggle_credentials()
+
+    assert ok is True
+    assert "environment" in sources
+
+
+def test_has_kaggle_credentials_accepts_api_token(monkeypatch):
+    monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
+    monkeypatch.delenv("KAGGLE_KEY", raising=False)
+    monkeypatch.setenv("KAGGLE_API_TOKEN", "token-123")
+
+    ok, sources = medal_ops.has_kaggle_credentials()
+
+    assert ok is True
+    assert "environment-token" in sources
 
 
 def test_generate_sync_template_assets(tmp_path):

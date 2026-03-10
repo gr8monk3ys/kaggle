@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-import notebook_promoter
+from kaggle_portfolio.notebooks import notebook_promoter
 
 
 def _write_meta(path: Path, payload: dict) -> None:

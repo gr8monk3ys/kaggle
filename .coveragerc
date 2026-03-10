@@ -5,7 +5,6 @@ omit =
     */build_notebook.py
     */create_dataset.py
     */_build_notebook.py
-    pi-automation/*
     datasets/*/explore.ipynb
     tests/*
     .playwright-cli/*

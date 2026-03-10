@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-# Add the repo root to sys.path at import time so that module-level imports
-# (e.g. ``import build_utils``) work before any fixture has a chance to run.
+# Add the repo root to sys.path at import time so package imports work before
+# any fixture has a chance to run.
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-import dataset_usability_benchmark as benchmark
+from kaggle_portfolio.datasets import dataset_usability_benchmark as benchmark
 
 
 def test_load_stringified_metadata_handles_string_encoded_json(tmp_path):

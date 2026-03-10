@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sys
 
-import campaign_pack
+from kaggle_portfolio.campaigns import campaign_pack
 
 
 def test_prioritize_datasets_orders_by_live_status_and_rating():

@@ -183,23 +183,23 @@ jobs:
           echo "mode=${MODE}" >> "${GITHUB_OUTPUT}"
 
           if [[ "${MODE}" == "live" ]]; then
-            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health doctor --strict --require-kaggle --max-stale-days "${MAX_STALE_DAYS}" >/tmp/doctor.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_health --strict --fail-under "${MIN_DATASET_USABILITY_SCORE}" >/tmp/dataset-usability.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_health --live --owner "${KAGGLE_USERNAME}" --daily-tracker --alert-under "${LIVE_ALERT_UNDER}" --target-rating "${LIVE_TARGET_RATING}" --fail-on-live-alert >/tmp/dataset-usability-tracker.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python discussion_scheduler.py --health-check --max-overdue-scheduled "${MAX_OVERDUE_SCHEDULED}" --max-days-until-next-post "${MAX_DAYS_UNTIL_NEXT_POST}" >/tmp/draft-ops.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health sync --dry-run >/tmp/sync.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_health doctor --strict --require-kaggle --max-stale-days "${MAX_STALE_DAYS}" >/tmp/doctor.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.quality.notebook_quality --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --strict --fail-under "${MIN_DATASET_USABILITY_SCORE}" >/tmp/dataset-usability.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --live --owner "${KAGGLE_USERNAME}" --daily-tracker --alert-under "${LIVE_ALERT_UNDER}" --target-rating "${LIVE_TARGET_RATING}" --fail-on-live-alert >/tmp/dataset-usability-tracker.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.discussion_scheduler --health-check --max-overdue-scheduled "${MAX_OVERDUE_SCHEDULED}" --max-days-until-next-post "${MAX_DAYS_UNTIL_NEXT_POST}" >/tmp/draft-ops.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_health sync --dry-run >/tmp/sync.log
           else
             printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
             printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
             printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
             printf 'ref,title,size,lastUpdated,downloadCount,voteCount,usabilityRating\nsample/a,A,1,2026-02-24,0,0,0.82\nsample/b,B,1,2026-02-24,0,0,0.74\n' >/tmp/live-ratings.csv
-            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health doctor --strict --max-stale-days "${MAX_STALE_DAYS}" --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/doctor.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python notebook_quality.py --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_health --strict --fail-under "${MIN_DATASET_USABILITY_SCORE}" >/tmp/dataset-usability.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python dataset_usability.py --output-root /tmp/medal_ops_health --daily-tracker --live-ratings-csv /tmp/live-ratings.csv --alert-under "${LIVE_ALERT_UNDER}" --target-rating "${LIVE_TARGET_RATING}" >/tmp/dataset-usability-tracker.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python discussion_scheduler.py --health-check --max-overdue-scheduled "${MAX_OVERDUE_SCHEDULED}" --max-days-until-next-post "${MAX_DAYS_UNTIL_NEXT_POST}" >/tmp/draft-ops.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python medal_ops.py --output-root /tmp/medal_ops_health sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_health doctor --strict --max-stale-days "${MAX_STALE_DAYS}" --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/doctor.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.quality.notebook_quality --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --strict --fail-under "${MIN_DATASET_USABILITY_SCORE}" >/tmp/dataset-usability.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --daily-tracker --live-ratings-csv /tmp/live-ratings.csv --alert-under "${LIVE_ALERT_UNDER}" --target-rating "${LIVE_TARGET_RATING}" >/tmp/dataset-usability-tracker.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.discussion_scheduler --health-check --max-overdue-scheduled "${MAX_OVERDUE_SCHEDULED}" --max-days-until-next-post "${MAX_DAYS_UNTIL_NEXT_POST}" >/tmp/draft-ops.log
+            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_health sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log
           fi
 
       - name: Upload health logs

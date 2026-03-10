@@ -732,11 +732,11 @@ TODAY=$(date -u +%Y-%m-%d)
 doctor_status="✅ PASS"
 quality_status="✅ PASS"
 
-python3 "${REPO}/medal_ops.py" --output-root /tmp/health --today "${TODAY}" \
-    doctor --strict 2>&1 | tee /tmp/doctor.log || doctor_status="❌ FAIL"
+(cd "${REPO}" && python3 -m kaggle_portfolio.ops.medal_ops --output-root /tmp/health --today "${TODAY}" \
+    doctor --strict) 2>&1 | tee /tmp/doctor.log || doctor_status="❌ FAIL"
 
-python3 "${REPO}/notebook_quality.py" --output-root /tmp/health --today "${TODAY}" \
-    --scope all --min-score 95 --fail-under-threshold 2>&1 | tee /tmp/quality.log \
+(cd "${REPO}" && python3 -m kaggle_portfolio.quality.notebook_quality --output-root /tmp/health --today "${TODAY}" \
+    --scope all --min-score 95 --fail-under-threshold) 2>&1 | tee /tmp/quality.log \
     || quality_status="❌ FAIL"
 
 python3 /scripts/notify.py "📊 *Kaggle Health — ${TODAY}*
@@ -753,8 +753,8 @@ set -euo pipefail
 REPO="${REPO_PATH:-/repo}"
 TODAY=$(date -u +%Y-%m-%d)
 
-if python3 "${REPO}/medal_ops.py" --output-root /tmp/health --today "${TODAY}" \
-    sync 2>&1 | tee /tmp/sync.log; then
+if (cd "${REPO}" && python3 -m kaggle_portfolio.ops.medal_ops --output-root /tmp/health --today "${TODAY}" \
+    sync) 2>&1 | tee /tmp/sync.log; then
     python3 /scripts/notify.py "🔄 *Sync complete — ${TODAY}*"
 else
     python3 /scripts/notify.py "❌ *Sync failed — ${TODAY}*"
@@ -770,8 +770,8 @@ set -euo pipefail
 REPO="${REPO_PATH:-/repo}"
 TODAY=$(date -u +%Y-%m-%d)
 
-python3 "${REPO}/medal_ops.py" --output-root /tmp/health --today "${TODAY}" \
-    weekly-plan 2>&1 | tee /tmp/weekly.log
+(cd "${REPO}" && python3 -m kaggle_portfolio.ops.medal_ops --output-root /tmp/health --today "${TODAY}" \
+    weekly-plan) 2>&1 | tee /tmp/weekly.log
 
 REPORT=$(head -60 /tmp/health/reports/latest-weekly-plan.md 2>/dev/null || echo "Report not generated.")
 python3 /scripts/notify.py "📅 *Weekly Plan — ${TODAY}*
@@ -985,7 +985,7 @@ Look for `sample_submission.csv`. Note the column names and expected values.
 ```bash
 python3 -c "
 import json
-nb = json.load(open('med-gemma-challenge/med_gemma_eda.ipynb'))
+nb = json.load(open('projects/competitions/med-gemma-challenge/med_gemma_eda.ipynb'))
 for cell in nb['cells'][-5:]:
     print('---', cell.get('cell_type'))
     print(''.join(cell.get('source', []))[:300])

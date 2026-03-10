@@ -1,18 +1,11 @@
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-
 import json
 import os
 import time
 from datetime import date
+from pathlib import Path
 from typing import Optional
 
-import stale_content_detector as scd
+from kaggle_portfolio.ops import stale_content_detector as scd
 
 
 # ---------------------------------------------------------------------------
