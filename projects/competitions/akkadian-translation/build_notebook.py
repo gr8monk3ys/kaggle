@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a competition-compliant starter notebook for Akkadian submission."""
+"""Build a competition-compliant Akkadian retrieval baseline notebook."""
 
 import os as _os
 import sys as _sys
@@ -28,16 +28,18 @@ cells: list[dict] = []
 
 cells.append(
     md(
-        """# Akkadian Translation Starter Submission
+        """# Akkadian Translation Retrieval Baseline
 **Competition:** [Deep Past Challenge - Translate Akkadian to English](https://www.kaggle.com/competitions/deep-past-initiative-machine-translation)
-**Runtime:** competition-safe starter with internet disabled
+**Runtime:** competition-safe baseline with internet disabled
 
 ## What this notebook does
 - loads the real competition files from `/kaggle/input`
-- verifies the train/test/sample schema quickly
+- builds a lightweight transliteration retrieval index from the training set
+- matches each test tablet to the closest training translation
+- splits the retrieved English text across the requested line ranges
 - writes a valid `submission.csv`
 
-This starter uses the organizer-provided sample submission as the first valid baseline so the notebook can be committed and submitted reliably inside the code-competition rules."""
+This baseline avoids external model downloads and still uses the actual training pairs, which makes it a better first code-competition submission than copying the sample file."""
     )
 )
 
@@ -48,6 +50,8 @@ cells.append(
         """from pathlib import Path
 
 import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
 
 candidates = [
     Path('/kaggle/input/deep-past-initiative-machine-translation'),
@@ -81,13 +85,95 @@ train.head(2)"""
     )
 )
 
-cells.append(md("## 3. Write Submission"))
+cells.append(md("## 3. Build Retrieval Baseline"))
 
 cells.append(
     code(
-        """# First valid baseline: use the organizer-provided sample submission.
-# This keeps the notebook commit fast and competition-compliant.
-submission = sample.copy()
+        """def normalize_transliteration(text: str) -> str:
+    return ' '.join(str(text).lower().split())
+
+
+def split_translation_by_weights(text: str, weights: list[int]) -> list[str]:
+    words = str(text).split()
+    if not words:
+        return ['' for _ in weights]
+
+    total_weight = sum(weights) or len(weights)
+    chunks: list[str] = []
+    position = 0
+
+    for idx, weight in enumerate(weights):
+        remaining_words = len(words) - position
+        remaining_groups = len(weights) - idx
+
+        if idx == len(weights) - 1:
+            take = remaining_words
+        else:
+            take = max(1, round(len(words) * weight / total_weight))
+            take = min(take, remaining_words - (remaining_groups - 1))
+
+        chunk_words = words[position : position + take]
+        chunks.append(' '.join(chunk_words).strip())
+        position += take
+
+    return chunks
+
+
+train_index = train.copy()
+train_index['translit_norm'] = train_index['transliteration'].map(normalize_transliteration)
+
+vectorizer = TfidfVectorizer(analyzer='char_wb', ngram_range=(3, 6), min_df=1)
+train_matrix = vectorizer.fit_transform(train_index['translit_norm'])
+
+predictions: dict[int, str] = {}
+matches: list[dict] = []
+
+ordered_test = test.sort_values(['text_id', 'line_start']).copy()
+for text_id, group in ordered_test.groupby('text_id', sort=False):
+    combined_translit = ' '.join(group['transliteration'].astype(str).tolist())
+    combined_norm = normalize_transliteration(combined_translit)
+    similarity = linear_kernel(vectorizer.transform([combined_norm]), train_matrix)[0]
+    best_idx = int(similarity.argmax())
+    best_row = train_index.iloc[best_idx]
+
+    weights = (
+        group['line_end'].fillna(group['line_start']).astype(int)
+        - group['line_start'].astype(int)
+        + 1
+    ).clip(lower=1).tolist()
+    chunks = split_translation_by_weights(best_row['translation'], weights)
+
+    for row_idx, chunk in zip(group.index.tolist(), chunks):
+        predictions[row_idx] = chunk or best_row['translation']
+
+    matches.append(
+        {
+            'text_id': text_id,
+            'similarity': float(similarity[best_idx]),
+            'matched_oare_id': best_row['oare_id'],
+            'matched_translation_preview': best_row['translation'][:140],
+        }
+    )
+
+match_frame = pd.DataFrame(matches).sort_values('similarity', ascending=False)
+match_frame.head(10)"""
+    )
+)
+
+cells.append(md("## 4. Write Submission"))
+
+cells.append(
+    code(
+        """fallback_submission = sample.copy()
+submission = pd.DataFrame(
+    {
+        'id': test['id'],
+        'translation': [
+            predictions.get(idx, fallback_submission.iloc[idx]['translation'])
+            for idx in range(len(test))
+        ],
+    }
+)
 submission.to_csv('submission.csv', index=False)
 
 print('submission.csv written')
@@ -97,8 +183,8 @@ print(submission.head().to_string(index=False))"""
 
 cells.append(
     md(
-        """## Next Step
-After the commit finishes on Kaggle, use the competition notebook submit flow to send `submission.csv` to the leaderboard."""
+        """## Notes
+This baseline uses nearest-neighbor retrieval over transliterated tablets. It is still simple, but it uses the actual training pairs and grouped test structure, which makes it a more realistic first competition model."""
     )
 )
 
