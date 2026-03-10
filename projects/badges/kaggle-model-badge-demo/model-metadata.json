@@ -1,0 +1,10 @@
+{
+  "ownerSlug": "lorenzoscaturchio",
+  "title": "Iris Logistic Regression Badge Demo",
+  "slug": "iris-logistic-regression-badge-demo",
+  "subtitle": "Tiny scikit-learn model for Kaggle badge automation",
+  "isPrivate": true,
+  "description": "# Model Summary\n\nA compact scikit-learn logistic regression model trained on the classic iris dataset for Kaggle model badge workflows.\n\n# Model Characteristics\n\n- Framework: scikit-learn\n- Task: multiclass classification\n- Classes: setosa, versicolor, virginica\n\n# Data Overview\n\nTrained on the built-in iris dataset bundled with scikit-learn.\n\n# Evaluation Results\n\nThis artifact is intended for badge automation and notebook attachment validation.\n",
+  "publishTime": "",
+  "provenanceSources": ""
+}

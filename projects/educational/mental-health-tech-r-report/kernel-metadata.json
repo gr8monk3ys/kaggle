@@ -2,7 +2,7 @@
   "id": "lorenzoscaturchio/mental-health-in-tech-policy-report-in-r-markdown",
   "title": "Mental Health in Tech: Policy Report in R Markdown",
   "code_file": "mental_health_policy_report.Rmd",
-  "language": "r",
+  "language": "rmarkdown",
   "kernel_type": "script",
   "is_private": false,
   "enable_gpu": false,

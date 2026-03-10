@@ -1,0 +1,25 @@
+{
+  "id": "lorenzoscaturchio/playground-model-badge-demo",
+  "title": "Playground Model Badge Demo",
+  "code_file": "playground_model_badge_demo.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": [
+    "playground-series-s6e3"
+  ],
+  "kernel_sources": [],
+  "model_sources": [
+    "lorenzoscaturchio/iris-logistic-regression-badge-demo/ScikitLearn/scikit-baseline/2"
+  ],
+  "keywords": [
+    "model hub",
+    "playground",
+    "scikit-learn",
+    "badge automation"
+  ]
+}
