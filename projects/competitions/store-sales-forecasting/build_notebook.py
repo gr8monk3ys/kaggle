@@ -278,28 +278,130 @@ cells.append(code("""def make_features(df, oil_df, stores_df, holidays_df, lags=
     # Lag features (only on train — test lags come from recent train data)
     if 'sales' in df.columns:
         key = ['store_nbr','family']
+        grouped_sales = df.groupby(key)['sales']
+        grouped_promo = df.groupby(key)['onpromotion']
         for lag in lags:
-            df[f'lag_{lag}'] = df.groupby(key)['sales'].shift(lag)
+            df[f'lag_{lag}'] = grouped_sales.shift(lag)
         for w in windows:
-            df[f'roll_mean_{w}'] = (df.groupby(key)['sales']
-                                    .transform(lambda x: x.shift(1).rolling(w).mean()))
-            df[f'roll_std_{w}']  = (df.groupby(key)['sales']
-                                    .transform(lambda x: x.shift(1).rolling(w).std()))
-        df['ewma_7'] = df.groupby(key)['sales'].transform(
-            lambda x: x.shift(1).ewm(span=7).mean())
+            df[f'roll_mean_{w}'] = grouped_sales.transform(lambda x: x.shift(1).rolling(w).mean())
+            df[f'roll_std_{w}'] = grouped_sales.transform(lambda x: x.shift(1).rolling(w).std())
+        df['ewma_7'] = grouped_sales.transform(lambda x: x.shift(1).ewm(span=7).mean())
+        df['promo_roll_mean_14'] = grouped_promo.transform(lambda x: x.shift(1).rolling(14).mean())
+        df['promo_roll_mean_28'] = grouped_promo.transform(lambda x: x.shift(1).rolling(28).mean())
+        df['history_mean'] = grouped_sales.transform(lambda x: x.shift(1).expanding().mean())
+        df['trend_7_28'] = df['roll_mean_7'] / (df['roll_mean_28'] + 1)
+        df['sales_momentum'] = df['roll_mean_7'] - df['roll_mean_28']
 
-    # Encode categoricals
-    for col in ['family','type']:
-        if col in df.columns:
-            df[col] = df[col].astype('category').cat.codes
+    df['oil_to_trend'] = df['oil_price'] / (df.get('roll_mean_28', pd.Series(0, index=df.index)).fillna(0) + 1)
+    df['promo_x_trend'] = df['onpromotion'] * df.get('trend_7_28', pd.Series(1.0, index=df.index)).fillna(1.0)
 
     return df
 
 train_fe = make_features(train, oil, stores, holidays)
+test_fe = make_features(test, oil, stores, holidays)
+
+category_maps = {}
+for col in ['family', 'type']:
+    combined_values = pd.Index(train_fe[col].astype(str)).append(pd.Index(test_fe[col].astype(str))).drop_duplicates()
+    mapping = {value: idx for idx, value in enumerate(sorted(combined_values))}
+    category_maps[col] = mapping
+    train_fe[col] = train_fe[col].astype(str).map(mapping).astype(int)
+    test_fe[col] = test_fe[col].astype(str).map(mapping).astype(int)
+
 # Fill NaNs from lags at start of series
 train_fe = train_fe.fillna(0)
+test_fe = test_fe.fillna(0)
 print(f'Features: {[c for c in train_fe.columns if c not in ["id","date","sales"]]}')
 print(f'Shape after feature engineering: {train_fe.shape}')"""))
+
+cells.append(code("""history_base = train.sort_values(['store_nbr', 'family', 'date']).copy()
+lag_lookup = history_base[['store_nbr', 'family', 'date', 'sales']].copy()
+
+history_summary = (
+    history_base.groupby(['store_nbr', 'family'])
+    .apply(
+        lambda g: pd.Series({
+            'lag_7_fill': g['sales'].shift(7).dropna().iloc[-1] if g['sales'].shift(7).notna().any() else g['sales'].tail(7).mean(),
+            'lag_14_fill': g['sales'].shift(14).dropna().iloc[-1] if g['sales'].shift(14).notna().any() else g['sales'].tail(14).mean(),
+            'lag_28_fill': g['sales'].shift(28).dropna().iloc[-1] if g['sales'].shift(28).notna().any() else g['sales'].tail(28).mean(),
+            'roll_mean_7_fill': g['sales'].tail(7).mean(),
+            'roll_mean_14_fill': g['sales'].tail(14).mean(),
+            'roll_mean_28_fill': g['sales'].tail(28).mean(),
+            'roll_std_7_fill': g['sales'].tail(7).std(),
+            'roll_std_14_fill': g['sales'].tail(14).std(),
+            'roll_std_28_fill': g['sales'].tail(28).std(),
+            'ewma_7_fill': g['sales'].ewm(span=7).mean().iloc[-1],
+            'promo_roll_mean_14_fill': g['onpromotion'].tail(14).mean(),
+            'promo_roll_mean_28_fill': g['onpromotion'].tail(28).mean(),
+            'history_mean_fill': g['sales'].mean(),
+            'trend_7_28_fill': g['sales'].tail(7).mean() / (g['sales'].tail(28).mean() + 1),
+            'sales_momentum_fill': g['sales'].tail(7).mean() - g['sales'].tail(28).mean(),
+        })
+    )
+    .reset_index()
+)
+
+family_dow_history = (
+    history_base.assign(dayofweek=history_base['date'].dt.dayofweek)
+    .groupby(['family', 'dayofweek'])['sales']
+    .mean()
+    .rename('family_dow_mean')
+    .reset_index()
+)
+store_dow_history = (
+    history_base.assign(dayofweek=history_base['date'].dt.dayofweek)
+    .groupby(['store_nbr', 'dayofweek'])['sales']
+    .mean()
+    .rename('store_dow_mean')
+    .reset_index()
+)
+
+
+def build_future_features(test_df):
+    future = make_features(test_df.copy(), oil, stores, holidays)
+    future = future.merge(history_summary, on=['store_nbr', 'family'], how='left')
+    future = future.merge(family_dow_history, on=['family', 'dayofweek'], how='left')
+    future = future.merge(store_dow_history, on=['store_nbr', 'dayofweek'], how='left')
+
+    for lag in [7, 14, 28]:
+        lagged = lag_lookup.rename(columns={'sales': f'lag_{lag}_direct'}).copy()
+        lagged['forecast_date'] = lagged['date'] + pd.Timedelta(days=lag)
+        future = future.merge(
+            lagged[['store_nbr', 'family', 'forecast_date', f'lag_{lag}_direct']],
+            left_on=['store_nbr', 'family', 'date'],
+            right_on=['store_nbr', 'family', 'forecast_date'],
+            how='left',
+        ).drop(columns=['forecast_date'])
+        future[f'lag_{lag}'] = future[f'lag_{lag}_direct'].fillna(future[f'lag_{lag}_fill'])
+
+    fill_map = {
+        'roll_mean_7': 'roll_mean_7_fill',
+        'roll_mean_14': 'roll_mean_14_fill',
+        'roll_mean_28': 'roll_mean_28_fill',
+        'roll_std_7': 'roll_std_7_fill',
+        'roll_std_14': 'roll_std_14_fill',
+        'roll_std_28': 'roll_std_28_fill',
+        'ewma_7': 'ewma_7_fill',
+        'promo_roll_mean_14': 'promo_roll_mean_14_fill',
+        'promo_roll_mean_28': 'promo_roll_mean_28_fill',
+        'history_mean': 'history_mean_fill',
+        'trend_7_28': 'trend_7_28_fill',
+        'sales_momentum': 'sales_momentum_fill',
+    }
+    for feature, fallback in fill_map.items():
+        future[feature] = future.get(feature, pd.Series(np.nan, index=future.index)).fillna(future[fallback])
+
+    future['oil_to_trend'] = future['oil_price'] / (future['roll_mean_28'] + 1)
+    future['promo_x_trend'] = future['onpromotion'] * future['trend_7_28']
+
+    for col, mapping in category_maps.items():
+        future[col] = future[col].astype(str).map(mapping).fillna(-1).astype(int)
+
+    return future.fillna(0)
+
+
+print('Built history summary for future-horizon features.')
+history_summary.head()"""))
 
 cells.append(md("## 4. Baseline: Naive & Seasonal Naive"))
 
@@ -344,7 +446,7 @@ except ImportError:
     print('lightgbm not available')
 
 FEATURE_COLS = [c for c in train_fe.columns
-                if c not in ['id','date','sales','store_nbr'] and train_fe[c].dtype != 'object']
+                if c not in ['id','date','sales'] and train_fe[c].dtype != 'object']
 
 if LGB_AVAILABLE:
     cutoff = train_fe['date'].max() - pd.Timedelta(days=28)
@@ -419,15 +521,7 @@ if LGB_AVAILABLE:
 cells.append(md("## 7. Submission"))
 
 cells.append(code("""if LGB_AVAILABLE and TEST_PATH is not None:
-    # Merge test with features
-    test_fe = make_features(test, oil, stores, holidays)
-
-    # Fill lag columns using last known values from train
-    for col in [c for c in FEATURE_COLS if 'lag' in c or 'roll' in c or 'ewma' in c]:
-        if col not in test_fe.columns:
-            test_fe[col] = 0
-
-    test_fe = test_fe.fillna(0)
+    test_fe = build_future_features(test)
     X_test_cols = [c for c in FEATURE_COLS if c in test_fe.columns]
     test_preds = np.expm1(model.predict(test_fe[X_test_cols].fillna(0)))
     test_preds = np.clip(test_preds, 0, None)
@@ -455,7 +549,8 @@ cells.append(md("""## Key Takeaways
 - **Per-family LightGBM models** consistently outperform a single model
 - **Target transformation:** `log1p(sales)` stabilizes variance significantly
 - **RMSLE penalizes under-prediction** — clip negatives hard at 0
-- Add **promotion × lag interactions** as explicit features
+- Keep **categorical encoding consistent** between train and test; silent remapping can cost leaderboard points
+- Add **promotion × lag interactions** and history-summary features instead of zero-filling unknown test lags
 - Consider **Prophet** for trend decomposition as an ensemble component
 """))
 

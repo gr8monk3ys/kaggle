@@ -119,11 +119,24 @@ def split_translation_by_weights(text: str, weights: list[int]) -> list[str]:
     return chunks
 
 
-train_index = train.copy()
-train_index['translit_norm'] = train_index['transliteration'].map(normalize_transliteration)
+sort_cols = [col for col in ['oare_id', 'line_start', 'line_number', 'line_no'] if col in train.columns]
+train_ordered = train.sort_values(sort_cols) if sort_cols else train.copy()
 
-vectorizer = TfidfVectorizer(analyzer='char_wb', ngram_range=(3, 6), min_df=1)
-train_matrix = vectorizer.fit_transform(train_index['translit_norm'])
+train_index = (
+    train_ordered.groupby('oare_id', as_index=False)
+    .agg(
+        transliteration=('transliteration', lambda values: ' '.join(map(str, values))),
+        translation=('translation', lambda values: ' '.join(map(str, values))),
+    )
+)
+train_index['line_count'] = train_ordered.groupby('oare_id').size().values
+train_index['translit_norm'] = train_index['transliteration'].map(normalize_transliteration)
+train_index['token_count'] = train_index['translit_norm'].str.split().str.len().clip(lower=1)
+
+char_vectorizer = TfidfVectorizer(analyzer='char_wb', ngram_range=(3, 6), min_df=1)
+word_vectorizer = TfidfVectorizer(analyzer='word', ngram_range=(1, 2), min_df=1)
+char_matrix = char_vectorizer.fit_transform(train_index['translit_norm'])
+word_matrix = word_vectorizer.fit_transform(train_index['translit_norm'])
 
 predictions: dict[int, str] = {}
 matches: list[dict] = []
@@ -132,8 +145,35 @@ ordered_test = test.sort_values(['text_id', 'line_start']).copy()
 for text_id, group in ordered_test.groupby('text_id', sort=False):
     combined_translit = ' '.join(group['transliteration'].astype(str).tolist())
     combined_norm = normalize_transliteration(combined_translit)
-    similarity = linear_kernel(vectorizer.transform([combined_norm]), train_matrix)[0]
-    best_idx = int(similarity.argmax())
+    char_similarity = linear_kernel(char_vectorizer.transform([combined_norm]), char_matrix)[0]
+    word_similarity = linear_kernel(word_vectorizer.transform([combined_norm]), word_matrix)[0]
+    requested_lines = len(group)
+    requested_tokens = max(1, len(combined_norm.split()))
+
+    line_bonus = 1 - (
+        (train_index['line_count'] - requested_lines).abs()
+        / train_index['line_count'].clip(lower=requested_lines)
+    )
+    token_bonus = 1 - (
+        (train_index['token_count'] - requested_tokens).abs()
+        / train_index['token_count'].clip(lower=requested_tokens)
+    )
+    similarity = 0.55 * char_similarity + 0.35 * word_similarity + 0.10 * line_bonus.fillna(0).to_numpy()
+
+    candidate_scores = pd.DataFrame(
+        {
+            'idx': range(len(train_index)),
+            'base_score': similarity,
+        }
+    ).nlargest(3, 'base_score')
+
+    reranked: list[tuple[int, float]] = []
+    for idx in candidate_scores['idx']:
+        idx = int(idx)
+        rerank_score = similarity[idx] + 0.05 * float(token_bonus.iloc[idx])
+        reranked.append((idx, rerank_score))
+
+    best_idx = max(reranked, key=lambda item: item[1])[0]
     best_row = train_index.iloc[best_idx]
 
     weights = (
