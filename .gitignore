@@ -7,6 +7,7 @@ kaggle.json
 __pycache__/
 *.py[cod]
 .venv/
+catboost_info/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -15,6 +16,7 @@ __pycache__/
 medal_ops/history/
 medal_ops/reports/
 medal_ops/sync_inputs/
+.competition_lab/
 
 .env
 pi-automation/.env

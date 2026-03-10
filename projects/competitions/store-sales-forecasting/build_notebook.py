@@ -24,6 +24,7 @@ cells.append(md("""# Store Sales Time Series Forecasting with LightGBM
 **Task:** Predict 15 days of store sales across 54 stores and 33 product families
 **Metric:** RMSLE (Root Mean Squared Log Error)
 **Author:** Lorenzo Scaturchio
+**Last Updated:** March 2026
 
 ---
 
@@ -42,6 +43,26 @@ cells.append(md("""## Objective & Evaluation Strategy
 **Evaluation:** optimize RMSLE on a held-out validation window and inspect residuals by store, family, and holiday regime before trusting leaderboard gains.
 
 **Hypothesis:** lagged demand, holiday context, and exogenous oil signals should explain most forecast lift because they capture recurring seasonal behavior.
+"""))
+
+cells.append(md("""## March 2026 Refresh
+
+- Tightened the opening section so the first screen explains the full forecasting plan immediately.
+- Added a compact leaderboard playbook to show which feature blocks usually move RMSLE the most.
+- Linked the competition forum for faster iteration once the notebook is live.
+
+**Competition discussion:** [Store Sales forum](https://www.kaggle.com/competitions/store-sales-time-series-forecasting/discussion)
+"""))
+
+cells.append(md("""## Leaderboard Playbook
+
+| Lever | Why it matters for RMSLE | Used here |
+|---|---|---|
+| Lag features | Capture the strongest recent-demand signal without leaking future data | Yes |
+| Rolling means and volatility | Stabilize noisy series and help low-volume families | Yes |
+| Holiday context | Prevent false spikes and dips around Ecuador holiday shifts | Yes |
+| Oil price | Adds macro context for broad spending behavior | Yes |
+| Temporal validation | Keeps local gains closer to what the Kaggle leaderboard rewards | Yes |
 """))
 
 cells.append(md("## 1. Setup & Data Loading"))

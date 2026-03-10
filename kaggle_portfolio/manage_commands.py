@@ -702,6 +702,7 @@ COMMANDS = [
     Command("stale-content", "Detect stale notebooks, datasets, and outdated library versions", lambda a: run_module("kaggle_portfolio.ops.stale_content_detector", a), "[--max-nb-age N] [--max-ds-age N]"),
     Command("build-explore-notebooks", "Generate rich EDA explore notebooks for all datasets", lambda a: run_module("kaggle_portfolio.datasets.dataset_explore_generator", ["--all", *a]), "[--push]"),
     Command("create-competition-entry", "Scaffold a new competition entry from a competition slug", lambda a: run_module("kaggle_portfolio.notebooks.competition_entry", a), "<slug> [--gpu] [--push]"),
+    Command("competition-lab", "Benchmark local competition models and optionally submit from the CLI", lambda a: run_module("kaggle_portfolio.notebooks.local_competition_lab", a), "<slug> [--write-submission] [--submit] [--force-download]"),
     Command("metadata-tracker", "Track metadata changes vs vote deltas over time", lambda a: run_module("kaggle_portfolio.ops.metadata_tracker", a), "<snapshot|annotate|report> [args...]"),
     Command("smoke-live", "Safely exercise live Kaggle publish/post prerequisites without mutating Kaggle state", lambda a: run_module("kaggle_portfolio.ops.repo_ops", ["smoke-live", *a]), "[--owner OWNER] [--check-discussion-login]"),
     Command("upload-covers", "Upload cover images to Kaggle datasets via Playwright", cmd_upload_covers),

@@ -1,117 +1,115 @@
 # Kaggle Discussion Posts - Ready to Post
 
-**Date:** January 31, 2026
-**Status:** Ready for manual posting
-**Posts Selected:** 5 of 10
+**Date:** March 10, 2026  
+**Status:** Current and ready for manual posting  
+**Focus:** discussion visibility that supports live notebooks, datasets, and competition activity
 
----
+## Posting Order
 
-## Quick Reference
+1. `titanic` competition comment
+2. `spaceship-titanic` competition comment
+3. `nlp-getting-started` competition comment
+4. `store-sales-time-series-forecasting` discussion post
+5. `general` dataset spotlight for Spotify Tracks
+6. `deep-past-initiative-machine-translation` post after competition rules are accepted
 
-| # | Title | Forum | Link to Post |
-|---|-------|-------|--------------|
-| 1 | 5 Feature Engineering Tricks | [Getting Started](https://www.kaggle.com/discussions/getting-started) | Copy Draft 1 below |
-| 2 | Med-Gemma EDA Findings | Competition Forum | Copy Draft 2 below |
-| 3 | Akkadian Translation Data | Competition Forum | Copy Draft 3 below |
-| 4 | RAG Systems Guide | [General](https://www.kaggle.com/discussions/general) | Copy Draft 5 below |
-| 5 | Time Series Pitfalls | [Getting Started](https://www.kaggle.com/discussions/getting-started) | Copy Draft 7 below |
+## Post 1
 
----
+**Forum:** <https://www.kaggle.com/competitions/titanic/discussion>  
+**Format:** comment on an existing feature-engineering or baseline thread
 
-## Post 1: 5 Feature Engineering Tricks That Won Me Bronze
+```text
+I revisited Titanic with a stronger local CatBoost setup and pushed my public score from 0.77511 to 0.77751 today.
 
-**Post to:** https://www.kaggle.com/discussions/getting-started
+The biggest lift came from simple structured features rather than a more exotic model: title extraction, family size, fare-per-person, cabin deck, and ticket-prefix cleanup.
 
-### Title: 5 Feature Engineering Tricks That Won Me Bronze
-
-### Body:
-(Copy everything from "Hey Kagglers!" to the end of Draft 1 in discussion-drafts.md)
-
-**Quick link:** See Draft 1 in `discussion-drafts.md` (lines 18-102)
-
----
-
-## Post 2: Med-Gemma Challenge: Initial EDA Findings
-
-**Post to:** Competition discussion forum (search "Med-Gemma" on Kaggle)
-
-### Title: Med-Gemma Challenge: Initial EDA Findings
-
-### Body:
-(Copy Draft 2 from discussion-drafts.md, lines 112-187)
-
----
-
-## Post 3: Akkadian Translation: Understanding the Data
-
-**Post to:** https://www.kaggle.com/c/deep-past-initiative-machine-translation/discussion
-
-### Title: Akkadian Translation: Understanding the Data
-
-### Body:
-(Copy Draft 3 from discussion-drafts.md, lines 197-261)
-
----
-
-## Post 4: RAG Systems: What I Learned Building One From Scratch
-
-**Post to:** https://www.kaggle.com/discussions/general
-
-### Title: RAG Systems: What I Learned Building One From Scratch
-
-### Body:
-(Copy Draft 5 from discussion-drafts.md, lines 396-490)
-
----
-
-## Post 5: Time Series Pitfalls: Don't Random Split Your Data!
-
-**Post to:** https://www.kaggle.com/discussions/getting-started
-
-### Title: Time Series Pitfalls: Don't Random Split Your Data!
-
-### Body:
-(Copy Draft 7 from discussion-drafts.md, lines 617-701)
-
----
-
-## How to Post
-
-1. Go to the forum URL listed above
-2. Click "New Topic" or "Start Discussion"
-3. Paste the title
-4. Paste the body content (markdown formatting should be preserved)
-5. Add relevant tags if prompted
-6. Submit
-
-## After Posting
-
-- [ ] Post 1 submitted
-- [ ] Post 2 submitted
-- [ ] Post 3 submitted
-- [ ] Post 4 submitted
-- [ ] Post 5 submitted
-- [ ] Check for upvotes after 24 hours
-- [ ] Respond to any comments
-
----
-
-## Kaggle API Re-authentication
-
-The Kaggle API returned 401 Unauthorized. To fix:
-
-1. Go to https://www.kaggle.com/settings
-2. Scroll to "API" section
-3. Click "Create New Token"
-4. Download the new `kaggle.json`
-5. Replace `~/.kaggle/kaggle.json` with the new file
-6. Run `chmod 600 ~/.kaggle/kaggle.json`
-7. Test with `kaggle competitions list`
-
-Once re-authenticated, you can push notebooks with:
-```bash
-cd /path/to/repo/kaggle
-./manage.sh push-nb    # Push all notebooks
-./manage.sh push graph-neural-networks  # Push GNN specifically
-./manage.sh push eda-tutorial  # Push EDA tutorial
+Notebook here if useful:
+https://www.kaggle.com/code/lorenzoscaturchio/titanic-ml-guide-zero-to-top-5-accuracy
 ```
+
+## Post 2
+
+**Forum:** <https://www.kaggle.com/competitions/spaceship-titanic/discussion>  
+**Format:** comment on a modeling, feature-engineering, or CatBoost thread
+
+```text
+I just pushed a stronger Spaceship Titanic submission and moved my public score from 0.80079 to 0.80874.
+
+The features that mattered most were deck and side parsing from Cabin, grouped-passenger features, total spend, no-spend flags, and CryoSleep interaction terms.
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/spaceship-titanic-complete-ml-guide
+```
+
+## Post 3
+
+**Forum:** <https://www.kaggle.com/competitions/nlp-getting-started/discussion>  
+**Format:** comment on a baseline, TF-IDF, or transformer thread
+
+```text
+I finally pushed a full submission from my disaster tweets notebook today and landed at 0.79681 on the public board.
+
+The current version combines strong sparse baselines with a transformer-oriented workflow, and the next thing I want to improve is a cleaner out-of-fold blend instead of a simple probability mix.
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/nlp-disaster-tweets-bert-guide
+```
+
+## Post 4
+
+**Forum:** <https://www.kaggle.com/competitions/store-sales-time-series-forecasting/discussion>  
+**Format:** short topic or reply tied to validation strategy
+
+**Suggested title:** Validation setup that mirrored the leaderboard best for me
+
+```text
+The biggest thing that improved my Store Sales workflow was treating validation design as the first modeling decision rather than an afterthought.
+
+Once I switched to a strictly forward-looking split and inspected errors by store, family, and holiday regime, it became much easier to tell whether a new lag block was a real improvement or just leaking convenience.
+
+I refreshed my notebook around that idea here:
+https://www.kaggle.com/code/lorenzoscaturchio/store-sales-forecasting-lightgbm
+```
+
+## Post 5
+
+**Forum:** <https://www.kaggle.com/discussions/general>  
+**Format:** short discussion post highlighting one useful dataset pattern
+
+**Suggested title:** A small music dataset that is actually useful for ML demos
+
+```text
+I have been refreshing a synthetic Spotify-style dataset and one reason it has been useful is that it is large enough to train real baselines but still compact enough to explore end to end in one sitting.
+
+Genre classification is much easier than popularity prediction, which makes it a nice teaching example for the difference between style signals and audience signals.
+
+Dataset:
+https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/spotify-tracks-eda-popularity-prediction
+```
+
+## Post 6
+
+**Forum:** <https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion>  
+**Format:** topic after you manually accept the competition rules
+
+**Suggested title:** Preprocessing seems higher leverage than model size so far
+
+```text
+I put together an Akkadian baseline notebook and one thing that stood out immediately is how much preprocessing quality matters before model choice.
+
+Token normalization, transliteration consistency, and sequence length handling all look like higher-leverage decisions than jumping straight into a bigger model.
+
+I'm using a ByT5-style baseline as the starting point:
+https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda-byt5-seq2seq-baseline
+```
+
+## Manual Checklist
+
+- [ ] Post the three competition comments first
+- [ ] Publish the Store Sales thread
+- [ ] Publish the Spotify dataset spotlight
+- [ ] Enter Deep Past Akkadian and accept rules before posting there
+- [ ] Check replies after 12 to 24 hours and answer anything technical
