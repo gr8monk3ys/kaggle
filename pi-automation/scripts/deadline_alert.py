@@ -15,7 +15,7 @@ import notify
 from kaggle_portfolio.ops.medal_ops import ParsedDeadline, parse_active_competitions
 
 REPO = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent)))
-TRACKER_PATH = REPO / "grandmaster-tracker.md"
+TRACKER_PATH = REPO / "docs" / "reports" / "grandmaster-tracker.md"
 ALERT_HOURS = 72
 
 

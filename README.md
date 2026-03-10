@@ -7,7 +7,7 @@
 
 A systematic collection of Kaggle notebooks, competition entries, datasets, and community engagement resources targeting Kaggle Grandmaster status across all four categories.
 
-Progress is tracked in [`grandmaster-tracker.md`](./grandmaster-tracker.md).
+Progress is tracked in [docs/reports/grandmaster-tracker.md](./docs/reports/grandmaster-tracker.md).
 
 ---
 
@@ -160,10 +160,10 @@ All datasets live under [`datasets/`](./datasets). Each directory contains a `cr
 
 | Document | Purpose |
 |----------|---------|
-| [grandmaster-tracker.md](./grandmaster-tracker.md) | Progress tracking across all 4 Grandmaster categories |
-| [competition-scout-report.md](./competition-scout-report.md) | Active competition analysis and medal probability assessment |
-| [discussion-engagement-strategy.md](./discussion-engagement-strategy.md) | 12-week community engagement roadmap |
-| [discussion-drafts.md](./discussion-drafts.md) | Pre-written discussion posts for community engagement |
+| [docs/reports/grandmaster-tracker.md](./docs/reports/grandmaster-tracker.md) | Progress tracking across all 4 Grandmaster categories |
+| [docs/reports/competition-scout-report.md](./docs/reports/competition-scout-report.md) | Active competition analysis and medal probability assessment |
+| [docs/discussions/engagement-strategy.md](./docs/discussions/engagement-strategy.md) | 12-week community engagement roadmap |
+| [docs/discussions/discussion-drafts.md](./docs/discussions/discussion-drafts.md) | Pre-written discussion posts for community engagement |
 | [manage.sh](./manage.sh) | CLI tool for Kaggle notebook/dataset management |
 
 ---
@@ -348,11 +348,15 @@ kaggle/
 │   ├── ops/                            # Repo health, auth, tracker, scheduling
 │   ├── quality/                        # Notebook quality scoring
 │   └── shared/                         # Shared helpers (Kaggle + notebook utils)
-├── grandmaster-tracker.md              # Progress across all 4 GM categories
-├── competition-scout-report.md         # Active competition analysis
-├── discussion-engagement-strategy.md   # 12-week community engagement plan
-├── discussion-drafts.md                # Pre-written discussion posts
-├── DISCUSSION_POSTS_READY.md           # Ready-to-post discussion index
+├── docs/
+│   ├── discussions/
+│   │   ├── discussion-drafts.md        # Pre-written discussion posts
+│   │   ├── discussion-posts-ready.md   # Ready-to-post discussion index
+│   │   └── engagement-strategy.md      # 12-week community engagement plan
+│   ├── plans/                          # Planning docs and design notes
+│   └── reports/
+│       ├── competition-scout-report.md # Active competition analysis
+│       └── grandmaster-tracker.md      # Progress across all 4 GM categories
 ├── kaggle.json.example                 # Credential template (never commit real keys)
 │
 ├── projects/

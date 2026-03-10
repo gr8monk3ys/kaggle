@@ -24,7 +24,7 @@ from kaggle_portfolio.shared.kaggle_utils import (
 )
 
 
-DEFAULT_TRACKER_PATH = Path("grandmaster-tracker.md")
+DEFAULT_TRACKER_PATH = Path("docs/reports/grandmaster-tracker.md")
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 DEFAULT_SYNC_INPUT_DIRNAME = "sync_inputs"
 DEFAULT_KAGGLE_PAGE_SIZE = 20
