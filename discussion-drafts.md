@@ -4886,4 +4886,174 @@ The difference between people who improve quickly on Kaggle and those who platea
 
 ---
 
-*End of drafts. All 50 are ready to post. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
+## Draft 51: Titanic Feature Blocks That Actually Moved My Score
+
+**Target forum:** Titanic
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-03-12
+**Status:** ready
+
+### Titanic Feature Blocks That Actually Moved My Score
+
+I revisited Titanic this week and the biggest reminder for me was how often leaderboard movement still comes from disciplined tabular work rather than a fancier model.
+
+The features that helped most were:
+
+- title extraction from `Name`
+- family size and an `IsAlone` flag
+- fare-per-person instead of raw fare alone
+- cabin deck from the first cabin letter
+- ticket-prefix cleanup to separate numeric tickets from shared prefixes
+
+That combination moved my public score from `0.77511` to `0.77751`.
+
+The interesting part was not that each feature was individually huge. It was that they made the survival story more coherent for the model: social group size, socioeconomic proxy, and partial location signal all started lining up better.
+
+I also found that a stronger local CV does not automatically guarantee a better public score. One more CatBoost run with higher local CV actually came back worse on the leaderboard, which was a useful reminder to treat this board as noisy and saturated.
+
+Notebook here if useful:
+https://www.kaggle.com/code/lorenzoscaturchio/titanic-ml-guide-zero-to-top-5-accuracy
+
+If anyone has seen reliably strong gains lately from a smaller feature set rather than stacking, I would be interested in that comparison.
+
+---
+
+## Draft 52: Spaceship Titanic Features That Earned the Biggest Lift
+
+**Target forum:** Spaceship Titanic
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-03-13
+**Status:** ready
+
+### Spaceship Titanic Features That Earned the Biggest Lift
+
+I pushed a stronger Spaceship Titanic submission today and moved from `0.80079` to `0.80874` on the public board.
+
+The biggest lift came from feature engineering that respected the passenger grouping structure:
+
+- parsing `Cabin` into deck, side, and cabin number
+- using the passenger group id from `PassengerId`
+- aggregating total spend across the five spending columns
+- adding a `NoSpend` flag
+- keeping `CryoSleep` and spending behavior in the same feature view
+
+What I liked about this setup is that it improved both the notebook workflow and the local experimentation path. It is still a simple tabular problem, but the grouped-travel structure matters more than I originally expected.
+
+One thing that did not help as much as I expected was blindly pushing a higher local CV CatBoost run. The best local result did not beat the earlier public score, so I am leaning toward stability and cleaner feature semantics over extra tuning depth on this board.
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/spaceship-titanic-complete-ml-guide
+
+Curious whether others are getting more from group-level consistency features or from stronger model ensembling at this point.
+
+---
+
+## Draft 53: Disaster Tweets Baseline Takeaways After My First Full Submission
+
+**Target forum:** NLP Getting Started
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-03-14
+**Status:** ready
+
+### Disaster Tweets Baseline Takeaways After My First Full Submission
+
+I finally pushed a full live submission from my disaster tweets workflow and landed at `0.79681` on the public board.
+
+The main takeaway for me was that strong sparse baselines are still hard to beat cleanly on this competition unless the validation loop is very disciplined. Word and character TF-IDF variants were more competitive than I expected, and the next improvement path looks more like better out-of-fold blending than a dramatic model change.
+
+Right now the thing I trust most is:
+
+- a solid sparse baseline
+- careful threshold selection on out-of-fold probabilities
+- treating transformer runs as additions to the blend, not automatic replacements
+
+Notebook here:
+https://www.kaggle.com/code/lorenzoscaturchio/nlp-disaster-tweets-bert-guide
+
+If you have found a blend setup that consistently beats a strong sparse baseline without a lot of variance, I would love to compare notes.
+
+---
+
+## Draft 54: Validation Setup That Mirrored the Leaderboard Best for Me
+
+**Target forum:** Store Sales
+**Category:** Validation Strategy
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-03-16
+**Status:** ready
+
+### Validation Setup That Mirrored the Leaderboard Best for Me
+
+The biggest thing that improved my Store Sales workflow was treating validation design as the first modeling decision rather than an afterthought.
+
+Once I switched to a strictly forward-looking split and started inspecting errors by store, family, and holiday regime, it became much easier to tell whether a new lag block was a real improvement or just convenience leakage.
+
+The feature blocks that felt the most trustworthy in that setup were:
+
+- lag features at multiple horizons
+- rolling means and rolling volatility
+- holiday context
+- oil as an exogenous signal
+
+I refreshed my notebook around that idea here:
+https://www.kaggle.com/code/lorenzoscaturchio/store-sales-forecasting-lightgbm
+
+If anyone has a validation template they trust more than a straightforward forward split on this competition, I would be interested in seeing how you pressure-test it.
+
+---
+
+## Draft 55: A Small Music Dataset That Is Actually Useful for ML Demos
+
+**Target forum:** General
+**Category:** Dataset Spotlight
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-03-18
+**Status:** ready
+
+### A Small Music Dataset That Is Actually Useful for ML Demos
+
+I have been refreshing a synthetic Spotify-style dataset and one reason it has been useful is that it is large enough to train real baselines but still compact enough to explore end to end in one sitting.
+
+The pattern I keep coming back to is that genre classification is much easier than popularity prediction, which makes it a good teaching example for the difference between style signals and audience signals.
+
+Dataset:
+https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/spotify-tracks-eda-popularity-prediction
+
+If anyone has a favorite public music dataset for quick tabular or clustering demos, I would be interested in comparing tradeoffs.
+
+---
+
+## Draft 56: Preprocessing Looks Higher Leverage Than Model Size So Far
+
+**Target forum:** Deep Past Competition
+**Category:** Competition Update
+**Expected medal:** Silver
+**Priority:** high
+**Deadline:** 2026-03-23
+**Status:** idea
+
+### Preprocessing Looks Higher Leverage Than Model Size So Far
+
+I put together an Akkadian baseline notebook and one thing that stood out immediately is how much preprocessing quality matters before model choice.
+
+Token normalization, transliteration consistency, and sequence length handling all look like higher-leverage decisions than jumping straight into a bigger model.
+
+I am using a ByT5-style baseline as the starting point:
+https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda-byt5-seq2seq-baseline
+
+Curious whether others are seeing more gains from preprocessing or from architecture changes first.
+
+---
+
+*End of drafts. The March 10 additions are ready to queue. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
