@@ -63,6 +63,14 @@ def test_manage_help_available():
     assert "--schedule-weeks" in result.stdout
 
 
+def test_repo_root_has_no_top_level_python_scripts():
+    root_scripts = sorted(path.name for path in ROOT.glob("*.py"))
+    assert root_scripts == [], (
+        "Move root Python files into kaggle_portfolio/ or a dedicated subdirectory. "
+        f"Found: {', '.join(root_scripts)}"
+    )
+
+
 def test_medal_ops_health_workflow_exists_and_has_schedule():
     workflow = ROOT / ".github" / "workflows" / "medal-ops-health.yml"
     assert workflow.exists(), "Expected medal ops health workflow to exist."
@@ -84,11 +92,11 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "max_days_until_next_post:" in content
     assert 'default: "85"' in content
     assert "doctor --strict" in content
-    assert "notebook_quality.py" in content
-    assert "dataset_usability.py" in content
+    assert "python -m kaggle_portfolio.quality.notebook_quality" in content
+    assert "python -m kaggle_portfolio.datasets.dataset_usability" in content
     assert "dataset-usability.log" in content
     assert "dataset-usability-tracker.log" in content
-    assert "discussion_scheduler.py --health-check" in content
+    assert "python -m kaggle_portfolio.ops.discussion_scheduler --health-check" in content
     assert "draft-ops.log" in content
     assert "sync --dry-run" in content
     assert "Open or update incident issue" in content
@@ -102,8 +110,8 @@ def test_ci_workflow_runs_preflight_gate_and_script_smokes():
     assert "--strict-doctor" in content
     assert "--no-pytest" in content
     assert "pytest -q --cov=." in content
-    assert "dataset_explore_generator.py" in content
-    assert "competition_entry.py --help" in content
+    assert "python -m kaggle_portfolio.datasets.dataset_explore_generator" in content
+    assert "python -m kaggle_portfolio.notebooks.competition_entry --help" in content
 
 
 def test_live_smoke_workflow_exists_and_is_manual():

@@ -5,8 +5,7 @@ from pathlib import Path
 import pytest
 
 # Add pi-automation/scripts and the repo root to sys.path at import time so
-# that module-level imports (e.g. ``import discussion_queue``, ``import medal_ops``)
-# work before fixtures run.
+# module-level imports work before fixtures run.
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "pi-automation" / "scripts"
 for _p in (str(SCRIPTS_DIR), str(REPO_ROOT)):

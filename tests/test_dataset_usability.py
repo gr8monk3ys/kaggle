@@ -5,7 +5,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-import dataset_usability
+from kaggle_portfolio.datasets import dataset_usability
 
 
 def _write_dataset_bundle(

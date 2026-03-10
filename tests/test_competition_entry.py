@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-import competition_entry as entry
+from kaggle_portfolio.notebooks import competition_entry as entry
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ class TestGenerateCells:
 # ---------------------------------------------------------------------------
 
 class TestCreateEntry:
-    @patch("competition_entry.fetch_competition_info")
+    @patch("kaggle_portfolio.notebooks.competition_entry.fetch_competition_info")
     def test_creates_directory(self, mock_fetch, tmp_path):
         mock_fetch.return_value = None
 
@@ -169,7 +169,7 @@ class TestCreateEntry:
             ok = entry.create_entry("test-competition", gpu=False, push=False)
 
         assert ok
-        entry_dir = tmp_path / "test-competition"
+        entry_dir = tmp_path / "projects" / "competitions" / "test-competition"
         assert entry_dir.is_dir()
 
         # kernel-metadata.json exists and is valid
@@ -186,12 +186,12 @@ class TestCreateEntry:
         assert nb["nbformat"] == 4
         assert len(nb["cells"]) >= 15
 
-    @patch("competition_entry.fetch_competition_info")
+    @patch("kaggle_portfolio.notebooks.competition_entry.fetch_competition_info")
     def test_existing_directory_updates_notebook(self, mock_fetch, tmp_path):
         mock_fetch.return_value = None
 
-        entry_dir = tmp_path / "existing-comp"
-        entry_dir.mkdir()
+        entry_dir = tmp_path / "projects" / "competitions" / "existing-comp"
+        entry_dir.mkdir(parents=True)
         # Pre-existing kernel-metadata.json
         meta = {
             "id": "lorenzoscaturchio/existing-comp",
@@ -214,7 +214,7 @@ class TestCreateEntry:
         # But notebook should be created
         assert (entry_dir / "notebook.ipynb").exists()
 
-    @patch("competition_entry.fetch_competition_info")
+    @patch("kaggle_portfolio.notebooks.competition_entry.fetch_competition_info")
     def test_fetched_title_used(self, mock_fetch, tmp_path):
         mock_fetch.return_value = {"title": "Amazing Competition", "ref": "amazing-comp"}
 
@@ -223,6 +223,6 @@ class TestCreateEntry:
 
         assert ok
         meta = json.loads(
-            (tmp_path / "amazing-comp" / "kernel-metadata.json").read_text()
+            (tmp_path / "projects" / "competitions" / "amazing-comp" / "kernel-metadata.json").read_text()
         )
         assert "Amazing Competition" in meta["title"]

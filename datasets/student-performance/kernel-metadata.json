@@ -10,13 +10,14 @@
   "dataset_sources": [
     "lorenzoscaturchio/student-academic-performance-dataset"
   ],
-  "kernel_sources": [],
+  "kernel_sources": [
+    "lorenzoscaturchio/tabular-eda-utilities-for-kaggle-projects"
+  ],
   "competition_sources": [],
   "keywords": [
     "education",
     "classification",
     "regression",
-    "student analytics",
-    "eda"
+    "beginner"
   ]
 }

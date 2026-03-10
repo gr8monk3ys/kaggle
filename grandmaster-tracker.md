@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-02-22
+**Last Updated:** 2026-03-09
 
 ---
 
@@ -25,7 +25,10 @@
 
 ---
 
-## Current Progress (2026-02-22)
+## Current Progress (2026-03-09)
+
+> Note: Notebook, dataset, and competition metrics were refreshed live on 2026-03-09 from authenticated Kaggle CLI pulls.
+> Discussion metrics still reflect the last manual tracker snapshot.
 
 ### Competitions
 | Status | Target | Current |
@@ -34,7 +37,7 @@
 | Gold medals | 5 | 0 |
 | Silver medals | — | 0 |
 | Bronze medals | — | 0 |
-| Entered | — | 1 (Titanic) |
+| Entered | — | 4 |
 
 **Active competitions to enter:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
@@ -48,18 +51,17 @@
 | AIMO3 | 1,560 | Apr 15, 2026 | Very Hard | LLM math reasoning |
 
 **Priority: Med-Gemma (58 teams = best medal odds by far)**
-
 ### Notebooks
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 21 (on Kaggle) |
+| Total notebooks | 30+ | 59 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
-| Bronze medals (5+ votes) | — | 0 |
-| Total votes | — | 4 |
+| Bronze medals (5+ votes) | — | 2 |
+| Total votes | — | 50 |
 
-**Notebooks on Kaggle:**
+**Tracked notebook portfolio (curated live + pipeline subset):**
 | # | Notebook | Votes | Status |
 |---|----------|-------|--------|
 | 1 | Intro to FastText Subword Embeddings | 2 | Live |
@@ -94,30 +96,34 @@
 | 30 | House Prices: Complete EDA + Feature Engineering | — | In progress |
 | 31 | Digit Recognizer: CNN from Scratch to 99%+ | — | In progress |
 
+**Note:** The table above is a curated portfolio subset, not the full live inventory. Kaggle sync currently reports 59 notebooks and 50 total notebook votes.
 ### Datasets
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (5 gold) | Novice |
-| Total datasets | 7+ | 4 (on Kaggle) |
+| Total datasets | 7+ | 11 (on Kaggle) |
 | Gold medals (50+ votes) | 5 | 0 |
-| Bronze medals (5+ votes) | — | 0 |
-| Total votes | — | 0 |
+| Silver medals (20+ votes) | — | 1 |
+| Bronze medals (5+ votes) | — | 1 |
+| Total votes | — | 33 |
+| Total downloads | — | 437 |
 
 **Datasets on Kaggle:**
-| # | Dataset | Votes | Usability |
-|---|---------|-------|-----------|
-| 1 | Credit Card Fraud | 0 | 0.12 |
-| 2 | ML/DS Interview Questions & Answers (500+) | 0 | 0.35 |
-| 3 | Synthetic E-Commerce Customer Behavior | 0 | 0.24 |
-| 4 | GitHub Repository Metrics (5K+ Repos) | 0 | 0.24 |
-| 5 | AI/ML Research Papers Trends (3K+) | — | Local (not pushed) |
-| 6 | Programming Language Benchmarks | — | Local (not pushed) |
-| 7 | Credit Card Fraud Detection (200K transactions) | — | Local (not pushed) |
-| 8 | Job Postings NLP & Salary Prediction (15K listings) | — | Local (not pushed) |
-| 9 | Student Academic Performance | — | In progress |
+| # | Dataset | Votes | Downloads | Usability |
+|---|---------|-------|-----------|-----------|
+| 1 | Spotify Tracks: Audio Features (50K Songs) | 23 | 309 | 0.882 |
+| 2 | GitHub Repository Metrics Dataset (5K+ Repos) | 9 | 44 | 0.882 |
+| 3 | Job Postings: NLP & Salary Prediction (15K) | 1 | 1 | 0.882 |
+| 4 | AI/ML Research Papers Trends (3K+ Papers) | 0 | 2 | 0.882 |
+| 5 | Student Academic Performance (10K Students) | 0 | 9 | 0.882 |
+| 6 | Credit Card Fraud Detection (200K Transactions) | 0 | 6 | 0.882 |
+| 7 | ML/DS Interview Questions & Answers (500+) | 0 | 31 | 0.882 |
+| 8 | Synthetic E-Commerce Customer Behavior Dataset | 0 | 29 | 0.882 |
+| 9 | Mental Health in Tech Survey (5K Responses) | 0 | 4 | 0.882 |
+| 10 | Programming Language Benchmarks Dataset | 0 | 2 | 0.882 |
+| 11 | Usability Probe Dataset (Tabular Sample) | 0 | 0 | n/a |
 
-**Note:** Usability scores are low - need to improve documentation and add column descriptions on Kaggle.
-
+**Note:** All 11 live datasets are now accounted for in the tracker. Ten are portfolio datasets and one is a public usability probe used for rating checks. Portfolio dataset usability is solid at 0.882 across the board; the next step is turning downloads into votes and pushing ratings toward 1.0.
 ### Discussion
 | Status | Target | Current |
 |--------|--------|---------|
@@ -141,8 +147,9 @@
 - [x] Create 5 additional high-value notebooks (SHAP, Optuna, NLP Classification, House Prices, Digit Recognizer)
 - [x] Create 2 additional datasets (credit-card-fraud, job-postings; student-performance in progress)
 - [ ] Push all new notebooks to Kaggle (llm-finetuning, timeseries-transformers, image-segmentation, ensemble-stacking, graph-neural-networks, shap-explainability, optuna-guide, nlp-text-classification)
-- [ ] Push all new datasets to Kaggle (ai-research-trends, programming-benchmarks, credit-card-fraud, job-postings)
-- [ ] Run create_dataset.py for credit-card-fraud, job-postings, and student-performance datasets
+- [x] Push all new datasets to Kaggle (ai-research-trends, programming-benchmarks, credit-card-fraud, job-postings)
+- [x] Run create_dataset.py for credit-card-fraud, job-postings, and student-performance datasets
+- [ ] Run a promotion sprint on Spotify Tracks, GitHub Repo Metrics, and ML/DS Interview QA to convert downloads into more votes
 - [ ] Accept rules for Med-Gemma, Vesuvius, Akkadian competitions
 - [ ] Post first 3 discussion drafts
 - [ ] Submit initial Med-Gemma baseline
@@ -175,9 +182,9 @@
 
 | Metric | Week 1 | Week 2 | Week 3 | Week 4 |
 |--------|--------|--------|--------|--------|
-| Notebook votes (total) | 4 | | | |
-| Dataset votes (total) | 0 | | | |
+| Notebook votes (total) | 50 | | | |
+| Dataset votes (total) | 33 | | | |
 | Discussion medals | 0 | | | |
-| Competition entries | 1 | | | |
+| Competition entries | 4 | | | |
 | Competition medals | 0 | | | |
 | New content published | 4 | | | |

@@ -12,29 +12,33 @@ kaggle/
 ├── discussion-engagement-strategy.md  # 12-week community plan
 ├── discussion-drafts.md               # Pre-written discussion posts
 │
-├── Competition Entries
-│   ├── med-gemma-challenge/           # MedGemma 4B chest X-ray triage (LoRA)
-│   ├── akkadian-translation/          # ByT5 seq2seq ancient language translation
-│   └── vesuvius-surface/              # 3D U-Net volumetric segmentation
-│
-├── Educational Notebooks
-│   ├── feature-engineering/           # 50 techniques across 8 categories
-│   ├── attention-guide/               # Bahdanau → Transformer walkthrough
-│   ├── llm-finetuning/               # LoRA/QLoRA practical guide
-│   ├── image-segmentation/            # U-Net → SegFormer masterclass
-│   ├── timeseries-transformers/       # Transformer time series forecasting
-│   ├── ensemble-stacking/            # Competition-winning ensemble methods
-│   ├── rag-from-scratch/             # RAG from first principles
-│   ├── graph-neural-networks/        # GNN practical guide
-│   ├── financial-analysis/           # Financial time-series prediction
-│   ├── fraud-detection/              # Explainable fraud detection
-│   ├── eda-tutorial/                 # EDA best practices
-│   ├── competition-template/         # Standardized ML pipeline template
-│   ├── shap-explainability/          # SHAP Model Explainability Masterclass
-│   ├── optuna-guide/                 # Optuna Hyperparameter Optimization Guide
-│   ├── nlp-text-classification/      # NLP Text Classification: TF-IDF to BERT
-│   ├── house-prices/                 # House Prices: Complete EDA + Feature Engineering
-│   └── digit-recognizer/             # Digit Recognizer: CNN from Scratch to 99%+
+├── projects/
+│   ├── competitions/
+│   │   ├── med-gemma-challenge/      # MedGemma 4B chest X-ray triage (LoRA)
+│   │   ├── akkadian-translation/     # ByT5 seq2seq ancient language translation
+│   │   ├── vesuvius-surface/         # 3D U-Net volumetric segmentation
+│   │   ├── spaceship-titanic/        # Binary classification with feature engineering
+│   │   ├── titanic-ultimate/         # Titanic: From Zero to Top 5%
+│   │   ├── store-sales-forecasting/  # Time series forecasting with LightGBM
+│   │   ├── nlp-disaster-tweets/      # BERT-based disaster tweet classification
+│   │   ├── house-prices/             # House Prices: Complete EDA + Feature Engineering
+│   │   └── digit-recognizer/         # Digit Recognizer: CNN from Scratch to 99%+
+│   └── educational/
+│       ├── feature-engineering/      # 50 techniques across 8 categories
+│       ├── attention-guide/          # Bahdanau → Transformer walkthrough
+│       ├── llm-finetuning/           # LoRA/QLoRA practical guide
+│       ├── image-segmentation/       # U-Net → SegFormer masterclass
+│       ├── timeseries-transformers/  # Transformer time series forecasting
+│       ├── ensemble-stacking/        # Competition-winning ensemble methods
+│       ├── rag-from-scratch/         # RAG from first principles
+│       ├── graph-neural-networks/    # GNN practical guide
+│       ├── financial-analysis/       # Financial time-series prediction
+│       ├── fraud-detection/          # Explainable fraud detection
+│       ├── eda-tutorial/             # EDA best practices
+│       ├── competition-template/     # Standardized ML pipeline template
+│       ├── shap-explainability/      # SHAP Model Explainability Masterclass
+│       ├── optuna-guide/             # Optuna Hyperparameter Optimization Guide
+│       └── nlp-text-classification/  # NLP Text Classification: TF-IDF to BERT
 │
 └── datasets/                          # 8 custom Kaggle datasets
     ├── ml-interview-questions/

@@ -1,0 +1,61 @@
+---
+title: "Mental Health in Tech: Policy Report in R Markdown"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(dplyr)
+library(ggplot2)
+
+data_path <- "/kaggle/input/mental-health-in-tech-survey-5k/mental_health_tech.csv"
+if (!file.exists(data_path)) {
+  data_path <- "mental_health_tech.csv"
+}
+
+survey <- read.csv(data_path)
+```
+
+# Overview
+
+This report evaluates which employer support signals are most associated with workers seeking treatment, using the Mental Health in Tech dataset.
+
+```{r}
+survey %>%
+  group_by(benefits, seek_help) %>%
+  summarise(
+    respondents = n(),
+    treatment_rate = mean(treatment == "Yes"),
+    .groups = "drop"
+  )
+```
+
+# Treatment rate by support environment
+
+```{r}
+ggplot(
+  survey,
+  aes(x = reorder(benefits, as.numeric(treatment == "Yes"), FUN = mean), y = as.numeric(treatment == "Yes"))
+) +
+  stat_summary(fun = mean, geom = "col") +
+  coord_flip() +
+  labs(
+    title = "Treatment rate by employer mental health benefits",
+    x = "Benefits response",
+    y = "Share seeking treatment"
+  )
+```
+
+# Country and company-size slice
+
+```{r}
+survey %>%
+  group_by(country, no_employees) %>%
+  summarise(
+    respondents = n(),
+    treatment_rate = mean(treatment == "Yes"),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(respondents)) %>%
+  head(20)
+```

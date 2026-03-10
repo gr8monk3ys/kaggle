@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sys
 
-import campaign_dispatcher
+from kaggle_portfolio.campaigns import campaign_dispatcher
 
 
 def _write_queue(path, queue):

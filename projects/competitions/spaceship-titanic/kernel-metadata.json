@@ -1,0 +1,14 @@
+{
+  "id": "lorenzoscaturchio/spaceship-titanic-complete-ml-guide",
+  "title": "Spaceship Titanic Complete ML Guide",
+  "code_file": "spaceship_titanic_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["spaceship titanic", "binary classification", "feature engineering", "xgboost", "ensemble"],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": ["spaceship-titanic"]
+}

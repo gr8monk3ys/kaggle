@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-import dataset_publish_pipeline as pipeline
+from kaggle_portfolio.datasets import dataset_publish_pipeline as pipeline
 
 
 def _candidate(

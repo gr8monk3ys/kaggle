@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-import metadata_tracker as tracker
+from kaggle_portfolio.ops import metadata_tracker as tracker
 
 
 # ---------------------------------------------------------------------------

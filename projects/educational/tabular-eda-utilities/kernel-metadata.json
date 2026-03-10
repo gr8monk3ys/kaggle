@@ -1,0 +1,19 @@
+{
+  "id": "lorenzoscaturchio/tabular-eda-utilities-for-kaggle-projects",
+  "title": "Tabular EDA Utilities for Kaggle Projects",
+  "code_file": "tabular_eda_utils.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "python",
+    "eda",
+    "education",
+    "beginner"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}
