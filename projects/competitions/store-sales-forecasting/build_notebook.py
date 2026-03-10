@@ -78,12 +78,33 @@ np.random.seed(SEED)
 print('Libraries loaded.')"""))
 
 cells.append(code("""# ── Paths ────────────────────────────────────────────────────────────────────
-BASE = '/kaggle/input/store-sales-time-series-forecasting/'
-TRAIN_PATH   = BASE + 'train.csv'
-TEST_PATH    = BASE + 'test.csv'
-STORES_PATH  = BASE + 'stores.csv'
-OIL_PATH     = BASE + 'oil.csv'
-HOLIDAYS_PATH= BASE + 'holidays_events.csv'
+from pathlib import Path
+
+
+def find_input_file(filename):
+    candidates = [
+        Path('/kaggle/input/store-sales-time-series-forecasting') / filename,
+        Path('/tmp/store-sales-live/extracted') / filename,
+        Path(filename),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    input_root = Path('/kaggle/input')
+    if input_root.exists():
+        matches = sorted(input_root.rglob(filename))
+        if matches:
+            return matches[0]
+    return None
+
+
+TRAIN_PATH = find_input_file('train.csv')
+TEST_PATH = find_input_file('test.csv')
+STORES_PATH = find_input_file('stores.csv')
+OIL_PATH = find_input_file('oil.csv')
+HOLIDAYS_PATH = find_input_file('holidays_events.csv')
+SAMPLE_PATH = find_input_file('sample_submission.csv')
 
 def make_synthetic():
     \"\"\"Compact synthetic dataset: 3 stores x 5 families x 500 days\"\"\"
@@ -122,18 +143,20 @@ def make_synthetic():
                                'type': ['A','B','C'], 'cluster': [1,2,3]})
     oil = pd.DataFrame({'date': dates, 'dcoilwtico': 50 + np.cumsum(np.random.normal(0,1,len(dates)))})
     holidays = pd.DataFrame({'date': pd.date_range('2015-01-01', periods=20, freq='18D'),
-                              'type': 'Holiday', 'locale': 'National',
-                              'locale_name': 'Ecuador', 'description': 'Holiday',
-                              'transferred': False})
+                             'type': 'Holiday', 'locale': 'National',
+                             'locale_name': 'Ecuador', 'description': 'Holiday',
+                             'transferred': False})
     return train, test, stores_df, oil, holidays
 
-if os.path.exists(TRAIN_PATH):
-    train    = pd.read_csv(TRAIN_PATH, parse_dates=['date'])
-    test     = pd.read_csv(TEST_PATH,  parse_dates=['date'])
-    stores   = pd.read_csv(STORES_PATH)
-    oil      = pd.read_csv(OIL_PATH,   parse_dates=['date'])
+if TRAIN_PATH is not None and TEST_PATH is not None:
+    train = pd.read_csv(TRAIN_PATH, parse_dates=['date'])
+    test = pd.read_csv(TEST_PATH, parse_dates=['date'])
+    stores = pd.read_csv(STORES_PATH)
+    oil = pd.read_csv(OIL_PATH, parse_dates=['date'])
     holidays = pd.read_csv(HOLIDAYS_PATH, parse_dates=['date'])
-    print('Loaded from Kaggle.')
+    print('Loaded competition files:')
+    print(f'  train: {TRAIN_PATH}')
+    print(f'  test : {TEST_PATH}')
 else:
     train, test, stores, oil, holidays = make_synthetic()
     print('Using synthetic data.')
@@ -395,7 +418,7 @@ if LGB_AVAILABLE:
 
 cells.append(md("## 7. Submission"))
 
-cells.append(code("""if LGB_AVAILABLE and os.path.exists(TEST_PATH):
+cells.append(code("""if LGB_AVAILABLE and TEST_PATH is not None:
     # Merge test with features
     test_fe = make_features(test, oil, stores, holidays)
 
