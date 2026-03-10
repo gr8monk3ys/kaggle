@@ -242,7 +242,7 @@ def validate_kernel(path: Path, payload: dict, raw_text: str) -> list[str]:
 
 def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
     errors: list[str] = []
-    required = ("id", "title", "licenses", "resources")
+    required = ("id", "title", "licenses", "resources", "authors", "coverage", "provenance")
     for field in required:
         if field not in payload:
             errors.append(f"missing '{field}'")
@@ -251,6 +251,9 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
     title = str(payload.get("title", "")).strip()
     licenses = payload.get("licenses")
     resources = payload.get("resources")
+    authors = payload.get("authors")
+    coverage = payload.get("coverage")
+    provenance = payload.get("provenance")
 
     if "id" in payload and not ident:
         errors.append("missing 'id'")
@@ -282,6 +285,57 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
                 errors.append(
                     f"resource path '{resource_path}' not found in {path.parent.name}/"
                 )
+            if not str(item.get("description", "")).strip():
+                errors.append(f"resource #{index} missing 'description'")
+
+            schema = item.get("schema")
+            if not isinstance(schema, dict):
+                errors.append(f"resource #{index} missing 'schema'")
+                continue
+
+            fields = schema.get("fields")
+            if not isinstance(fields, list) or not fields:
+                errors.append(f"resource #{index} missing non-empty 'schema.fields'")
+                continue
+
+            for field_index, field_payload in enumerate(fields, start=1):
+                if not isinstance(field_payload, dict):
+                    errors.append(
+                        f"resource #{index} field #{field_index} must be an object"
+                    )
+                    continue
+                for field_name in ("name", "title", "description", "type"):
+                    if not str(field_payload.get(field_name, "")).strip():
+                        errors.append(
+                            f"resource #{index} field #{field_index} missing '{field_name}'"
+                        )
+
+    if not isinstance(authors, list) or not authors:
+        errors.append("missing non-empty 'authors' list")
+    else:
+        for index, item in enumerate(authors, start=1):
+            if not isinstance(item, dict) or not str(item.get("name", "")).strip():
+                errors.append(f"author #{index} missing 'name'")
+
+    if not isinstance(coverage, dict):
+        errors.append("missing 'coverage' object")
+    else:
+        for field in ("temporal_start_date", "temporal_end_date", "geospatial_coverage"):
+            if not str(coverage.get(field, "")).strip():
+                errors.append(f"coverage missing '{field}'")
+
+    if not isinstance(provenance, dict):
+        errors.append("missing 'provenance' object")
+    else:
+        sources = provenance.get("sources")
+        if not isinstance(sources, list) or not sources:
+            errors.append("provenance missing non-empty 'sources' list")
+        else:
+            for index, item in enumerate(sources, start=1):
+                if not str(item).strip():
+                    errors.append(f"provenance source #{index} is empty")
+        if not str(provenance.get("collection_methodology", "")).strip():
+            errors.append("provenance missing 'collection_methodology'")
 
     if SUSPICIOUS_PATTERN.search(raw_text):
         errors.append("possible credential in metadata — review before pushing")
