@@ -190,6 +190,66 @@ def test_dataset_metadata_resource_paths_exist(meta_path):
         )
 
 
+@pytest.mark.parametrize("meta_path", _find_dataset_metas())
+def test_dataset_metadata_resources_include_schema_fields(meta_path):
+    """Each dataset resource should ship field-level descriptors for Kaggle usability."""
+    meta = _load(meta_path)
+    resources = meta.get("resources")
+    assert isinstance(resources, list) and resources
+    for idx, item in enumerate(resources, start=1):
+        assert item.get("description"), (
+            f"{meta_path.relative_to(ROOT)}: resource #{idx} missing description"
+        )
+        schema = item.get("schema")
+        assert isinstance(schema, dict), (
+            f"{meta_path.relative_to(ROOT)}: resource #{idx} missing schema"
+        )
+        fields = schema.get("fields")
+        assert isinstance(fields, list) and fields, (
+            f"{meta_path.relative_to(ROOT)}: resource #{idx} missing schema.fields"
+        )
+        for field_idx, field in enumerate(fields, start=1):
+            for name in ("name", "title", "description", "type"):
+                assert field.get(name), (
+                    f"{meta_path.relative_to(ROOT)}: resource #{idx} field #{field_idx} missing {name}"
+                )
+
+
+@pytest.mark.parametrize("meta_path", _find_dataset_metas())
+def test_dataset_metadata_includes_provenance_authors_and_coverage(meta_path):
+    """Datasets should document source story and context, not just file paths."""
+    meta = _load(meta_path)
+
+    authors = meta.get("authors")
+    assert isinstance(authors, list) and authors, (
+        f"{meta_path.relative_to(ROOT)}: authors must be a non-empty list"
+    )
+    assert authors[0].get("name"), (
+        f"{meta_path.relative_to(ROOT)}: first author missing name"
+    )
+
+    coverage = meta.get("coverage")
+    assert isinstance(coverage, dict), (
+        f"{meta_path.relative_to(ROOT)}: coverage must be an object"
+    )
+    for field in ("temporal_start_date", "temporal_end_date", "geospatial_coverage"):
+        assert coverage.get(field), (
+            f"{meta_path.relative_to(ROOT)}: coverage missing {field}"
+        )
+
+    provenance = meta.get("provenance")
+    assert isinstance(provenance, dict), (
+        f"{meta_path.relative_to(ROOT)}: provenance must be an object"
+    )
+    sources = provenance.get("sources")
+    assert isinstance(sources, list) and sources, (
+        f"{meta_path.relative_to(ROOT)}: provenance.sources must be a non-empty list"
+    )
+    assert provenance.get("collection_methodology"), (
+        f"{meta_path.relative_to(ROOT)}: provenance missing collection_methodology"
+    )
+
+
 # ── validate subcommand integration test ─────────────────────────────────────
 
 
@@ -249,6 +309,34 @@ def test_manage_validate_fails_on_missing_dataset_resource(tmp_path):
     )
     assert result.returncode != 0
     assert "resource path 'missing.csv' not found" in result.stdout
+
+
+def test_manage_validate_fails_on_missing_dataset_provenance_and_schema(tmp_path):
+    """manage.sh validate returns non-zero when rich dataset metadata sections are omitted."""
+    (tmp_path / "example.csv").write_text("a\n1\n", encoding="utf-8")
+    (tmp_path / "dataset-metadata.json").write_text(
+        json.dumps(
+            {
+                "id": "owner/example-dataset",
+                "title": "Example Dataset",
+                "licenses": [{"name": "CC0-1.0"}],
+                "resources": [{"path": "example.csv"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    patched_manage = _patched_manage_script(tmp_path)
+
+    result = subprocess.run(
+        ["bash", str(patched_manage), "validate"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "missing 'authors'" in result.stdout
+    assert "missing 'provenance'" in result.stdout
 
 
 def test_validate_python_logic_invalid_json(tmp_path):
