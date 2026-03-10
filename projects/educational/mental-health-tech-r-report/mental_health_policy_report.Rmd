@@ -8,9 +8,34 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(dplyr)
 library(ggplot2)
 
-data_path <- "/kaggle/input/mental-health-in-tech-survey-5k/mental_health_tech.csv"
-if (!file.exists(data_path)) {
-  data_path <- "mental_health_tech.csv"
+candidate_paths <- c(
+  "/kaggle/input/mental-health-in-tech-survey-5k/mental_health_tech.csv",
+  "/kaggle/input/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k/mental_health_tech.csv",
+  "mental_health_tech.csv"
+)
+
+data_path <- NA_character_
+for (candidate in candidate_paths) {
+  if (file.exists(candidate)) {
+    data_path <- candidate
+    break
+  }
+}
+
+if (is.na(data_path) && dir.exists("/kaggle/input")) {
+  matches <- list.files(
+    "/kaggle/input",
+    pattern = "^mental_health_tech\\.csv$",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+  if (length(matches) > 0) {
+    data_path <- matches[[1]]
+  }
+}
+
+if (is.na(data_path)) {
+  stop("mental_health_tech.csv not found in /kaggle/input or local working directory")
 }
 
 survey <- read.csv(data_path)

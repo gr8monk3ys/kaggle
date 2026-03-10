@@ -1,0 +1,14 @@
+{
+  "ownerSlug": "lorenzoscaturchio",
+  "modelSlug": "iris-logistic-regression-badge-demo",
+  "instanceSlug": "scikit-baseline",
+  "framework": "scikitLearn",
+  "overview": "Minimal scikit-learn variation used to validate Kaggle model creation and notebook attachment flows.",
+  "usage": "# Model Format\n\njoblib serialized scikit-learn estimator.\n\n# Training Data\n\nTrained on scikit-learn's built-in iris dataset.\n\n# Model Inputs\n\nA 2D float array with four numeric flower measurements per row.\n\n# Model Outputs\n\nInteger class ids from 0 to 2.\n\n# Model Usage\n\nLoad with `joblib.load()` and call `.predict()` on a matrix of shape `(n_samples, 4)`.\n\n# Fine-tuning\n\nNot intended for fine-tuning.\n\n# Changelog\n\nInitial badge automation variation.\n",
+  "licenseName": "Apache 2.0",
+  "fineTunable": false,
+  "trainingData": [],
+  "modelInstanceType": "Unspecified",
+  "baseModelInstanceId": 0,
+  "externalBaseModelUrl": ""
+}
