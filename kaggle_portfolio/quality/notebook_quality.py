@@ -72,6 +72,8 @@ VISUALIZATION_KEYWORDS = [
     "plt.",
     "seaborn",
     "sns.",
+    "ggplot(",
+    "geom_",
     "plotly",
     "px.",
     "go.",

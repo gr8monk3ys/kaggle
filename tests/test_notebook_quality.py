@@ -62,6 +62,25 @@ def test_score_notebook_low_quality(tmp_path, code_cell, write_kernel_bundle):
     assert any("H1 title" in hint for hint in score.missing)
 
 
+def test_score_notebook_recognizes_r_visualizations(tmp_path, md_cell, code_cell, write_kernel_bundle):
+    cells = [
+        md_cell("# R Notebook"),
+        md_cell("## Objective\nDefine the goal."),
+        md_cell("## Data\nDataset and EDA."),
+        code_cell("set.seed(42)\nsummary(df)"),
+        md_cell("## Method\nModel approach."),
+        code_cell("library(ggplot2)\nggplot(df, aes(x, y)) + geom_point()"),
+        md_cell("## Evaluation\nResults and metrics."),
+        md_cell("## Conclusion\nSummary and next steps to improve."),
+    ]
+    write_kernel_bundle(tmp_path, "portfolio-r", "guide.ipynb", cells)
+    notebook_path = tmp_path / "portfolio-r" / "guide.ipynb"
+
+    score = notebook_quality.score_notebook(notebook_path, tmp_path, min_score=80)
+
+    assert score.criteria["visualization_signal"] == 12
+
+
 def test_main_quality_gate_fails(tmp_path, monkeypatch, code_cell, write_kernel_bundle):
     write_kernel_bundle(
         tmp_path,
