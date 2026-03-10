@@ -9,7 +9,7 @@ Scores each competition by:
 Usage
 -----
     python3 -m kaggle_portfolio.notebooks.competition_scout          # print ranked list
-    python3 -m kaggle_portfolio.notebooks.competition_scout --update # also update competition-scout-report.md
+    python3 -m kaggle_portfolio.notebooks.competition_scout --update # also update docs/reports/competition-scout-report.md
 
 Invoked by: ./manage.sh scout [--update]
 """
@@ -24,7 +24,7 @@ from pathlib import Path
 from kaggle_portfolio.shared.kaggle_utils import kaggle_command
 
 ROOT = Path(__file__).resolve().parents[2]
-SCOUT_REPORT = ROOT / "competition-scout-report.md"
+SCOUT_REPORT = ROOT / "docs" / "reports" / "competition-scout-report.md"
 
 GREEN = "\033[0;32m"
 YELLOW = "\033[0;33m"
@@ -39,6 +39,13 @@ OUR_TOPICS = {
     "time series", "forecasting", "feature engineering", "ensemble",
     "deep learning", "bert", "tabular", "eda", "fraud", "medical",
 }
+
+
+def parse_deadline_datetime(value: str) -> datetime:
+    deadline = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if deadline.tzinfo is None:
+        return deadline.replace(tzinfo=timezone.utc)
+    return deadline.astimezone(timezone.utc)
 
 
 
@@ -86,7 +93,7 @@ def score_competition(row: dict, now: datetime) -> float:
     deadline_str = row.get("deadline", row.get("evaluationDate", ""))
     if deadline_str:
         try:
-            deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+            deadline = parse_deadline_datetime(deadline_str)
             days_left = (deadline - now).days
             if days_left < 0:
                 return -1  # already ended
@@ -169,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
         days_left = "?"
         if deadline_str:
             try:
-                deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+                deadline = parse_deadline_datetime(deadline_str)
                 days_left = max(0, (deadline - now).days)
             except ValueError:
                 pass

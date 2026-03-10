@@ -30,7 +30,7 @@ from pathlib import Path
 from kaggle_portfolio.shared.kaggle_utils import parse_iso_date
 
 ROOT = Path(__file__).resolve().parents[2]
-DRAFTS_FILE = ROOT / "discussion-drafts.md"
+DRAFTS_FILE = ROOT / "docs" / "discussions" / "discussion-drafts.md"
 QUEUE_FILE = ROOT / "pi-automation" / "data" / "discussion_queue.json"
 PI_SCRIPTS = ROOT / "pi-automation" / "scripts"
 

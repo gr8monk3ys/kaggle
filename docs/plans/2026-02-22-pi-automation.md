@@ -355,7 +355,7 @@ import notify
 from medal_ops import parse_active_competitions, ParsedDeadline
 
 REPO = Path(os.environ.get("REPO_PATH", "/repo"))
-TRACKER_PATH = REPO / "grandmaster-tracker.md"
+TRACKER_PATH = REPO / "docs/reports/grandmaster-tracker.md"
 ALERT_HOURS = 72
 
 
@@ -441,7 +441,7 @@ import discussion_queue as dq
 
 SAMPLE_QUEUE = [
     {"id": "d1", "title": "Post One", "forum_url": "https://kaggle.com/discussions/getting-started",
-     "body_file": "discussion-drafts.md", "body_section": "Draft 1",
+     "body_file": "docs/discussions/discussion-drafts.md", "body_section": "Draft 1",
      "status": "pending", "scheduled_after": "2026-02-01T00:00:00Z"},
     {"id": "d2", "title": "Post Two", "forum_url": "https://kaggle.com/discussions/general",
      "body_file": "discussion-drafts.md", "body_section": "Draft 2",
