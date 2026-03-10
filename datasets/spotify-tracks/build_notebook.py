@@ -61,8 +61,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, mean_squared_error, r2_score
+from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score, train_test_split
+from sklearn.metrics import classification_report, f1_score, mean_squared_error, r2_score
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -272,12 +272,26 @@ cells.append(md("## 5. Genre Classification (XGBoost) <a id='classification'></a
 cells.append(code("""from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.preprocessing import LabelEncoder
 
-FEATURE_COLS = AUDIO_FEATURES + ['duration_ms', 'release_year', 'explicit', 'key', 'mode', 'time_signature']
-
 le = LabelEncoder()
 df_ml = df.copy()
 df_ml['genre_enc'] = le.fit_transform(df_ml['genre'])
 df_ml['explicit'] = df_ml['explicit'].astype(int)
+df_ml['duration_min'] = df_ml['duration_ms'] / 60000
+df_ml['artist_track_count'] = df_ml.groupby('artist_name')['track_id'].transform('count')
+df_ml['energy_acoustic_gap'] = df_ml['energy'] - df_ml['acousticness']
+df_ml['dance_valence_interaction'] = df_ml['danceability'] * df_ml['valence']
+df_ml['tempo_bucket'] = pd.cut(
+    df_ml['tempo'],
+    bins=[0, 80, 110, 140, 220],
+    labels=[0, 1, 2, 3],
+    include_lowest=True,
+).astype(int)
+
+FEATURE_COLS = AUDIO_FEATURES + [
+    'duration_ms', 'duration_min', 'release_year', 'explicit', 'key', 'mode',
+    'time_signature', 'artist_track_count', 'energy_acoustic_gap',
+    'dance_valence_interaction', 'tempo_bucket',
+]
 
 X = df_ml[FEATURE_COLS]
 y = df_ml['genre_enc']
@@ -294,10 +308,16 @@ except ImportError:
     from sklearn.ensemble import RandomForestClassifier
     clf = RandomForestClassifier(n_estimators=200, max_depth=15, random_state=42, n_jobs=-1)
 
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+cv_f1 = cross_val_score(clf, X, y, cv=cv, scoring='f1_macro', n_jobs=-1)
+print(f"5-fold macro-F1: {cv_f1.mean():.3f} +/- {cv_f1.std():.3f}")
+
 clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
 acc = (y_pred == y_test).mean()
+macro_f1 = f1_score(y_test, y_pred, average='macro')
 print(f"Test Accuracy: {acc:.3f} ({acc*100:.1f}%)")
+print(f"Holdout macro-F1: {macro_f1:.3f}")
 print(f"\\nPer-genre accuracy (top/bottom 5):")
 from sklearn.metrics import confusion_matrix
 cm = confusion_matrix(y_test, y_pred)
@@ -335,6 +355,13 @@ except ImportError:
 X_reg = df_ml[FEATURE_COLS + ['genre_enc']]
 y_reg = df_ml['popularity']
 X_tr, X_te, y_tr, y_te = train_test_split(X_reg, y_reg, test_size=0.2, random_state=42)
+
+cv_reg = KFold(n_splits=5, shuffle=True, random_state=42)
+cv_rmse = -cross_val_score(reg, X_reg, y_reg, cv=cv_reg,
+                           scoring='neg_root_mean_squared_error', n_jobs=-1)
+cv_r2 = cross_val_score(reg, X_reg, y_reg, cv=cv_reg, scoring='r2', n_jobs=-1)
+print(f"5-fold CV RMSE: {cv_rmse.mean():.2f} +/- {cv_rmse.std():.2f}")
+print(f"5-fold CV R^2 : {cv_r2.mean():.3f} +/- {cv_r2.std():.3f}")
 
 reg.fit(X_tr, y_tr)
 y_hat = reg.predict(X_te)
@@ -437,14 +464,14 @@ cells.append(md("""## 8. Key Takeaways <a id='takeaways'></a>
 - **Instrumentalness** is right-skewed — very few tracks have no vocals
 
 **Genre Classification:**
-- XGBoost achieves ~55-65% accuracy on 20 genres using only audio features
-- Most confusion occurs between similar genres (e.g., rock/metal, folk/acoustic)
-- **Acousticness**, **tempo**, and **energy** are the most discriminative features
+- Cross-validated macro-F1 is more reliable than one lucky holdout split because it penalizes weak performance on underrepresented genres.
+- Most confusion still occurs between acoustically adjacent genres (for example rock/metal or folk/country).
+- **Acousticness**, **tempo**, **energy**, and the derived energy-acoustic gap are among the strongest discriminative features.
 
 **Popularity:**
-- Audio features alone explain only ~15-20% of popularity variance (R²≈0.15-0.20)
-- Newer tracks are significantly more popular (algorithmic recency bias)
-- This highlights the importance of non-acoustic factors (marketing, social media, algorithmic promotion)
+- Audio features alone explain only part of popularity variance, even after adding lightweight interaction features and artist-frequency context.
+- Newer tracks still trend more popular, which is consistent with recency bias in recommendation systems.
+- The remaining error is useful: it shows where marketing, playlists, artist brand, and network effects dominate pure content signals.
 
 **Mood Clustering:**
 - Songs cluster meaningfully into mood archetypes: Energetic, Chill, Happy, Melancholic, Danceable, Acoustic

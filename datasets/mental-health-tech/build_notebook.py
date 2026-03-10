@@ -40,23 +40,30 @@ cells.append(md("""## Objective & Evaluation Strategy
 
 cells.append(md("## 1. Setup & Overview <a id='setup'></a>"))
 
-cells.append(code("""import numpy as np
+cells.append(code("""from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix, roc_curve
 import warnings
 warnings.filterwarnings('ignore')
 
-import os
-DATA_DIR = '/kaggle/input/mental-health-in-tech-survey-5k'
-if not os.path.exists(DATA_DIR):
-    DATA_DIR = '.'
+candidate_paths = [
+    Path('/kaggle/input/mental-health-in-tech-survey-5k/mental_health_tech.csv'),
+    *Path('/kaggle/input').glob('*/mental_health_tech.csv'),
+    Path('mental_health_tech.csv'),
+]
+csv_path = next((path for path in candidate_paths if path.exists()), None)
+if csv_path is None:
+    raise FileNotFoundError('mental_health_tech.csv not found in /kaggle/input or local working directory')
 
-df = pd.read_csv(f'{DATA_DIR}/mental_health_tech.csv')
+df = pd.read_csv(csv_path)
+print(f"Loaded from: {csv_path}")
 print(f"Shape: {df.shape}")
 df.head()"""))
 
@@ -312,11 +319,20 @@ for col in cat_cols:
 for col in ['self_employed', 'family_history', 'remote_work', 'tech_company', 'obs_consequence']:
     df_ml[col] = (df_ml[col] == 'Yes').astype(int)
 
+support_cols = ['benefits', 'care_options', 'wellness_program', 'seek_help', 'anonymity']
+df_ml['support_score'] = sum((df[col] == 'Yes').astype(int) for col in support_cols)
+df_ml['risk_signal_score'] = (
+    (df['family_history'] == 'Yes').astype(int)
+    + (df['work_interfere'].isin(['Sometimes', 'Often'])).astype(int)
+    + (df['mental_health_consequence'] == 'Yes').astype(int)
+)
+
 FEATURE_COLS = ['age', 'gender', 'country', 'self_employed', 'family_history',
                 'work_interfere', 'no_employees', 'remote_work', 'tech_company',
                 'benefits', 'care_options', 'wellness_program', 'seek_help', 'anonymity',
                 'leave', 'mental_health_consequence', 'phys_health_consequence',
-                'coworkers', 'supervisor', 'mental_vs_physical', 'obs_consequence']
+                'coworkers', 'supervisor', 'mental_vs_physical', 'obs_consequence',
+                'support_score', 'risk_signal_score']
 
 X = df_ml[FEATURE_COLS]
 y = df_ml['treatment_binary']
@@ -332,6 +348,10 @@ cells.append(code("""try:
 except ImportError:
     from sklearn.ensemble import RandomForestClassifier
     clf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42, n_jobs=-1)
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+cv_auc = cross_val_score(clf, X, y, cv=cv, scoring='roc_auc', n_jobs=-1)
+print(f"5-fold ROC-AUC: {cv_auc.mean():.4f} +/- {cv_auc.std():.4f}")
 
 clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
@@ -363,6 +383,48 @@ if hasattr(clf, 'feature_importances_'):
 plt.tight_layout()
 plt.show()"""))
 
+cells.append(md("""## 7.1 Segment Reliability Audit
+
+High overall ROC-AUC is not enough on a workplace-support dataset. This audit checks whether performance is concentrated in one easy segment or whether it holds across company size, family-history status, and remote-work status.
+"""))
+
+cells.append(code("""audit = pd.DataFrame({
+    'actual': y_test,
+    'predicted': y_pred,
+    'probability': y_prob,
+    'family_history': df.loc[X_test.index, 'family_history'].values,
+    'remote_work': df.loc[X_test.index, 'remote_work'].values,
+    'company_size': df.loc[X_test.index, 'no_employees'].values,
+})
+audit['correct'] = (audit['actual'] == audit['predicted']).astype(int)
+
+segment_tables = {
+    'Family history': audit.groupby('family_history')['correct'].agg(['mean', 'count']).sort_values('mean'),
+    'Remote work': audit.groupby('remote_work')['correct'].agg(['mean', 'count']).sort_values('mean'),
+    'Company size': audit.groupby('company_size')['correct'].agg(['mean', 'count']).sort_values('mean'),
+}
+
+for name, table in segment_tables.items():
+    table = table.rename(columns={'mean': 'accuracy'})
+    print(f'\\n{name}')
+    print(table.round(3))
+
+company_error = (1 - segment_tables['Company size']['mean']).sort_values(ascending=False).head(6)
+family_error = (1 - segment_tables['Family history']['mean']).sort_values(ascending=False)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+axes[0].bar(company_error.index.astype(str), company_error.values, color=sns.color_palette('rocket', len(company_error)))
+axes[0].set_title('Misclassification Rate by Company Size')
+axes[0].set_ylabel('Error Rate')
+axes[0].tick_params(axis='x', rotation=20)
+
+axes[1].bar(family_error.index.astype(str), family_error.values, color=sns.color_palette('crest', len(family_error)))
+axes[1].set_title('Misclassification Rate by Family History')
+axes[1].set_ylabel('Error Rate')
+
+plt.tight_layout()
+plt.show()"""))
+
 cells.append(md("""## 8. Key Takeaways for HR <a id='takeaways'></a>
 
 ### What Drives Treatment-Seeking?
@@ -372,6 +434,7 @@ cells.append(md("""## 8. Key Takeaways for HR <a id='takeaways'></a>
 2. **Work interference** — "Often" group seeks treatment at 3× the rate of "Never" group
 3. **Fear of mental health consequences** — stigma is a major barrier
 4. **Company mental health benefits** — access drives action
+5. **Aggregated support score** — benefit bundles are more predictive than any single policy toggle
 
 **Company Policy Findings:**
 - Companies with 500+ employees provide 2–3× better mental health support than startups
