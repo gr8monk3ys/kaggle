@@ -1,12 +1,12 @@
 {
   "id": "lorenzoscaturchio/akkadian-translation-eda-byt5-seq2seq-baseline",
-  "title": "Akkadian Translation: Ancient Language NLP with ByT5",
-  "code_file": "akkadian_eda.ipynb",
+  "title": "Akkadian Translation EDA ByT5 Seq2Seq Baseline",
+  "code_file": "akkadian_submission_baseline.ipynb",
   "language": "python",
   "kernel_type": "notebook",
-  "is_private": false,
+  "is_private": true,
   "enable_gpu": true,
-  "enable_internet": true,
+  "enable_internet": false,
   "keywords": [
     "nlp",
     "machine translation",
