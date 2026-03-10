@@ -56,5 +56,5 @@ Use `doctor` before sync to validate tracker health, environment readiness, and 
 
 ## Inputs
 
-- `grandmaster-tracker.md` is the primary source of truth.
+- `docs/reports/grandmaster-tracker.md` is the primary source of truth.
 - Keep that tracker updated for accurate reports.

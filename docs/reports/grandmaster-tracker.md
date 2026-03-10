@@ -133,7 +133,7 @@
 | Silver medals (5+ votes) | — | 0 |
 | Bronze medals (1+ vote) | — | 0 |
 
-**Strategy:** See discussion-engagement-strategy.md for 12-week plan
+**Strategy:** See ../discussions/engagement-strategy.md for 12-week plan
 **Total drafts:** 50 (being expanded)
 
 ---

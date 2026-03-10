@@ -77,7 +77,7 @@ pi-automation/data/
     "id": "draft-1",
     "title": "5 Feature Engineering Tricks That Won Me Bronze",
     "forum_url": "https://www.kaggle.com/discussions/getting-started",
-    "body_file": "discussion-drafts.md",
+    "body_file": "docs/discussions/discussion-drafts.md",
     "body_section": "Draft 1",
     "status": "pending",
     "scheduled_after": "2026-02-24T10:00:00Z"

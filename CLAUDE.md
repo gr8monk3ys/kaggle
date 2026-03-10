@@ -7,10 +7,13 @@ This is a monorepo containing Kaggle competition entries, educational notebooks,
 ```
 kaggle/
 ├── manage.sh                          # CLI for Kaggle push/pull/status operations
-├── grandmaster-tracker.md             # Progress across 4 Grandmaster categories
-├── competition-scout-report.md        # Active competition analysis
-├── discussion-engagement-strategy.md  # 12-week community plan
-├── discussion-drafts.md               # Pre-written discussion posts
+├── docs/
+│   ├── reports/
+│   │   ├── grandmaster-tracker.md     # Progress across 4 Grandmaster categories
+│   │   └── competition-scout-report.md # Active competition analysis
+│   └── discussions/
+│       ├── engagement-strategy.md     # 12-week community plan
+│       └── discussion-drafts.md       # Pre-written discussion posts
 │
 ├── projects/
 │   ├── competitions/
