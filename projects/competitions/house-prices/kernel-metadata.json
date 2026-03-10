@@ -6,7 +6,7 @@
   "kernel_type": "notebook",
   "is_private": false,
   "enable_gpu": false,
-  "enable_internet": true,
+  "enable_internet": false,
   "keywords": [
     "house prices",
     "regression",
