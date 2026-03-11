@@ -45,6 +45,19 @@ def test_deep_past_assign_sentences_uses_half_open_row_boundaries():
     assert predictions == ["a b", "c d", "e", "f g"]
 
 
+def test_deep_past_split_translation_handles_missing_line_end():
+    test = pd.DataFrame(
+        [
+            {"id": 0, "line_start": 1, "line_end": 3},
+            {"id": 1, "line_start": 4, "line_end": None},
+        ]
+    )
+
+    predictions = lab._deep_past_split_translation_by_rows("alpha beta gamma delta", test)
+
+    assert predictions == ["alpha beta gamma", "delta"]
+
+
 def test_deep_past_sentence_rows_match_stripped_display_name():
     sentences = pd.DataFrame(
         [
@@ -57,6 +70,35 @@ def test_deep_past_sentence_rows_match_stripped_display_name():
     matched = lab._deep_past_sentence_rows(sentences, row)
 
     assert matched["translation"].tolist() == ["Line 1", "Line 7"]
+
+
+def test_benchmark_deep_past_falls_back_without_auxiliary_files(tmp_path):
+    pd.DataFrame(
+        [
+            {"transliteration": "a na", "translation": "go to"},
+            {"transliteration": "dingir lugal", "translation": "the god king"},
+        ]
+    ).to_csv(tmp_path / "train.csv", index=False)
+    pd.DataFrame(
+        [
+            {"id": 1, "line_start": 1, "line_end": 1, "transliteration": "a"},
+            {"id": 2, "line_start": 2, "line_end": 2, "transliteration": "na"},
+        ]
+    ).to_csv(tmp_path / "test.csv", index=False)
+    pd.DataFrame(
+        [
+            {"id": 1, "translation": "broken text"},
+            {"id": 2, "translation": "broken text"},
+        ]
+    ).to_csv(tmp_path / "sample_submission.csv", index=False)
+
+    result = lab.benchmark_deep_past(tmp_path, _folds=0, write_submission=False)
+
+    assert result.best_model == "train_retrieval"
+    assert any(
+        row["model"] == "published_sentence_match" and row["available"] is False
+        for row in result.benchmark_rows
+    )
 
 
 def test_march_seed_number_parses_seed_codes():
