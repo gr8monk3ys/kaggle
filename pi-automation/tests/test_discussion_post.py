@@ -178,3 +178,21 @@ def test_smoke_test_succeeds_when_queue_has_no_postable_items(monkeypatch, tmp_p
     assert rc == 0
     captured = capsys.readouterr()
     assert "No postable discussion items found" in captured.out
+
+
+def test_is_browser_challenge_detects_cloudflare_page(monkeypatch):
+    module = _load_discussion_post_module(monkeypatch)
+
+    class FakeBody:
+        def inner_text(self, timeout=None):
+            return "Checking your browser before accessing www.kaggle.com ..."
+
+    class FakePage:
+        def title(self):
+            return "Checking your browser - reCAPTCHA"
+
+        def locator(self, selector):
+            assert selector == "body"
+            return FakeBody()
+
+    assert module.is_browser_challenge(FakePage()) is True

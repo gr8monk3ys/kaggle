@@ -16,10 +16,14 @@ import json
 import os
 import random
 import re
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "pi-automation" / "scripts"))
+import kaggle_browser as kb
 
 
 DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
@@ -152,8 +156,28 @@ def topic_title_for_action(action: dict[str, Any]) -> str:
     title = str(action.get("dataset_title") or action.get("dataset_ref") or "Dataset").strip()
     channel = normalized_channel(action)
     if channel == "kaggle-changelog":
-        return f"Changelog: {title}"
-    return f"Usability Update: {title}"
+        return f"Refresh Plan: {title}"
+    return f"Feedback Wanted: improving {title}"
+
+
+def extract_submission_error(page) -> str | None:
+    body_text = ""
+    try:
+        body_text = str(page.locator("body").inner_text(timeout=2000) or "")
+    except Exception:
+        body_text = ""
+
+    patterns = [
+        r"This comment is too similar to a previous one\.[^\n]*",
+        r"This topic is too similar to a previous one\.[^\n]*",
+        r"Please fix the errors below\.[^\n]*",
+        r"Topic title is required\.[^\n]*",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, body_text, flags=re.IGNORECASE)
+        if match:
+            return match.group(0).strip()
+    return None
 
 
 def require_playwright():
@@ -173,6 +197,13 @@ def locator_count(locator) -> int:
         return locator.count()
     except Exception:
         return 0
+
+
+def discussion_editor_controls(page):
+    title_box = page.get_by_role("textbox", name=re.compile(r"topic\s+title", re.IGNORECASE)).first
+    content_box = page.get_by_role("textbox", name=re.compile(r"content", re.IGNORECASE)).first
+    publish = page.get_by_role("button", name=re.compile(r"publish\s+topic|post", re.IGNORECASE)).first
+    return title_box, content_box, publish
 
 
 def is_authenticated(page) -> bool:
@@ -226,27 +257,67 @@ def post_dataset_discussion_topic(
     topic_title: str,
     body: str,
     timeout_ms: int,
+    manual_login: bool = False,
 ) -> str:
     discussion_url = f"https://www.kaggle.com/datasets/{dataset_ref}/discussion"
-    page.goto(discussion_url, wait_until="domcontentloaded", timeout=timeout_ms)
+    composer_url = f"{discussion_url}/new"
+    page.goto(composer_url, wait_until="domcontentloaded", timeout=timeout_ms)
     page.wait_for_timeout(500)
 
-    cookie_ack = page.get_by_text("OK, Got it.", exact=True).first
-    if locator_count(cookie_ack):
-        cookie_ack.click(timeout=timeout_ms)
-        page.wait_for_timeout(250)
+    challenge_prompted = False
 
-    new_topic = page.get_by_role("button", name=re.compile(r"new\s+topic", re.IGNORECASE)).first
-    if not locator_count(new_topic):
-        raise RuntimeError("New Topic button not found")
-    if new_topic.is_disabled():
-        raise RuntimeError("New Topic button is disabled (insufficient permissions or auth state)")
-    new_topic.click(timeout=timeout_ms)
-    page.wait_for_timeout(400)
+    def wait_for_editor() -> tuple[Any, Any, Any] | None:
+        nonlocal challenge_prompted
+        deadline = time.time() + max(timeout_ms, 2000) / 1000.0
+        while time.time() < deadline:
+            if kb.is_browser_challenge(page):
+                if not manual_login:
+                    raise RuntimeError(kb.BROWSER_CHALLENGE_MESSAGE)
+                if not challenge_prompted:
+                    print(
+                        "Kaggle browser challenge detected on the discussion composer. "
+                        "Clear it in the browser window; the run will resume automatically."
+                    )
+                    challenge_prompted = True
+                page.wait_for_timeout(1000)
+                continue
 
-    title_box = page.get_by_role("textbox", name=re.compile(r"topic\s+title", re.IGNORECASE)).first
-    content_box = page.get_by_role("textbox", name=re.compile(r"content", re.IGNORECASE)).first
-    publish = page.get_by_role("button", name=re.compile(r"publish\s+topic|post", re.IGNORECASE)).first
+            controls = discussion_editor_controls(page)
+            if all(locator_count(locator) for locator in controls):
+                return controls
+            page.wait_for_timeout(500)
+        return None
+
+    controls = wait_for_editor()
+    if controls is None:
+        page.goto(discussion_url, wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_timeout(500)
+        if kb.is_browser_challenge(page):
+            raise RuntimeError(kb.BROWSER_CHALLENGE_MESSAGE)
+
+        cookie_ack = page.get_by_text("OK, Got it.", exact=True).first
+        if locator_count(cookie_ack):
+            cookie_ack.click(timeout=timeout_ms)
+            page.wait_for_timeout(250)
+
+        new_topic = kb.first_available(
+            page.get_by_role("button", name=re.compile(r"new\s+topic", re.IGNORECASE)).first,
+            page.locator("button").filter(has_text=re.compile(r"new\s+topic", re.IGNORECASE)).first,
+            page.locator('[role="button"]').filter(has_text=re.compile(r"new\s+topic", re.IGNORECASE)).first,
+            page.get_by_text(re.compile(r"new\s+topic", re.IGNORECASE)).first,
+        )
+        if not locator_count(new_topic):
+            raise RuntimeError("New Topic button not found")
+        if getattr(new_topic, "is_disabled", None) and new_topic.is_disabled():
+            raise RuntimeError("New Topic button is disabled (insufficient permissions or auth state)")
+        new_topic.click(timeout=timeout_ms)
+        page.wait_for_timeout(400)
+
+        controls = wait_for_editor()
+        if controls is None:
+            raise RuntimeError("Discussion editor controls not found")
+
+    title_box, content_box, publish = controls
     if not locator_count(title_box) or not locator_count(content_box) or not locator_count(publish):
         raise RuntimeError("Discussion editor controls not found")
 
@@ -260,6 +331,9 @@ def post_dataset_discussion_topic(
         url = str(getattr(page, "url", "") or "")
         if re.search(r"/discussion/\d+", url):
             return url
+        error_text = extract_submission_error(page)
+        if error_text:
+            raise RuntimeError(error_text)
         page.wait_for_timeout(250)
     raise RuntimeError(f"Publish did not reach discussion topic URL: {url}")
 
@@ -284,6 +358,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sleep-jitter-s", type=float, default=15.0, help="Random jitter added to cooldown.")
     parser.add_argument("--timeout-ms", type=int, default=15000, help="Playwright timeout in ms.")
     parser.add_argument("--headed", action="store_true", help="Run browser headed.")
+    parser.add_argument(
+        "--skip-login-check",
+        action="store_true",
+        help="Skip the initial Kaggle login check and rely on the provided storage state/session.",
+    )
     parser.add_argument(
         "--manual-login",
         action=argparse.BooleanOptionalAction,
@@ -339,14 +418,15 @@ def main() -> int:
         context = browser.new_context(storage_state=state_arg)
         page = context.new_page()
         try:
-            maybe_login(
-                page,
-                timeout_ms=args.timeout_ms,
-                manual_login=args.manual_login,
-                email=args.email,
-                password=args.password,
-            )
-            context.storage_state(path=str(args.storage_state))
+            if not args.skip_login_check:
+                maybe_login(
+                    page,
+                    timeout_ms=args.timeout_ms,
+                    manual_login=args.manual_login,
+                    email=args.email,
+                    password=args.password,
+                )
+                context.storage_state(path=str(args.storage_state))
 
             for idx, action in enumerate(selected):
                 action_id = str(action.get("id", ""))
@@ -370,6 +450,7 @@ def main() -> int:
                         topic_title=title,
                         body=copy_text,
                         timeout_ms=args.timeout_ms,
+                        manual_login=args.manual_login,
                     )
                     mark_done(action, post_url=post_url, stamp=now_iso())
                     success += 1

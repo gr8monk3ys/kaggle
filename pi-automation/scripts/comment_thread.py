@@ -56,6 +56,9 @@ def post_comment(page, url: str, body: str, *, timeout_ms: int) -> str:
     page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
     page.wait_for_timeout(1500)
 
+    if kb.is_browser_challenge(page):
+        raise RuntimeError(kb.BROWSER_CHALLENGE_MESSAGE)
+
     if not kb.is_authenticated(page):
         raise RuntimeError("Not authenticated")
 

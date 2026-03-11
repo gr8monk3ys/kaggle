@@ -53,6 +53,20 @@ COMPETITION_TOPICS = {
 }
 
 
+def normalize_ref(value: str | None) -> str:
+    return str(value or "").strip().lower()
+
+
+def parse_ref_filter(raw: str | None) -> set[str]:
+    if not raw:
+        return set()
+    return {
+        normalize_ref(part)
+        for part in raw.split(",")
+        if normalize_ref(part)
+    }
+
+
 def load_notebooks() -> tuple[list[dict], list[str]]:
     """Load all kernel-metadata.json files (excluding dataset explorers)."""
     notebooks = []
@@ -88,18 +102,22 @@ def match_notebook_to_competitions(nb: dict) -> list[str]:
         if comp in COMPETITION_TOPICS:
             matches.append(comp)
 
-    # Tag/title matching
-    tags = [t.lower() for t in nb.get("tags", [])]
+    # Metadata keyword/title matching
+    tags = [str(t).lower() for t in nb.get("tags", [])]
+    keywords = [str(k).lower() for k in nb.get("keywords", [])]
+    topics = [*tags, *keywords]
     title = nb.get("title", "").lower()
     nb_id = nb.get("id", "").lower()
+    searchable = [title, nb_id, *topics]
 
     for slug, info in COMPETITION_TOPICS.items():
         if slug in matches:
             continue
-        for topic in info["topics"]:
-            if topic in title or topic in nb_id or any(topic in t for t in tags):
-                matches.append(slug)
-                break
+        overlap = sum(
+            1 for topic in info["topics"] if any(topic in field for field in searchable)
+        )
+        if overlap >= 2:
+            matches.append(slug)
 
     return matches
 
@@ -128,6 +146,48 @@ def generate_promo_comment(nb: dict, comp_slug: str) -> str:
     )
 
 
+def notebook_url(nb: dict) -> str:
+    nb_id = str(nb.get("id") or "")
+    user = nb_id.split("/")[0] if "/" in nb_id else "lorenzoscaturchio"
+    nb_slug = nb_id.split("/")[1] if "/" in nb_id else nb_id
+    return f"https://www.kaggle.com/code/{user}/{nb_slug}"
+
+
+def generate_manual_share_copy(nb: dict) -> str:
+    title = nb.get("title", nb.get("_dir", "my notebook"))
+    url = notebook_url(nb)
+    return (
+        f"I published a notebook on {title}: {url}\n"
+        f"If you're working in this area, I'd be interested in what you'd extend or benchmark next."
+    )
+
+
+def filter_notebooks(
+    notebooks: list[dict],
+    refs: set[str],
+) -> tuple[list[dict], list[str]]:
+    if not refs:
+        return notebooks, []
+
+    filtered: list[dict] = []
+    seen: set[str] = set()
+    for nb in notebooks:
+        nb_id = normalize_ref(nb.get("id"))
+        slug = nb_id.split("/")[-1] if nb_id else ""
+        rel_dir = normalize_ref(nb.get("_dir"))
+        if nb_id in refs or slug in refs or rel_dir in refs:
+            filtered.append(nb)
+            if nb_id:
+                seen.add(nb_id)
+            if slug:
+                seen.add(slug)
+            if rel_dir:
+                seen.add(rel_dir)
+
+    missing = sorted(ref for ref in refs if ref not in seen)
+    return filtered, missing
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
     parser = argparse.ArgumentParser()
@@ -137,11 +197,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Fail when any notebook metadata file cannot be parsed.",
     )
+    parser.add_argument(
+        "--refs",
+        default=None,
+        help="Optional comma-separated notebook refs/slugs/directories to include exactly.",
+    )
     args = parser.parse_args(argv)
 
     print(f"{BLUE}=== Notebook Promotion Planner ==={RESET}\n")
 
     notebooks, warnings = load_notebooks()
+    selected_refs = parse_ref_filter(args.refs)
+    notebooks, missing_refs = filter_notebooks(notebooks, selected_refs)
     print(f"Loaded {len(notebooks)} notebooks\n")
     if warnings:
         print(f"{YELLOW}Skipped {len(warnings)} notebook(s) due to metadata issues:{RESET}")
@@ -152,11 +219,27 @@ def main(argv: list[str] | None = None) -> int:
         print()
         if args.strict_metadata:
             return 1
+    if missing_refs:
+        print(f"{YELLOW}Requested refs not found:{RESET}")
+        for ref in missing_refs:
+            print(f"  - {ref}")
+        print()
 
     plan: dict[str, list[dict]] = {}  # comp_slug → list of (nb, comment)
+    manual_share: list[dict] = []
 
     for nb in notebooks:
         comps = match_notebook_to_competitions(nb)
+        if not comps:
+            manual_share.append(
+                {
+                    "notebook": nb.get("_dir"),
+                    "title": nb.get("title", nb.get("_dir")),
+                    "url": notebook_url(nb),
+                    "comment": generate_manual_share_copy(nb),
+                }
+            )
+            continue
         for comp in comps:
             plan.setdefault(comp, []).append({
                 "notebook": nb.get("_dir"),
@@ -164,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
                 "comment": generate_promo_comment(nb, comp),
             })
 
-    if not plan:
+    if not plan and not manual_share:
         print(f"{YELLOW}No notebook-competition matches found.{RESET}")
         return 0
 
@@ -181,6 +264,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"   Draft comment:")
             for line in entry["comment"].splitlines():
                 print(f"     {line}")
+        print()
+
+    if manual_share:
+        print(f"{YELLOW}Manual share targets (no competition forum match):{RESET}")
+        for entry in manual_share:
+            print(f"\n  Notebook: {entry['notebook']}")
+            print("  Draft share copy:")
+            for line in entry["comment"].splitlines():
+                print(f"    {line}")
         print()
 
     if args.auto:

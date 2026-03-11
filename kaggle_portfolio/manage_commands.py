@@ -33,6 +33,7 @@ SKIP_DIRS = {
 SUSPICIOUS_PATTERN = re.compile(
     r"(password|secret|api_key|kgat_|kaggle_token)", re.IGNORECASE
 )
+TRUTHY = {"1", "true", "yes", "on"}
 
 GREEN = "\033[0;32m"
 RED = "\033[0;31m"
@@ -156,6 +157,45 @@ def rel_path(path: Path) -> str:
         return str(path)
 
 
+def git_run(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "-C", str(ROOT), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def git_head_available() -> bool:
+    repo_probe = git_run("rev-parse", "--is-inside-work-tree")
+    if repo_probe.returncode != 0:
+        return False
+    return git_run("rev-parse", "--verify", "HEAD").returncode == 0
+
+
+def env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in TRUTHY
+
+
+def head_payload(path: Path) -> dict | None:
+    if not env_truthy("VALIDATE_ENFORCE_ID_BASELINE") or env_truthy("MANAGE_ALLOW_ID_CHANGE"):
+        return None
+    if not git_head_available():
+        return None
+    rel = rel_path(path).replace(os.sep, "/")
+    tracked = git_run("ls-files", "--error-unmatch", rel)
+    if tracked.returncode != 0:
+        return None
+    result = git_run("show", f"HEAD:{rel}")
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def resolve_target(target: str) -> Path:
     path = Path(target)
     if path.is_absolute():
@@ -219,6 +259,15 @@ def validate_kernel(path: Path, payload: dict, raw_text: str) -> list[str]:
         errors.append("missing 'id'")
     elif ident and ("/" not in ident or " " in ident):
         errors.append(f"id '{ident}' must use owner/slug format with no spaces")
+    else:
+        baseline = head_payload(path)
+        baseline_id = str(baseline.get("id", "")).strip() if baseline else ""
+        if baseline_id and ident and baseline_id != ident:
+            errors.append(
+                f"id changed from '{baseline_id}' to '{ident}' relative to git HEAD; "
+                "pushing can create a duplicate Kaggle notebook "
+                "(set MANAGE_ALLOW_ID_CHANGE=1 to override)"
+            )
 
     if "title" in payload and not title:
         errors.append("missing 'title'")
@@ -407,6 +456,20 @@ def cmd_validate(args: list[str]) -> int:
     return 0
 
 
+def validate_for_push(args: list[str], *, enforce_id_baseline: bool) -> int:
+    previous = os.environ.get("VALIDATE_ENFORCE_ID_BASELINE")
+    if enforce_id_baseline:
+        os.environ["VALIDATE_ENFORCE_ID_BASELINE"] = "1"
+    try:
+        return cmd_validate(args)
+    finally:
+        if enforce_id_baseline:
+            if previous is None:
+                os.environ.pop("VALIDATE_ENFORCE_ID_BASELINE", None)
+            else:
+                os.environ["VALIDATE_ENFORCE_ID_BASELINE"] = previous
+
+
 def cmd_status(_: list[str]) -> int:
     print(f"{BLUE}=== Kaggle Portfolio Status ==={RESET}")
     print("")
@@ -444,7 +507,8 @@ def cmd_push(args: list[str]) -> int:
         print(f"{RED}Error:{RESET} path not found: {target}", file=sys.stderr)
         return 1
     print(f"{YELLOW}Running validation for {target}...{RESET}")
-    if cmd_validate([str(path)]) != 0:
+    enforce_id_baseline = (path / "kernel-metadata.json").exists()
+    if validate_for_push([str(path)], enforce_id_baseline=enforce_id_baseline) != 0:
         print(f"{RED}Fix validation errors before pushing.{RESET}")
         return 1
     if (path / "dataset-metadata.json").exists():
@@ -459,7 +523,7 @@ def cmd_push(args: list[str]) -> int:
 def cmd_push_nb(_: list[str]) -> int:
     print(f"{BLUE}=== Pushing All Notebooks ==={RESET}")
     print(f"{YELLOW}Running pre-push validation...{RESET}")
-    if cmd_validate([]) != 0:
+    if validate_for_push([], enforce_id_baseline=True) != 0:
         print(f"{RED}Fix validation errors before pushing.{RESET}")
         return 1
     print("")
@@ -557,7 +621,9 @@ def cmd_votes(_: list[str]) -> int:
         "list",
         "--mine",
         "--page-size",
-        "50",
+        "100",
+        "--kernel-type",
+        "notebook",
         "--csv",
         check=False,
         capture_output=True,
@@ -581,10 +647,18 @@ def cmd_votes(_: list[str]) -> int:
         (k for k in sample if k and ("vote" in k.lower() or "upvote" in k.lower())),
         None,
     )
-    ref_col = next(
-        (k for k in sample if k and ("ref" in k.lower() or "title" in k.lower())),
-        "ref",
-    )
+    ref_col = next((k for k in sample if k and "ref" in k.lower()), None)
+    title_col = next((k for k in sample if k and "title" in k.lower()), None)
+
+    def is_public_notebook(row: dict[str, str]) -> bool:
+        ref = str(row.get(ref_col, "")).strip() if ref_col else ""
+        title = str(row.get(title_col, "")).strip().lower() if title_col else ""
+        return bool(ref) and title != "[private notebook]"
+
+    rows = [row for row in rows if is_public_notebook(row)]
+    if not rows:
+        print("No public notebooks found.")
+        return 0
 
     def next_tier(votes: int) -> tuple[str, int]:
         if votes < bronze_t:
@@ -613,7 +687,11 @@ def cmd_votes(_: list[str]) -> int:
         return (-votes, threshold - votes)
 
     for row in sorted(rows, key=sort_key):
-        ref = row.get(ref_col, row.get("ref", "unknown"))
+        ref = (
+            row.get(ref_col, row.get(title_col, row.get("ref", "unknown")))
+            if (ref_col or title_col)
+            else row.get("ref", "unknown")
+        )
         votes = int(row.get(vote_col or "", 0) or 0) if vote_col else 0
         tier_name, tier_thresh = next_tier(votes)
         gap = tier_thresh - votes
@@ -658,6 +736,9 @@ def cmd_link_competition(args: list[str]) -> int:
     payload["competition_sources"] = sources
     meta.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(f"competition_sources = {json.dumps(sources)}")
+    if validate_for_push([str(path)], enforce_id_baseline=True) != 0:
+        print(f"{RED}Fix validation errors before pushing.{RESET}")
+        return 1
     print("Pushing updated notebook ...")
     rc = kaggle_cmd("kernels", "push", "-p", str(path), check=False).returncode
     if rc == 0:

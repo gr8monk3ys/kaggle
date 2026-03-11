@@ -1,8 +1,8 @@
 {
   "id": "lorenzoscaturchio/spotify-tracks-audio-features-50k",
   "title": "Spotify Tracks: Audio Features (50K Songs)",
-  "subtitle": "50K tracks with Spotify audio features for ML tasks",
-  "description": "50,000 synthetic Spotify-style tracks spanning 2000\u20132024 across 20 genres. Each record mirrors the Spotify Audio Features API: danceability, energy, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, duration, key, and mode \u2014 all generated with realistic per-genre distributions and correlations (e.g., electronic tracks have high energy+danceability; acoustic folk has high acousticness+valence).\n\nBuilt for: track popularity prediction (regression), genre classification (20 classes), playlist mood clustering (K-Means / UMAP), audio feature trend analysis over time, and recommender system prototyping.\n\nNotable features: 'popularity' follows a Zipf distribution (most tracks are obscure); key and mode are realistic (C major most common); tempo ranges from 60 BPM (ballads) to 180 BPM (drum-and-bass). All data is synthetic and generated for educational and ML prototyping purposes.",
+  "subtitle": "50K tracks with audio features, popularity, and genre labels",
+  "description": "50,000 synthetic Spotify-style tracks spanning 2000\u20132024 across 20 genres. Each row includes track metadata plus the core Spotify-style audio features used for recommendation, clustering, and predictive modeling: danceability, energy, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, key, mode, and time signature.\n\nBuilt for popularity prediction, genre classification, playlist mood clustering, trend analysis, and recommender-system prototyping. The dataset is intentionally lightweight enough for notebook workflows while still large enough to support non-trivial tabular ML experiments.\n\nNotable properties: genre-aware feature correlations, Zipf-like popularity distribution, realistic tempo ranges, and synthetic generation designed for educational benchmarking rather than exact catalog reconstruction.",
   "isPrivate": false,
   "licenses": [
     {
@@ -13,8 +13,8 @@
     "music",
     "classification",
     "regression",
-    "clustering",
-    "beginner"
+    "beginner",
+    "clustering"
   ],
   "resources": [
     {

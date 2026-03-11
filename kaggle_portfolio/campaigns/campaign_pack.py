@@ -18,6 +18,39 @@ DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.
 DEFAULT_CHANNELS = ["kaggle-discussion", "kaggle-changelog", "x", "linkedin"]
 
 
+def normalize_ref(value: Any) -> str:
+    return str(value or "").strip().lower()
+
+
+def parse_ref_filter(raw: str | None) -> set[str]:
+    if not raw:
+        return set()
+    refs = {
+        normalize_ref(item)
+        for part in raw.split(",")
+        for item in [part.strip()]
+        if item.strip()
+    }
+    return {item for item in refs if item}
+
+
+def filter_rows_by_refs(rows: list[dict[str, Any]], refs: set[str]) -> tuple[list[dict[str, Any]], list[str]]:
+    if not refs:
+        return rows, []
+
+    filtered: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in rows:
+        ref = normalize_ref(row.get("dataset_ref"))
+        if ref in refs:
+            filtered.append(row)
+            seen.add(ref)
+
+    missing = sorted(ref for ref in refs if ref not in seen)
+    warnings = [f"Requested dataset ref not found in report: {ref}" for ref in missing]
+    return filtered, warnings
+
+
 
 
 def resolve_start_date(today: date, start_override: str | None) -> date:
@@ -114,16 +147,22 @@ def build_channel_copy(dataset: dict[str, Any], target_rating: float) -> dict[st
     url = dataset.get("dataset_url") or "(add dataset URL)"
     rating = dataset.get("rating")
     rating_text = f"{rating:.3f}" if isinstance(rating, float) else "n/a"
+    objective = str(dataset.get("objective") or "Improve docs, examples, and discoverability.")
 
     kaggle_discussion = (
-        f"Shared an update for {title}: {url}\n"
-        f"Current usability is {rating_text}; target is {target_rating:.1f}. "
-        "Feedback on docs/features is welcome."
+        f"I am planning the next refresh for {title} and want concrete feedback before I publish it.\n"
+        f"Dataset: {url}\n"
+        f"Current usability rating: {rating_text} (target {target_rating:.1f}).\n"
+        f"Current focus: {objective}\n"
+        "If you used this dataset, what is the one improvement that would make it more useful?"
     )
     kaggle_changelog = (
-        f"Update note: improved usability assets for {title}. "
-        f"Current rating {rating_text}, target {target_rating:.1f}. "
-        "Next release will include additional examples and richer docs."
+        f"Refresh plan for {title}\n"
+        f"- Dataset: {url}\n"
+        f"- Current usability rating: {rating_text}\n"
+        f"- Short-term target: {target_rating:.1f}\n"
+        f"- Next change set: {objective}\n"
+        "- Planned additions: richer data dictionary, example workflows, and clearer file notes."
     )
     x_copy = (
         f"Dataset refresh: {title} ({ref}) now in active usability sprint. "
@@ -293,6 +332,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--alert-under", type=float, default=0.7, help="Critical threshold (default 0.7).")
     parser.add_argument("--target-rating", type=float, default=0.8, help="Target threshold (default 0.8).")
     parser.add_argument("--max-datasets", type=int, default=12, help="Maximum datasets to include in priority set.")
+    parser.add_argument(
+        "--refs",
+        default=None,
+        help="Optional comma-separated dataset refs to include exactly (owner/slug).",
+    )
     return parser.parse_args()
 
 
@@ -318,6 +362,8 @@ def main() -> int:
     queue_path = Path(args.queue_path)
 
     dataset_rows = load_dataset_report(report_path)
+    requested_refs = parse_ref_filter(args.refs)
+    dataset_rows, ref_warnings = filter_rows_by_refs(dataset_rows, requested_refs)
     prioritized = prioritize_datasets(
         dataset_rows,
         alert_under=args.alert_under,
@@ -351,6 +397,8 @@ def main() -> int:
             "alert_under": args.alert_under,
             "target_rating": args.target_rating,
         },
+        "ref_filter": sorted(requested_refs),
+        "warnings": ref_warnings,
         "schedule": {
             "start_date": start_date.isoformat(),
             "days": args.days,
@@ -376,6 +424,8 @@ def main() -> int:
     print(f"Campaign pack written: {dated_md}")
     print(f"Latest campaign pack: {latest_md}")
     print(f"Campaign queue written: {queue_path}")
+    for warning in ref_warnings:
+        print(f"Warning: {warning}")
     print(f"Summary: {len(prioritized)} datasets, {len(queue)} scheduled actions")
     return 0
 

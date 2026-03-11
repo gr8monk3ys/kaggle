@@ -1,8 +1,8 @@
 {
   "title": "GitHub Repository Metrics Dataset (5K+ Repos)",
   "id": "lorenzoscaturchio/github-repo-metrics",
-  "subtitle": "5,500 repos with 29 features: stars, forks, CI/CD, community health",
-  "description": "5,500 GitHub repositories across 12 programming languages with 29 features spanning three dimensions: popularity (stars, forks, watchers), activity (open/closed issues, PRs, commits, releases), and community health (CI/CD, test coverage, code of conduct, contributing guide, wiki, discussions).\n\nBuilt for: star count prediction (regression benchmark), open source project health classification, language-based popularity analysis, CI/CD adoption study, and software engineering research. The combination of popularity and health signals makes it particularly useful for studying what separates high-traction projects from abandoned ones.\n\nNotable features: test_coverage percentage is included where available; has_ci distinguishes automated from manual workflows; topics field enables NLP analysis of project categorization. Spans repositories created from 2014 to 2025. All data is synthetic.",
+  "subtitle": "5.5K repos with stars, forks, issues, CI/CD, and health signals",
+  "description": "5,500 synthetic GitHub repositories across 12 programming languages with 29 features covering popularity, activity, and project-health signals. The table combines stars, forks, watchers, issues, pull requests, contributors, releases, CI/CD presence, test coverage, repository governance, and topic metadata in a single CSV.\n\nBuilt for star prediction, repository-health scoring, dormant-vs-active classification, language ecosystem analysis, and software engineering research. It is large enough for meaningful tabular modeling while staying compact enough for fast Kaggle notebook iteration.\n\nNotable properties: realistic correlations between popularity and maintenance signals, sparse test coverage when CI is absent, and topic strings that support lightweight NLP or tagging experiments. All data is synthetic.",
   "licenses": [
     {
       "name": "GPL-3.0"
@@ -11,9 +11,9 @@
   "keywords": [
     "software",
     "programming",
-    "beginner",
     "regression",
-    "classification"
+    "classification",
+    "beginner"
   ],
   "resources": [
     {
