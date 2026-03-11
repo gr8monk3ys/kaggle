@@ -35,6 +35,7 @@ BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
 MAX_SLUG_LEN = 34
+COMPETITION_LIST_CATEGORIES = (None, "featured", "research", "playground", "masters", "gettingStarted")
 
 # Category detection keywords
 NLP_KEYWORDS = {"nlp", "text", "language", "tweet", "sentiment", "bert", "llm",
@@ -102,18 +103,19 @@ def fetch_competition_info(slug: str) -> dict | None:
 
     try:
         cli = kaggle_command()
-        result = subprocess.run(
-            [*cli, "competitions", "list", "--csv", "--page-size", "100",
-             "--sort-by", "latestDeadline"],
-            capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            return None
+        for category in COMPETITION_LIST_CATEGORIES:
+            cmd = [*cli, "competitions", "list", "--csv", "--sort-by", "latestDeadline"]
+            if category:
+                cmd += ["--category", category]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                continue
 
-        for row in csv.DictReader(io.StringIO(result.stdout)):
-            ref = str(row.get("ref", "")).strip().lower()
-            if ref == slug:
-                return row
+            for row in csv.DictReader(io.StringIO(result.stdout)):
+                ref = str(row.get("ref", "")).strip().lower()
+                ref_slug = ref.rsplit("/", 1)[-1]
+                if ref == slug or ref_slug == slug:
+                    return row
 
     except Exception:
         pass
