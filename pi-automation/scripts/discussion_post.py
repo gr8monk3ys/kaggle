@@ -16,6 +16,10 @@ REPO = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent)
 QUEUE_PATH = Path(os.environ.get("QUEUE_PATH", str(Path(__file__).parent.parent / "data" / "discussion_queue.json")))
 EMAIL = os.environ.get("KAGGLE_EMAIL", "")
 PASSWORD = os.environ.get("KAGGLE_PASSWORD", "")
+BROWSER_CHALLENGE_MESSAGE = (
+    "Kaggle browser challenge detected. Clear the Cloudflare/reCAPTCHA check in a headed browser "
+    "and retry."
+)
 
 
 def notify_safe(message: str) -> None:
@@ -24,6 +28,23 @@ def notify_safe(message: str) -> None:
         notify.send(message)
     except Exception as exc:
         print(f"Notification failed: {exc}", file=sys.stderr)
+
+
+def is_browser_challenge(page) -> bool:
+    try:
+        title = str(page.title() or "").lower()
+    except Exception:
+        title = ""
+    if "checking your browser" in title or "recaptcha" in title:
+        return True
+    try:
+        body = str(page.locator("body").inner_text(timeout=1500) or "").lower()
+    except Exception:
+        body = ""
+    return (
+        "checking your browser before accessing" in body
+        or "click here if you are not automatically redirected" in body
+    )
 
 
 def require_kaggle_login_env() -> None:
@@ -41,6 +62,8 @@ def require_kaggle_login_env() -> None:
 
 def login(page) -> None:
     page.goto("https://www.kaggle.com/account/login", wait_until="networkidle")
+    if is_browser_challenge(page):
+        raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
     page.fill('input[name="email"]', EMAIL)
     page.fill('input[name="password"]', PASSWORD)
     page.click('button[type="submit"]')
@@ -49,6 +72,8 @@ def login(page) -> None:
 
 def post_discussion(page, forum_url: str, title: str, body: str) -> str:
     page.goto(forum_url, wait_until="networkidle")
+    if is_browser_challenge(page):
+        raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
     page.click("text=New Topic", timeout=10000)
     page.wait_for_selector('input[name="title"]', timeout=10000)
     page.fill('input[name="title"]', title)

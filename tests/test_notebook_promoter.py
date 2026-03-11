@@ -61,3 +61,28 @@ def test_load_notebooks_skips_dataset_explorer_metadata(tmp_path, monkeypatch):
 
     assert warnings == []
     assert [item["id"] for item in notebooks] == ["user/competition-notebook"]
+
+
+def test_match_notebook_to_competitions_uses_keywords_and_requires_overlap():
+    notebook = {
+        "id": "user/store-sales-notebook",
+        "title": "Store Sales Time Series Forecasting",
+        "tags": [],
+        "keywords": ["lightgbm", "lag features"],
+    }
+
+    matches = notebook_promoter.match_notebook_to_competitions(notebook)
+
+    assert "store-sales-time-series-forecasting" in matches
+
+
+def test_filter_notebooks_matches_ref_slug_and_directory():
+    notebooks = [
+        {"id": "user/one", "_dir": "dir-one"},
+        {"id": "user/two", "_dir": "dir-two"},
+    ]
+
+    filtered, missing = notebook_promoter.filter_notebooks(notebooks, {"user/two", "dir-one", "missing"})
+
+    assert [item["id"] for item in filtered] == ["user/one", "user/two"]
+    assert missing == ["missing"]

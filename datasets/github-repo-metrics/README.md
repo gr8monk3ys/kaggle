@@ -16,6 +16,30 @@ All records are synthetic, but the schema is intentionally realistic enough for:
 - portfolio projects around open source quality and popularity
 - downstream feature-importance or explainability examples
 
+## Why This Dataset Is Useful
+
+- A single tabular file with **5,500 repositories** and **29 features** makes it easy to benchmark tabular models quickly.
+- Mixes **popularity**, **activity**, and **project health** signals in one place instead of forcing feature joins.
+- Strong fit for software-engineering ML tasks, ranking experiments, and open-source health scoring.
+- Synthetic generation keeps the structure realistic while avoiding maintenance overhead from live GitHub API collection.
+
+## Quick Start
+
+```python
+import pandas as pd
+
+df = pd.read_csv("github_repos.csv")
+print(df.shape)
+print(df[["language", "stars", "forks", "has_ci", "test_coverage"]].head())
+```
+
+Common starter tasks:
+
+- Predict `stars` or bucketed popularity tiers.
+- Score repository health from maintenance and community features.
+- Compare language ecosystems by stars, CI usage, and contributor counts.
+- Model dormant vs active projects using `last_commit_date`, issues, PRs, and releases.
+
 ## Quick Facts
 
 | Property | Value |
@@ -72,6 +96,16 @@ All records are synthetic, but the schema is intentionally realistic enough for:
 - Generated from repository scripts in this project
 - Built from public schema conventions and OSS platform patterns
 - Intended for education, benchmarking, demos, and exploratory research
+
+## Notes and Caveats
+
+- This dataset is **synthetic**. It is designed to preserve realistic relationships between repo attributes, not to mirror a specific live GitHub snapshot.
+- `topics` is useful for lightweight NLP or multi-label experiments, but it should be treated as simulated metadata rather than canonical GitHub taxonomy.
+- `test_coverage` is intentionally sparse when CI is absent, which makes it useful for missingness-aware modeling.
+
+## Changelog
+
+- 2026-03-08: tightened the README, clarified the benchmark tasks, and added a quick-start workflow.
 
 ## Citation
 
