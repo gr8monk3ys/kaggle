@@ -5,6 +5,60 @@ import pandas as pd
 from kaggle_portfolio.notebooks import local_competition_lab as lab
 
 
+def test_deep_past_display_name_candidates_strip_cuneiform_prefix():
+    row = pd.Series(
+        {
+            "label": "Cuneiform Tablet Kt 92/k 221 (AKT 5 1)",
+            "aliases": "Kt 92/k 221 | AKT 5 1",
+        }
+    )
+
+    candidates = lab._deep_past_display_name_candidates(row)
+
+    assert "Kt 92/k 221 (AKT 5 1)" in candidates
+    assert "AKT 5 1" in candidates
+
+
+def test_deep_past_assign_sentences_uses_half_open_row_boundaries():
+    test = pd.DataFrame(
+        [
+            {"id": 0, "line_start": 1, "line_end": 7},
+            {"id": 1, "line_start": 7, "line_end": 14},
+            {"id": 2, "line_start": 14, "line_end": 24},
+            {"id": 3, "line_start": 25, "line_end": 30},
+        ]
+    )
+    sentence_rows = pd.DataFrame(
+        [
+            {"line_number": 1, "translation": "a"},
+            {"line_number": 6, "translation": "b"},
+            {"line_number": 7, "translation": "c"},
+            {"line_number": 8, "translation": "d"},
+            {"line_number": 14, "translation": "e"},
+            {"line_number": 25, "translation": "f"},
+            {"line_number": 28, "translation": "g"},
+        ]
+    )
+
+    predictions = lab._deep_past_assign_sentences_to_rows(test, sentence_rows)
+
+    assert predictions == ["a b", "c d", "e", "f g"]
+
+
+def test_deep_past_sentence_rows_match_stripped_display_name():
+    sentences = pd.DataFrame(
+        [
+            {"display_name": "Kt 92/k 221 (AKT 5 1)", "line_number": 7, "translation": "Line 7"},
+            {"display_name": "Kt 92/k 221 (AKT 5 1)", "line_number": 1, "translation": "Line 1"},
+        ]
+    )
+    row = pd.Series({"label": "Cuneiform Tablet Kt 92/k 221 (AKT 5 1)", "aliases": "Kt 92/k 221 | AKT 5 1"})
+
+    matched = lab._deep_past_sentence_rows(sentences, row)
+
+    assert matched["translation"].tolist() == ["Line 1", "Line 7"]
+
+
 def test_march_seed_number_parses_seed_codes():
     assert lab._march_seed_number("W01") == 1.0
     assert lab._march_seed_number("X16b") == 16.0
