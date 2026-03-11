@@ -16,6 +16,30 @@ Each row represents one synthetic track with:
 - a popularity target on a 0-100 scale
 - the core continuous audio descriptors most practitioners expect from Spotify-style feature tables
 
+## Why This Dataset Is Useful
+
+- One clean CSV with **50,000 rows** and **21 columns**, so it is fast to load and easy to benchmark.
+- Includes both **supervised targets** (`popularity`, `genre`) and unsupervised structure in the audio feature space.
+- Works well for beginner EDA and for stronger baselines such as gradient boosting, tabular neural nets, UMAP, and recommendation heuristics.
+- Safe to share and remix because the data is synthetic rather than scraped from the Spotify API.
+
+## Quick Start
+
+```python
+import pandas as pd
+
+df = pd.read_csv("spotify_tracks.csv")
+print(df.shape)
+print(df[["genre", "popularity", "danceability", "energy"]].head())
+```
+
+Common starter tasks:
+
+- Predict `popularity` from audio features and metadata.
+- Classify `genre` across 20 classes.
+- Cluster tracks into playlist moods using `valence`, `energy`, `danceability`, and `tempo`.
+- Build simple nearest-neighbor recommendations from standardized audio features.
+
 ## Quick Facts
 
 | Property | Value |
@@ -77,6 +101,16 @@ Each row represents one synthetic track with:
 - Genre patterns are intentionally distinct enough to support classification baselines.
 - Popularity is harder than genre because the table omits playlist, social, and artist-network effects.
 - This is synthetic data intended for education, prototyping, and benchmarking rather than production music analytics.
+
+## Notes and Caveats
+
+- This dataset is **synthetic**. It is designed for benchmarking, tutorials, and prototyping rather than for reproducing real Spotify catalog statistics exactly.
+- `release_year` is intentionally broad enough for trend analysis, but it should not be treated as a precise historical reconstruction of the music industry.
+- Audio features are generated with genre-aware distributions, so they are realistic enough for ML practice while still being simulation data.
+
+## Changelog
+
+- 2026-03-08: tightened the README, clarified benchmark tasks, and added a quick-start workflow.
 
 ## Provenance
 

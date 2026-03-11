@@ -4,6 +4,7 @@ These tests verify both the structure of existing metadata files and
 the validation logic that manage.sh validate relies on.
 """
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -39,9 +40,39 @@ def _patched_manage_script(tmp_path: Path) -> Path:
         f'KAGGLE_DIR="{tmp_path}"',
         1,
     )
+    patched = patched.replace(
+        'MODULE_ROOT="/workspaces/kaggle"',
+        f'MODULE_ROOT="{ROOT}"',
+        1,
+    )
     assert patched != original, "Failed to patch manage.sh test fixture"
     patched_manage.write_text(patched, encoding="utf-8")
     return patched_manage
+
+
+def _init_git_repo(repo: Path) -> None:
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True, text=True)
+
+
+def _write_kernel_fixture(root: Path, *, ident: str) -> None:
+    nb_dir = root / "example-notebook"
+    nb_dir.mkdir(parents=True, exist_ok=True)
+    (nb_dir / "notebook.ipynb").write_text("{}", encoding="utf-8")
+    (nb_dir / "kernel-metadata.json").write_text(
+        json.dumps(
+            {
+                "id": ident,
+                "title": "Example Notebook Title",
+                "code_file": "notebook.ipynb",
+                "language": "python",
+                "kernel_type": "notebook",
+                "is_private": False,
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 # ── Structural tests on real metadata files ───────────────────────────────────
@@ -337,6 +368,91 @@ def test_manage_validate_fails_on_missing_dataset_provenance_and_schema(tmp_path
     assert result.returncode != 0
     assert "missing 'authors'" in result.stdout
     assert "missing 'provenance'" in result.stdout
+
+
+def test_manage_validate_passes_when_tracked_kernel_id_matches_head(tmp_path):
+    _init_git_repo(tmp_path)
+    _write_kernel_fixture(tmp_path, ident="owner/example-notebook")
+    subprocess.run(
+        ["git", "add", "example-notebook/kernel-metadata.json", "example-notebook/notebook.ipynb"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    patched_manage = _patched_manage_script(tmp_path)
+
+    result = subprocess.run(
+        ["bash", str(patched_manage), "validate", "example-notebook"],
+        cwd=tmp_path,
+        env={**os.environ, "VALIDATE_ENFORCE_ID_BASELINE": "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    assert "All metadata files valid" in result.stdout
+
+
+def test_manage_validate_fails_when_tracked_kernel_id_drifted_from_head(tmp_path):
+    _init_git_repo(tmp_path)
+    _write_kernel_fixture(tmp_path, ident="owner/example-notebook")
+    subprocess.run(
+        ["git", "add", "example-notebook/kernel-metadata.json", "example-notebook/notebook.ipynb"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    _write_kernel_fixture(tmp_path, ident="owner/example-notebook-renamed")
+    patched_manage = _patched_manage_script(tmp_path)
+
+    result = subprocess.run(
+        ["bash", str(patched_manage), "validate", "example-notebook"],
+        cwd=tmp_path,
+        env={**os.environ, "VALIDATE_ENFORCE_ID_BASELINE": "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "id changed from 'owner/example-notebook' to 'owner/example-notebook-renamed'" in result.stdout
+    assert "MANAGE_ALLOW_ID_CHANGE=1" in result.stdout
+
+
+def test_manage_validate_allows_tracked_kernel_id_override(tmp_path):
+    _init_git_repo(tmp_path)
+    _write_kernel_fixture(tmp_path, ident="owner/example-notebook")
+    subprocess.run(
+        ["git", "add", "example-notebook/kernel-metadata.json", "example-notebook/notebook.ipynb"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    _write_kernel_fixture(tmp_path, ident="owner/example-notebook-renamed")
+    patched_manage = _patched_manage_script(tmp_path)
+
+    result = subprocess.run(
+        ["bash", str(patched_manage), "validate", "example-notebook"],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "VALIDATE_ENFORCE_ID_BASELINE": "1",
+            "MANAGE_ALLOW_ID_CHANGE": "1",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    assert "All metadata files valid" in result.stdout
 
 
 def test_validate_python_logic_invalid_json(tmp_path):

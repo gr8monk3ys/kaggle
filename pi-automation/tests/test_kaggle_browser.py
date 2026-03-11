@@ -24,6 +24,9 @@ class _FakeLocator:
     def count(self) -> int:
         return self._count
 
+    def inner_text(self, timeout=None) -> str:
+        return ""
+
 
 class _ClickableLocator(_FakeLocator):
     def __init__(self, count: int = 0):
@@ -42,9 +45,21 @@ class _ClickableLocator(_FakeLocator):
 
 
 class _FakePage:
-    def __init__(self, *, url: str = "https://www.kaggle.com/datasets", signed_out: bool = False):
+    def __init__(
+        self,
+        *,
+        url: str = "https://www.kaggle.com/datasets",
+        signed_out: bool = False,
+        title_text: str = "",
+        body_text: str = "",
+    ):
         self.url = url
         self.signed_out = signed_out
+        self._title_text = title_text
+        self._body_text = body_text
+
+    def title(self) -> str:
+        return self._title_text
 
     def get_by_role(self, role: str, name=None):
         pattern = getattr(name, "pattern", "") if name is not None else ""
@@ -57,6 +72,10 @@ class _FakePage:
         return _FakeLocator(0)
 
     def locator(self, selector: str):
+        if selector == "body":
+            locator = _FakeLocator(1)
+            locator.inner_text = lambda timeout=None: self._body_text
+            return locator
         return _FakeLocator(0)
 
 
@@ -110,6 +129,20 @@ class TestIsAuthenticated:
     def test_login_url_is_not_authenticated(self):
         page = _FakePage(url="https://www.kaggle.com/account/login", signed_out=False)
         assert kb.is_authenticated(page) is False
+
+
+class TestBrowserChallenge:
+    def test_detects_challenge_from_title(self):
+        page = _FakePage(title_text="Checking your browser - reCAPTCHA")
+        assert kb.is_browser_challenge(page) is True
+
+    def test_detects_challenge_from_body(self):
+        page = _FakePage(body_text="Checking your browser before accessing www.kaggle.com ...")
+        assert kb.is_browser_challenge(page) is True
+
+    def test_non_challenge_page_returns_false(self):
+        page = _FakePage(title_text="Datasets", body_text="Normal Kaggle page")
+        assert kb.is_browser_challenge(page) is False
 
 
 # ---------------------------------------------------------------------------

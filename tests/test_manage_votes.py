@@ -25,9 +25,10 @@ def test_manage_votes_parses_kernel_csv_rows(tmp_path):
                 "if [[ \"${1:-}\" == \"kernels\" && \"${2:-}\" == \"list\" ]]; then",
                 "  if [[ \" $* \" == *\" --csv \"* ]]; then",
                 "    cat <<'CSV'",
-                "ref,totalVotes",
-                "alice/kernel-one,3",
-                "alice/kernel-two,8",
+                "ref,title,totalVotes",
+                "alice/kernel-one,Kernel One,3",
+                ",[Private Notebook],0",
+                "alice/kernel-two,Kernel Two,8",
                 "CSV",
                 "  else",
                 "    echo \"kernels list\"",
@@ -68,3 +69,4 @@ def test_manage_votes_parses_kernel_csv_rows(tmp_path):
     assert "No kernels found." not in result.stdout
     assert "kernel-one" in result.stdout
     assert "kernel-two" in result.stdout
+    assert "Private Notebook" not in result.stdout

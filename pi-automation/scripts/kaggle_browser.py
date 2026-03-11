@@ -22,6 +22,10 @@ from typing import Any, Generator
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STORAGE_STATE = REPO_ROOT / "pi-automation" / "data" / "kaggle_storage_state.json"
 DEFAULT_TIMEOUT_MS = 20_000
+BROWSER_CHALLENGE_MESSAGE = (
+    "Kaggle browser challenge detected. Clear the Cloudflare/reCAPTCHA check in a headed browser "
+    "and retry with --manual-login."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +86,24 @@ def is_authenticated(page) -> bool:
     return not is_login_prompt_visible(page)
 
 
+def is_browser_challenge(page) -> bool:
+    try:
+        title = str(page.title() or "").lower()
+    except Exception:
+        title = ""
+    if "checking your browser" in title or "recaptcha" in title:
+        return True
+
+    try:
+        body = str(page.locator("body").inner_text(timeout=1500) or "").lower()
+    except Exception:
+        body = ""
+    return (
+        "checking your browser before accessing" in body
+        or "click here if you are not automatically redirected" in body
+    )
+
+
 def _wait_and_check_auth(page, *, timeout_ms: int) -> bool:
     """Wait for the page to settle, then check auth robustly.
 
@@ -91,6 +113,8 @@ def _wait_and_check_auth(page, *, timeout_ms: int) -> bool:
     import time
     deadline = time.time() + min(timeout_ms, 5000) / 1000.0
     while time.time() < deadline:
+        if is_browser_challenge(page):
+            return False
         # If sign-in buttons appear, definitely not authenticated
         if is_login_prompt_visible(page):
             return False
@@ -117,11 +141,27 @@ def maybe_login(
     """Authenticate on Kaggle using credentials or manual browser login."""
     page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
     page.wait_for_timeout(1500)
+    if is_browser_challenge(page):
+        if manual_login:
+            print("Kaggle browser challenge detected. Clear it in the browser window.")
+            input("Press Enter after the challenge clears...")
+            page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
+            page.wait_for_timeout(1500)
+        else:
+            raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
     if _wait_and_check_auth(page, timeout_ms=timeout_ms):
         return
 
     page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
     page.wait_for_timeout(1000)
+    if is_browser_challenge(page):
+        if manual_login:
+            print("Kaggle browser challenge detected. Clear it in the browser window.")
+            input("Press Enter after the challenge clears...")
+            page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
+            page.wait_for_timeout(1000)
+        else:
+            raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
 
     # Kaggle uses a two-step login: click "Sign in with Email" first to reveal fields
     email_signin_btn = first_available(
