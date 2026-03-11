@@ -89,6 +89,27 @@ class TestFetchCompetitionInfo:
         assert info["ref"] == "playground-series-s4e1"
         assert info["title"] == "Episode 1"
 
+    def test_matches_full_url_and_checks_featured_lists(self, monkeypatch):
+        calls: list[list[str]] = []
+
+        def fake_run(cmd, *args, **kwargs):
+            calls.append(cmd)
+
+            class Result:
+                returncode = 0
+                stdout = "ref,title\nhttps://www.kaggle.com/competitions/march-machine-learning-mania-2026,March Mania\n" if "--category" in cmd and "featured" in cmd else "ref,title\n"
+
+            return Result()
+
+        monkeypatch.setattr(entry.subprocess, "run", fake_run)
+        monkeypatch.setattr(entry, "kaggle_command", lambda: ["kaggle"])
+
+        info = entry.fetch_competition_info("march-machine-learning-mania-2026")
+
+        assert info is not None
+        assert info["title"] == "March Mania"
+        assert any("--category" in call and "featured" in call for call in calls)
+
 
 # ---------------------------------------------------------------------------
 # Kernel metadata generation

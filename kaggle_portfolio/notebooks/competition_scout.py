@@ -39,6 +39,14 @@ OUR_TOPICS = {
     "time series", "forecasting", "feature engineering", "ensemble",
     "deep learning", "bert", "tabular", "eda", "fraud", "medical",
 }
+SCOUT_CATEGORIES = ("featured", "research", "playground", "masters")
+
+
+def normalize_competition_ref(value: str) -> str:
+    value = str(value or "").strip()
+    if not value:
+        return value
+    return value.rsplit("/", 1)[-1]
 
 
 def parse_deadline_datetime(value: str) -> datetime:
@@ -52,15 +60,22 @@ def parse_deadline_datetime(value: str) -> datetime:
 
 def fetch_competitions(category: str = "all", page_size: int = 50) -> list[dict]:
     """Fetch competitions from Kaggle CLI as CSV."""
-    cmd = [*kaggle_command(), "competitions", "list", "--csv",
-           "--page-size", str(page_size),
-           "--sort-by", "latestDeadline"]
-    if category != "all":
-        cmd += ["--category", category]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        return []
-    return _parse_csv(result.stdout)
+    del page_size  # Kaggle CLI compatibility: recent versions reject --page-size.
+    categories = SCOUT_CATEGORIES if category == "all" else (category,)
+    merged: dict[str, dict] = {}
+    for category_name in categories:
+        cmd = [*kaggle_command(), "competitions", "list", "--csv", "--sort-by", "latestDeadline"]
+        if category_name != "all":
+            cmd += ["--category", category_name]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            continue
+        for row in _parse_csv(result.stdout):
+            ref = normalize_competition_ref(row.get("ref", ""))
+            if not ref:
+                continue
+            merged[ref] = row
+    return list(merged.values())
 
 
 def _parse_csv(raw: str) -> list[dict]:
@@ -71,25 +86,40 @@ def _parse_csv(raw: str) -> list[dict]:
 
 def score_competition(row: dict, now: datetime) -> float:
     """Score a competition 0-100 (higher = better opportunity)."""
-    score = 50.0
+    score = 40.0
 
-    # Team count (lower = better)
+    # Category quality: prioritize live medal-relevant boards.
+    category = str(row.get("category", "")).lower()
+    if "featured" in category:
+        score += 25
+    elif "research" in category:
+        score += 22
+    elif "playground" in category:
+        score += 16
+    elif "masters" in category:
+        score += 14
+    elif "getting started" in category:
+        score -= 20
+
+    # Team count: tiny boards are often dead; healthy active boards are better.
     try:
         teams = int(row.get("teamCount", row.get("team_count", 0)) or 0)
         if teams == 0:
-            score += 20   # newly launched, no teams yet
+            score -= 10
         elif teams < 50:
-            score += 15
-        elif teams < 100:
-            score += 10
-        elif teams < 500:
-            score += 0
+            score -= 6
+        elif teams < 200:
+            score += 6
+        elif teams < 2500:
+            score += 12
+        elif teams < 5000:
+            score += 5
         else:
-            score -= 10   # saturated
+            score -= 4
     except (ValueError, TypeError):
         pass
 
-    # Deadline proximity
+    # Deadline proximity: favor active boards, penalize evergreen training boards.
     deadline_str = row.get("deadline", row.get("evaluationDate", ""))
     if deadline_str:
         try:
@@ -97,28 +127,30 @@ def score_competition(row: dict, now: datetime) -> float:
             days_left = (deadline - now).days
             if days_left < 0:
                 return -1  # already ended
-            elif days_left < 7:
-                score -= 20  # too close
-            elif days_left < 21:
-                score += 5
-            elif days_left < 56:
-                score += 15  # sweet spot: 3-8 weeks
-            elif days_left < 120:
-                score += 10
+            elif days_left < 5:
+                score -= 14
+            elif days_left < 14:
+                score += 16
+            elif days_left < 45:
+                score += 12
+            elif days_left < 90:
+                score += 8
+            elif days_left < 180:
+                score += 2
+            elif days_left < 365:
+                score -= 6
             else:
-                score += 0   # too far out
+                score -= 24
         except ValueError:
             pass
 
     # Category/topic alignment
-    title = (row.get("ref", "") + " " + row.get("title", "")).lower()
+    title = (normalize_competition_ref(row.get("ref", "")) + " " + row.get("title", "")).lower()
     matches = sum(1 for t in OUR_TOPICS if t in title)
-    score += min(matches * 5, 15)
+    score += min(matches * 4, 12)
 
-    # Reward "getting started" competitions
-    category = row.get("category", "").lower()
-    if "getting started" in category or "playground" in category:
-        score += 10
+    if str(row.get("userHasEntered", "")).lower() == "true":
+        score += 6
 
     return round(score, 1)
 
@@ -140,10 +172,10 @@ def format_report(ranked: list[dict], now: datetime) -> str:
         score = entry["score"]
         teams = row.get("teamCount", row.get("team_count", "?"))
         days = entry.get("days_left", "?")
-        ref = row.get("ref", "?")
+        ref = normalize_competition_ref(row.get("ref", "?"))
         action = "ENTER NOW" if score >= 70 else ("Consider" if score >= 55 else "Monitor")
         lines.append(f"| {i} | {ref} | {teams} | {days} | {score:.0f} | {action} |")
-    lines += ["", "---", "*Scores: team count (40%) + deadline (30%) + topic alignment (30%)*"]
+    lines += ["", "---", "*Scores favor live featured/research/playground boards with workable deadlines, healthy team counts, and topic overlap.*"]
     return "\n".join(lines) + "\n"
 
 
@@ -191,7 +223,7 @@ def main(argv: list[str] | None = None) -> int:
         score = entry["score"]
         teams = str(row.get("teamCount", row.get("team_count", "?")))
         days = str(entry.get("days_left", "?"))
-        ref = row.get("ref", "?")[:48]
+        ref = normalize_competition_ref(row.get("ref", "?"))[:48]
         action = f"{GREEN}ENTER NOW{RESET}" if score >= 70 else (f"{YELLOW}Consider{RESET}" if score >= 55 else "Monitor")
         score_col = GREEN if score >= 70 else (YELLOW if score >= 55 else RESET)
         print(f"  {i:<4} {ref:<50} {teams:>6}  {days:>5}  {score_col}{score:>5.0f}{RESET}  {action}")

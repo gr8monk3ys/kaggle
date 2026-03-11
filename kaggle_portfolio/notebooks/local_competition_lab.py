@@ -5,6 +5,7 @@ Supports a small set of high-value competitions already used in this repo:
     - titanic
     - spaceship-titanic
     - nlp-getting-started
+    - march-machine-learning-mania-2026
 
 Examples
 --------
@@ -31,7 +32,7 @@ from sklearn.ensemble import ExtraTreesClassifier, HistGradientBoostingClassifie
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, brier_score_loss
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.naive_bayes import ComplementNB
 from sklearn.pipeline import Pipeline
@@ -541,7 +542,304 @@ def benchmark_nlp(data_dir: Path, folds: int, write_submission: bool) -> LabResu
     )
 
 
+def _march_seed_number(value: Any) -> float:
+    text = str(value or "").strip()
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if not digits:
+        return np.nan
+    return float(digits[:2])
+
+
+def _march_team_game_rows(results: pd.DataFrame) -> pd.DataFrame:
+    winners = pd.DataFrame(
+        {
+            "Season": results["Season"],
+            "DayNum": results["DayNum"],
+            "TeamID": results["WTeamID"],
+            "OppTeamID": results["LTeamID"],
+            "Score": results["WScore"],
+            "OppScore": results["LScore"],
+            "Win": 1,
+        }
+    )
+    losers = pd.DataFrame(
+        {
+            "Season": results["Season"],
+            "DayNum": results["DayNum"],
+            "TeamID": results["LTeamID"],
+            "OppTeamID": results["WTeamID"],
+            "Score": results["LScore"],
+            "OppScore": results["WScore"],
+            "Win": 0,
+        }
+    )
+    team_games = pd.concat([winners, losers], ignore_index=True)
+    team_games["Margin"] = team_games["Score"] - team_games["OppScore"]
+    return team_games.sort_values(["Season", "TeamID", "DayNum"]).reset_index(drop=True)
+
+
+def _march_elo_features(results: pd.DataFrame) -> pd.DataFrame:
+    ratings_rows: list[dict[str, float]] = []
+    for season, season_games in results.sort_values(["Season", "DayNum"]).groupby("Season", sort=True):
+        season_ratings: dict[int, float] = {}
+        for game in season_games.itertuples(index=False):
+            winner_rating = season_ratings.get(int(game.WTeamID), 1500.0)
+            loser_rating = season_ratings.get(int(game.LTeamID), 1500.0)
+            expected_winner = 1.0 / (1.0 + 10 ** ((loser_rating - winner_rating) / 400.0))
+            margin = max(int(game.WScore) - int(game.LScore), 1)
+            k_factor = 20.0 * min(2.5, 1.0 + (margin - 1) / 25.0)
+            season_ratings[int(game.WTeamID)] = winner_rating + k_factor * (1.0 - expected_winner)
+            season_ratings[int(game.LTeamID)] = loser_rating + k_factor * (0.0 - (1.0 - expected_winner))
+
+        for team_id, rating in season_ratings.items():
+            ratings_rows.append({"Season": season, "TeamID": team_id, "elo": rating})
+    return pd.DataFrame(ratings_rows)
+
+
+def _march_team_features(results: pd.DataFrame, seeds: pd.DataFrame) -> pd.DataFrame:
+    team_games = _march_team_game_rows(results)
+    recent = (
+        team_games.groupby(["Season", "TeamID"], group_keys=False)
+        .tail(10)
+        .groupby(["Season", "TeamID"])
+        .agg(
+            recent_win_pct=("Win", "mean"),
+            recent_margin=("Margin", "mean"),
+        )
+        .reset_index()
+    )
+    season_features = (
+        team_games.groupby(["Season", "TeamID"])
+        .agg(
+            games=("Win", "size"),
+            win_pct=("Win", "mean"),
+            avg_score=("Score", "mean"),
+            avg_allowed=("OppScore", "mean"),
+            avg_margin=("Margin", "mean"),
+        )
+        .reset_index()
+    )
+    elo = _march_elo_features(results)
+    features = season_features.merge(recent, on=["Season", "TeamID"], how="left")
+    features = features.merge(elo, on=["Season", "TeamID"], how="left")
+
+    seed_features = seeds.copy()
+    seed_features["seed"] = seed_features["Seed"].map(_march_seed_number)
+    seed_features = seed_features[["Season", "TeamID", "seed"]]
+    features = features.merge(seed_features, on=["Season", "TeamID"], how="left")
+    features["seed"] = features["seed"].fillna(20.0)
+    features["elo"] = features["elo"].fillna(1500.0)
+    features["recent_win_pct"] = features["recent_win_pct"].fillna(features["win_pct"])
+    features["recent_margin"] = features["recent_margin"].fillna(features["avg_margin"])
+    return features
+
+
+def _march_submission_pairs(sample: pd.DataFrame) -> pd.DataFrame:
+    parsed = sample["ID"].astype(str).str.split("_", expand=True)
+    if parsed.shape[1] != 3:
+        raise ValueError("Unexpected March Mania submission ID format.")
+    return pd.DataFrame(
+        {
+            "ID": sample["ID"].astype(str),
+            "Season": parsed[0].astype(int),
+            "Team1": parsed[1].astype(int),
+            "Team2": parsed[2].astype(int),
+        }
+    )
+
+
+def _march_matchups(
+    games: pd.DataFrame,
+    features: pd.DataFrame,
+    *,
+    include_target: bool,
+) -> pd.DataFrame:
+    feature_map = features.set_index(["Season", "TeamID"]).to_dict("index")
+    base_cols = [
+        "games",
+        "win_pct",
+        "avg_score",
+        "avg_allowed",
+        "avg_margin",
+        "recent_win_pct",
+        "recent_margin",
+        "elo",
+        "seed",
+    ]
+    rows: list[dict[str, Any]] = []
+
+    for game in games.itertuples(index=False):
+        season = int(game.Season)
+        if hasattr(game, "WTeamID") and hasattr(game, "LTeamID"):
+            team_a = int(game.WTeamID)
+            team_b = int(game.LTeamID)
+        else:
+            team_a = int(game.Team1)
+            team_b = int(game.Team2)
+        team1, team2 = sorted((team_a, team_b))
+        feat_1 = feature_map.get((season, team1))
+        feat_2 = feature_map.get((season, team2))
+        if feat_1 is None or feat_2 is None:
+            continue
+
+        row: dict[str, Any] = {"Season": season, "Team1": team1, "Team2": team2}
+        if include_target:
+            row["target"] = 1 if team1 == team_a else 0
+        for col in base_cols:
+            value_1 = float(feat_1[col])
+            value_2 = float(feat_2[col])
+            row[f"{col}_1"] = value_1
+            row[f"{col}_2"] = value_2
+            row[f"{col}_diff"] = value_1 - value_2
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def _march_build_models() -> dict[str, Any]:
+    return {
+        "lr": Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="median")),
+                ("scale", StandardScaler()),
+                ("model", LogisticRegression(max_iter=2000, C=1.5)),
+            ]
+        ),
+        "hgb": Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="median")),
+                (
+                    "model",
+                    HistGradientBoostingClassifier(
+                        learning_rate=0.05,
+                        max_depth=6,
+                        max_iter=300,
+                        random_state=RANDOM_STATE,
+                    ),
+                ),
+            ]
+        ),
+    }
+
+
+def benchmark_march_mania(data_dir: Path, _folds: int, write_submission: bool) -> LabResult:
+    regular_season = pd.concat(
+        [
+            pd.read_csv(data_dir / "MRegularSeasonCompactResults.csv"),
+            pd.read_csv(data_dir / "WRegularSeasonCompactResults.csv"),
+        ],
+        ignore_index=True,
+    )
+    tournament = pd.concat(
+        [
+            pd.read_csv(data_dir / "MNCAATourneyCompactResults.csv"),
+            pd.read_csv(data_dir / "WNCAATourneyCompactResults.csv"),
+        ],
+        ignore_index=True,
+    )
+    seeds = pd.concat(
+        [
+            pd.read_csv(data_dir / "MNCAATourneySeeds.csv"),
+            pd.read_csv(data_dir / "WNCAATourneySeeds.csv"),
+        ],
+        ignore_index=True,
+    )
+
+    features = _march_team_features(regular_season, seeds)
+    train_df = _march_matchups(tournament, features, include_target=True)
+    if train_df.empty:
+        raise SystemExit("Failed to build March Mania training rows from downloaded competition files.")
+
+    feature_cols = [col for col in train_df.columns if col not in {"target", "Team1", "Team2"}]
+    holdout_seasons = sorted(season for season in train_df["Season"].unique() if season >= 2021)
+    if not holdout_seasons:
+        holdout_seasons = sorted(train_df["Season"].unique())[-5:]
+
+    season_predictions: dict[str, list[tuple[int, np.ndarray, np.ndarray]]] = {"lr": [], "hgb": []}
+    for season in holdout_seasons:
+        train_mask = train_df["Season"] < season
+        valid_mask = train_df["Season"] == season
+        if int(train_mask.sum()) == 0 or int(valid_mask.sum()) == 0:
+            continue
+        x_train = train_df.loc[train_mask, feature_cols]
+        y_train = train_df.loc[train_mask, "target"].astype(int)
+        x_valid = train_df.loc[valid_mask, feature_cols]
+        y_valid = train_df.loc[valid_mask, "target"].astype(int)
+        for name, model in _march_build_models().items():
+            model.fit(x_train, y_train)
+            probs = model.predict_proba(x_valid)[:, 1]
+            season_predictions[name].append((season, y_valid.to_numpy(), probs))
+
+    benchmarks: list[dict[str, Any]] = []
+    for name, rows in season_predictions.items():
+        scores = [(season, brier_score_loss(y_true, probs)) for season, y_true, probs in rows]
+        if scores:
+            benchmarks.append({"model": name, "score": round(float(np.mean([score for _, score in scores])), 5)})
+
+    if season_predictions["lr"] and season_predictions["hgb"]:
+        ensemble_scores = []
+        for (season_lr, y_lr, pred_lr), (season_hgb, _y_hgb, pred_hgb) in zip(
+            season_predictions["lr"], season_predictions["hgb"]
+        ):
+            if season_lr != season_hgb:
+                continue
+            ensemble_scores.append((season_lr, brier_score_loss(y_lr, (pred_lr + pred_hgb) / 2.0)))
+        if ensemble_scores:
+            benchmarks.append(
+                {
+                    "model": "lr_hgb_ensemble",
+                    "score": round(float(np.mean([score for _, score in ensemble_scores])), 5),
+                }
+            )
+
+    if not benchmarks:
+        raise SystemExit("March Mania benchmark did not produce any holdout scores.")
+
+    best = min(benchmarks, key=lambda row: row["score"])
+    submission_path = None
+    if write_submission:
+        sample_path = (
+            data_dir / "SampleSubmissionStage2.csv"
+            if (data_dir / "SampleSubmissionStage2.csv").exists()
+            else data_dir / "SampleSubmissionStage1.csv"
+        )
+        sample = pd.read_csv(sample_path)
+        submission_pairs = _march_submission_pairs(sample)
+        submission_features = _march_matchups(submission_pairs, features, include_target=False)
+        if submission_features.empty:
+            raise SystemExit("Failed to build March Mania submission rows.")
+
+        train_x = train_df[feature_cols]
+        train_y = train_df["target"].astype(int)
+        submit_x = submission_features[feature_cols]
+        models = _march_build_models()
+        fitted: dict[str, Any] = {}
+        for name, model in models.items():
+            model.fit(train_x, train_y)
+            fitted[name] = model
+
+        if best["model"] == "lr_hgb_ensemble":
+            preds = (fitted["lr"].predict_proba(submit_x)[:, 1] + fitted["hgb"].predict_proba(submit_x)[:, 1]) / 2.0
+        else:
+            preds = fitted[best["model"]].predict_proba(submit_x)[:, 1]
+
+        submission_path = _submission_dir("march-machine-learning-mania-2026") / (
+            f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        )
+        pd.DataFrame({"ID": submission_pairs["ID"], "Pred": preds}).to_csv(submission_path, index=False)
+
+    return LabResult(
+        competition="march-machine-learning-mania-2026",
+        metric_name="brier",
+        best_model=best["model"],
+        best_score=float(best["score"]),
+        benchmark_rows=benchmarks,
+        submission_path=submission_path,
+    )
+
+
 BENCHMARKS = {
+    "march-machine-learning-mania-2026": benchmark_march_mania,
     "titanic": benchmark_titanic,
     "spaceship-titanic": benchmark_spaceship,
     "nlp-getting-started": benchmark_nlp,
