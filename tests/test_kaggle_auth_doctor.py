@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 from kaggle_portfolio.ops import kaggle_auth_doctor
 
@@ -63,24 +64,42 @@ def test_dataset_id_owners_counts_and_malformed(tmp_path):
 
 
 def test_probe_blob_upload_auth_status_classification(monkeypatch):
-    class FakeResponse:
-        def __init__(self, status_code: int):
-            self.status_code = status_code
+    class FakeBlobApiClient:
+        def __init__(self, should_fail: bool):
+            self.should_fail = should_fail
 
-    monkeypatch.setattr(
-        kaggle_auth_doctor.requests,
-        "post",
-        lambda *args, **kwargs: FakeResponse(401),
-    )
-    ok, msg = kaggle_auth_doctor.probe_blob_upload_auth("u", "k", timeout=1)
+        def start_blob_upload(self, _request):
+            if self.should_fail:
+                raise RuntimeError("401 Client Error: Unauthorized for url: https://www.kaggle.com/api/v1/blobs/upload")
+            return SimpleNamespace(create_url="https://upload.example", token="tok")
+
+    class FakeClientContext:
+        def __init__(self, should_fail: bool):
+            self.should_fail = should_fail
+
+        def __enter__(self):
+            return SimpleNamespace(blobs=SimpleNamespace(blob_api_client=FakeBlobApiClient(self.should_fail)))
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeKaggleApi:
+        should_fail = False
+
+        def authenticate(self):
+            return None
+
+        def build_kaggle_client(self):
+            return FakeClientContext(self.should_fail)
+
+    monkeypatch.setattr(kaggle_auth_doctor, "KaggleApi", FakeKaggleApi)
+
+    FakeKaggleApi.should_fail = True
+    ok, msg = kaggle_auth_doctor.probe_blob_upload_auth(timeout=1)
     assert ok is False
     assert "401" in msg
 
-    monkeypatch.setattr(
-        kaggle_auth_doctor.requests,
-        "post",
-        lambda *args, **kwargs: FakeResponse(400),
-    )
-    ok, msg = kaggle_auth_doctor.probe_blob_upload_auth("u", "k", timeout=1)
+    FakeKaggleApi.should_fail = False
+    ok, msg = kaggle_auth_doctor.probe_blob_upload_auth(timeout=1)
     assert ok is True
-    assert "400" in msg
+    assert "succeeded" in msg
