@@ -96,3 +96,115 @@ def test_march_matchups_uses_sorted_team_ids_and_binary_target():
     assert row["Team2"] == 1102
     assert row["target"] == 0
     assert row["elo_diff"] == 60
+
+
+def test_benchmarks_include_new_entered_competitions():
+    assert "playground-series-s6e3" in lab.BENCHMARKS
+    assert "house-prices-advanced-regression-techniques" in lab.BENCHMARKS
+    assert "store-sales-time-series-forecasting" in lab.BENCHMARKS
+
+
+def test_playground_prepare_features_adds_telco_derivatives():
+    train = pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "gender": "Male",
+                "SeniorCitizen": 0,
+                "Partner": "Yes",
+                "Dependents": "No",
+                "tenure": 12,
+                "PhoneService": "Yes",
+                "MultipleLines": "No",
+                "InternetService": "Fiber optic",
+                "OnlineSecurity": "Yes",
+                "OnlineBackup": "No",
+                "DeviceProtection": "Yes",
+                "TechSupport": "Yes",
+                "StreamingTV": "No",
+                "StreamingMovies": "Yes",
+                "Contract": "Month-to-month",
+                "PaperlessBilling": "Yes",
+                "PaymentMethod": "Bank transfer (automatic)",
+                "MonthlyCharges": 80.0,
+                "TotalCharges": "960.0",
+                "Churn": "No",
+            }
+        ]
+    )
+    test = train.drop(columns=["Churn"]).copy()
+
+    train_x, test_x = lab._playground_prepare_features(train, test)
+
+    assert "ChargesPerTenure" in train_x.columns
+    assert "HasAutoPay" in train_x.columns
+    assert train_x.loc[0, "HasFiber"] == 1
+    assert train_x.loc[0, "HasAutoPay"] == 1
+    assert test_x.loc[0, "HasStreaming"] == 1
+
+
+def test_house_prepare_features_adds_core_engineering_columns():
+    train = pd.DataFrame(
+        [
+            {
+                "Id": 1,
+                "MSSubClass": 20,
+                "Neighborhood": "NAmes",
+                "LotFrontage": 80.0,
+                "TotalBsmtSF": 900,
+                "1stFlrSF": 1000,
+                "2ndFlrSF": 400,
+                "FullBath": 2,
+                "HalfBath": 1,
+                "BsmtFullBath": 1,
+                "BsmtHalfBath": 0,
+                "YrSold": 2010,
+                "YearBuilt": 2000,
+                "YearRemodAdd": 2005,
+                "GarageArea": 500,
+                "PoolArea": 0,
+                "Fireplaces": 1,
+                "WoodDeckSF": 10,
+                "OpenPorchSF": 20,
+                "EnclosedPorch": 0,
+                "3SsnPorch": 0,
+                "ScreenPorch": 30,
+                "OverallQual": 7,
+                "OverallCond": 5,
+                "GrLivArea": 1400,
+                "MasVnrArea": 100,
+                "SalePrice": 200000,
+            }
+        ]
+    )
+    test = train.drop(columns=["SalePrice"]).copy()
+
+    train_x, _test_x = lab._house_prepare_features(train, test)
+
+    assert train_x.loc[0, "TotalSF"] == 2300
+    assert train_x.loc[0, "TotalBath"] == 3.5
+    assert train_x.loc[0, "QualSF"] == 9800
+    assert train_x.loc[0, "TotalPorchSF"] == 60
+
+
+def test_store_sales_prediction_frame_produces_complete_predictions():
+    history = pd.DataFrame(
+        [
+            {"date": "2024-01-01", "store_nbr": 1, "family": "A", "onpromotion": 0, "sales": 10.0},
+            {"date": "2024-01-08", "store_nbr": 1, "family": "A", "onpromotion": 0, "sales": 12.0},
+            {"date": "2024-01-15", "store_nbr": 1, "family": "A", "onpromotion": 1, "sales": 15.0},
+            {"date": "2024-01-22", "store_nbr": 1, "family": "A", "onpromotion": 1, "sales": 16.0},
+        ]
+    )
+    target = pd.DataFrame(
+        [
+            {"date": "2024-01-29", "store_nbr": 1, "family": "A", "onpromotion": 1},
+            {"date": "2024-01-30", "store_nbr": 1, "family": "A", "onpromotion": 0},
+        ]
+    )
+
+    frame = lab._store_sales_prediction_frame(history, target)
+
+    assert frame["recent_dow_promo_mean"].notna().all()
+    assert frame["recent_28_mean"].notna().all()
+    assert frame["hybrid_mean"].notna().all()
