@@ -73,15 +73,33 @@ cells.append(
         """train = pd.read_csv(data_dir / 'train.csv')
 test = pd.read_csv(data_dir / 'test.csv').sort_values(['line_start', 'line_end']).reset_index(drop=True)
 sample = pd.read_csv(data_dir / 'sample_submission.csv').sort_values('id').reset_index(drop=True)
-published = pd.read_csv(data_dir / 'published_texts.csv')
-sentences = pd.read_csv(data_dir / 'Sentences_Oare_FirstWord_LinNum.csv')
+
+def load_optional_csv(path: Path, required_columns: list[str]) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame(columns=required_columns)
+    frame = pd.read_csv(path)
+    for column in required_columns:
+        if column not in frame.columns:
+            frame[column] = pd.Series(dtype='object')
+    return frame
+
+published = load_optional_csv(
+    data_dir / 'published_texts.csv',
+    ['transliteration', 'label', 'aliases', 'note'],
+)
+sentences = load_optional_csv(
+    data_dir / 'Sentences_Oare_FirstWord_LinNum.csv',
+    ['display_name', 'line_number', 'translation'],
+)
 
 print('Train shape      :', train.shape)
 print('Test shape       :', test.shape)
-print('Published texts  :', published.shape)
-print('Sentence matches :', sentences.shape)
+print('Published texts  :', published.shape, '(optional)')
+print('Sentence matches :', sentences.shape, '(optional)')
 print('\\nTest rows:')
-print(test.to_string(index=False))"""
+print(test.head(10).to_string(index=False))
+if len(test) > 10:
+    print(f'... ({len(test) - 10} additional test rows omitted)')"""
     )
 )
 
@@ -160,21 +178,39 @@ def display_name_candidates(row: pd.Series) -> list[str]:
 
 
 query = ' '.join(test['transliteration'].astype(str))
-published_idx, published_score = best_match(published['transliteration'], query)
-published_row = published.iloc[published_idx]
-display_names = sentences['display_name'].astype(str).str.strip()
 candidate_rows = pd.DataFrame()
-for name in display_name_candidates(published_row):
-    matched = sentences.loc[display_names == name]
-    if len(matched) > len(candidate_rows):
-        candidate_rows = matched
-
-candidate_rows = (
-    candidate_rows[['line_number', 'translation']]
-    .dropna(subset=['line_number', 'translation'])
-    .sort_values('line_number')
-    .reset_index(drop=True)
+published_score = 0.0
+published_row = pd.Series(dtype='object')
+published_available = (
+    not published.empty
+    and 'transliteration' in published
+    and published['transliteration'].notna().any()
 )
+sentences_available = (
+    not sentences.empty
+    and {'display_name', 'line_number', 'translation'}.issubset(set(sentences.columns))
+)
+
+if published_available:
+    published_idx, published_score = best_match(published['transliteration'], query)
+    published_row = published.iloc[published_idx]
+    if sentences_available:
+        display_names = sentences['display_name'].astype(str).str.strip()
+        for name in display_name_candidates(published_row):
+            matched = sentences.loc[display_names == name]
+            if len(matched) > len(candidate_rows):
+                candidate_rows = matched
+
+        candidate_rows = (
+            candidate_rows[['line_number', 'translation']]
+            .dropna(subset=['line_number', 'translation'])
+            .sort_values('line_number')
+            .reset_index(drop=True)
+        )
+    else:
+        print('Sentence alignment file unavailable on this run; using train retrieval fallback.')
+else:
+    print('Published-text auxiliary file unavailable on this run; using train retrieval fallback.')
 
 print('Best published match score:', round(published_score, 5))
 print('Best published label      :', published_row.get('label'))
@@ -204,7 +240,11 @@ cells.append(
 
 def split_translation_by_rows(text: str, test_rows: pd.DataFrame) -> list[str]:
     ordered = test_rows.sort_values(['line_start', 'line_end']).reset_index(drop=True)
-    weights = (ordered['line_end'].astype(int) - ordered['line_start'].astype(int) + 1).clip(lower=1).tolist()
+    weights = (
+        ordered['line_end'].fillna(ordered['line_start']).astype(int)
+        - ordered['line_start'].astype(int)
+        + 1
+    ).clip(lower=1).tolist()
     words = str(text or '').split()
     if not words:
         return ['' for _ in weights]
@@ -271,7 +311,9 @@ cells.append(
 submission.to_csv('submission.csv', index=False)
 
 print('submission.csv written')
-print(submission.to_string(index=False))"""
+print(submission.head(10).to_string(index=False))
+if len(submission) > 10:
+    print(f'... ({len(submission) - 10} additional submission rows omitted)')"""
     )
 )
 
