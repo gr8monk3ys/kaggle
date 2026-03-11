@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Benchmark local Kaggle competition baselines and optionally submit them.
 
-Supports a small set of high-value competitions already used in this repo:
+Supports a focused set of entered competitions already used in this repo:
     - titanic
     - spaceship-titanic
     - nlp-getting-started
+    - house-prices-advanced-regression-techniques
+    - store-sales-time-series-forecasting
+    - playground-series-s6e3
     - deep-past-initiative-machine-translation
     - march-machine-learning-mania-2026
 
@@ -33,13 +36,13 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import ExtraTreesClassifier, HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import ElasticNet, LogisticRegression
 from sklearn.metrics import accuracy_score, brier_score_loss
 from sklearn.metrics.pairwise import linear_kernel
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.model_selection import KFold, StratifiedKFold, cross_val_predict, cross_val_score
 from sklearn.naive_bayes import ComplementNB
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, RobustScaler, StandardScaler
 
 from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
 
@@ -538,6 +541,446 @@ def benchmark_nlp(data_dir: Path, folds: int, write_submission: bool) -> LabResu
     return LabResult(
         competition="nlp-getting-started",
         metric_name="f1",
+        best_model=best["model"],
+        best_score=float(best["score"]),
+        benchmark_rows=benchmarks,
+        submission_path=submission_path,
+    )
+
+
+def _playground_prepare_features(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    combined = pd.concat([train.drop(columns=["Churn"]), test], axis=0, ignore_index=True)
+    combined["TotalCharges"] = pd.to_numeric(combined["TotalCharges"], errors="coerce")
+    tenure = combined["tenure"].replace(0, np.nan)
+    combined["ChargesPerTenure"] = combined["TotalCharges"] / tenure
+    combined["MonthlyToTenureRatio"] = combined["MonthlyCharges"] / tenure
+    combined["IsNewCustomer"] = combined["tenure"].fillna(0).le(6).astype(int)
+    combined["HasFiber"] = combined["InternetService"].fillna("").eq("Fiber optic").astype(int)
+    combined["HasAutoPay"] = (
+        combined["PaymentMethod"].fillna("").str.contains("automatic", case=False, regex=False).astype(int)
+    )
+    combined["HasStreaming"] = (
+        combined["StreamingTV"].fillna("").eq("Yes") | combined["StreamingMovies"].fillna("").eq("Yes")
+    ).astype(int)
+    combined["HasSecurityBundle"] = (
+        combined["OnlineSecurity"].fillna("").eq("Yes")
+        | combined["TechSupport"].fillna("").eq("Yes")
+        | combined["OnlineBackup"].fillna("").eq("Yes")
+        | combined["DeviceProtection"].fillna("").eq("Yes")
+    ).astype(int)
+
+    object_cols = combined.select_dtypes(include=["object", "string"]).columns.tolist()
+    for col in object_cols:
+        combined[col] = combined[col].fillna("Missing").astype(str)
+        combined[col] = pd.Categorical(combined[col]).codes.astype(int)
+
+    combined = combined.fillna(-1)
+    train_x = combined.iloc[: len(train)].reset_index(drop=True)
+    test_x = combined.iloc[len(train) :].reset_index(drop=True)
+    return train_x, test_x
+
+
+def benchmark_playground_telco(data_dir: Path, folds: int, write_submission: bool) -> LabResult:
+    train = pd.read_csv(data_dir / "train.csv")
+    test = pd.read_csv(data_dir / "test.csv")
+    y = train["Churn"].astype(str).str.lower().map({"yes": 1, "no": 0}).fillna(train["Churn"]).astype(int)
+    train_x, test_x = _playground_prepare_features(train, test)
+    skf = StratifiedKFold(n_splits=min(max(3, folds), 5), shuffle=True, random_state=RANDOM_STATE)
+
+    benchmarks: list[dict[str, Any]] = []
+    trained_predictions: dict[str, np.ndarray] = {}
+
+    try:
+        import lightgbm as lgb
+
+        lgb_model = lgb.LGBMClassifier(
+            n_estimators=600,
+            learning_rate=0.05,
+            num_leaves=64,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.1,
+            reg_lambda=0.3,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        lgb_score = cross_val_score(lgb_model, train_x, y, cv=skf, scoring="roc_auc", n_jobs=1)
+        benchmarks.append({"model": "lightgbm", "score": round(float(lgb_score.mean()), 5)})
+        lgb_model.fit(train_x, y)
+        trained_predictions["lightgbm"] = lgb_model.predict_proba(test_x)[:, 1]
+    except ImportError:
+        pass
+
+    try:
+        import xgboost as xgb
+
+        xgb_model = xgb.XGBClassifier(
+            n_estimators=500,
+            learning_rate=0.05,
+            max_depth=6,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
+            eval_metric="auc",
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        xgb_score = cross_val_score(xgb_model, train_x, y, cv=skf, scoring="roc_auc", n_jobs=1)
+        benchmarks.append({"model": "xgboost", "score": round(float(xgb_score.mean()), 5)})
+        xgb_model.fit(train_x, y)
+        trained_predictions["xgboost"] = xgb_model.predict_proba(test_x)[:, 1]
+    except ImportError:
+        pass
+
+    if not benchmarks:
+        raise SystemExit("No Playground Series S6E3 models are available locally.")
+
+    best = max(benchmarks, key=lambda row: row["score"])
+    submission_path = None
+    if write_submission:
+        submission_path = _submission_dir("playground-series-s6e3") / (
+            f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        )
+        pd.DataFrame({"id": test["id"], "Churn": trained_predictions[best["model"]]}).to_csv(
+            submission_path,
+            index=False,
+        )
+
+    return LabResult(
+        competition="playground-series-s6e3",
+        metric_name="roc_auc",
+        best_model=best["model"],
+        best_score=float(best["score"]),
+        benchmark_rows=benchmarks,
+        submission_path=submission_path,
+    )
+
+
+def _house_prepare_features(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    combined = pd.concat([train.drop(columns=["SalePrice"]), test], axis=0, ignore_index=True)
+
+    none_fill_cols = [
+        "Alley",
+        "BsmtQual",
+        "BsmtCond",
+        "BsmtExposure",
+        "BsmtFinType1",
+        "BsmtFinType2",
+        "FireplaceQu",
+        "GarageType",
+        "GarageFinish",
+        "GarageQual",
+        "GarageCond",
+        "PoolQC",
+        "Fence",
+        "MiscFeature",
+        "MasVnrType",
+    ]
+    zero_fill_cols = [
+        "MasVnrArea",
+        "BsmtFinSF1",
+        "BsmtFinSF2",
+        "BsmtUnfSF",
+        "TotalBsmtSF",
+        "BsmtFullBath",
+        "BsmtHalfBath",
+        "GarageCars",
+        "GarageArea",
+        "GarageYrBlt",
+    ]
+    mode_fill_cols = ["MSZoning", "KitchenQual", "Electrical", "Exterior1st", "Exterior2nd", "SaleType", "Utilities"]
+
+    for col in none_fill_cols:
+        if col in combined:
+            combined[col] = combined[col].fillna("None")
+    for col in zero_fill_cols:
+        if col in combined:
+            combined[col] = combined[col].fillna(0)
+    for col in mode_fill_cols:
+        if col in combined and combined[col].notna().any():
+            combined[col] = combined[col].fillna(combined[col].mode().iloc[0])
+    if "LotFrontage" in combined:
+        combined["LotFrontage"] = combined.groupby("Neighborhood")["LotFrontage"].transform(
+            lambda s: s.fillna(s.median())
+        )
+        combined["LotFrontage"] = combined["LotFrontage"].fillna(combined["LotFrontage"].median())
+
+    combined["MSSubClass"] = combined["MSSubClass"].astype(str)
+    combined["TotalSF"] = combined[["TotalBsmtSF", "1stFlrSF", "2ndFlrSF"]].sum(axis=1)
+    combined["TotalBath"] = (
+        combined["FullBath"].fillna(0)
+        + 0.5 * combined["HalfBath"].fillna(0)
+        + combined["BsmtFullBath"].fillna(0)
+        + 0.5 * combined["BsmtHalfBath"].fillna(0)
+    )
+    combined["HouseAge"] = combined["YrSold"] - combined["YearBuilt"]
+    combined["RemodAge"] = combined["YrSold"] - combined["YearRemodAdd"]
+    combined["HasGarage"] = combined["GarageArea"].fillna(0).gt(0).astype(int)
+    combined["HasBsmt"] = combined["TotalBsmtSF"].fillna(0).gt(0).astype(int)
+    combined["HasPool"] = combined["PoolArea"].fillna(0).gt(0).astype(int)
+    combined["HasFireplace"] = combined["Fireplaces"].fillna(0).gt(0).astype(int)
+    combined["HasSecondFloor"] = combined["2ndFlrSF"].fillna(0).gt(0).astype(int)
+    combined["TotalPorchSF"] = (
+        combined["WoodDeckSF"].fillna(0)
+        + combined["OpenPorchSF"].fillna(0)
+        + combined["EnclosedPorch"].fillna(0)
+        + combined["3SsnPorch"].fillna(0)
+        + combined["ScreenPorch"].fillna(0)
+    )
+    combined["QualSF"] = combined["OverallQual"].fillna(0) * combined["GrLivArea"].fillna(0)
+    combined["TotalHomeQuality"] = combined["OverallQual"].fillna(0) + combined["OverallCond"].fillna(0)
+
+    for col in ("LotArea", "GrLivArea", "TotalSF", "1stFlrSF", "2ndFlrSF", "MasVnrArea", "TotalBsmtSF"):
+        if col in combined:
+            combined[f"log_{col.lower()}"] = np.log1p(combined[col].clip(lower=0))
+
+    train_x = combined.iloc[: len(train)].reset_index(drop=True)
+    test_x = combined.iloc[len(train) :].reset_index(drop=True)
+    return train_x, test_x
+
+
+def benchmark_house_prices(data_dir: Path, folds: int, write_submission: bool) -> LabResult:
+    train = pd.read_csv(data_dir / "train.csv")
+    test = pd.read_csv(data_dir / "test.csv")
+
+    outlier_mask = (train["GrLivArea"] > 4000) & (train["SalePrice"] < 300000)
+    if outlier_mask.any():
+        train = train.loc[~outlier_mask].reset_index(drop=True)
+
+    y = np.log1p(train["SalePrice"])
+    train_x, test_x = _house_prepare_features(train, test)
+    dense_train = pd.get_dummies(train_x, dummy_na=True).apply(pd.to_numeric, errors="coerce")
+    dense_test = pd.get_dummies(test_x, dummy_na=True).apply(pd.to_numeric, errors="coerce")
+    dense_test = dense_test.reindex(columns=dense_train.columns, fill_value=0)
+    medians = dense_train.median()
+    dense_train = dense_train.fillna(medians)
+    dense_test = dense_test.fillna(medians)
+
+    cv = KFold(n_splits=min(max(3, folds), 5), shuffle=True, random_state=RANDOM_STATE)
+    benchmarks: list[dict[str, Any]] = []
+    trained_predictions: dict[str, np.ndarray] = {}
+
+    elastic = Pipeline(
+        [
+            ("scale", RobustScaler()),
+            ("model", ElasticNet(alpha=0.0005, l1_ratio=0.9, max_iter=20000, random_state=RANDOM_STATE)),
+        ]
+    )
+    elastic_score = -cross_val_score(
+        elastic,
+        dense_train,
+        y,
+        cv=cv,
+        scoring="neg_root_mean_squared_error",
+        n_jobs=1,
+    )
+    benchmarks.append({"model": "elasticnet", "score": round(float(elastic_score.mean()), 5)})
+    elastic.fit(dense_train, y)
+    elastic_test_pred = np.expm1(elastic.predict(dense_test)).clip(min=0)
+    trained_predictions["elasticnet"] = elastic_test_pred
+
+    xgb_oof: np.ndarray | None = None
+    xgb_test_pred: np.ndarray | None = None
+    try:
+        import lightgbm as lgb
+
+        lgb_model = lgb.LGBMRegressor(
+            n_estimators=1500,
+            learning_rate=0.02,
+            num_leaves=31,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.05,
+            reg_lambda=0.2,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )
+        lgb_score = -cross_val_score(
+            lgb_model,
+            dense_train,
+            y,
+            cv=cv,
+            scoring="neg_root_mean_squared_error",
+            n_jobs=1,
+        )
+        benchmarks.append({"model": "lightgbm", "score": round(float(lgb_score.mean()), 5)})
+        lgb_model.fit(dense_train, y)
+        trained_predictions["lightgbm"] = np.expm1(lgb_model.predict(dense_test)).clip(min=0)
+    except ImportError:
+        pass
+
+    try:
+        import xgboost as xgb
+
+        xgb_model = xgb.XGBRegressor(
+            n_estimators=1200,
+            learning_rate=0.02,
+            max_depth=4,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.05,
+            reg_lambda=1.0,
+            objective="reg:squarederror",
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbosity=0,
+        )
+        xgb_score = -cross_val_score(
+            xgb_model,
+            dense_train,
+            y,
+            cv=cv,
+            scoring="neg_root_mean_squared_error",
+            n_jobs=1,
+        )
+        benchmarks.append({"model": "xgboost", "score": round(float(xgb_score.mean()), 5)})
+        xgb_model.fit(dense_train, y)
+        xgb_test_pred = np.expm1(xgb_model.predict(dense_test)).clip(min=0)
+        trained_predictions["xgboost"] = xgb_test_pred
+        xgb_oof = cross_val_predict(xgb_model, dense_train, y, cv=cv, n_jobs=1)
+    except ImportError:
+        pass
+
+    if xgb_oof is not None and xgb_test_pred is not None:
+        elastic_oof = cross_val_predict(elastic, dense_train, y, cv=cv, n_jobs=1)
+        blend_oof = 0.5 * elastic_oof + 0.5 * xgb_oof
+        blend_rmse = float(np.sqrt(np.mean((blend_oof - y.to_numpy()) ** 2)))
+        benchmarks.append({"model": "elastic_xgb_blend", "score": round(blend_rmse, 5)})
+        trained_predictions["elastic_xgb_blend"] = 0.5 * elastic_test_pred + 0.5 * xgb_test_pred
+
+    best = min(benchmarks, key=lambda row: row["score"])
+    submission_path = None
+    if write_submission:
+        submission_path = _submission_dir("house-prices-advanced-regression-techniques") / (
+            f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        )
+        pd.DataFrame({"Id": test["Id"], "SalePrice": trained_predictions[best["model"]]}).to_csv(
+            submission_path,
+            index=False,
+        )
+
+    return LabResult(
+        competition="house-prices-advanced-regression-techniques",
+        metric_name="rmse",
+        best_model=best["model"],
+        best_score=float(best["score"]),
+        benchmark_rows=benchmarks,
+        submission_path=submission_path,
+    )
+
+
+def _store_sales_rmsle(y_true: Any, y_pred: Any) -> float:
+    y_true_arr = np.asarray(y_true, dtype=float)
+    y_pred_arr = np.clip(np.asarray(y_pred, dtype=float), 0, None)
+    return float(np.sqrt(np.mean((np.log1p(y_pred_arr) - np.log1p(y_true_arr)) ** 2)))
+
+
+def _store_sales_prediction_frame(history: pd.DataFrame, target: pd.DataFrame) -> pd.DataFrame:
+    history = history.copy()
+    target = target.copy()
+    history["date"] = pd.to_datetime(history["date"])
+    target["date"] = pd.to_datetime(target["date"])
+    history["dow"] = history["date"].dt.dayofweek
+    target["dow"] = target["date"].dt.dayofweek
+
+    recent_140 = history.loc[history["date"] >= history["date"].max() - pd.Timedelta(days=140)]
+    recent_56 = history.loc[history["date"] >= history["date"].max() - pd.Timedelta(days=56)]
+    recent_28 = history.loc[history["date"] >= history["date"].max() - pd.Timedelta(days=28)]
+
+    group_sf_dow_promo = (
+        recent_140.groupby(["store_nbr", "family", "dow", "onpromotion"])["sales"]
+        .mean()
+        .rename("pred_sf_dow_promo")
+        .reset_index()
+    )
+    group_sf_dow = (
+        recent_140.groupby(["store_nbr", "family", "dow"])["sales"].mean().rename("pred_sf_dow").reset_index()
+    )
+    group_sf_28 = recent_28.groupby(["store_nbr", "family"])["sales"].mean().rename("pred_sf_28").reset_index()
+    group_sf_56 = recent_56.groupby(["store_nbr", "family"])["sales"].mean().rename("pred_sf_56").reset_index()
+    group_family_dow = recent_140.groupby(["family", "dow"])["sales"].mean().rename("pred_family_dow").reset_index()
+    group_store_dow = (
+        recent_140.groupby(["store_nbr", "dow"])["sales"].mean().rename("pred_store_dow").reset_index()
+    )
+    global_mean = float(history["sales"].mean())
+
+    frame = (
+        target.merge(group_sf_dow_promo, on=["store_nbr", "family", "dow", "onpromotion"], how="left")
+        .merge(group_sf_dow, on=["store_nbr", "family", "dow"], how="left")
+        .merge(group_sf_28, on=["store_nbr", "family"], how="left")
+        .merge(group_sf_56, on=["store_nbr", "family"], how="left")
+        .merge(group_family_dow, on=["family", "dow"], how="left")
+        .merge(group_store_dow, on=["store_nbr", "dow"], how="left")
+    )
+    frame["recent_dow_promo_mean"] = (
+        frame["pred_sf_dow_promo"]
+        .fillna(frame["pred_sf_dow"])
+        .fillna(frame["pred_sf_28"])
+        .fillna(frame["pred_sf_56"])
+        .fillna(frame["pred_family_dow"])
+        .fillna(frame["pred_store_dow"])
+        .fillna(global_mean)
+    )
+    frame["recent_28_mean"] = (
+        frame["pred_sf_28"]
+        .fillna(frame["pred_sf_56"])
+        .fillna(frame["pred_sf_dow"])
+        .fillna(frame["pred_family_dow"])
+        .fillna(frame["pred_store_dow"])
+        .fillna(global_mean)
+    )
+    frame["hybrid_mean"] = 0.65 * frame["recent_dow_promo_mean"] + 0.35 * frame["recent_28_mean"]
+    return frame
+
+
+def benchmark_store_sales(data_dir: Path, _folds: int, write_submission: bool) -> LabResult:
+    train = pd.read_csv(data_dir / "train.csv", parse_dates=["date"])
+    test = pd.read_csv(data_dir / "test.csv", parse_dates=["date"])
+    valid_dates = sorted(train["date"].drop_duplicates())[-16:]
+    validation = train.loc[train["date"].isin(valid_dates)].copy()
+    history = train.loc[~train["date"].isin(valid_dates)].copy()
+    validation_frame = _store_sales_prediction_frame(history, validation)
+
+    benchmarks = [
+        {
+            "model": "recent_dow_promo_mean",
+            "score": round(_store_sales_rmsle(validation["sales"], validation_frame["recent_dow_promo_mean"]), 5),
+        },
+        {
+            "model": "recent_28_mean",
+            "score": round(_store_sales_rmsle(validation["sales"], validation_frame["recent_28_mean"]), 5),
+        },
+        {
+            "model": "hybrid_mean",
+            "score": round(_store_sales_rmsle(validation["sales"], validation_frame["hybrid_mean"]), 5),
+        },
+    ]
+    best = min(benchmarks, key=lambda row: row["score"])
+
+    submission_path = None
+    if write_submission:
+        submission_frame = _store_sales_prediction_frame(train, test)
+        submission_path = _submission_dir("store-sales-time-series-forecasting") / (
+            f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        )
+        pd.DataFrame({"id": test["id"], "sales": submission_frame[best["model"]].clip(lower=0)}).to_csv(
+            submission_path,
+            index=False,
+        )
+
+    return LabResult(
+        competition="store-sales-time-series-forecasting",
+        metric_name="rmsle",
         best_model=best["model"],
         best_score=float(best["score"]),
         benchmark_rows=benchmarks,
@@ -1050,7 +1493,10 @@ def benchmark_march_mania(data_dir: Path, _folds: int, write_submission: bool) -
 
 BENCHMARKS = {
     "deep-past-initiative-machine-translation": benchmark_deep_past,
+    "house-prices-advanced-regression-techniques": benchmark_house_prices,
     "march-machine-learning-mania-2026": benchmark_march_mania,
+    "playground-series-s6e3": benchmark_playground_telco,
+    "store-sales-time-series-forecasting": benchmark_store_sales,
     "titanic": benchmark_titanic,
     "spaceship-titanic": benchmark_spaceship,
     "nlp-getting-started": benchmark_nlp,
