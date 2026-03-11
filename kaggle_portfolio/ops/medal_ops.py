@@ -279,6 +279,11 @@ def run_kaggle_csv(args: list[str]) -> tuple[list[dict[str, str]], list[str]]:
     return rows, fieldnames
 
 
+def is_page_size_unsupported(exc: SystemExit) -> bool:
+    message = str(exc).lower()
+    return "--page-size" in message and "unrecognized arguments" in message
+
+
 def run_kaggle_csv_paginated(
     args: list[str], *, page_size: int | None = None
 ) -> tuple[list[dict[str, str]], list[str]]:
@@ -286,13 +291,22 @@ def run_kaggle_csv_paginated(
     fieldnames: list[str] = []
     page = 1
     expected_page_size = page_size or DEFAULT_KAGGLE_PAGE_SIZE
+    include_page_size = page_size is not None
 
     while True:
         paged_args = [*args]
-        if page_size is not None:
+        if include_page_size and page_size is not None:
             paged_args.extend(["--page-size", str(page_size)])
         paged_args.extend(["--page", str(page)])
-        rows, fields = run_kaggle_csv(paged_args)
+        try:
+            rows, fields = run_kaggle_csv(paged_args)
+        except SystemExit as exc:
+            if not include_page_size or not is_page_size_unsupported(exc):
+                raise
+            include_page_size = False
+            expected_page_size = DEFAULT_KAGGLE_PAGE_SIZE
+            paged_args = [*args, "--page", str(page)]
+            rows, fields = run_kaggle_csv(paged_args)
         if rows and not fieldnames:
             fieldnames = fields
         rows_all.extend(rows)
@@ -560,7 +574,7 @@ mkdir -p "${OUT_DIR}"
 
 kaggle kernels list --mine --page-size 100 --csv > "${OUT_DIR}/kernels.csv"
 kaggle datasets list -m --csv > "${OUT_DIR}/datasets.csv"
-kaggle competitions list --group entered --page-size 100 --csv > "${OUT_DIR}/competitions.csv"
+kaggle competitions list --group entered --csv > "${OUT_DIR}/competitions.csv"
 
 echo "CSV exports written to ${OUT_DIR}"
 """
