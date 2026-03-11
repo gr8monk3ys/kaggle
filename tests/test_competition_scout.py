@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timezone
+from datetime import datetime
 
 from kaggle_portfolio.notebooks import competition_scout
 from kaggle_portfolio.shared import kaggle_utils
@@ -28,3 +29,32 @@ def test_parse_csv_handles_standard_output():
 def test_parse_deadline_datetime_normalizes_naive_values_to_utc():
     parsed = competition_scout.parse_deadline_datetime("2026-03-01T00:00:00")
     assert parsed.tzinfo == timezone.utc
+
+
+def test_normalize_competition_ref_handles_full_url():
+    assert (
+        competition_scout.normalize_competition_ref(
+            "https://www.kaggle.com/competitions/march-machine-learning-mania-2026"
+        )
+        == "march-machine-learning-mania-2026"
+    )
+
+
+def test_score_competition_prefers_featured_active_board_over_getting_started():
+    now = datetime(2026, 3, 10, tzinfo=timezone.utc)
+    featured = {
+        "ref": "https://www.kaggle.com/competitions/march-machine-learning-mania-2026",
+        "deadline": "2026-03-19T16:00:00Z",
+        "category": "Featured",
+        "teamCount": "772",
+        "userHasEntered": "True",
+    }
+    evergreen = {
+        "ref": "https://www.kaggle.com/competitions/gan-getting-started",
+        "deadline": "2030-07-01T23:59:00Z",
+        "category": "Getting Started",
+        "teamCount": "21",
+        "userHasEntered": "False",
+    }
+
+    assert competition_scout.score_competition(featured, now) > competition_scout.score_competition(evergreen, now)

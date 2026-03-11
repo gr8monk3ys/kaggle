@@ -750,9 +750,11 @@ def cmd_link_competition(args: list[str]) -> int:
 
 def cmd_competitions(_: list[str]) -> int:
     print(f"{BLUE}=== Active Medal-Eligible Competitions ==={RESET}")
-    kaggle_cmd("competitions", "list", "--sort-by", "latestDeadline", "--category", "featured", "--page-size", "10", check=False)
+    kaggle_cmd("competitions", "list", "--sort-by", "latestDeadline", "--category", "featured", check=False)
     print("")
-    kaggle_cmd("competitions", "list", "--sort-by", "latestDeadline", "--category", "research", "--page-size", "10", check=False)
+    kaggle_cmd("competitions", "list", "--sort-by", "latestDeadline", "--category", "research", check=False)
+    print("")
+    kaggle_cmd("competitions", "list", "--sort-by", "latestDeadline", "--category", "playground", check=False)
     return 0
 
 
