@@ -11,7 +11,7 @@ import os
 import re
 import subprocess
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +28,7 @@ DEFAULT_TRACKER_PATH = Path("docs/reports/grandmaster-tracker.md")
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 DEFAULT_SYNC_INPUT_DIRNAME = "sync_inputs"
 DEFAULT_KAGGLE_PAGE_SIZE = 20
+UTC = getattr(datetime, "UTC", timezone.utc)
 
 
 @dataclass(frozen=True)

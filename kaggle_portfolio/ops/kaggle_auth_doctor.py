@@ -10,10 +10,12 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-import requests
+from kaggle.api.kaggle_api_extended import KaggleApi
+from kagglesdk.blobs.types.blob_api_service import ApiBlobType, ApiStartBlobUploadRequest
 from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
 
 
@@ -112,23 +114,40 @@ def probe_public_listing(owner: str) -> tuple[bool, str]:
     return True, f"retrieved {count} public dataset rows"
 
 
-def probe_blob_upload_auth(username: str, key: str, timeout: int) -> tuple[bool, str]:
-    """Check whether credentials are authorized for upload endpoint access.
-
-    Status 401/403 indicates credentials are not authorized for upload actions.
-    Status 400 can still indicate auth success with invalid request payload.
-    """
-    url = "https://www.kaggle.com/api/v1/blobs/upload"
+def probe_blob_upload_auth(timeout: int) -> tuple[bool, str]:
+    """Check whether Kaggle's official upload-start flow accepts the local credentials."""
+    temp_path: str | None = None
     try:
-        response = requests.post(url, auth=(username, key), timeout=timeout)
-    except requests.RequestException as exc:
-        return False, f"request failed: {exc}"
+        with tempfile.NamedTemporaryFile("wb", prefix="kaggle-auth-doctor-", suffix=".txt", delete=False) as handle:
+            handle.write(b"auth-doctor upload probe\n")
+            temp_path = handle.name
 
-    if response.status_code in {401, 403}:
-        return False, f"{response.status_code} unauthorized for upload endpoint"
-    if response.status_code in {200, 201, 202, 400, 405, 413, 415}:
-        return True, f"{response.status_code} upload endpoint reachable"
-    return False, f"unexpected status {response.status_code}"
+        api = KaggleApi()
+        api.authenticate()
+
+        request = ApiStartBlobUploadRequest()
+        request.type = ApiBlobType.DATASET
+        request.name = Path(temp_path).name
+        request.content_length = os.path.getsize(temp_path)
+        request.last_modified_epoch_seconds = int(os.path.getmtime(temp_path))
+
+        with api.build_kaggle_client() as kaggle:
+            response = kaggle.blobs.blob_api_client.start_blob_upload(request)
+
+        create_url = str(getattr(response, "create_url", "") or "")
+        token = str(getattr(response, "token", "") or "")
+        if create_url and token:
+            return True, "official upload-start probe succeeded"
+        return False, "official upload-start probe returned no create_url/token"
+    except Exception as exc:
+        message = str(exc).strip() or exc.__class__.__name__
+        lowered = message.lower()
+        if any(marker in lowered for marker in ("401", "403", "unauthenticated", "unauthorized")):
+            return False, f"official upload-start probe rejected credentials ({message})"
+        return False, f"official upload-start probe failed: {message}"
+    finally:
+        if temp_path:
+            Path(temp_path).unlink(missing_ok=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -187,11 +206,15 @@ def main() -> int:
     else:
         warnings.append(f"public listing probe failed: {listing_msg}")
 
-    upload_ok, upload_msg = probe_blob_upload_auth(creds.username, creds.key, timeout=args.timeout)
+    upload_ok, upload_msg = probe_blob_upload_auth(timeout=args.timeout)
     if upload_ok:
         print(f"Upload auth probe: {GREEN}OK{RESET} ({upload_msg})")
     else:
         failures.append(f"upload auth probe failed: {upload_msg}")
+        failures.append(
+            "download a fresh API token from https://www.kaggle.com/settings/account "
+            f"and replace {kaggle_config_path()}"
+        )
 
     if warnings:
         print(f"{YELLOW}Warnings:{RESET}")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC
+from datetime import timezone
 
 from kaggle_portfolio.notebooks import competition_scout
 from kaggle_portfolio.shared import kaggle_utils
@@ -27,4 +27,4 @@ def test_parse_csv_handles_standard_output():
 
 def test_parse_deadline_datetime_normalizes_naive_values_to_utc():
     parsed = competition_scout.parse_deadline_datetime("2026-03-01T00:00:00")
-    assert parsed.tzinfo == UTC
+    assert parsed.tzinfo == timezone.utc
