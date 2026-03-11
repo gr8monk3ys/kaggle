@@ -1063,7 +1063,24 @@ def _deep_past_display_name_candidates(row: pd.Series) -> list[str]:
     return deduped
 
 
+def _deep_past_optional_csv(
+    data_dir: Path,
+    file_name: str,
+    required_columns: list[str],
+) -> pd.DataFrame:
+    path = data_dir / file_name
+    if not path.exists():
+        return pd.DataFrame(columns=required_columns)
+    frame = pd.read_csv(path)
+    for column in required_columns:
+        if column not in frame.columns:
+            frame[column] = pd.Series(dtype="object")
+    return frame
+
+
 def _deep_past_sentence_rows(sentences: pd.DataFrame, published_row: pd.Series) -> pd.DataFrame:
+    if sentences.empty or "display_name" not in sentences:
+        return sentences.iloc[0:0]
     display_names = sentences["display_name"].astype(str).str.strip()
     best = sentences.iloc[0:0]
     for candidate in _deep_past_display_name_candidates(published_row):
@@ -1138,14 +1155,32 @@ def benchmark_deep_past(data_dir: Path, _folds: int, write_submission: bool) -> 
     train = pd.read_csv(data_dir / "train.csv")
     test = pd.read_csv(data_dir / "test.csv").sort_values(["line_start", "line_end"]).reset_index(drop=True)
     sample = pd.read_csv(data_dir / "sample_submission.csv").sort_values("id").reset_index(drop=True)
-    published = pd.read_csv(data_dir / "published_texts.csv")
-    sentences = pd.read_csv(data_dir / "Sentences_Oare_FirstWord_LinNum.csv")
+    published = _deep_past_optional_csv(data_dir, "published_texts.csv", ["transliteration", "label", "aliases", "note"])
+    sentences = _deep_past_optional_csv(
+        data_dir,
+        "Sentences_Oare_FirstWord_LinNum.csv",
+        ["display_name", "line_number", "translation"],
+    )
 
     query = " ".join(test["transliteration"].astype(str))
-    published_idx, published_score = _deep_past_best_match(published["transliteration"], query)
-    published_row = published.iloc[published_idx]
-    sentence_rows = _deep_past_sentence_rows(sentences, published_row)
-    sentence_predictions = _deep_past_assign_sentences_to_rows(test, sentence_rows) if not sentence_rows.empty else []
+    published_available = not published.empty and "transliteration" in published and published["transliteration"].notna().any()
+    sentences_available = (
+        not sentences.empty
+        and "display_name" in sentences
+        and "translation" in sentences
+        and "line_number" in sentences
+    )
+    published_score = 0.0
+    published_row = pd.Series(dtype="object")
+    sentence_rows = sentences.iloc[0:0]
+    sentence_predictions: list[str] = []
+    if published_available:
+        published_idx, published_score = _deep_past_best_match(published["transliteration"], query)
+        published_row = published.iloc[published_idx]
+        if sentences_available:
+            sentence_rows = _deep_past_sentence_rows(sentences, published_row)
+            if not sentence_rows.empty:
+                sentence_predictions = _deep_past_assign_sentences_to_rows(test, sentence_rows)
     train_predictions, train_score = _deep_past_train_retrieval(train, test, sample)
     sentence_coverage = (
         sum(1 for pred in sentence_predictions if pred.strip()) / len(test) if len(sentence_predictions) == len(test) else 0.0
@@ -1157,6 +1192,7 @@ def benchmark_deep_past(data_dir: Path, _folds: int, write_submission: bool) -> 
             "model": "published_sentence_match",
             "score": round(published_decision_score, 5),
             "source_label": str(published_row.get("label", "")),
+            "available": bool(published_available and sentences_available),
         },
         {
             "model": "train_retrieval",
