@@ -326,11 +326,41 @@ def test_run_kaggle_csv_paginated_without_page_size_uses_default(monkeypatch):
     ]
 
 
+def test_run_kaggle_csv_paginated_falls_back_when_page_size_flag_is_unsupported(monkeypatch):
+    seen_args: list[list[str]] = []
+
+    def fake_run_kaggle_csv(args: list[str]) -> tuple[list[dict[str, str]], list[str]]:
+        seen_args.append(args)
+        if "--page-size" in args:
+            raise SystemExit(
+                "Command failed: kaggle competitions list --group entered --page-size 100 --page 1 --csv\n"
+                "cli.py: error: unrecognized arguments: --page-size 100"
+            )
+        page = int(args[-1])
+        if page == 1:
+            return ([{"userHasEntered": "true"}] * medal_ops.DEFAULT_KAGGLE_PAGE_SIZE, ["userHasEntered"])
+        return ([{"userHasEntered": "false"}], ["userHasEntered"])
+
+    monkeypatch.setattr(medal_ops, "run_kaggle_csv", fake_run_kaggle_csv)
+
+    rows, fieldnames = medal_ops.run_kaggle_csv_paginated(
+        ["competitions", "list", "--group", "entered"], page_size=100
+    )
+
+    assert len(rows) == medal_ops.DEFAULT_KAGGLE_PAGE_SIZE + 1
+    assert fieldnames == ["userHasEntered"]
+    assert seen_args == [
+        ["competitions", "list", "--group", "entered", "--page-size", "100", "--page", "1"],
+        ["competitions", "list", "--group", "entered", "--page", "1"],
+        ["competitions", "list", "--group", "entered", "--page", "2"],
+    ]
+
+
 def test_fetch_live_kaggle_metrics_uses_entered_group(monkeypatch):
     calls: list[tuple[list[str], int | None]] = []
 
     def fake_run_kaggle_csv_paginated(
-        args: list[str], *, page_size: int | None = None
+        args: list[str], *, page_size=None
     ) -> tuple[list[dict[str, str]], list[str]]:
         calls.append((args, page_size))
         if args[:3] == ["kernels", "list", "--mine"]:
