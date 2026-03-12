@@ -1,0 +1,159 @@
+{
+  "id": "lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026",
+  "title": "AI & Data Jobs: Skills + Salaries (2024-2026)",
+  "subtitle": "36K listings plus company profiles, job-skill edges, and salary benchmarks",
+  "description": "A multi-table synthetic jobs market dataset covering 36,000 AI and data job listings from January 2024 through March 2026. Focuses on the roles people actually search for right now: Data Scientist, ML Engineer, AI Engineer, LLM Engineer, Data Engineer, Analytics Engineer, MLOps, BI, Research, and AI Product roles across North America, Europe, and APAC.\n\nThe dataset includes five linked tables: jobs, companies, normalized job-skill edges, salary benchmarks, and monthly skill-demand trends. Compensation is modeled in USD with realistic effects from seniority, region, industry, remote policy, and company size. GenAI / LLM roles become more common in 2025-2026, and startups trade higher equity incidence for lower cash compensation.\n\nBuilt for salary prediction, market trend analysis, skill-gap analysis, retrieval and recommendation systems, compensation benchmarking, and tabular or graph ML on hiring data. All records are synthetic and generated for educational and prototyping use.",
+  "isPrivate": false,
+  "licenses": [
+    {
+      "name": "GPL-3.0"
+    }
+  ],
+  "keywords": [
+    "jobs",
+    "business",
+    "regression",
+    "classification",
+    "nlp"
+  ],
+  "resources": [
+    {
+      "path": "jobs.csv",
+      "description": "36K AI and data job listings with compensation, company context, skills summary, and job description",
+      "schema": {
+        "fields": [
+          {"name": "job_id", "title": "Job ID", "description": "Unique job identifier", "type": "string"},
+          {"name": "company_id", "title": "Company ID", "description": "Foreign key to companies.csv", "type": "string"},
+          {"name": "company_name", "title": "Company Name", "description": "Hiring company name", "type": "string"},
+          {"name": "posted_date", "title": "Posted Date", "description": "Date job was posted", "type": "date"},
+          {"name": "job_title", "title": "Job Title", "description": "Role title", "type": "string"},
+          {"name": "role_family", "title": "Role Family", "description": "High-level function such as analytics, modeling, or genai-apps", "type": "string"},
+          {"name": "seniority", "title": "Seniority", "description": "entry, mid, senior, staff, or principal", "type": "string"},
+          {"name": "employment_type", "title": "Employment Type", "description": "full_time, contract, or internship", "type": "string"},
+          {"name": "remote_type", "title": "Remote Type", "description": "onsite, hybrid, or remote", "type": "string"},
+          {"name": "city", "title": "City", "description": "Office or hiring hub city", "type": "string"},
+          {"name": "country", "title": "Country", "description": "Country of the role", "type": "string"},
+          {"name": "region", "title": "Region", "description": "North America, Europe, or APAC", "type": "string"},
+          {"name": "industry", "title": "Industry", "description": "Company industry", "type": "string"},
+          {"name": "company_size", "title": "Company Size", "description": "startup, small, medium, large, or enterprise", "type": "string"},
+          {"name": "funding_stage", "title": "Funding Stage", "description": "seed through public", "type": "string"},
+          {"name": "company_type", "title": "Company Type", "description": "More specific business model label", "type": "string"},
+          {"name": "salary_currency", "title": "Salary Currency", "description": "Normalized compensation currency", "type": "string"},
+          {"name": "salary_min_usd", "title": "Salary Min USD", "description": "Lower end of base salary range in USD", "type": "integer"},
+          {"name": "salary_max_usd", "title": "Salary Max USD", "description": "Upper end of base salary range in USD", "type": "integer"},
+          {"name": "salary_mid_usd", "title": "Salary Mid USD", "description": "Midpoint of salary range in USD", "type": "integer"},
+          {"name": "bonus_target_pct", "title": "Bonus Target Percent", "description": "Target annual bonus as fraction of salary", "type": "number"},
+          {"name": "equity_offered", "title": "Equity Offered", "description": "Whether role includes equity", "type": "integer"},
+          {"name": "experience_min_years", "title": "Minimum Experience Years", "description": "Minimum years of experience", "type": "integer"},
+          {"name": "experience_max_years", "title": "Maximum Experience Years", "description": "Typical upper bound of expected experience", "type": "integer"},
+          {"name": "education_required", "title": "Education Required", "description": "Typical education requirement", "type": "string"},
+          {"name": "visa_sponsorship", "title": "Visa Sponsorship", "description": "Whether employer is willing to sponsor visas", "type": "integer"},
+          {"name": "ai_focus_area", "title": "AI Focus Area", "description": "Problem space like rag, experimentation, or forecasting", "type": "string"},
+          {"name": "primary_skill_cluster", "title": "Primary Skill Cluster", "description": "Dominant skill cluster for the job", "type": "string"},
+          {"name": "cloud_stack", "title": "Cloud Stack", "description": "Pipe-separated cloud / warehouse stack", "type": "string"},
+          {"name": "llm_stack", "title": "LLM Stack", "description": "Pipe-separated LLM tooling when relevant", "type": "string"},
+          {"name": "required_skills", "title": "Required Skills", "description": "Pipe-separated required skills", "type": "string"},
+          {"name": "skills_count", "title": "Skills Count", "description": "Number of required skills listed", "type": "integer"},
+          {"name": "applications_30d", "title": "Applications 30D", "description": "Applications received in first 30 days", "type": "integer"},
+          {"name": "days_open", "title": "Days Open", "description": "Number of days role remained open", "type": "integer"},
+          {"name": "is_filled", "title": "Is Filled", "description": "Whether role was filled", "type": "integer"},
+          {"name": "hiring_urgency", "title": "Hiring Urgency", "description": "high, medium, or low urgency", "type": "string"},
+          {"name": "description", "title": "Description", "description": "Short natural-language job description", "type": "string"}
+        ]
+      }
+    },
+    {
+      "path": "companies.csv",
+      "description": "Company profile table with size, funding stage, region, remote-first flag, and hiring-health signals",
+      "schema": {
+        "fields": [
+          {"name": "company_id", "title": "Company ID", "description": "Primary key", "type": "string"},
+          {"name": "company_name", "title": "Company Name", "description": "Company name", "type": "string"},
+          {"name": "industry", "title": "Industry", "description": "Primary industry", "type": "string"},
+          {"name": "company_type", "title": "Company Type", "description": "Business model or organization type", "type": "string"},
+          {"name": "company_size", "title": "Company Size", "description": "Size band", "type": "string"},
+          {"name": "funding_stage", "title": "Funding Stage", "description": "Company funding stage", "type": "string"},
+          {"name": "hq_city", "title": "HQ City", "description": "Headquarters city", "type": "string"},
+          {"name": "country", "title": "Country", "description": "Headquarters country", "type": "string"},
+          {"name": "region", "title": "Region", "description": "North America, Europe, or APAC", "type": "string"},
+          {"name": "employee_count_estimate", "title": "Employee Count Estimate", "description": "Approximate employee count", "type": "integer"},
+          {"name": "remote_first", "title": "Remote First", "description": "Whether company is remote-first", "type": "integer"},
+          {"name": "ai_maturity_score", "title": "AI Maturity Score", "description": "Synthetic 0-100 AI maturity index", "type": "number"},
+          {"name": "benefits_score", "title": "Benefits Score", "description": "Synthetic employer benefits index", "type": "number"},
+          {"name": "glassdoor_like_rating", "title": "Glassdoor-Like Rating", "description": "Synthetic employee rating", "type": "number"},
+          {"name": "hiring_velocity_index", "title": "Hiring Velocity Index", "description": "Synthetic 0-100 hiring intensity index", "type": "integer"}
+        ]
+      }
+    },
+    {
+      "path": "job_skills.csv",
+      "description": "Normalized job-skill edge table for graph, ranking, and skill-gap analysis",
+      "schema": {
+        "fields": [
+          {"name": "job_id", "title": "Job ID", "description": "Foreign key to jobs.csv", "type": "string"},
+          {"name": "skill", "title": "Skill", "description": "Skill or tool name", "type": "string"},
+          {"name": "skill_category", "title": "Skill Category", "description": "analytics, llm, cloud, bi, platform, etc.", "type": "string"},
+          {"name": "importance", "title": "Importance", "description": "core, strong, or nice_to_have", "type": "string"},
+          {"name": "proficiency_level", "title": "Proficiency Level", "description": "basic, intermediate, or advanced", "type": "string"},
+          {"name": "is_genai_skill", "title": "Is GenAI Skill", "description": "Whether skill belongs to GenAI / LLM workflows", "type": "integer"}
+        ]
+      }
+    },
+    {
+      "path": "salary_benchmarks.csv",
+      "description": "Aggregated salary benchmark table by role, country, seniority, and remote type",
+      "schema": {
+        "fields": [
+          {"name": "job_title", "title": "Job Title", "description": "Role title", "type": "string"},
+          {"name": "country", "title": "Country", "description": "Country for the benchmark slice", "type": "string"},
+          {"name": "seniority", "title": "Seniority", "description": "Seniority band", "type": "string"},
+          {"name": "remote_type", "title": "Remote Type", "description": "onsite, hybrid, or remote", "type": "string"},
+          {"name": "sample_jobs", "title": "Sample Jobs", "description": "Number of jobs in the benchmark slice", "type": "integer"},
+          {"name": "salary_p10_usd", "title": "Salary P10 USD", "description": "10th percentile salary midpoint in USD", "type": "integer"},
+          {"name": "salary_median_usd", "title": "Salary Median USD", "description": "Median salary midpoint in USD", "type": "integer"},
+          {"name": "salary_p90_usd", "title": "Salary P90 USD", "description": "90th percentile salary midpoint in USD", "type": "integer"},
+          {"name": "bonus_target_pct_median", "title": "Bonus Target Percent Median", "description": "Median annual bonus target as a fraction of salary", "type": "number"},
+          {"name": "visa_share", "title": "Visa Share", "description": "Share of roles offering visa sponsorship", "type": "number"}
+        ]
+      }
+    },
+    {
+      "path": "skill_demand_monthly.csv",
+      "description": "Monthly trend table for the most in-demand skills, including salary and remote-share context",
+      "schema": {
+        "fields": [
+          {"name": "year_month", "title": "Year Month", "description": "Monthly period in YYYY-MM format", "type": "string"},
+          {"name": "skill", "title": "Skill", "description": "Skill or tool name", "type": "string"},
+          {"name": "skill_category", "title": "Skill Category", "description": "analytics, llm, cloud, platform, bi, etc.", "type": "string"},
+          {"name": "job_count", "title": "Job Count", "description": "Number of postings mentioning the skill that month", "type": "integer"},
+          {"name": "median_salary_mid_usd", "title": "Median Salary Mid USD", "description": "Median salary midpoint of jobs mentioning the skill", "type": "integer"},
+          {"name": "remote_share", "title": "Remote Share", "description": "Share of skill-tagged jobs that are fully remote", "type": "number"},
+          {"name": "share_of_postings", "title": "Share Of Postings", "description": "Fraction of all monthly postings mentioning the skill", "type": "number"}
+        ]
+      }
+    }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2024-01-01",
+    "temporal_end_date": "2026-03-31",
+    "geospatial_coverage": "North America, Europe, APAC (synthetic)"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Synthetic data generation scripts in this repository",
+      "Public domain job-market schemas and compensation conventions for educational simulation"
+    ],
+    "collection_methodology": "Programmatic synthetic generation using seeded probabilistic rules to simulate realistic relationships between compensation, location, company type, seniority, and skill demand while avoiding direct personal or employer data."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). AI & Data Jobs: Skills + Salaries (2024-2026). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026"
+  ],
+  "updateFrequency": "Monthly"
+}

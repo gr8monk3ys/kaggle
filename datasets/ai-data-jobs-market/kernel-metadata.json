@@ -1,0 +1,21 @@
+{
+  "id": "lorenzoscaturchio/ai-data-jobs-market-explorer",
+  "title": "AI & Data Jobs Market Explorer",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "dataset_sources": [
+    "lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026"
+  ],
+  "kernel_sources": [],
+  "keywords": [
+    "jobs",
+    "business",
+    "regression",
+    "classification",
+    "nlp"
+  ]
+}
