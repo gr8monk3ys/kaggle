@@ -64,9 +64,9 @@ def login(page) -> None:
     page.goto("https://www.kaggle.com/account/login", wait_until="networkidle")
     if is_browser_challenge(page):
         raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
-    page.fill('input[name="email"]', EMAIL)
-    page.fill('input[name="password"]', PASSWORD)
-    page.click('button[type="submit"]')
+    page.locator('input[name="email"]').fill(EMAIL)
+    page.locator('input[name="password"]').fill(PASSWORD)
+    page.locator('button[type="submit"]').click()
     page.wait_for_url("https://www.kaggle.com/", timeout=20000)
 
 
@@ -74,13 +74,13 @@ def post_discussion(page, forum_url: str, title: str, body: str) -> str:
     page.goto(forum_url, wait_until="networkidle")
     if is_browser_challenge(page):
         raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
-    page.click("text=New Topic", timeout=10000)
-    page.wait_for_selector('input[name="title"]', timeout=10000)
-    page.fill('input[name="title"]', title)
+    page.get_by_text("New Topic", exact=True).click(timeout=10000)
+    page.locator('input[name="title"]').wait_for(timeout=10000)
+    page.locator('input[name="title"]').fill(title)
     editor = page.locator('[contenteditable="true"]').first
     editor.click()
     editor.fill(body)
-    page.click('button:has-text("Post")', timeout=10000)
+    page.get_by_role("button", name="Post").click(timeout=10000)
     page.wait_for_load_state("networkidle", timeout=20000)
     return page.url
 
@@ -181,7 +181,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.smoke_test:
         try:
             raise SystemExit(smoke_test(check_login=args.check_login))
-        except (EnvironmentError, FileNotFoundError, ValueError, RuntimeError, Exception) as exc:
+        except (EnvironmentError, FileNotFoundError, ValueError, RuntimeError) as exc:
             print(str(exc), file=sys.stderr)
             notify_safe(f"❌ Discussion smoke test failed: {exc}")
             sys.exit(1)

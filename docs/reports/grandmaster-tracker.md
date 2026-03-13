@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-13
 
 ---
 
@@ -25,7 +25,7 @@
 
 ---
 
-## Current Progress (2026-03-09)
+## Current Progress (2026-03-13)
 
 > Note: Notebook, dataset, and competition metrics were refreshed live on 2026-03-09 from authenticated Kaggle CLI pulls.
 > Discussion metrics still reflect the last manual tracker snapshot.
@@ -39,18 +39,17 @@
 | Bronze medals | — | 0 |
 | Entered | — | 12 |
 
-**Active competitions to enter:**
+**Active competitions:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
 |-------------|-------|----------|-----------------|----------|
-| Med-Gemma Impact Challenge | 58 | Feb 24, 2026 | Easiest (small field) | Fine-tune MedGemma, LoRA approach |
-| Vesuvius Surface Detection | 759 | Feb 13, 2026 | Medium | 3D U-Net baseline, iterate |
-| CAFA 6 Protein Function | 2,061 | Feb 2, 2026 | Hard (large field) | Protein LM embeddings |
 | Deep Past Akkadian | 1,321 | Mar 23, 2026 | Hard (large field) | ByT5 seq2seq |
 | Stanford RNA 3D Folding 2 | 480 | Mar 25, 2026 | Medium | Geometric deep learning |
-| Hull Tactical Market | 3,677 | Jun 16, 2026 | Hard | Ensemble tree models |
 | AIMO3 | 1,560 | Apr 15, 2026 | Very Hard | LLM math reasoning |
+| Hull Tactical Market | 3,677 | Jun 16, 2026 | Hard | Ensemble tree models |
 
-**Priority: Med-Gemma (58 teams = best medal odds by far)**
+**Closed (deadline passed):** Med-Gemma (Feb 24), Vesuvius (Feb 13), CAFA 6 (Feb 2)
+
+**Priority: Akkadian (10 days!) & RNA Folding (12 days)**
 ### Notebooks
 | Status | Target | Current |
 |--------|--------|---------|

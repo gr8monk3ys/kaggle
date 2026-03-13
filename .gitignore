@@ -20,3 +20,12 @@ medal_ops/sync_inputs/
 
 .env
 pi-automation/.env
+
+# Browser automation artifacts
+.playwright-cli/
+.playwright-mcp/
+*_storage_state.json
+
+# Automation queue/tracker data (contains session tokens, campaign queues)
+pi-automation/data/*.json
+!pi-automation/data/.gitkeep
