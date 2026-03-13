@@ -928,6 +928,7 @@ def test_house_prepare_features_adds_core_engineering_columns():
                 "YrSold": 2010,
                 "YearBuilt": 2000,
                 "YearRemodAdd": 2005,
+                "GarageCars": 2,
                 "GarageArea": 500,
                 "PoolArea": 0,
                 "Fireplaces": 1,
@@ -952,6 +953,34 @@ def test_house_prepare_features_adds_core_engineering_columns():
     assert train_x.loc[0, "TotalBath"] == 3.5
     assert train_x.loc[0, "QualSF"] == 9800
     assert train_x.loc[0, "TotalPorchSF"] == 60
+    assert train_x.loc[0, "GarageScore"] == 1000
+    assert train_x.loc[0, "OverallGrade"] == 35
+
+
+def test_house_best_blend_prefers_stronger_weighted_mix():
+    y = np.array([1.0, 2.0, 3.0, 4.0])
+    predictions = {
+        "a": (
+            np.array([1.1, 1.9, 3.2, 3.8]),
+            np.array([1.5, 2.5]),
+        ),
+        "b": (
+            np.array([0.9, 2.2, 2.8, 4.1]),
+            np.array([1.4, 2.6]),
+        ),
+        "c": (
+            np.array([1.4, 2.4, 3.4, 4.4]),
+            np.array([1.6, 2.8]),
+        ),
+    }
+
+    result = lab._house_best_blend(predictions, y)
+
+    assert result is not None
+    weights, score, test_pred = result
+    assert abs(sum(weights.values()) - 1.0) < 1e-9
+    assert score < min(lab._house_rmse(y, pred[0]) for pred in predictions.values())
+    assert test_pred.shape == (2,)
 
 
 def test_store_sales_prediction_frame_produces_complete_predictions():
