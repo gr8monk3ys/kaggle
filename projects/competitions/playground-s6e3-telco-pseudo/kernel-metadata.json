@@ -1,0 +1,20 @@
+{
+  "id": "lorenzoscaturchio/playground-s6e3-telco-pseudo-label-xgboost",
+  "title": "Playground S6E3 Telco Pseudo Label XGBoost",
+  "code_file": "playground_s6e3_telco_pseudo.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "xgboost"
+  ],
+  "dataset_sources": [
+    "blastchar/telco-customer-churn"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [
+    "playground-series-s6e3"
+  ]
+}
