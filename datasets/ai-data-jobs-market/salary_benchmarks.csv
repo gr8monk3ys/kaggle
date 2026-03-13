@@ -1,0 +1,619 @@
+job_title,country,seniority,remote_type,sample_jobs,salary_p10_usd,salary_median_usd,salary_p90_usd,bonus_target_pct_median,visa_share
+AI Engineer,Australia,mid,hybrid,20,124000,151500,171000,0.097,0.15
+AI Engineer,Canada,entry,hybrid,21,96000,105000,121000,0.094,0.238
+AI Engineer,Canada,mid,hybrid,27,125600,143000,166400,0.089,0.111
+AI Engineer,Canada,mid,onsite,17,127200,146000,163000,0.091,0.353
+AI Engineer,Canada,mid,remote,23,129200,143000,174600,0.09,0.174
+AI Engineer,Canada,senior,hybrid,31,157000,178000,206000,0.096,0.194
+AI Engineer,Canada,senior,remote,18,164600,187500,203000,0.09,0.278
+AI Engineer,Canada,staff,remote,16,183000,212500,241000,0.108,0.188
+AI Engineer,Germany,mid,hybrid,24,123800,142000,166800,0.09,0.167
+AI Engineer,Germany,mid,remote,19,123200,148000,173600,0.094,0.105
+AI Engineer,India,entry,hybrid,48,44000,54000,67000,0.095,0.104
+AI Engineer,India,entry,onsite,23,51000,58000,64000,0.094,0.217
+AI Engineer,India,entry,remote,26,47000,55000,66000,0.093,0.154
+AI Engineer,India,mid,hybrid,58,64400,78000,90600,0.093,0.034
+AI Engineer,India,mid,onsite,31,68000,82000,93000,0.093,0.0
+AI Engineer,India,mid,remote,60,60900,78500,96100,0.093,0.083
+AI Engineer,India,senior,hybrid,54,79300,101000,120400,0.092,0.074
+AI Engineer,India,senior,onsite,26,74000,93500,114500,0.093,0.154
+AI Engineer,India,senior,remote,56,76500,95000,117500,0.09,0.071
+AI Engineer,India,staff,hybrid,19,99400,118000,147600,0.121,0.158
+AI Engineer,India,staff,remote,23,92600,114000,135600,0.113,0.13
+AI Engineer,Netherlands,mid,hybrid,17,126800,153000,177600,0.091,0.059
+AI Engineer,Netherlands,mid,remote,26,130000,155000,198500,0.094,0.154
+AI Engineer,Netherlands,senior,hybrid,16,154500,185500,207500,0.096,0.062
+AI Engineer,Singapore,entry,remote,16,95000,107000,125000,0.088,0.188
+AI Engineer,Singapore,mid,hybrid,21,137000,145000,182000,0.098,0.095
+AI Engineer,Singapore,mid,onsite,18,132400,144000,173000,0.092,0.111
+AI Engineer,Singapore,mid,remote,31,125000,147000,165000,0.089,0.065
+AI Engineer,Singapore,senior,hybrid,19,163600,188000,216600,0.084,0.211
+AI Engineer,Singapore,senior,remote,23,163600,182000,216600,0.086,0.087
+AI Engineer,Singapore,staff,remote,16,191000,212500,248000,0.108,0.125
+AI Engineer,United Kingdom,entry,hybrid,28,95900,113000,131600,0.095,0.143
+AI Engineer,United Kingdom,entry,remote,26,93000,107500,144000,0.093,0.346
+AI Engineer,United Kingdom,mid,hybrid,56,125000,153000,194500,0.096,0.321
+AI Engineer,United Kingdom,mid,onsite,26,132500,155500,185000,0.093,0.154
+AI Engineer,United Kingdom,mid,remote,46,130000,160000,203500,0.095,0.239
+AI Engineer,United Kingdom,senior,hybrid,44,153900,193000,222600,0.087,0.114
+AI Engineer,United Kingdom,senior,onsite,17,173000,196000,224600,0.089,0.118
+AI Engineer,United Kingdom,senior,remote,42,170100,200500,235800,0.089,0.119
+AI Engineer,United Kingdom,staff,hybrid,16,172500,220500,267500,0.11,0.188
+AI Engineer,United Kingdom,staff,remote,23,201000,236000,257400,0.111,0.087
+AI Engineer,United States,entry,hybrid,88,107700,129000,155000,0.092,0.216
+AI Engineer,United States,entry,onsite,47,108000,126000,153800,0.094,0.191
+AI Engineer,United States,entry,remote,114,110000,129000,162000,0.091,0.14
+AI Engineer,United States,mid,hybrid,211,149000,179000,224000,0.091,0.156
+AI Engineer,United States,mid,onsite,88,153000,182000,227600,0.09,0.239
+AI Engineer,United States,mid,remote,195,151400,181000,224200,0.093,0.179
+AI Engineer,United States,principal,hybrid,30,260500,303500,374400,0.11,0.2
+AI Engineer,United States,principal,onsite,16,281500,314000,369500,0.11,0.125
+AI Engineer,United States,principal,remote,42,289100,318500,365900,0.112,0.262
+AI Engineer,United States,senior,hybrid,164,186000,226000,278700,0.092,0.171
+AI Engineer,United States,senior,onsite,83,185400,227000,267600,0.091,0.169
+AI Engineer,United States,senior,remote,151,190000,234000,294000,0.091,0.192
+AI Engineer,United States,staff,hybrid,98,223700,264000,310300,0.113,0.204
+AI Engineer,United States,staff,onsite,44,238200,266000,338400,0.11,0.182
+AI Engineer,United States,staff,remote,82,233200,275000,323900,0.113,0.207
+AI Product Manager,India,entry,hybrid,15,37400,45000,56000,0.122,0.0
+AI Product Manager,India,mid,hybrid,21,57000,63000,76000,0.118,0.095
+AI Product Manager,India,mid,remote,20,53800,64000,77100,0.122,0.2
+AI Product Manager,Singapore,senior,hybrid,15,142200,154000,204000,0.121,0.0
+AI Product Manager,United Kingdom,mid,hybrid,20,108700,131500,148900,0.12,0.15
+AI Product Manager,United Kingdom,mid,remote,20,119300,140000,156000,0.122,0.3
+AI Product Manager,United Kingdom,senior,hybrid,21,129000,158000,203000,0.115,0.095
+AI Product Manager,United Kingdom,senior,remote,19,136800,152000,195400,0.118,0.053
+AI Product Manager,United States,entry,hybrid,33,96400,112000,140400,0.12,0.333
+AI Product Manager,United States,entry,remote,38,96000,119000,137800,0.119,0.158
+AI Product Manager,United States,mid,hybrid,65,129800,149000,183000,0.123,0.092
+AI Product Manager,United States,mid,onsite,42,133100,150500,196600,0.117,0.071
+AI Product Manager,United States,mid,remote,80,131900,154500,187000,0.122,0.113
+AI Product Manager,United States,principal,hybrid,19,210000,259000,354400,0.14,0.105
+AI Product Manager,United States,principal,remote,19,236600,274000,340600,0.137,0.105
+AI Product Manager,United States,senior,hybrid,55,148800,187000,230600,0.122,0.218
+AI Product Manager,United States,senior,onsite,31,162000,180000,220000,0.124,0.194
+AI Product Manager,United States,senior,remote,59,160600,189000,242400,0.121,0.119
+AI Product Manager,United States,staff,hybrid,31,185000,230000,291000,0.142,0.129
+AI Product Manager,United States,staff,remote,26,203500,225000,281000,0.142,0.115
+Analytics Engineer,Australia,mid,remote,16,93000,117000,138500,0.082,0.188
+Analytics Engineer,Canada,entry,remote,18,75000,84500,103100,0.081,0.333
+Analytics Engineer,Canada,mid,hybrid,24,104900,114500,130400,0.084,0.292
+Analytics Engineer,Canada,mid,remote,27,99800,119000,145800,0.077,0.185
+Analytics Engineer,Canada,senior,hybrid,25,134800,143000,168200,0.082,0.16
+Analytics Engineer,Germany,mid,hybrid,25,107400,128000,143000,0.084,0.2
+Analytics Engineer,Germany,mid,remote,17,100600,115000,137800,0.082,0.118
+Analytics Engineer,Germany,senior,remote,17,128600,145000,186000,0.076,0.176
+Analytics Engineer,India,entry,hybrid,22,40000,47000,54800,0.082,0.091
+Analytics Engineer,India,entry,remote,32,40000,45500,56000,0.079,0.125
+Analytics Engineer,India,mid,hybrid,47,52600,61000,77000,0.084,0.021
+Analytics Engineer,India,mid,onsite,30,55000,68500,78100,0.082,0.1
+Analytics Engineer,India,mid,remote,41,51000,62000,77000,0.08,0.122
+Analytics Engineer,India,senior,hybrid,62,63100,75000,92000,0.078,0.145
+Analytics Engineer,India,senior,onsite,20,59900,71500,89400,0.078,0.1
+Analytics Engineer,India,senior,remote,38,69400,86500,100300,0.084,0.105
+Analytics Engineer,India,staff,hybrid,21,81000,92000,105000,0.1,0.143
+Analytics Engineer,India,staff,remote,26,80500,93000,115500,0.097,0.077
+Analytics Engineer,Netherlands,mid,remote,17,107000,131000,167000,0.08,0.118
+Analytics Engineer,Netherlands,senior,hybrid,23,131000,148000,197800,0.087,0.13
+Analytics Engineer,Singapore,mid,hybrid,36,107000,121000,142000,0.079,0.139
+Analytics Engineer,Singapore,mid,remote,18,107400,126500,140600,0.079,0.167
+Analytics Engineer,Singapore,senior,hybrid,18,125100,153500,176700,0.083,0.167
+Analytics Engineer,Singapore,senior,remote,16,132000,142000,166500,0.083,0.0
+Analytics Engineer,Switzerland,mid,hybrid,15,111800,123000,161800,0.087,0.2
+Analytics Engineer,United Kingdom,entry,hybrid,23,76200,93000,103800,0.082,0.13
+Analytics Engineer,United Kingdom,entry,remote,22,75200,94000,119600,0.075,0.227
+Analytics Engineer,United Kingdom,mid,hybrid,36,109000,136500,153500,0.08,0.194
+Analytics Engineer,United Kingdom,mid,onsite,15,109800,126000,155600,0.081,0.2
+Analytics Engineer,United Kingdom,mid,remote,46,115500,135000,167500,0.079,0.239
+Analytics Engineer,United Kingdom,senior,hybrid,31,127000,147000,175000,0.079,0.194
+Analytics Engineer,United Kingdom,senior,onsite,18,127100,176500,193900,0.081,0.167
+Analytics Engineer,United Kingdom,senior,remote,36,130500,156000,174000,0.083,0.194
+Analytics Engineer,United Kingdom,staff,hybrid,19,165600,193000,248600,0.106,0.368
+Analytics Engineer,United Kingdom,staff,remote,16,162500,197000,221500,0.098,0.188
+Analytics Engineer,United States,entry,hybrid,90,93000,109000,133100,0.083,0.178
+Analytics Engineer,United States,entry,onsite,40,94800,107500,136100,0.082,0.3
+Analytics Engineer,United States,entry,remote,93,91400,111000,134800,0.083,0.118
+Analytics Engineer,United States,mid,hybrid,171,121000,149000,179000,0.082,0.181
+Analytics Engineer,United States,mid,onsite,77,126200,153000,178400,0.084,0.156
+Analytics Engineer,United States,mid,remote,157,126000,149000,185400,0.082,0.191
+Analytics Engineer,United States,principal,hybrid,31,221000,257000,313000,0.105,0.161
+Analytics Engineer,United States,principal,remote,32,211600,253000,297600,0.101,0.281
+Analytics Engineer,United States,senior,hybrid,126,150500,180000,219500,0.082,0.214
+Analytics Engineer,United States,senior,onsite,86,148000,180500,221500,0.082,0.174
+Analytics Engineer,United States,senior,remote,151,157000,187000,237000,0.083,0.119
+Analytics Engineer,United States,staff,hybrid,75,181000,219000,265800,0.102,0.16
+Analytics Engineer,United States,staff,onsite,21,178000,228000,278000,0.102,0.19
+Analytics Engineer,United States,staff,remote,70,177800,215000,261100,0.102,0.214
+Applied Scientist,Canada,mid,hybrid,17,112200,128000,141400,0.099,0.235
+Applied Scientist,Canada,senior,remote,15,141600,160000,187000,0.101,0.333
+Applied Scientist,Germany,senior,remote,15,146800,162000,205200,0.104,0.133
+Applied Scientist,India,entry,hybrid,16,43500,52000,58500,0.104,0.25
+Applied Scientist,India,entry,remote,16,42500,50000,57000,0.102,0.0
+Applied Scientist,India,mid,hybrid,16,65000,69000,81000,0.103,0.0
+Applied Scientist,India,mid,onsite,19,54800,69000,83000,0.104,0.158
+Applied Scientist,India,mid,remote,24,63600,73000,85100,0.103,0.042
+Applied Scientist,India,senior,hybrid,26,72000,87000,103500,0.102,0.038
+Applied Scientist,India,senior,onsite,18,79300,88000,101500,0.106,0.056
+Applied Scientist,India,senior,remote,30,77900,94500,110100,0.102,0.067
+Applied Scientist,Netherlands,mid,remote,19,118400,135000,165200,0.101,0.211
+Applied Scientist,Singapore,mid,hybrid,16,123000,136000,156500,0.098,0.125
+Applied Scientist,Singapore,mid,remote,17,121600,134000,155800,0.1,0.059
+Applied Scientist,United Kingdom,mid,hybrid,37,114600,141000,174400,0.1,0.162
+Applied Scientist,United Kingdom,mid,remote,18,134400,161000,179000,0.107,0.167
+Applied Scientist,United Kingdom,senior,hybrid,24,149500,184500,217400,0.103,0.25
+Applied Scientist,United Kingdom,senior,remote,26,156000,185000,202500,0.108,0.308
+Applied Scientist,United States,entry,hybrid,62,101100,122500,147800,0.102,0.145
+Applied Scientist,United States,entry,onsite,27,102800,122000,154600,0.105,0.185
+Applied Scientist,United States,entry,remote,59,103800,122000,136400,0.102,0.203
+Applied Scientist,United States,mid,hybrid,95,137800,170000,210000,0.101,0.168
+Applied Scientist,United States,mid,onsite,52,138100,155500,189900,0.099,0.096
+Applied Scientist,United States,mid,remote,111,141000,167000,213000,0.101,0.198
+Applied Scientist,United States,principal,hybrid,19,252200,292000,334400,0.119,0.158
+Applied Scientist,United States,principal,remote,15,258000,304000,371200,0.12,0.067
+Applied Scientist,United States,senior,hybrid,75,177800,207000,244800,0.1,0.227
+Applied Scientist,United States,senior,onsite,42,171600,207500,243000,0.102,0.262
+Applied Scientist,United States,senior,remote,89,171000,207000,246200,0.101,0.18
+Applied Scientist,United States,staff,hybrid,46,201500,251000,281000,0.123,0.196
+Applied Scientist,United States,staff,onsite,17,211200,247000,291800,0.119,0.118
+Applied Scientist,United States,staff,remote,39,211600,247000,283800,0.124,0.077
+BI Analyst,Australia,mid,hybrid,17,96000,115000,126800,0.075,0.0
+BI Analyst,Canada,mid,hybrid,36,87500,102500,119500,0.076,0.389
+BI Analyst,Canada,mid,remote,24,95600,102000,119200,0.072,0.208
+BI Analyst,Canada,senior,hybrid,22,119100,137000,152000,0.073,0.182
+BI Analyst,Canada,senior,onsite,16,117000,138500,152500,0.071,0.312
+BI Analyst,Canada,senior,remote,16,122500,137000,155000,0.071,0.125
+BI Analyst,Germany,entry,hybrid,16,68000,79000,96500,0.073,0.125
+BI Analyst,Germany,mid,remote,19,93800,108000,141200,0.077,0.158
+BI Analyst,India,entry,hybrid,24,36000,41000,50700,0.075,0.083
+BI Analyst,India,entry,onsite,15,34800,42000,49200,0.076,0.267
+BI Analyst,India,entry,remote,23,33200,41000,49600,0.067,0.174
+BI Analyst,India,mid,hybrid,37,48200,55000,69000,0.08,0.189
+BI Analyst,India,mid,onsite,21,51000,58000,64000,0.066,0.095
+BI Analyst,India,mid,remote,36,52000,61500,72000,0.072,0.139
+BI Analyst,India,senior,hybrid,39,58800,72000,87200,0.071,0.051
+BI Analyst,India,senior,onsite,24,59300,71500,88700,0.072,0.208
+BI Analyst,India,senior,remote,31,56000,75000,90000,0.07,0.065
+BI Analyst,India,staff,remote,19,73800,90000,102800,0.097,0.105
+BI Analyst,Netherlands,mid,remote,15,108400,128000,141000,0.075,0.067
+BI Analyst,Singapore,entry,remote,15,67200,77000,89400,0.071,0.067
+BI Analyst,Singapore,mid,hybrid,16,97000,109000,128000,0.066,0.188
+BI Analyst,Singapore,mid,remote,19,97600,105000,131400,0.075,0.053
+BI Analyst,Singapore,senior,hybrid,21,122000,140000,164000,0.067,0.048
+BI Analyst,Singapore,senior,remote,17,121000,138000,164400,0.07,0.059
+BI Analyst,United Kingdom,entry,hybrid,26,71000,83500,93500,0.074,0.231
+BI Analyst,United Kingdom,entry,remote,17,68200,85000,97600,0.072,0.118
+BI Analyst,United Kingdom,mid,hybrid,34,95300,115500,139700,0.067,0.088
+BI Analyst,United Kingdom,mid,onsite,24,96600,115000,137400,0.073,0.208
+BI Analyst,United Kingdom,mid,remote,30,98500,118000,134500,0.071,0.2
+BI Analyst,United Kingdom,senior,hybrid,39,119200,148000,165000,0.073,0.256
+BI Analyst,United Kingdom,senior,onsite,20,131600,154000,172500,0.07,0.25
+BI Analyst,United Kingdom,senior,remote,36,127500,149000,178000,0.076,0.25
+BI Analyst,United States,entry,hybrid,77,78000,97000,112000,0.071,0.13
+BI Analyst,United States,entry,onsite,34,83300,93000,122000,0.069,0.147
+BI Analyst,United States,entry,remote,76,84000,95500,115000,0.073,0.211
+BI Analyst,United States,mid,hybrid,148,113000,133500,163000,0.072,0.189
+BI Analyst,United States,mid,onsite,71,111000,132000,163000,0.074,0.099
+BI Analyst,United States,mid,remote,143,112200,134000,168800,0.073,0.168
+BI Analyst,United States,principal,hybrid,29,200000,233000,275800,0.092,0.103
+BI Analyst,United States,principal,onsite,19,186400,253000,273400,0.094,0.053
+BI Analyst,United States,principal,remote,30,198900,232000,259000,0.094,0.133
+BI Analyst,United States,senior,hybrid,105,138400,169000,212000,0.07,0.267
+BI Analyst,United States,senior,onsite,47,141600,169000,211000,0.073,0.191
+BI Analyst,United States,senior,remote,133,136200,171000,207000,0.071,0.128
+BI Analyst,United States,staff,hybrid,74,163300,198500,243200,0.09,0.149
+BI Analyst,United States,staff,onsite,25,172000,198000,226000,0.094,0.16
+BI Analyst,United States,staff,remote,56,170000,200500,242500,0.092,0.214
+Data Analyst,Australia,entry,remote,17,65600,81000,95000,0.075,0.176
+Data Analyst,Australia,mid,hybrid,27,96600,114000,137000,0.084,0.074
+Data Analyst,Australia,mid,remote,16,92500,114000,134500,0.077,0.125
+Data Analyst,Australia,senior,hybrid,20,122000,133500,169600,0.074,0.05
+Data Analyst,Australia,senior,remote,21,108000,142000,171000,0.073,0.048
+Data Analyst,Canada,entry,hybrid,26,70500,78000,88000,0.074,0.385
+Data Analyst,Canada,entry,onsite,16,65500,72000,88000,0.063,0.125
+Data Analyst,Canada,entry,remote,19,67400,77000,87400,0.07,0.211
+Data Analyst,Canada,mid,hybrid,37,91000,109000,119200,0.073,0.27
+Data Analyst,Canada,mid,onsite,23,100000,107000,128000,0.07,0.174
+Data Analyst,Canada,mid,remote,38,98000,111500,125900,0.075,0.184
+Data Analyst,Canada,senior,hybrid,40,114000,134000,150100,0.078,0.2
+Data Analyst,Canada,senior,onsite,16,109500,124000,158000,0.071,0.375
+Data Analyst,Canada,senior,remote,29,114800,134000,156800,0.066,0.207
+Data Analyst,Canada,staff,hybrid,17,138200,162000,187200,0.093,0.235
+Data Analyst,Germany,mid,hybrid,29,98000,119000,131600,0.075,0.276
+Data Analyst,Germany,mid,remote,22,100100,105500,123000,0.068,0.091
+Data Analyst,Germany,senior,hybrid,22,119400,139500,163900,0.066,0.136
+Data Analyst,Germany,senior,remote,26,127500,143500,168500,0.08,0.231
+Data Analyst,India,entry,hybrid,30,36000,43000,49200,0.067,0.2
+Data Analyst,India,entry,onsite,18,36000,40500,44000,0.074,0.167
+Data Analyst,India,entry,remote,44,35300,42000,50700,0.071,0.159
+Data Analyst,India,mid,hybrid,87,51000,60000,72000,0.073,0.126
+Data Analyst,India,mid,onsite,36,49000,59500,70000,0.069,0.083
+Data Analyst,India,mid,remote,75,51400,61000,73000,0.068,0.12
+Data Analyst,India,senior,hybrid,65,58800,73000,89000,0.071,0.062
+Data Analyst,India,senior,onsite,31,64000,76000,88000,0.071,0.129
+Data Analyst,India,senior,remote,65,60800,75000,87600,0.071,0.231
+Data Analyst,India,staff,hybrid,37,67000,83000,96200,0.089,0.135
+Data Analyst,India,staff,remote,32,74100,86500,108400,0.089,0.062
+Data Analyst,Netherlands,entry,remote,15,75600,94000,106200,0.078,0.0
+Data Analyst,Netherlands,mid,hybrid,29,92600,110000,130400,0.07,0.138
+Data Analyst,Netherlands,mid,remote,26,101500,123000,144500,0.075,0.038
+Data Analyst,Netherlands,senior,hybrid,26,124500,138000,173000,0.07,0.115
+Data Analyst,Netherlands,senior,remote,21,122000,152000,185000,0.075,0.143
+Data Analyst,Singapore,mid,hybrid,33,102200,111000,136600,0.071,0.212
+Data Analyst,Singapore,mid,onsite,16,103500,112000,133000,0.071,0.062
+Data Analyst,Singapore,mid,remote,41,102000,117000,127000,0.069,0.171
+Data Analyst,Singapore,senior,hybrid,23,117600,138000,157600,0.068,0.087
+Data Analyst,Singapore,senior,remote,27,128000,138000,160800,0.07,0.148
+Data Analyst,Singapore,staff,remote,16,147000,169000,186500,0.095,0.062
+Data Analyst,United Kingdom,entry,hybrid,35,74400,87000,99000,0.076,0.143
+Data Analyst,United Kingdom,entry,remote,43,73200,91000,109000,0.073,0.209
+Data Analyst,United Kingdom,mid,hybrid,49,101600,113000,145600,0.07,0.204
+Data Analyst,United Kingdom,mid,onsite,37,97000,116000,134200,0.071,0.189
+Data Analyst,United Kingdom,mid,remote,74,98000,118500,147400,0.072,0.122
+Data Analyst,United Kingdom,senior,hybrid,51,126000,146000,174000,0.073,0.255
+Data Analyst,United Kingdom,senior,onsite,21,133000,154000,165000,0.077,0.19
+Data Analyst,United Kingdom,senior,remote,59,127400,154000,185200,0.071,0.102
+Data Analyst,United Kingdom,staff,hybrid,29,140600,172000,199600,0.094,0.31
+Data Analyst,United Kingdom,staff,remote,30,149000,180000,215100,0.091,0.167
+Data Analyst,United States,entry,hybrid,146,83000,99000,124500,0.072,0.171
+Data Analyst,United States,entry,onsite,67,84600,98000,122400,0.075,0.209
+Data Analyst,United States,entry,remote,137,83600,100000,123000,0.071,0.19
+Data Analyst,United States,mid,hybrid,278,113700,140000,172000,0.071,0.162
+Data Analyst,United States,mid,onsite,133,113200,139000,169000,0.069,0.18
+Data Analyst,United States,mid,remote,274,121000,140000,174000,0.07,0.179
+Data Analyst,United States,principal,hybrid,43,197800,228000,278200,0.094,0.163
+Data Analyst,United States,principal,onsite,29,214800,240000,290200,0.09,0.138
+Data Analyst,United States,principal,remote,40,198800,248000,325400,0.094,0.05
+Data Analyst,United States,senior,hybrid,189,142000,174000,208000,0.071,0.185
+Data Analyst,United States,senior,onsite,109,141600,175000,205000,0.074,0.229
+Data Analyst,United States,senior,remote,222,143000,172000,212000,0.072,0.194
+Data Analyst,United States,staff,hybrid,101,173000,207000,254000,0.093,0.149
+Data Analyst,United States,staff,onsite,46,162500,205000,239000,0.091,0.239
+Data Analyst,United States,staff,remote,114,175300,211000,250400,0.095,0.132
+Data Engineer,Australia,entry,remote,15,76400,90000,102200,0.086,0.0
+Data Engineer,Australia,mid,hybrid,21,93000,128000,147000,0.086,0.143
+Data Engineer,Australia,mid,remote,21,100000,126000,144000,0.086,0.19
+Data Engineer,Australia,senior,hybrid,19,119600,172000,191000,0.095,0.0
+Data Engineer,Australia,senior,remote,18,137700,157000,180000,0.085,0.111
+Data Engineer,Canada,entry,hybrid,25,71800,83000,103600,0.082,0.24
+Data Engineer,Canada,entry,remote,17,83600,88000,110200,0.088,0.118
+Data Engineer,Canada,mid,hybrid,44,104000,118000,136700,0.081,0.273
+Data Engineer,Canada,mid,onsite,16,99500,114000,132000,0.08,0.25
+Data Engineer,Canada,mid,remote,41,106000,124000,138000,0.084,0.195
+Data Engineer,Canada,senior,hybrid,25,123800,145000,178200,0.076,0.36
+Data Engineer,Canada,senior,onsite,16,136500,152000,176500,0.082,0.312
+Data Engineer,Canada,senior,remote,36,132000,149500,185500,0.085,0.139
+Data Engineer,Canada,staff,hybrid,17,147600,177000,217400,0.103,0.118
+Data Engineer,Germany,entry,hybrid,21,77000,87000,99000,0.083,0.19
+Data Engineer,Germany,entry,remote,15,77800,85000,94000,0.083,0.133
+Data Engineer,Germany,mid,hybrid,26,103500,124000,150500,0.08,0.269
+Data Engineer,Germany,mid,remote,20,108700,125500,144100,0.08,0.1
+Data Engineer,Germany,senior,hybrid,15,146400,158000,183400,0.086,0.067
+Data Engineer,Germany,senior,remote,20,136800,147500,195900,0.081,0.1
+Data Engineer,India,entry,hybrid,39,39800,49000,57200,0.082,0.282
+Data Engineer,India,entry,onsite,24,40200,49500,56000,0.076,0.208
+Data Engineer,India,entry,remote,41,40000,51000,58000,0.083,0.195
+Data Engineer,India,mid,hybrid,85,54400,65000,76600,0.08,0.141
+Data Engineer,India,mid,onsite,38,54000,64000,73300,0.082,0.132
+Data Engineer,India,mid,remote,86,51000,66000,80000,0.082,0.151
+Data Engineer,India,senior,hybrid,50,63900,78000,96000,0.081,0.12
+Data Engineer,India,senior,onsite,36,67500,80500,96500,0.082,0.167
+Data Engineer,India,senior,remote,63,72000,83000,99800,0.079,0.095
+Data Engineer,India,staff,hybrid,39,81400,97000,117000,0.104,0.103
+Data Engineer,India,staff,onsite,19,85600,98000,113400,0.102,0.158
+Data Engineer,India,staff,remote,23,81000,107000,121800,0.106,0.0
+Data Engineer,Ireland,mid,remote,17,113800,135000,153400,0.074,0.0
+Data Engineer,Netherlands,entry,hybrid,17,79000,84000,108200,0.082,0.176
+Data Engineer,Netherlands,entry,remote,15,83400,102000,108600,0.079,0.2
+Data Engineer,Netherlands,mid,hybrid,15,106000,126000,148800,0.081,0.2
+Data Engineer,Netherlands,mid,remote,27,109600,129000,164600,0.083,0.111
+Data Engineer,Netherlands,senior,hybrid,23,126200,149000,171800,0.082,0.13
+Data Engineer,Netherlands,senior,remote,28,142000,160500,200200,0.08,0.214
+Data Engineer,Singapore,mid,hybrid,27,107000,122000,141800,0.078,0.185
+Data Engineer,Singapore,mid,remote,28,111000,125000,141600,0.084,0.179
+Data Engineer,Singapore,senior,hybrid,31,136000,152000,178000,0.077,0.097
+Data Engineer,Singapore,senior,remote,34,131900,157500,182400,0.079,0.088
+Data Engineer,Singapore,staff,hybrid,18,172400,179500,220400,0.103,0.111
+Data Engineer,Singapore,staff,remote,18,157600,191500,225200,0.103,0.056
+Data Engineer,United Kingdom,entry,hybrid,39,79800,100000,117200,0.081,0.282
+Data Engineer,United Kingdom,entry,onsite,18,85600,96500,114900,0.083,0.333
+Data Engineer,United Kingdom,entry,remote,28,82700,98000,118800,0.088,0.179
+Data Engineer,United Kingdom,mid,hybrid,59,108800,144000,160400,0.085,0.186
+Data Engineer,United Kingdom,mid,onsite,33,109800,136000,163000,0.084,0.152
+Data Engineer,United Kingdom,mid,remote,71,114000,140000,161000,0.082,0.155
+Data Engineer,United Kingdom,principal,remote,15,180600,222000,252600,0.101,0.333
+Data Engineer,United Kingdom,senior,hybrid,59,136800,168000,199200,0.086,0.203
+Data Engineer,United Kingdom,senior,onsite,25,132400,167000,185400,0.087,0.2
+Data Engineer,United Kingdom,senior,remote,44,137300,172000,216400,0.082,0.25
+Data Engineer,United Kingdom,staff,hybrid,31,166000,199000,247000,0.098,0.161
+Data Engineer,United Kingdom,staff,onsite,16,169000,202000,233500,0.104,0.125
+Data Engineer,United Kingdom,staff,remote,30,163000,201500,238400,0.103,0.267
+Data Engineer,United States,entry,hybrid,131,92000,108000,135000,0.081,0.168
+Data Engineer,United States,entry,onsite,71,91000,110000,131000,0.087,0.127
+Data Engineer,United States,entry,remote,140,94800,113000,140000,0.08,0.221
+Data Engineer,United States,mid,hybrid,234,125000,154500,191400,0.082,0.222
+Data Engineer,United States,mid,onsite,124,126300,152000,186000,0.082,0.137
+Data Engineer,United States,mid,remote,273,129200,155000,192800,0.083,0.161
+Data Engineer,United States,principal,hybrid,56,221500,259500,327000,0.1,0.179
+Data Engineer,United States,principal,onsite,18,233800,269500,342900,0.103,0.167
+Data Engineer,United States,principal,remote,46,239500,276000,322500,0.1,0.087
+Data Engineer,United States,senior,hybrid,182,157000,189500,237900,0.08,0.192
+Data Engineer,United States,senior,onsite,90,154900,179500,217200,0.08,0.144
+Data Engineer,United States,senior,remote,238,160000,191000,235000,0.082,0.206
+Data Engineer,United States,staff,hybrid,97,189000,227000,265400,0.099,0.124
+Data Engineer,United States,staff,onsite,37,196600,218000,275800,0.099,0.189
+Data Engineer,United States,staff,remote,104,199000,234500,289800,0.102,0.24
+Data Scientist,Australia,entry,remote,18,75700,91000,106600,0.111,0.0
+Data Scientist,Australia,mid,hybrid,32,104400,125500,149400,0.107,0.125
+Data Scientist,Australia,mid,remote,29,107600,137000,149600,0.104,0.138
+Data Scientist,Australia,senior,hybrid,32,147300,168000,186800,0.113,0.125
+Data Scientist,Australia,senior,onsite,17,122000,162000,173000,0.111,0.235
+Data Scientist,Australia,senior,remote,15,134200,155000,192000,0.1,0.267
+Data Scientist,Canada,entry,hybrid,22,77000,90500,104600,0.099,0.318
+Data Scientist,Canada,entry,remote,30,77000,89500,103000,0.095,0.133
+Data Scientist,Canada,mid,hybrid,51,110000,123000,135000,0.101,0.255
+Data Scientist,Canada,mid,onsite,25,110000,124000,139800,0.11,0.08
+Data Scientist,Canada,mid,remote,54,112200,127000,152000,0.101,0.259
+Data Scientist,Canada,senior,hybrid,32,133100,152000,181300,0.102,0.312
+Data Scientist,Canada,senior,onsite,27,136000,151000,178000,0.099,0.148
+Data Scientist,Canada,senior,remote,34,139000,155500,183700,0.102,0.235
+Data Scientist,Canada,staff,hybrid,22,158100,176500,199900,0.123,0.227
+Data Scientist,Canada,staff,remote,20,171700,186000,213500,0.124,0.15
+Data Scientist,Germany,entry,hybrid,19,74200,89000,105000,0.102,0.211
+Data Scientist,Germany,entry,remote,20,78900,89000,111200,0.108,0.3
+Data Scientist,Germany,mid,hybrid,34,111000,127500,147400,0.102,0.088
+Data Scientist,Germany,mid,remote,26,116000,126500,152000,0.1,0.192
+Data Scientist,Germany,senior,hybrid,31,137000,154000,190000,0.102,0.226
+Data Scientist,Germany,senior,remote,29,141000,166000,203800,0.105,0.172
+Data Scientist,India,entry,hybrid,60,41000,48000,57100,0.097,0.133
+Data Scientist,India,entry,onsite,22,42000,48000,55900,0.104,0.273
+Data Scientist,India,entry,remote,40,38000,49500,58400,0.101,0.15
+Data Scientist,India,mid,hybrid,93,56000,65000,79000,0.104,0.108
+Data Scientist,India,mid,onsite,43,58000,69000,80600,0.099,0.14
+Data Scientist,India,mid,remote,87,58600,67000,83000,0.1,0.149
+Data Scientist,India,principal,hybrid,16,90500,113500,139500,0.117,0.062
+Data Scientist,India,principal,remote,17,104200,123000,137000,0.122,0.118
+Data Scientist,India,senior,hybrid,87,68000,82000,97800,0.104,0.149
+Data Scientist,India,senior,onsite,37,70800,82000,99000,0.102,0.216
+Data Scientist,India,senior,remote,62,72100,85000,101000,0.104,0.145
+Data Scientist,India,staff,hybrid,28,81100,108500,120600,0.122,0.036
+Data Scientist,India,staff,remote,41,89000,105000,125000,0.121,0.122
+Data Scientist,Ireland,mid,remote,16,107500,120500,147000,0.099,0.125
+Data Scientist,Netherlands,entry,hybrid,15,84800,99000,108000,0.101,0.267
+Data Scientist,Netherlands,entry,remote,21,81000,100000,110000,0.099,0.143
+Data Scientist,Netherlands,mid,hybrid,22,115200,133500,152900,0.105,0.045
+Data Scientist,Netherlands,mid,remote,31,114000,140000,164000,0.106,0.097
+Data Scientist,Netherlands,senior,hybrid,25,142200,165000,197800,0.107,0.16
+Data Scientist,Netherlands,senior,remote,27,140400,169000,207600,0.103,0.148
+Data Scientist,Singapore,entry,hybrid,16,81500,88000,103500,0.105,0.062
+Data Scientist,Singapore,entry,remote,18,86700,93000,103000,0.103,0.167
+Data Scientist,Singapore,mid,hybrid,47,107600,123000,144400,0.1,0.128
+Data Scientist,Singapore,mid,remote,39,117800,132000,152400,0.1,0.051
+Data Scientist,Singapore,principal,hybrid,17,187400,225000,264200,0.127,0.059
+Data Scientist,Singapore,senior,hybrid,29,136800,164000,185600,0.099,0.103
+Data Scientist,Singapore,senior,onsite,16,141000,157500,191500,0.106,0.125
+Data Scientist,Singapore,senior,remote,25,144800,162000,182800,0.098,0.2
+Data Scientist,Singapore,staff,hybrid,20,174900,184000,196300,0.116,0.2
+Data Scientist,Singapore,staff,remote,20,162800,194500,215300,0.125,0.3
+Data Scientist,United Kingdom,entry,hybrid,47,74000,94000,112400,0.105,0.213
+Data Scientist,United Kingdom,entry,onsite,34,82300,100500,115700,0.103,0.265
+Data Scientist,United Kingdom,entry,remote,41,81000,101000,112000,0.103,0.171
+Data Scientist,United Kingdom,mid,hybrid,79,109800,132000,151600,0.102,0.241
+Data Scientist,United Kingdom,mid,onsite,35,107400,132000,165000,0.104,0.229
+Data Scientist,United Kingdom,mid,remote,77,113800,136000,160400,0.099,0.143
+Data Scientist,United Kingdom,principal,remote,19,210200,247000,297000,0.119,0.0
+Data Scientist,United Kingdom,senior,hybrid,61,133000,166000,196000,0.104,0.23
+Data Scientist,United Kingdom,senior,onsite,26,133500,159500,187000,0.103,0.077
+Data Scientist,United Kingdom,senior,remote,69,144000,170000,204400,0.102,0.203
+Data Scientist,United Kingdom,staff,hybrid,28,161400,200500,238100,0.12,0.071
+Data Scientist,United Kingdom,staff,remote,27,179200,207000,241800,0.125,0.185
+Data Scientist,United States,entry,hybrid,173,94200,113000,131000,0.102,0.225
+Data Scientist,United States,entry,onsite,88,97000,116000,137000,0.101,0.136
+Data Scientist,United States,entry,remote,184,96300,117000,136700,0.103,0.147
+Data Scientist,United States,mid,hybrid,307,130600,157000,193000,0.102,0.208
+Data Scientist,United States,mid,onsite,144,127300,151000,194700,0.101,0.167
+Data Scientist,United States,mid,remote,280,133000,158500,195000,0.102,0.182
+Data Scientist,United States,principal,hybrid,53,229000,281000,335800,0.12,0.094
+Data Scientist,United States,principal,onsite,27,240600,280000,327400,0.125,0.148
+Data Scientist,United States,principal,remote,56,229500,268500,346000,0.121,0.161
+Data Scientist,United States,senior,hybrid,267,161600,194000,231400,0.103,0.146
+Data Scientist,United States,senior,onsite,125,164400,192000,240800,0.103,0.2
+Data Scientist,United States,senior,remote,273,166200,201000,243000,0.102,0.209
+Data Scientist,United States,staff,hybrid,107,191200,226000,273600,0.122,0.206
+Data Scientist,United States,staff,onsite,51,198000,238000,280000,0.124,0.137
+Data Scientist,United States,staff,remote,123,200200,239000,295800,0.121,0.236
+LLM Engineer,Australia,mid,hybrid,16,117500,147500,179000,0.092,0.062
+LLM Engineer,Australia,mid,remote,18,126600,155500,185900,0.091,0.167
+LLM Engineer,Canada,entry,hybrid,23,92000,110000,127600,0.091,0.174
+LLM Engineer,Canada,mid,hybrid,25,124000,136000,166000,0.092,0.28
+LLM Engineer,Canada,mid,remote,19,130000,144000,180200,0.091,0.105
+LLM Engineer,Canada,senior,hybrid,20,150700,181000,218600,0.094,0.35
+LLM Engineer,Germany,mid,remote,15,134400,153000,189000,0.094,0.267
+LLM Engineer,India,entry,hybrid,31,48000,58000,70000,0.093,0.097
+LLM Engineer,India,entry,onsite,18,45400,54500,61800,0.094,0.111
+LLM Engineer,India,entry,remote,33,49000,57000,65800,0.089,0.091
+LLM Engineer,India,mid,hybrid,50,64900,78500,97000,0.092,0.08
+LLM Engineer,India,mid,onsite,29,63600,75000,97200,0.096,0.103
+LLM Engineer,India,mid,remote,52,66100,81500,97800,0.092,0.096
+LLM Engineer,India,senior,hybrid,42,86100,98000,120700,0.094,0.19
+LLM Engineer,India,senior,onsite,16,88000,99000,109000,0.089,0.062
+LLM Engineer,India,senior,remote,37,85600,102000,122000,0.095,0.108
+LLM Engineer,India,staff,hybrid,28,103000,115000,139300,0.115,0.214
+LLM Engineer,Netherlands,mid,hybrid,17,136800,149000,174200,0.086,0.294
+LLM Engineer,Netherlands,mid,remote,18,129700,154500,195600,0.097,0.0
+LLM Engineer,Singapore,mid,hybrid,22,135100,150000,172500,0.089,0.136
+LLM Engineer,Singapore,mid,remote,15,137000,154000,170800,0.089,0.2
+LLM Engineer,Singapore,senior,hybrid,15,171800,199000,225200,0.09,0.2
+LLM Engineer,Singapore,senior,remote,22,172600,196000,221800,0.088,0.136
+LLM Engineer,United Kingdom,entry,hybrid,16,101000,110500,133000,0.095,0.25
+LLM Engineer,United Kingdom,mid,hybrid,47,136600,166000,193400,0.089,0.17
+LLM Engineer,United Kingdom,mid,onsite,22,127000,156500,173700,0.094,0.136
+LLM Engineer,United Kingdom,mid,remote,32,136400,166500,191800,0.094,0.156
+LLM Engineer,United Kingdom,senior,hybrid,43,161000,199000,247800,0.094,0.233
+LLM Engineer,United Kingdom,senior,remote,20,183700,217000,246700,0.094,0.25
+LLM Engineer,United States,entry,hybrid,78,112700,130500,157500,0.094,0.103
+LLM Engineer,United States,entry,onsite,36,111000,135000,161500,0.097,0.194
+LLM Engineer,United States,entry,remote,98,110700,135500,164300,0.091,0.133
+LLM Engineer,United States,mid,hybrid,154,154000,180000,227100,0.09,0.169
+LLM Engineer,United States,mid,onsite,65,149400,185000,220800,0.095,0.292
+LLM Engineer,United States,mid,remote,150,155900,188000,229000,0.09,0.173
+LLM Engineer,United States,principal,hybrid,24,269200,318000,402000,0.112,0.167
+LLM Engineer,United States,principal,remote,30,262500,308000,399600,0.111,0.2
+LLM Engineer,United States,senior,hybrid,121,188000,233000,286000,0.091,0.157
+LLM Engineer,United States,senior,onsite,59,210800,233000,285400,0.089,0.153
+LLM Engineer,United States,senior,remote,110,194000,242500,291000,0.092,0.164
+LLM Engineer,United States,staff,hybrid,68,231700,268500,330500,0.114,0.25
+LLM Engineer,United States,staff,onsite,21,226000,269000,317000,0.11,0.238
+LLM Engineer,United States,staff,remote,55,227400,285000,342200,0.109,0.109
+ML Engineer,Australia,mid,hybrid,28,103700,127500,146300,0.105,0.179
+ML Engineer,Australia,mid,remote,23,114000,135000,162200,0.101,0.087
+ML Engineer,Australia,senior,hybrid,26,129500,165000,197000,0.101,0.154
+ML Engineer,Australia,senior,remote,23,139200,162000,187200,0.102,0.087
+ML Engineer,Canada,entry,hybrid,23,79200,92000,106800,0.101,0.217
+ML Engineer,Canada,entry,remote,21,79000,91000,111000,0.102,0.333
+ML Engineer,Canada,mid,hybrid,42,112200,128000,147900,0.103,0.238
+ML Engineer,Canada,mid,onsite,18,115100,135000,159600,0.096,0.222
+ML Engineer,Canada,mid,remote,32,119000,130500,152900,0.103,0.281
+ML Engineer,Canada,senior,hybrid,25,145800,162000,182400,0.102,0.28
+ML Engineer,Canada,senior,onsite,17,133600,153000,174800,0.099,0.294
+ML Engineer,Canada,senior,remote,26,133000,149500,182500,0.101,0.115
+ML Engineer,Canada,staff,hybrid,15,164800,185000,224400,0.129,0.133
+ML Engineer,Canada,staff,remote,15,175600,193000,214200,0.12,0.333
+ML Engineer,Germany,entry,hybrid,21,86000,107000,117000,0.111,0.238
+ML Engineer,Germany,entry,remote,17,83600,90000,103400,0.099,0.118
+ML Engineer,Germany,mid,hybrid,24,113600,138000,166800,0.103,0.25
+ML Engineer,Germany,mid,remote,33,114800,137000,162600,0.103,0.152
+ML Engineer,Germany,senior,hybrid,17,152000,163000,202400,0.098,0.235
+ML Engineer,Germany,senior,remote,31,155000,177000,205000,0.103,0.065
+ML Engineer,India,entry,hybrid,46,40500,50000,61000,0.102,0.152
+ML Engineer,India,entry,onsite,21,42000,50000,59000,0.108,0.19
+ML Engineer,India,entry,remote,40,44700,51000,64000,0.102,0.075
+ML Engineer,India,mid,hybrid,88,59000,75500,85000,0.103,0.159
+ML Engineer,India,mid,onsite,47,56600,67000,84000,0.103,0.106
+ML Engineer,India,mid,remote,70,57900,71000,85100,0.101,0.129
+ML Engineer,India,principal,hybrid,19,93600,116000,144000,0.122,0.158
+ML Engineer,India,senior,hybrid,70,72900,85000,101000,0.102,0.171
+ML Engineer,India,senior,onsite,36,76500,88000,100500,0.103,0.111
+ML Engineer,India,senior,remote,67,74600,89000,109400,0.101,0.164
+ML Engineer,India,staff,hybrid,45,88200,99000,119000,0.123,0.089
+ML Engineer,India,staff,onsite,18,93400,104000,118700,0.126,0.056
+ML Engineer,India,staff,remote,25,83200,103000,131000,0.123,0.08
+ML Engineer,Ireland,mid,hybrid,19,122800,156000,175200,0.103,0.263
+ML Engineer,Netherlands,entry,hybrid,17,83200,104000,118000,0.107,0.118
+ML Engineer,Netherlands,mid,hybrid,31,109000,139000,157000,0.101,0.29
+ML Engineer,Netherlands,mid,remote,25,125800,144000,170200,0.107,0.2
+ML Engineer,Netherlands,senior,hybrid,19,142200,163000,195400,0.099,0.053
+ML Engineer,Singapore,entry,remote,23,86400,94000,105000,0.1,0.261
+ML Engineer,Singapore,mid,hybrid,28,118700,137500,148000,0.102,0.107
+ML Engineer,Singapore,mid,remote,26,124000,137000,149000,0.099,0.115
+ML Engineer,Singapore,senior,hybrid,23,143600,162000,179800,0.098,0.043
+ML Engineer,Singapore,senior,remote,29,143400,174000,202600,0.099,0.069
+ML Engineer,United Kingdom,entry,hybrid,34,89300,107000,121000,0.108,0.176
+ML Engineer,United Kingdom,entry,remote,29,92800,112000,125200,0.105,0.069
+ML Engineer,United Kingdom,mid,hybrid,54,110900,140500,169000,0.102,0.222
+ML Engineer,United Kingdom,mid,onsite,30,119800,137000,161100,0.103,0.133
+ML Engineer,United Kingdom,mid,remote,61,118000,147000,175000,0.106,0.23
+ML Engineer,United Kingdom,senior,hybrid,43,150200,180000,208600,0.103,0.209
+ML Engineer,United Kingdom,senior,onsite,28,138100,173000,220500,0.103,0.25
+ML Engineer,United Kingdom,senior,remote,57,146400,181000,218400,0.1,0.175
+ML Engineer,United Kingdom,staff,hybrid,25,177800,210000,235000,0.121,0.24
+ML Engineer,United Kingdom,staff,remote,22,189200,216000,244800,0.118,0.227
+ML Engineer,United States,entry,hybrid,131,101000,122000,147000,0.102,0.16
+ML Engineer,United States,entry,onsite,51,100000,117000,138000,0.103,0.216
+ML Engineer,United States,entry,remote,125,103400,122000,147000,0.101,0.176
+ML Engineer,United States,mid,hybrid,250,135900,163500,201000,0.101,0.168
+ML Engineer,United States,mid,onsite,102,130000,160500,194000,0.102,0.078
+ML Engineer,United States,mid,remote,278,138000,165000,210000,0.102,0.144
+ML Engineer,United States,principal,hybrid,55,232200,276000,333200,0.126,0.164
+ML Engineer,United States,principal,onsite,21,250000,288000,372000,0.118,0.429
+ML Engineer,United States,principal,remote,42,252600,280500,344700,0.119,0.167
+ML Engineer,United States,senior,hybrid,194,167000,202000,247000,0.102,0.191
+ML Engineer,United States,senior,onsite,105,167000,197000,247000,0.1,0.114
+ML Engineer,United States,senior,remote,211,172000,207000,255000,0.101,0.194
+ML Engineer,United States,staff,hybrid,106,200500,234000,288000,0.12,0.17
+ML Engineer,United States,staff,onsite,44,207500,256500,295400,0.119,0.273
+ML Engineer,United States,staff,remote,117,203000,246000,309000,0.123,0.145
+MLOps Engineer,Australia,senior,remote,15,147400,161000,177600,0.089,0.2
+MLOps Engineer,Canada,entry,hybrid,17,78600,93000,105200,0.091,0.118
+MLOps Engineer,Canada,mid,hybrid,26,110000,125000,152000,0.091,0.231
+MLOps Engineer,Canada,senior,hybrid,18,131800,152500,183000,0.089,0.222
+MLOps Engineer,Canada,senior,remote,19,138000,159000,186000,0.098,0.316
+MLOps Engineer,Germany,mid,hybrid,17,117400,127000,150400,0.097,0.059
+MLOps Engineer,Germany,senior,remote,15,142800,159000,202200,0.091,0.067
+MLOps Engineer,India,entry,hybrid,23,43400,50000,59600,0.096,0.043
+MLOps Engineer,India,entry,onsite,22,41100,49500,57700,0.089,0.045
+MLOps Engineer,India,mid,hybrid,50,62800,68000,83100,0.095,0.16
+MLOps Engineer,India,mid,onsite,22,56100,70500,84900,0.096,0.136
+MLOps Engineer,India,mid,remote,43,59000,72000,85000,0.093,0.023
+MLOps Engineer,India,senior,hybrid,46,71500,82500,99500,0.098,0.13
+MLOps Engineer,India,senior,onsite,27,69800,85000,101000,0.092,0.111
+MLOps Engineer,India,senior,remote,34,68600,84500,106500,0.092,0.059
+MLOps Engineer,India,staff,hybrid,19,90400,99000,124400,0.117,0.0
+MLOps Engineer,India,staff,onsite,17,94200,106000,129000,0.112,0.176
+MLOps Engineer,India,staff,remote,17,84600,104000,124400,0.118,0.176
+MLOps Engineer,Netherlands,mid,hybrid,18,110600,131500,159300,0.093,0.056
+MLOps Engineer,Netherlands,mid,remote,19,119600,145000,177400,0.086,0.053
+MLOps Engineer,Singapore,mid,hybrid,16,114500,124500,138000,0.089,0.188
+MLOps Engineer,Singapore,mid,remote,28,116400,125500,152900,0.087,0.214
+MLOps Engineer,Singapore,senior,hybrid,19,142000,156000,199400,0.092,0.0
+MLOps Engineer,United Kingdom,entry,hybrid,16,89000,101000,113000,0.091,0.188
+MLOps Engineer,United Kingdom,entry,remote,22,88100,108000,122900,0.099,0.182
+MLOps Engineer,United Kingdom,mid,hybrid,30,115600,135000,166300,0.09,0.133
+MLOps Engineer,United Kingdom,mid,onsite,20,111600,134000,154100,0.099,0.2
+MLOps Engineer,United Kingdom,mid,remote,28,119000,143500,172800,0.095,0.179
+MLOps Engineer,United Kingdom,senior,hybrid,32,141700,172500,202900,0.095,0.281
+MLOps Engineer,United Kingdom,senior,onsite,15,154600,179000,203000,0.104,0.2
+MLOps Engineer,United Kingdom,senior,remote,34,143600,165000,210100,0.093,0.118
+MLOps Engineer,United Kingdom,staff,hybrid,17,167200,209000,233000,0.108,0.176
+MLOps Engineer,United States,entry,hybrid,73,97200,112000,135000,0.092,0.192
+MLOps Engineer,United States,entry,onsite,40,95000,111500,138200,0.089,0.25
+MLOps Engineer,United States,entry,remote,73,98000,118000,158200,0.09,0.151
+MLOps Engineer,United States,mid,hybrid,118,130700,154000,197600,0.093,0.203
+MLOps Engineer,United States,mid,onsite,72,138000,162500,192000,0.092,0.125
+MLOps Engineer,United States,mid,remote,158,136000,163000,198300,0.092,0.127
+MLOps Engineer,United States,principal,hybrid,15,244800,290000,316000,0.113,0.2
+MLOps Engineer,United States,principal,remote,23,257600,292000,337000,0.113,0.174
+MLOps Engineer,United States,senior,hybrid,135,169000,199000,245200,0.094,0.252
+MLOps Engineer,United States,senior,onsite,52,165500,202000,247000,0.093,0.135
+MLOps Engineer,United States,senior,remote,136,171500,201500,238500,0.093,0.147
+MLOps Engineer,United States,staff,hybrid,57,195000,237000,277800,0.109,0.298
+MLOps Engineer,United States,staff,onsite,37,192600,226000,279400,0.115,0.27
+MLOps Engineer,United States,staff,remote,69,201600,235000,288200,0.109,0.13
+Research Scientist,Australia,mid,hybrid,15,119000,141000,163600,0.117,0.067
+Research Scientist,Australia,mid,remote,22,113200,134000,152900,0.109,0.273
+Research Scientist,Canada,mid,hybrid,24,115300,133500,155800,0.112,0.417
+Research Scientist,Canada,mid,remote,26,113500,129500,155500,0.115,0.231
+Research Scientist,Canada,senior,hybrid,17,131000,157000,182400,0.112,0.118
+Research Scientist,Germany,mid,remote,17,126800,147000,161400,0.12,0.118
+Research Scientist,India,entry,hybrid,21,46000,55000,65000,0.111,0.095
+Research Scientist,India,entry,remote,23,43000,53000,66600,0.109,0.13
+Research Scientist,India,mid,hybrid,38,62400,72000,91300,0.115,0.132
+Research Scientist,India,mid,onsite,22,62000,71000,88800,0.12,0.136
+Research Scientist,India,mid,remote,37,60800,74000,85200,0.116,0.162
+Research Scientist,India,senior,hybrid,45,76000,88000,113000,0.114,0.022
+Research Scientist,India,senior,remote,24,76800,94000,116300,0.115,0.042
+Research Scientist,India,staff,hybrid,15,88000,112000,121000,0.132,0.067
+Research Scientist,India,staff,remote,18,83700,104500,123500,0.138,0.167
+Research Scientist,Singapore,entry,hybrid,16,86500,97000,116500,0.111,0.188
+Research Scientist,Singapore,mid,hybrid,19,121800,136000,144400,0.11,0.211
+Research Scientist,Singapore,senior,hybrid,15,161000,171000,182400,0.106,0.133
+Research Scientist,Singapore,senior,remote,18,150200,180500,199500,0.111,0.056
+Research Scientist,United Kingdom,entry,remote,17,90800,110000,128600,0.108,0.176
+Research Scientist,United Kingdom,mid,hybrid,38,123700,147000,176200,0.117,0.237
+Research Scientist,United Kingdom,mid,remote,29,122400,143000,179000,0.115,0.241
+Research Scientist,United Kingdom,senior,hybrid,27,150600,176000,201200,0.111,0.148
+Research Scientist,United Kingdom,senior,onsite,15,146800,181000,205800,0.109,0.133
+Research Scientist,United Kingdom,senior,remote,23,149800,173000,209800,0.111,0.261
+Research Scientist,United States,entry,hybrid,65,99400,121000,153600,0.116,0.062
+Research Scientist,United States,entry,onsite,27,106000,119000,146200,0.112,0.037
+Research Scientist,United States,entry,remote,83,105400,123000,145600,0.112,0.169
+Research Scientist,United States,mid,hybrid,121,145000,172000,210000,0.111,0.165
+Research Scientist,United States,mid,onsite,70,141900,170500,213300,0.115,0.157
+Research Scientist,United States,mid,remote,143,142200,168000,209800,0.11,0.175
+Research Scientist,United States,principal,hybrid,30,250900,314500,376400,0.133,0.267
+Research Scientist,United States,principal,remote,26,251500,304000,369000,0.129,0.192
+Research Scientist,United States,senior,hybrid,91,174000,215000,256000,0.111,0.176
+Research Scientist,United States,senior,onsite,36,177500,217500,247500,0.113,0.194
+Research Scientist,United States,senior,remote,103,181000,216000,259600,0.114,0.223
+Research Scientist,United States,staff,hybrid,42,203400,245000,286600,0.133,0.119
+Research Scientist,United States,staff,onsite,25,203800,272000,324200,0.134,0.32
+Research Scientist,United States,staff,remote,62,221200,254500,311000,0.13,0.242

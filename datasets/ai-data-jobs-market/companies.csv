@@ -1,0 +1,281 @@
+company_id,company_name,industry,company_type,company_size,funding_stage,hq_city,country,region,employee_count_estimate,remote_first,ai_maturity_score,benefits_score,glassdoor_like_rating,hiring_velocity_index
+COMP0001,Apex Media,media,adtech,medium,series-d,"Amsterdam, Netherlands",Netherlands,Europe,401,0,59.5,59.8,3.69,44
+COMP0002,Northstar Bio,healthcare,provider,enterprise,public,"Berlin, Germany",Germany,Europe,33797,0,47.7,75.7,3.56,68
+COMP0003,Signal Consumer,retail,commerce,large,subsidiary,"Sydney, Australia",Australia,APAC,2783,0,53.8,77.3,4.03,61
+COMP0004,Vector Solutions,consulting,services,large,subsidiary,"Sydney, Australia",Australia,APAC,2303,0,65.4,83.3,3.86,44
+COMP0005,Nimbus Investments,finance,bank,large,subsidiary,"Bangalore, India",India,APAC,3519,0,61.0,74.3,3.94,59
+COMP0006,Atlas Partners,consulting,advisory,startup,series-b,"New York, NY",United States,North America,15,0,65.6,48.4,3.59,49
+COMP0007,Cobalt Retail,retail,marketplace,startup,seed,"Amsterdam, Netherlands",Netherlands,Europe,58,0,54.0,64.6,3.91,65
+COMP0008,Meridian Finance,finance,asset-manager,startup,series-a,"Boston, MA",United States,North America,29,1,53.7,51.7,3.38,74
+COMP0009,Beacon Analytics,finance,bank,large,public,"Bangalore, India",India,APAC,4985,0,74.5,65.4,3.77,50
+COMP0010,Vertex Partners,consulting,advisory,medium,series-d,"New York, NY",United States,North America,626,1,63.4,69.7,3.67,62
+COMP0011,Pioneer Commerce,retail,marketplace,small,series-c,"New York, NY",United States,North America,137,0,47.1,59.2,4.15,51
+COMP0012,Orbit Solutions,consulting,consulting,medium,late-stage,"Seattle, WA",United States,North America,322,0,68.1,45.7,3.85,59
+COMP0013,Foundry Labs,software,developer-tools,large,public,"Paris, France",France,Europe,3653,0,88.2,69.6,3.54,58
+COMP0014,Helix Systems,software,platform,medium,series-d,"Austin, TX",United States,North America,358,1,54.7,56.6,3.38,62
+COMP0015,Summit Investments,finance,fintech,medium,series-c,"Sydney, Australia",Australia,APAC,564,0,79.1,83.0,4.72,61
+COMP0016,Prism Commerce,retail,consumer,medium,series-d,"Seattle, WA",United States,North America,499,0,50.7,61.6,4.07,58
+COMP0017,Apex AI,software,product,medium,series-c,"Amsterdam, Netherlands",Netherlands,Europe,339,0,90.2,64.3,4.04,49
+COMP0018,Northstar Finance,finance,bank,startup,seed,"London, UK",United Kingdom,Europe,39,0,79.1,54.0,4.03,61
+COMP0019,Signal Cloud,cloud,security,small,series-c,"New York, NY",United States,North America,171,1,53.7,64.7,4.25,70
+COMP0020,Vector Policy,public-sector,public-sector,medium,series-c,"Austin, TX",United States,North America,829,0,71.3,67.3,4.24,58
+COMP0021,Nimbus Learning,education,edtech,small,series-a,"Bangalore, India",India,APAC,232,1,75.5,51.9,3.39,77
+COMP0022,Atlas Factory,manufacturing,automation,medium,series-c,"New York, NY",United States,North America,260,1,59.1,69.4,2.98,67
+COMP0023,Cobalt Consulting,consulting,consulting,medium,series-d,"Bangalore, India",India,APAC,268,0,58.4,58.2,3.59,70
+COMP0024,Meridian Solutions,consulting,advisory,enterprise,subsidiary,"Seattle, WA",United States,North America,37369,1,60.9,73.8,3.52,69
+COMP0025,Beacon Medical,healthcare,provider,enterprise,public,Singapore,Singapore,APAC,30842,0,50.9,75.2,4.32,45
+COMP0026,Vertex Media,media,adtech,small,series-c,"London, UK",United Kingdom,Europe,183,0,84.5,57.7,3.39,54
+COMP0027,Pioneer GovTech,public-sector,public-sector,medium,series-d,"Seattle, WA",United States,North America,996,0,92.9,51.3,3.57,60
+COMP0028,Orbit Content,media,adtech,small,series-c,"New York, NY",United States,North America,237,1,53.5,61.7,3.22,64
+COMP0029,Foundry AI,software,product,startup,series-b,"London, UK",United Kingdom,Europe,49,1,73.2,63.5,3.7,57
+COMP0030,Helix Platform,software,product,small,series-c,"Seattle, WA",United States,North America,122,0,73.6,55.4,3.31,72
+COMP0031,Summit Labs,software,product,enterprise,subsidiary,"Bangalore, India",India,APAC,33025,0,63.3,74.6,3.92,51
+COMP0032,Prism Systems,software,developer-tools,medium,late-stage,"London, UK",United Kingdom,Europe,894,0,66.2,64.8,3.8,50
+COMP0033,Apex Ops,cloud,cloud-platform,small,series-b,"Austin, TX",United States,North America,166,1,68.3,52.5,3.58,86
+COMP0034,Northstar Edu,education,edtech,medium,series-d,"Austin, TX",United States,North America,652,0,63.3,71.3,3.6,56
+COMP0035,Signal Investments,finance,fintech,large,public,"Amsterdam, Netherlands",Netherlands,Europe,3013,1,83.1,79.5,4.54,78
+COMP0036,Vector Scholar,education,edtech,startup,series-b,"Sydney, Australia",Australia,APAC,67,0,65.7,56.0,3.35,56
+COMP0037,Nimbus Retail,retail,commerce,startup,series-a,"New York, NY",United States,North America,23,0,30.5,66.0,3.73,61
+COMP0038,Atlas Ops,cloud,security,medium,series-d,Singapore,Singapore,APAC,339,1,86.7,66.7,4.0,60
+COMP0039,Cobalt Consulting 39,consulting,advisory,small,series-c,"Bangalore, India",India,APAC,188,1,56.2,61.5,3.83,81
+COMP0040,Meridian Medical,healthcare,healthtech,small,series-a,"Paris, France",France,Europe,174,0,60.4,71.4,3.7,74
+COMP0041,Beacon Advisory,consulting,consulting,enterprise,public,"Hyderabad, India",India,APAC,35728,1,77.3,67.4,3.94,86
+COMP0042,Vertex Streaming,media,media,small,series-b,"Toronto, ON",Canada,North America,155,1,64.3,65.8,3.21,35
+COMP0043,Pioneer GovTech 43,public-sector,research-consortium,small,series-c,"San Francisco, CA",United States,North America,193,0,59.7,70.6,3.78,63
+COMP0044,Orbit Analytics,finance,asset-manager,startup,series-b,"Bangalore, India",India,APAC,28,0,75.3,60.3,3.66,67
+COMP0045,Foundry Insights,retail,marketplace,large,subsidiary,"Hyderabad, India",India,APAC,1979,0,54.6,74.0,4.28,74
+COMP0046,Helix Works,software,developer-tools,small,series-a,"New York, NY",United States,North America,166,0,70.1,54.6,3.49,35
+COMP0047,Summit AI,software,developer-tools,small,series-a,"Melbourne, Australia",Australia,APAC,208,1,56.5,67.7,3.65,42
+COMP0048,Prism Platform,software,platform,startup,series-a,"New York, NY",United States,North America,79,0,74.1,61.1,3.82,61
+COMP0049,Apex Learning,education,learning-platform,small,series-b,"Amsterdam, Netherlands",Netherlands,Europe,124,0,62.6,61.7,3.82,83
+COMP0050,Northstar Systems,software,product,startup,series-a,"Seattle, WA",United States,North America,35,1,73.0,62.7,3.81,56
+COMP0051,Signal Cloud 51,software,product,medium,series-d,"San Francisco, CA",United States,North America,474,0,82.3,53.4,3.82,50
+COMP0052,Vector Retail,retail,marketplace,medium,series-d,"Austin, TX",United States,North America,841,0,44.3,63.1,4.61,59
+COMP0053,Nimbus Advisory,consulting,advisory,enterprise,public,"Vancouver, BC",Canada,North America,30669,0,63.2,63.5,4.13,71
+COMP0054,Atlas Platform,software,platform,small,series-b,"Austin, TX",United States,North America,109,1,47.0,59.6,3.0,47
+COMP0055,Cobalt Medical,healthcare,provider,startup,seed,"New York, NY",United States,North America,48,0,87.0,67.3,3.5,62
+COMP0056,Meridian Solutions 56,consulting,services,small,series-b,"Berlin, Germany",Germany,Europe,81,1,62.1,69.7,3.46,80
+COMP0057,Beacon Industrial,manufacturing,automation,medium,series-c,"Melbourne, Australia",Australia,APAC,738,0,52.7,77.6,3.75,59
+COMP0058,Vertex Ops,cloud,cloud-platform,startup,seed,"New York, NY",United States,North America,74,1,50.2,69.4,3.51,84
+COMP0059,Pioneer Cloud,cloud,cloud-platform,startup,seed,"Bangalore, India",India,APAC,71,0,66.0,61.4,3.77,41
+COMP0060,Orbit Security,cloud,cloud-platform,small,series-b,"Hyderabad, India",India,APAC,162,0,93.4,62.1,3.59,45
+COMP0061,Foundry Civic,public-sector,public-sector,small,series-b,"London, UK",United Kingdom,Europe,168,1,62.0,63.5,3.43,80
+COMP0062,Helix Systems 62,software,developer-tools,startup,seed,Singapore,Singapore,APAC,44,1,51.6,62.3,3.79,55
+COMP0063,Summit Consumer,retail,commerce,enterprise,subsidiary,"Toronto, ON",Canada,North America,39467,0,29.1,60.4,3.8,40
+COMP0064,Prism Works,software,platform,large,subsidiary,"Toronto, ON",Canada,North America,3212,0,88.3,59.8,3.99,81
+COMP0065,Apex Advisory,consulting,consulting,small,series-a,"San Francisco, CA",United States,North America,166,0,67.8,65.4,3.08,63
+COMP0066,Northstar Media,media,streaming,startup,series-b,"London, UK",United Kingdom,Europe,67,0,67.2,67.5,3.11,63
+COMP0067,Signal Labs,software,developer-tools,large,subsidiary,"Bangalore, India",India,APAC,1032,0,77.6,74.4,3.69,76
+COMP0068,Vector Policy 68,public-sector,public-sector,startup,series-b,"London, UK",United Kingdom,Europe,59,1,51.6,58.9,4.18,53
+COMP0069,Nimbus Civic,public-sector,research-consortium,small,series-c,"Seattle, WA",United States,North America,201,1,54.6,61.1,3.31,76
+COMP0070,Atlas Investments,finance,bank,large,late-stage,"Bangalore, India",India,APAC,4995,0,65.0,70.6,4.12,31
+COMP0071,Cobalt Health,healthcare,provider,enterprise,public,"New York, NY",United States,North America,8605,1,65.0,75.2,3.6,70
+COMP0072,Meridian Markets,finance,asset-manager,medium,series-d,"Sydney, Australia",Australia,APAC,814,0,64.9,62.2,3.1,33
+COMP0073,Beacon Learning,education,learning-platform,medium,late-stage,"London, UK",United Kingdom,Europe,715,0,42.2,71.4,3.82,89
+COMP0074,Vertex Marketplace,retail,commerce,large,late-stage,"Bangalore, India",India,APAC,2753,0,73.0,66.8,3.75,49
+COMP0075,Pioneer Insights,retail,commerce,startup,series-a,"Sydney, Australia",Australia,APAC,66,1,69.4,40.5,3.41,57
+COMP0076,Orbit Capital,finance,fintech,startup,series-a,"Toronto, ON",Canada,North America,49,1,66.1,52.7,3.68,82
+COMP0077,Foundry Advisory,consulting,consulting,small,series-c,"Boston, MA",United States,North America,119,1,66.4,52.6,3.7,65
+COMP0078,Helix Ops,cloud,infra,small,series-b,"Boston, MA",United States,North America,213,0,67.8,74.3,2.9,35
+COMP0079,Summit Consulting,consulting,consulting,small,series-c,Singapore,Singapore,APAC,162,0,63.4,63.6,3.89,53
+COMP0080,Prism Scholar,education,learning-platform,startup,seed,"New York, NY",United States,North America,17,1,31.0,73.0,4.12,53
+COMP0081,Apex Civic,public-sector,research-consortium,startup,seed,"Dublin, Ireland",Ireland,Europe,45,0,47.3,63.1,3.6,41
+COMP0082,Northstar Retail,retail,consumer,enterprise,public,"Austin, TX",United States,North America,33461,0,65.7,76.4,4.34,64
+COMP0083,Signal Finance,finance,fintech,startup,series-b,"Austin, TX",United States,North America,40,1,53.6,79.8,4.31,87
+COMP0084,Vector Policy 84,public-sector,research-consortium,medium,series-c,"New York, NY",United States,North America,357,0,62.8,63.6,3.24,55
+COMP0085,Nimbus Labs,software,platform,enterprise,public,"New York, NY",United States,North America,25044,0,66.6,61.2,3.85,45
+COMP0086,Atlas Commerce,retail,consumer,small,series-c,"Berlin, Germany",Germany,Europe,222,1,69.9,73.6,4.06,68
+COMP0087,Cobalt Retail 87,retail,commerce,medium,series-d,"Amsterdam, Netherlands",Netherlands,Europe,650,0,56.4,50.6,3.59,59
+COMP0088,Meridian Works,software,platform,large,subsidiary,"London, UK",United Kingdom,Europe,2632,1,72.7,68.0,3.99,71
+COMP0089,Beacon Industrial 89,manufacturing,industrial,startup,series-b,"Hyderabad, India",India,APAC,79,1,32.6,44.4,3.71,68
+COMP0090,Vertex Security,cloud,infra,large,subsidiary,"Paris, France",France,Europe,4132,0,55.5,68.2,3.64,43
+COMP0091,Pioneer Labs,software,developer-tools,small,series-b,"San Francisco, CA",United States,North America,115,1,90.0,62.1,3.75,73
+COMP0092,Orbit Retail,retail,marketplace,medium,late-stage,"Boston, MA",United States,North America,701,0,52.1,72.1,3.71,59
+COMP0093,Foundry Cloud,software,developer-tools,startup,seed,"Austin, TX",United States,North America,16,1,51.7,62.4,3.73,58
+COMP0094,Helix Works 94,software,product,small,series-c,"London, UK",United Kingdom,Europe,160,1,72.3,52.9,3.95,68
+COMP0095,Summit Security,cloud,cloud-platform,startup,seed,"Seattle, WA",United States,North America,35,0,71.7,72.5,3.31,39
+COMP0096,Prism Platform 96,software,product,startup,series-b,"Austin, TX",United States,North America,51,1,48.6,54.7,3.5,62
+COMP0097,Apex Markets,finance,asset-manager,startup,seed,"London, UK",United Kingdom,Europe,49,1,50.6,66.9,3.74,65
+COMP0098,Northstar Systems 98,software,product,enterprise,subsidiary,"New York, NY",United States,North America,36365,1,69.8,61.2,3.64,73
+COMP0099,Signal Clinical,healthcare,biotech,small,series-c,"Hyderabad, India",India,APAC,178,1,64.4,76.6,3.04,63
+COMP0100,Vector Scholar 100,education,edtech,enterprise,subsidiary,"Bangalore, India",India,APAC,23118,0,56.0,76.1,3.82,57
+COMP0101,Nimbus AI,software,platform,enterprise,public,"Sydney, Australia",Australia,APAC,10135,0,55.2,71.1,4.23,68
+COMP0102,Atlas Edu,education,edtech,small,series-a,"Dublin, Ireland",Ireland,Europe,159,1,53.7,66.4,2.7,73
+COMP0103,Cobalt Consulting 103,consulting,consulting,medium,late-stage,Singapore,Singapore,APAC,762,1,74.4,58.2,4.49,67
+COMP0104,Meridian Studios,media,streaming,small,series-b,Singapore,Singapore,APAC,154,0,57.6,49.4,3.61,45
+COMP0105,Beacon Medical 105,healthcare,healthtech,startup,series-a,"Berlin, Germany",Germany,Europe,47,0,46.0,52.6,4.09,50
+COMP0106,Vertex Commerce,retail,commerce,medium,series-d,"Sydney, Australia",Australia,APAC,507,1,66.8,66.7,3.92,48
+COMP0107,Pioneer GovTech 107,public-sector,research-consortium,large,public,"London, UK",United Kingdom,Europe,4004,0,75.8,89.9,4.36,54
+COMP0108,Orbit Consumer,retail,consumer,large,late-stage,"Vancouver, BC",Canada,North America,4629,0,57.3,64.7,3.75,64
+COMP0109,Foundry Labs 109,software,developer-tools,startup,seed,"Berlin, Germany",Germany,Europe,63,1,54.2,77.4,3.52,44
+COMP0110,Helix Investments,finance,asset-manager,large,late-stage,"New York, NY",United States,North America,2100,1,76.4,75.4,4.01,73
+COMP0111,Summit Compute,cloud,security,large,subsidiary,"Dublin, Ireland",Ireland,Europe,3982,0,81.5,83.9,3.97,48
+COMP0112,Prism Works 112,software,developer-tools,small,series-a,"Hyderabad, India",India,APAC,184,1,78.7,69.8,3.37,81
+COMP0113,Apex Ops 113,cloud,infra,medium,late-stage,"Seattle, WA",United States,North America,552,0,57.5,67.4,3.27,53
+COMP0114,Northstar Studios,media,adtech,medium,late-stage,"Toronto, ON",Canada,North America,430,0,62.9,64.2,3.86,53
+COMP0115,Signal Labs 115,software,developer-tools,large,public,"New York, NY",United States,North America,2464,0,74.5,86.5,3.87,53
+COMP0116,Vector Systems,software,product,small,series-a,"Melbourne, Australia",Australia,APAC,112,1,84.8,91.1,3.49,88
+COMP0117,Nimbus Cloud,software,developer-tools,startup,series-a,"Seattle, WA",United States,North America,46,0,52.2,47.6,3.93,52
+COMP0118,Atlas Ops 118,cloud,security,medium,late-stage,"Amsterdam, Netherlands",Netherlands,Europe,740,0,83.7,78.8,3.87,69
+COMP0119,Cobalt Analytics,finance,bank,medium,series-c,"San Francisco, CA",United States,North America,526,0,77.4,49.4,3.42,74
+COMP0120,Meridian Investments,finance,fintech,large,subsidiary,"Bangalore, India",India,APAC,2965,0,70.2,72.8,4.3,50
+COMP0121,Beacon Compute,cloud,cloud-platform,startup,series-a,"San Francisco, CA",United States,North America,20,0,66.8,60.3,4.32,54
+COMP0122,Vertex Systems,software,platform,enterprise,public,"Bangalore, India",India,APAC,23863,0,85.6,70.4,4.35,56
+COMP0123,Pioneer Consulting,consulting,advisory,medium,series-d,"Toronto, ON",Canada,North America,482,1,51.5,63.1,3.94,74
+COMP0124,Orbit Works,software,product,startup,series-a,"Bangalore, India",India,APAC,41,0,72.3,57.4,3.94,57
+COMP0125,Foundry Civic 125,public-sector,research-consortium,enterprise,subsidiary,"New York, NY",United States,North America,26601,0,54.9,56.9,3.56,43
+COMP0126,Helix Media,media,streaming,large,public,"San Francisco, CA",United States,North America,1197,0,35.1,70.8,3.55,54
+COMP0127,Summit Streaming,media,streaming,medium,series-c,"Seattle, WA",United States,North America,349,0,68.3,55.0,3.92,55
+COMP0128,Prism Systems 128,software,developer-tools,enterprise,public,"Berlin, Germany",Germany,Europe,11018,0,87.4,82.1,3.81,66
+COMP0129,Apex Cloud,software,product,medium,series-d,"Amsterdam, Netherlands",Netherlands,Europe,270,1,53.1,58.1,3.85,66
+COMP0130,Northstar Public Data,public-sector,public-sector,small,series-a,"Austin, TX",United States,North America,89,1,61.6,71.9,3.53,65
+COMP0131,Signal Academy,education,edtech,startup,series-b,"New York, NY",United States,North America,45,1,73.9,62.6,4.15,73
+COMP0132,Vector Works,manufacturing,industrial,startup,series-a,"Boston, MA",United States,North America,36,0,64.7,68.7,3.51,40
+COMP0133,Nimbus Ops,cloud,security,medium,series-c,"Boston, MA",United States,North America,854,0,69.3,68.7,3.92,77
+COMP0134,Atlas Public Data,public-sector,research-consortium,medium,series-d,"Austin, TX",United States,North America,556,0,58.8,58.9,3.07,53
+COMP0135,Cobalt Investments,finance,bank,medium,late-stage,"Toronto, ON",Canada,North America,468,0,61.5,70.7,3.69,80
+COMP0136,Meridian Works 136,software,developer-tools,large,late-stage,"Boston, MA",United States,North America,1858,0,68.4,70.8,3.61,65
+COMP0137,Beacon Retail,retail,marketplace,large,subsidiary,Singapore,Singapore,APAC,4389,0,50.5,72.2,3.69,78
+COMP0138,Vertex Consumer,retail,marketplace,startup,series-a,"Zurich, Switzerland",Switzerland,Europe,71,0,67.6,63.6,3.79,37
+COMP0139,Pioneer GovTech 139,public-sector,research-consortium,small,series-c,"Seattle, WA",United States,North America,194,0,32.4,65.6,4.0,33
+COMP0140,Orbit Policy,public-sector,research-consortium,small,series-a,"Dublin, Ireland",Ireland,Europe,230,1,27.4,69.1,3.96,64
+COMP0141,Foundry Industrial,manufacturing,industrial,medium,late-stage,"Austin, TX",United States,North America,345,1,67.7,56.2,3.84,75
+COMP0142,Helix Public Data,public-sector,research-consortium,startup,series-a,"London, UK",United Kingdom,Europe,45,0,48.9,57.4,3.69,34
+COMP0143,Summit AI 143,software,platform,medium,late-stage,"New York, NY",United States,North America,585,1,46.5,52.3,4.01,71
+COMP0144,Prism Studios,media,streaming,enterprise,public,"San Francisco, CA",United States,North America,27809,0,55.4,64.0,4.05,62
+COMP0145,Apex Security,cloud,security,enterprise,public,"San Francisco, CA",United States,North America,12120,0,67.7,69.5,4.1,37
+COMP0146,Northstar Systems 146,software,developer-tools,startup,series-b,"Bangalore, India",India,APAC,25,0,62.9,58.9,3.61,50
+COMP0147,Signal Cloud 147,software,product,enterprise,public,"New York, NY",United States,North America,22974,0,84.9,84.5,4.24,34
+COMP0148,Vector Works 148,manufacturing,automation,large,public,Singapore,Singapore,APAC,1507,0,64.7,73.8,4.0,76
+COMP0149,Nimbus Advisory 149,consulting,services,medium,series-d,"Boston, MA",United States,North America,460,0,73.0,52.1,3.82,43
+COMP0150,Atlas Edu 150,education,edtech,medium,series-d,"San Francisco, CA",United States,North America,368,1,80.3,69.0,3.64,76
+COMP0151,Cobalt Automation,manufacturing,industrial,small,series-b,"New York, NY",United States,North America,239,1,66.3,65.6,3.93,67
+COMP0152,Meridian Systems,software,platform,large,public,"Dublin, Ireland",Ireland,Europe,4457,0,85.4,63.5,4.68,69
+COMP0153,Beacon Learning 153,education,learning-platform,small,series-a,"London, UK",United Kingdom,Europe,152,1,60.2,53.9,3.99,80
+COMP0154,Vertex Partners 154,consulting,advisory,startup,seed,Singapore,Singapore,APAC,27,1,38.4,65.4,3.67,61
+COMP0155,Pioneer Automation,manufacturing,industrial,medium,series-d,"Boston, MA",United States,North America,980,0,75.3,61.6,3.8,88
+COMP0156,Orbit Compute,cloud,security,enterprise,public,"Toronto, ON",Canada,North America,7111,0,67.7,68.0,4.41,54
+COMP0157,Foundry Civic 157,public-sector,public-sector,medium,series-c,"Berlin, Germany",Germany,Europe,834,0,47.8,67.6,4.05,56
+COMP0158,Helix Partners,consulting,services,medium,late-stage,"New York, NY",United States,North America,809,1,71.5,62.9,2.91,65
+COMP0159,Summit Analytics,finance,asset-manager,startup,seed,"New York, NY",United States,North America,33,1,75.8,64.1,3.82,78
+COMP0160,Prism Works 160,software,developer-tools,small,series-a,"Toronto, ON",Canada,North America,105,1,61.6,62.8,3.48,52
+COMP0161,Apex AI 161,software,developer-tools,medium,series-c,"Zurich, Switzerland",Switzerland,Europe,331,0,62.2,56.8,4.16,60
+COMP0162,Northstar Infra,cloud,security,small,series-c,"Seattle, WA",United States,North America,208,1,70.6,63.7,3.89,80
+COMP0163,Signal Care,healthcare,biotech,small,series-b,Singapore,Singapore,APAC,142,0,34.8,50.3,2.74,52
+COMP0164,Vector Scholar 164,education,learning-platform,large,late-stage,"Toronto, ON",Canada,North America,1324,1,32.4,78.2,4.09,72
+COMP0165,Nimbus Security,cloud,cloud-platform,large,subsidiary,"Seattle, WA",United States,North America,1787,0,57.8,87.2,3.81,67
+COMP0166,Atlas Health,healthcare,provider,small,series-c,"Dublin, Ireland",Ireland,Europe,240,1,48.4,68.5,3.84,46
+COMP0167,Cobalt AI,software,platform,enterprise,subsidiary,"Bangalore, India",India,APAC,5110,1,78.3,80.1,3.85,62
+COMP0168,Meridian Platform,software,platform,large,subsidiary,"Bangalore, India",India,APAC,1941,0,55.0,73.6,4.16,33
+COMP0169,Beacon Analytics 169,finance,asset-manager,large,late-stage,"Boston, MA",United States,North America,3952,1,69.4,82.3,3.13,72
+COMP0170,Vertex Systems 170,software,developer-tools,medium,late-stage,"Bangalore, India",India,APAC,316,0,49.5,39.6,4.03,42
+COMP0171,Pioneer Health,healthcare,biotech,medium,late-stage,"Berlin, Germany",Germany,Europe,804,0,63.4,66.2,3.78,78
+COMP0172,Orbit Solutions 172,consulting,services,large,subsidiary,"San Francisco, CA",United States,North America,2873,1,54.3,85.6,4.08,70
+COMP0173,Foundry Learning,education,edtech,large,late-stage,"Seattle, WA",United States,North America,1474,1,49.9,77.3,4.9,43
+COMP0174,Helix Clinical,healthcare,biotech,startup,seed,"New York, NY",United States,North America,57,0,72.1,64.9,4.1,23
+COMP0175,Summit Investments 175,finance,asset-manager,startup,series-b,"Austin, TX",United States,North America,21,0,68.8,65.8,4.08,31
+COMP0176,Prism Health,healthcare,biotech,enterprise,public,"London, UK",United Kingdom,Europe,31067,0,29.0,78.5,3.38,56
+COMP0177,Apex Infra,cloud,infra,medium,late-stage,"Bangalore, India",India,APAC,971,0,75.4,59.1,3.62,34
+COMP0178,Northstar Content,media,adtech,enterprise,subsidiary,"Paris, France",France,Europe,37126,0,44.8,71.0,4.53,72
+COMP0179,Signal AI,software,developer-tools,small,series-b,"Seattle, WA",United States,North America,168,1,49.8,64.4,3.86,64
+COMP0180,Vector Investments,finance,asset-manager,medium,late-stage,"Berlin, Germany",Germany,Europe,873,1,51.0,52.7,3.51,85
+COMP0181,Nimbus Labs 181,software,developer-tools,small,series-c,"San Francisco, CA",United States,North America,223,0,62.6,47.3,3.22,48
+COMP0182,Atlas Systems,software,developer-tools,medium,series-d,"Bangalore, India",India,APAC,434,1,71.4,51.7,3.53,69
+COMP0183,Cobalt Consulting 183,consulting,services,medium,series-c,"Toronto, ON",Canada,North America,295,1,56.0,57.2,2.9,76
+COMP0184,Meridian Works 184,software,developer-tools,enterprise,public,Singapore,Singapore,APAC,37267,0,76.3,58.6,4.27,36
+COMP0185,Beacon AI,software,product,enterprise,public,"New York, NY",United States,North America,23477,0,69.9,72.4,3.87,55
+COMP0186,Vertex Compute,cloud,security,large,subsidiary,"Toronto, ON",Canada,North America,2384,0,66.7,63.8,3.94,50
+COMP0187,Pioneer Markets,finance,fintech,large,subsidiary,"Amsterdam, Netherlands",Netherlands,Europe,3584,1,72.8,67.1,4.21,57
+COMP0188,Orbit Scholar,education,edtech,small,series-c,"London, UK",United Kingdom,Europe,129,0,78.5,85.7,3.34,56
+COMP0189,Foundry Advisory 189,consulting,advisory,large,late-stage,"San Francisco, CA",United States,North America,4005,0,43.4,80.4,3.58,95
+COMP0190,Helix Investments 190,finance,fintech,large,late-stage,"London, UK",United Kingdom,Europe,4042,0,89.5,83.2,4.0,37
+COMP0191,Summit Compute 191,cloud,security,medium,late-stage,"San Francisco, CA",United States,North America,557,0,57.2,69.9,4.12,71
+COMP0192,Prism Bio,healthcare,healthtech,small,series-b,"New York, NY",United States,North America,96,1,61.3,60.0,3.05,63
+COMP0193,Apex Consumer,retail,consumer,startup,seed,"New York, NY",United States,North America,41,1,54.3,58.9,3.73,41
+COMP0194,Northstar Edu 194,education,edtech,medium,series-d,"Zurich, Switzerland",Switzerland,Europe,888,0,34.3,65.7,3.7,58
+COMP0195,Signal Insights,retail,consumer,enterprise,public,"London, UK",United Kingdom,Europe,16931,0,67.2,84.2,4.13,43
+COMP0196,Vector Capital,finance,bank,medium,series-d,"Melbourne, Australia",Australia,APAC,989,0,78.0,63.6,3.31,61
+COMP0197,Nimbus Retail 197,retail,commerce,medium,series-d,"Boston, MA",United States,North America,759,0,51.0,63.1,4.01,35
+COMP0198,Atlas Care,healthcare,biotech,small,series-c,"Zurich, Switzerland",Switzerland,Europe,174,1,65.9,56.6,3.78,63
+COMP0199,Cobalt Labs,software,platform,startup,series-b,"San Francisco, CA",United States,North America,16,1,52.2,69.6,3.32,87
+COMP0200,Meridian Signals,media,streaming,enterprise,subsidiary,"San Francisco, CA",United States,North America,11251,0,53.6,74.4,4.21,48
+COMP0201,Beacon Advisory 201,consulting,advisory,medium,late-stage,"Vancouver, BC",Canada,North America,670,0,75.1,46.7,3.95,75
+COMP0202,Vertex Partners 202,consulting,services,startup,seed,"Toronto, ON",Canada,North America,57,0,60.4,47.4,3.89,70
+COMP0203,Pioneer Ops,cloud,cloud-platform,medium,late-stage,"San Francisco, CA",United States,North America,899,0,74.4,58.5,3.32,48
+COMP0204,Orbit Platform,software,product,enterprise,public,"San Francisco, CA",United States,North America,37374,0,69.4,73.5,3.74,62
+COMP0205,Foundry Industrial 205,manufacturing,industrial,medium,late-stage,"Hyderabad, India",India,APAC,295,0,50.6,73.3,3.59,35
+COMP0206,Helix Systems 206,software,platform,large,late-stage,"Hyderabad, India",India,APAC,2890,0,54.7,66.2,3.54,68
+COMP0207,Summit Cloud,software,platform,small,series-c,Singapore,Singapore,APAC,169,1,88.3,62.7,3.29,58
+COMP0208,Prism Consumer,retail,marketplace,enterprise,subsidiary,"Seattle, WA",United States,North America,29253,0,53.4,54.0,3.64,43
+COMP0209,Apex AI 209,software,developer-tools,medium,late-stage,"Seattle, WA",United States,North America,634,0,71.6,52.8,4.02,39
+COMP0210,Northstar Insights,retail,consumer,startup,series-a,"Hyderabad, India",India,APAC,47,1,55.2,55.7,3.87,71
+COMP0211,Signal Labs 211,software,platform,medium,late-stage,"London, UK",United Kingdom,Europe,451,1,89.4,49.6,3.97,41
+COMP0212,Vector Systems 212,software,product,small,series-a,"Toronto, ON",Canada,North America,147,0,69.4,60.5,3.42,51
+COMP0213,Nimbus Ops 213,cloud,infra,small,series-c,"San Francisco, CA",United States,North America,96,0,71.8,72.7,3.73,61
+COMP0214,Atlas Studios,media,adtech,medium,late-stage,Singapore,Singapore,APAC,986,1,50.0,67.3,3.79,48
+COMP0215,Cobalt Automation 215,manufacturing,industrial,startup,seed,"Bangalore, India",India,APAC,48,0,79.3,69.6,3.7,78
+COMP0216,Meridian Capital,finance,bank,medium,series-c,"San Francisco, CA",United States,North America,568,0,69.2,55.1,3.75,55
+COMP0217,Beacon Civic,public-sector,public-sector,medium,series-c,"Hyderabad, India",India,APAC,897,0,73.7,58.1,3.93,50
+COMP0218,Vertex Care,healthcare,provider,small,series-b,"Amsterdam, Netherlands",Netherlands,Europe,111,0,61.5,72.2,3.93,82
+COMP0219,Pioneer Cloud 219,cloud,security,small,series-a,"London, UK",United Kingdom,Europe,125,0,55.5,70.7,3.27,72
+COMP0220,Orbit Investments,finance,fintech,large,public,"New York, NY",United States,North America,4228,0,47.3,66.0,3.52,35
+COMP0221,Foundry Capital,finance,bank,startup,seed,"London, UK",United Kingdom,Europe,66,0,68.6,68.3,3.63,51
+COMP0222,Helix Platform 222,software,developer-tools,small,series-a,"Seattle, WA",United States,North America,85,1,53.6,62.7,3.72,37
+COMP0223,Summit Finance,finance,fintech,startup,series-a,"New York, NY",United States,North America,34,0,78.3,62.0,3.54,47
+COMP0224,Prism Studios 224,media,streaming,large,subsidiary,"Hyderabad, India",India,APAC,4582,0,59.1,79.8,4.2,44
+COMP0225,Apex Cloud 225,software,developer-tools,enterprise,public,"San Francisco, CA",United States,North America,14680,1,65.6,66.9,4.39,53
+COMP0226,Northstar Works,software,developer-tools,small,series-b,"Boston, MA",United States,North America,87,1,71.4,67.9,3.61,68
+COMP0227,Signal Markets,finance,bank,enterprise,subsidiary,"Austin, TX",United States,North America,30914,0,69.8,71.7,3.97,86
+COMP0228,Vector Consumer,retail,consumer,small,series-b,"Bangalore, India",India,APAC,123,0,53.5,66.2,3.42,51
+COMP0229,Nimbus Cloud 229,cloud,security,startup,seed,"London, UK",United Kingdom,Europe,35,0,98.0,66.9,3.45,46
+COMP0230,Atlas Insights,retail,commerce,large,public,"San Francisco, CA",United States,North America,3049,0,66.8,63.5,3.52,59
+COMP0231,Cobalt Cloud,software,platform,small,series-a,"Paris, France",France,Europe,163,1,57.7,76.0,3.92,76
+COMP0232,Meridian Works 232,software,platform,startup,series-a,Singapore,Singapore,APAC,77,1,58.8,52.2,3.6,50
+COMP0233,Beacon Civic 233,public-sector,research-consortium,small,series-b,"San Francisco, CA",United States,North America,181,0,83.5,65.3,3.05,41
+COMP0234,Vertex Partners 234,consulting,advisory,enterprise,public,"New York, NY",United States,North America,16205,0,64.6,79.3,3.57,42
+COMP0235,Pioneer Investments,finance,fintech,small,series-a,"Seattle, WA",United States,North America,132,1,59.2,57.6,3.64,69
+COMP0236,Orbit Commerce,retail,marketplace,enterprise,public,"London, UK",United Kingdom,Europe,36843,0,65.3,67.7,4.18,69
+COMP0237,Foundry Bio,healthcare,provider,startup,series-a,"New York, NY",United States,North America,61,0,50.2,48.1,3.73,45
+COMP0238,Helix Partners 238,consulting,consulting,large,subsidiary,"Hyderabad, India",India,APAC,1145,0,65.0,93.9,4.0,62
+COMP0239,Summit AI 239,software,developer-tools,small,series-c,"New York, NY",United States,North America,198,0,67.9,54.0,3.59,73
+COMP0240,Prism Solutions,consulting,services,medium,series-c,"Austin, TX",United States,North America,474,1,39.0,55.6,3.68,84
+COMP0241,Apex Learning 241,education,edtech,large,public,"Vancouver, BC",Canada,North America,4490,0,62.0,74.5,4.28,63
+COMP0242,Northstar Factory,manufacturing,industrial,startup,series-a,"Boston, MA",United States,North America,26,1,67.5,69.1,3.63,42
+COMP0243,Signal Academy 243,education,edtech,startup,series-b,"Boston, MA",United States,North America,64,1,21.2,50.2,4.36,60
+COMP0244,Vector Cloud,cloud,cloud-platform,medium,series-c,"Boston, MA",United States,North America,870,1,74.5,66.6,3.94,99
+COMP0245,Nimbus Insights,retail,marketplace,startup,seed,"San Francisco, CA",United States,North America,49,1,72.0,72.3,4.6,57
+COMP0246,Atlas Platform 246,software,platform,startup,series-b,"San Francisco, CA",United States,North America,71,1,63.8,66.7,3.53,95
+COMP0247,Cobalt Infra,cloud,cloud-platform,enterprise,public,"Bangalore, India",India,APAC,38076,0,69.7,77.0,4.03,51
+COMP0248,Meridian Care,healthcare,healthtech,small,series-a,"London, UK",United Kingdom,Europe,159,1,71.7,63.1,2.87,75
+COMP0249,Beacon Civic 249,public-sector,public-sector,medium,series-d,"Amsterdam, Netherlands",Netherlands,Europe,976,1,61.1,62.7,3.53,69
+COMP0250,Vertex Factory,manufacturing,industrial,startup,series-b,"Zurich, Switzerland",Switzerland,Europe,19,0,55.7,42.5,3.63,67
+COMP0251,Pioneer Automation 251,manufacturing,industrial,small,series-b,"New York, NY",United States,North America,146,0,65.5,62.6,3.77,39
+COMP0252,Orbit Markets,finance,asset-manager,medium,series-d,"Seattle, WA",United States,North America,497,0,87.8,53.0,3.58,62
+COMP0253,Foundry Ops,cloud,cloud-platform,startup,series-a,"London, UK",United Kingdom,Europe,24,0,55.8,60.6,3.66,78
+COMP0254,Helix Edu,education,edtech,large,public,"San Francisco, CA",United States,North America,3768,0,57.0,69.3,4.18,34
+COMP0255,Summit Investments 255,finance,asset-manager,large,public,"London, UK",United Kingdom,Europe,1762,0,68.5,52.4,4.15,32
+COMP0256,Prism Compute,cloud,cloud-platform,medium,series-d,"London, UK",United Kingdom,Europe,286,0,61.3,68.9,3.54,69
+COMP0257,Apex Retail,retail,commerce,large,subsidiary,"London, UK",United Kingdom,Europe,1100,1,61.5,68.5,3.07,60
+COMP0258,Northstar Platform,software,product,medium,series-d,"Seattle, WA",United States,North America,801,0,85.3,55.6,3.48,64
+COMP0259,Signal GovTech,public-sector,research-consortium,large,late-stage,"Austin, TX",United States,North America,2321,1,71.6,93.1,3.7,67
+COMP0260,Vector Investments 260,finance,fintech,startup,seed,"Austin, TX",United States,North America,68,1,66.1,53.4,3.36,71
+COMP0261,Nimbus Cloud 261,software,developer-tools,enterprise,subsidiary,"London, UK",United Kingdom,Europe,39702,1,78.8,96.0,3.77,61
+COMP0262,Atlas Factory 262,manufacturing,automation,large,late-stage,"Seattle, WA",United States,North America,1213,0,48.1,67.9,3.93,69
+COMP0263,Cobalt Care,healthcare,healthtech,startup,seed,"Seattle, WA",United States,North America,35,1,43.7,56.0,3.43,61
+COMP0264,Meridian Marketplace,retail,marketplace,small,series-c,"Berlin, Germany",Germany,Europe,235,1,61.9,68.8,3.38,68
+COMP0265,Beacon Insights,retail,consumer,medium,series-d,"San Francisco, CA",United States,North America,276,0,60.6,62.6,3.66,54
+COMP0266,Vertex Compute 266,cloud,security,medium,late-stage,"Austin, TX",United States,North America,437,0,69.0,71.2,3.45,66
+COMP0267,Pioneer Markets 267,finance,bank,medium,series-c,"Berlin, Germany",Germany,Europe,819,0,83.8,68.5,3.79,70
+COMP0268,Orbit Works 268,software,product,medium,late-stage,"Amsterdam, Netherlands",Netherlands,Europe,810,0,79.9,59.9,3.49,79
+COMP0269,Foundry Marketplace,retail,marketplace,enterprise,public,"London, UK",United Kingdom,Europe,27412,0,64.7,54.9,3.82,80
+COMP0270,Helix Platform 270,software,product,enterprise,subsidiary,"San Francisco, CA",United States,North America,34267,1,77.2,71.3,3.77,83
+COMP0271,Summit Labs 271,software,platform,medium,series-c,"Bangalore, India",India,APAC,728,0,81.5,54.3,3.13,64
+COMP0272,Prism Scholar 272,education,learning-platform,enterprise,subsidiary,"Boston, MA",United States,North America,28359,0,57.5,67.1,3.79,84
+COMP0273,Apex Finance,finance,bank,large,public,"Hyderabad, India",India,APAC,4685,0,73.7,68.2,3.17,67
+COMP0274,Northstar Public Data 274,public-sector,public-sector,large,subsidiary,Singapore,Singapore,APAC,4510,0,78.2,83.3,3.57,58
+COMP0275,Signal Insights 275,retail,marketplace,small,series-a,"Seattle, WA",United States,North America,249,0,60.2,62.3,3.83,44
+COMP0276,Vector Compute,cloud,infra,small,series-a,"Bangalore, India",India,APAC,113,0,68.0,66.4,3.86,69
+COMP0277,Nimbus Civic 277,public-sector,research-consortium,large,subsidiary,"Berlin, Germany",Germany,Europe,1679,0,63.6,79.1,3.34,44
+COMP0278,Atlas Edu 278,education,learning-platform,small,series-c,"London, UK",United Kingdom,Europe,98,1,74.9,62.1,3.77,84
+COMP0279,Cobalt Cloud 279,cloud,security,large,late-stage,"San Francisco, CA",United States,North America,3957,0,78.9,66.0,3.76,30
+COMP0280,Meridian Insights,retail,consumer,medium,series-d,"Toronto, ON",Canada,North America,864,0,49.8,56.2,4.24,58
