@@ -5056,4 +5056,428 @@ Curious whether others are seeing more gains from preprocessing or from architec
 
 ---
 
+## Draft 57: House Prices - Feature Importance Findings
+
+**Target forum:** House Prices
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-03-26
+**Status:** ready
+
+### Feature Importance Findings from My House Prices Notebook
+
+After running permutation importance and SHAP on my House Prices pipeline, the top five features were OverallQual, GrLivArea, GarageCars, TotalBsmtSF, and a neighborhood target-encoded feature. What surprised me was how much OverallQual dominated everything else -- removing it alone increased RMSLE by about 0.04, while the next four combined accounted for roughly the same delta.
+
+The practical takeaway was that spending time engineering interactions with OverallQual (e.g., OverallQual x GrLivArea, OverallQual x neighborhood median) gave more consistent CV improvement than adding dozens of smaller features. My best single-model CV sits at 0.1198 RMSLE right now with a relatively compact feature set.
+
+Full EDA and feature engineering walkthrough here:
+https://www.kaggle.com/code/lorenzoscaturchio/house-prices-complete-eda-feature-engineering
+
+Curious whether others have found OverallQual interactions to be this dominant or if there is a feature set that competes without it.
+
+---
+
+## Draft 58: House Prices - Handling Missing Values Strategy
+
+**Target forum:** House Prices
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-03-28
+**Status:** ready
+
+### Missing Values Strategy That Cleaned Up My House Prices Pipeline
+
+One thing that improved my House Prices pipeline more than I expected was treating missing values as meaningful rather than just filling them. For features like PoolQC, MiscFeature, Alley, and Fence, NA genuinely means "does not exist" rather than "unknown." Encoding those as a separate category instead of imputing the mode gave a small but consistent CV improvement.
+
+For LotFrontage I used neighborhood-median imputation instead of global median, which made more sense geographically and dropped my RMSLE by about 0.002. GarageYrBlt I filled with YearBuilt when the house had no garage, treating it as a proxy for property age.
+
+The broader lesson: spending an hour understanding why each column has missing values pays off more than any automated imputation strategy.
+
+Notebook with the full approach:
+https://www.kaggle.com/code/lorenzoscaturchio/house-prices-complete-eda-feature-engineering
+
+---
+
+## Draft 59: Digit Recognizer - CNN Architecture Comparison
+
+**Target forum:** Digit Recognizer
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-03-30
+**Status:** ready
+
+### CNN Architecture Comparison on Digit Recognizer
+
+I tested three CNN architectures on Digit Recognizer and the results were more compressed than I expected. A simple 2-conv-layer network hit 99.1%, a deeper 4-layer network with batch norm reached 99.4%, and a ResNet-style skip-connection variant topped out at 99.5%. The jump from 2 layers to 4 layers with batch norm was the most efficient gain.
+
+The interesting part was that the deeper models were far more sensitive to learning rate scheduling. The 2-layer model was forgiving -- flat lr worked fine. The 4-layer model needed cosine annealing or it would plateau at 99.2% and stay there.
+
+Notebook with all three architectures and training curves:
+https://www.kaggle.com/code/lorenzoscaturchio/digit-recognizer-cnn-from-scratch-to-99
+
+If anyone has pushed past 99.5% without pretraining on external data, I would be interested in what architecture choices mattered most.
+
+---
+
+## Draft 60: Digit Recognizer - Data Augmentation Impact
+
+**Target forum:** Digit Recognizer
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-01
+**Status:** ready
+
+### Data Augmentation Impact on Digit Recognizer Accuracy
+
+I ran an ablation on data augmentation for my Digit Recognizer CNN and the results were clearer than I expected. Without augmentation the model hit 99.2%. Adding rotation (+-10 degrees) and small shifts bumped it to 99.4%. Adding elastic distortion on top of that pushed it to 99.5%.
+
+The one augmentation that hurt was aggressive zoom -- anything beyond 10% zoom range introduced too many ambiguous crops and the validation accuracy actually dropped. Keeping augmentations mild and realistic to how people actually write digits matters more than throwing every transform at the data.
+
+Notebook with the full augmentation ablation:
+https://www.kaggle.com/code/lorenzoscaturchio/digit-recognizer-cnn-from-scratch-to-99
+
+---
+
+## Draft 61: Titanic - Ensemble Stacking Approach
+
+**Target forum:** Titanic
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-03
+**Status:** ready
+
+### Ensemble Stacking Approach on Titanic
+
+I tried a 3-model stack on Titanic (LightGBM, CatBoost, logistic regression as meta-learner) and moved from 0.77751 to 0.78229 on the public board. The key was using out-of-fold predictions from 5-fold stratified CV as meta-features rather than just averaging predictions.
+
+What made the difference was that LightGBM and CatBoost disagreed most on passengers with partial cabin data and mid-range fares. The meta-learner learned to weight CatBoost more heavily in those cases, which a simple average would have missed. Adding the raw features back into the meta-learner alongside the OOF predictions gave another small bump.
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/titanic-ml-guide-zero-to-top-5-accuracy
+
+Has anyone found a meta-learner that works better than logistic regression for this competition? Ridge worked similarly for me but I have not tried a shallow neural net.
+
+---
+
+## Draft 62: NLP Disaster Tweets - TF-IDF vs BERT Tradeoffs
+
+**Target forum:** NLP Getting Started
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-04
+**Status:** ready
+
+### TF-IDF vs BERT Tradeoffs on Disaster Tweets
+
+After running both pipelines end to end, my TF-IDF + logistic regression baseline scored 0.796 and BERT-base scored 0.831 on the public board. The score gap is real, but so is the cost gap -- TF-IDF trains in under a minute on CPU, while BERT fine-tuning takes about 20 minutes on a T4 GPU.
+
+Where TF-IDF held up surprisingly well was on tweets with strong keyword signals ("earthquake", "wildfire"). BERT pulled ahead mainly on ambiguous tweets where context mattered -- things like "my mixtape is fire" vs actual fire reports. Blending the two (0.3 TF-IDF + 0.7 BERT) scored 0.834, slightly above BERT alone.
+
+Notebook with both pipelines:
+https://www.kaggle.com/code/lorenzoscaturchio/nlp-disaster-tweets-bert-guide
+
+For anyone still iterating, starting with TF-IDF as a sanity check before committing GPU time to transformers seems worth it.
+
+---
+
+## Draft 63: Store Sales - Holiday Feature Engineering
+
+**Target forum:** Store Sales
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-06
+**Status:** ready
+
+### Holiday Feature Engineering That Moved My Store Sales Score
+
+The single feature block that improved my Store Sales RMSLE the most was holiday context engineering. Raw holiday flags helped, but what made the real difference was encoding days-until-next-holiday, days-since-last-holiday, and a transferred-holiday indicator separately. Holidays that are transferred to another day have a very different sales pattern than holidays celebrated on their actual date.
+
+I also found that national vs regional vs local holiday distinction matters. National holidays suppress sales more uniformly, while regional holidays create store-level variance that the model needs to learn per-family. Treating them as one flag loses that signal.
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/store-sales-forecasting-lightgbm
+
+If anyone has a clean way to handle the interaction between holiday type and product family without exploding feature count, I would like to compare approaches.
+
+---
+
+## Draft 64: Spaceship Titanic - CryoSleep Interaction Features
+
+**Target forum:** Spaceship Titanic
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-08
+**Status:** ready
+
+### CryoSleep Interaction Features on Spaceship Titanic
+
+CryoSleep is one of the strongest single predictors in Spaceship Titanic, but I found that its interactions with spending features are where the real signal lives. Passengers in CryoSleep should have zero spending across all categories, so any nonzero spending for a CryoSleep passenger is either a data quality issue or a strong signal of mislabeling.
+
+I created a CryoSleep-spending consistency flag and used it both as a feature and as a filter for imputation. For passengers with missing CryoSleep, if all five spending columns were zero, imputing CryoSleep as True was almost always correct. This single imputation strategy improved my CV by about 0.004.
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/spaceship-titanic-complete-ml-guide
+
+---
+
+## Draft 65: Deep Past Akkadian - Data Augmentation for Low-Resource NLP
+
+**Target forum:** Deep Past Competition
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-10
+**Status:** ready
+
+### Data Augmentation for Low-Resource NLP on Akkadian
+
+With only a few thousand training pairs in the Akkadian translation task, data augmentation becomes critical. I experimented with three approaches: back-translation through a pivot language, random token dropout (masking 10-15% of source tokens), and synonym substitution using cuneiform sign variants.
+
+Token dropout was the most reliable -- it improved BLEU by about 1.2 points and is trivial to implement. Back-translation was noisy because the pivot quality was low. Sign-variant substitution showed promise but required careful curation of the variant table to avoid introducing incorrect readings.
+
+The broader lesson for low-resource NLP: simple noise-based augmentation tends to beat sophisticated augmentation that introduces semantic drift.
+
+Notebook:
+https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda-byt5-seq2seq-baseline
+
+Would be interested to hear if others are trying augmentation strategies or focusing purely on preprocessing and model architecture instead.
+
+---
+
+## Draft 66: Deep Past Akkadian - BLEU vs chrF++ Evaluation Metric Analysis
+
+**Target forum:** Deep Past Competition
+**Category:** Competition Update
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-11
+**Status:** ready
+
+### BLEU vs chrF++ on the Akkadian Translation Task
+
+This competition uses a combined BLEU and chrF++ metric, and I spent some time analyzing where the two metrics disagree. BLEU is sensitive to exact n-gram matches, so it penalizes valid translations that use different word order. chrF++ operates at the character level, which is more forgiving for morphologically rich languages like Akkadian where the same root can appear in many surface forms.
+
+In practice, my submissions that optimized for chrF++ alone scored higher on the combined metric than those optimized for BLEU alone. This makes sense given the agglutinative nature of Akkadian -- character-level overlap captures partial morphological matches that word-level BLEU misses entirely.
+
+Notebook with metric analysis:
+https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda-byt5-seq2seq-baseline
+
+If anyone has found beam search settings that improve both metrics simultaneously rather than trading off between them, that would be a useful comparison.
+
+---
+
+## Draft 67: GitHub Repo Metrics Dataset Spotlight
+
+**Target forum:** General
+**Category:** Dataset Spotlight
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-13
+**Status:** ready
+
+### GitHub Repo Metrics - A Dataset for Predicting Open Source Success
+
+I published a dataset of GitHub repository metrics covering stars, forks, issues, contributors, language, and license information across thousands of repos. The main use case I have found interesting is predicting which repos will cross adoption thresholds based on early signals.
+
+One pattern that stood out during EDA: repos with permissive licenses (MIT, Apache-2.0) accumulate stars faster early on, but repos with copyleft licenses (GPL) tend to have more sustained contributor growth over time. The dataset is structured to make that kind of longitudinal analysis straightforward.
+
+Dataset:
+https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics
+
+If anyone builds a notebook on it, I would be happy to link it from the dataset page.
+
+---
+
+## Draft 68: Credit Card Fraud Dataset for Anomaly Detection Teaching
+
+**Target forum:** General
+**Category:** Dataset Spotlight
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-15
+**Status:** ready
+
+### Credit Card Fraud Dataset - 200K Transactions for Anomaly Detection
+
+I put together a synthetic credit card fraud dataset with 200K transactions specifically designed for teaching anomaly detection. The class imbalance is realistic (about 1.5% fraud rate), which makes it useful for practicing SMOTE, threshold tuning, and precision-recall tradeoff analysis.
+
+The reason I made this synthetic rather than using existing fraud datasets is control over the feature distributions. Each feature has a known generation process, so students can verify whether their model is picking up the right signals rather than just memorizing noise. It works well for isolation forest, autoencoders, and standard classification approaches.
+
+Dataset:
+https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud-detection-synthetic
+
+---
+
+## Draft 69: Job Postings Dataset for NLP Salary Prediction
+
+**Target forum:** General
+**Category:** Dataset Spotlight
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-17
+**Status:** ready
+
+### Job Postings Dataset - 15K Listings for NLP and Salary Prediction
+
+I published a job postings dataset with 15K listings that includes both structured fields (location, experience level, company size) and free-text descriptions. The two main tasks it supports are salary prediction from job descriptions and skill extraction via NLP.
+
+What makes it interesting for NLP practice is that job descriptions have a specific domain vocabulary that general-purpose embeddings handle poorly. Fine-tuning sentence transformers on this domain vs using off-the-shelf embeddings shows a measurable gap, which makes it a good teaching example for domain adaptation.
+
+Dataset:
+https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp-salary-prediction
+
+---
+
+## Draft 70: E-Commerce Behavior Multi-Table Dataset
+
+**Target forum:** General
+**Category:** Dataset Spotlight
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-19
+**Status:** ready
+
+### E-Commerce Behavior Dataset - Multi-Table for Real-World Practice
+
+Most Kaggle datasets are single tables, but real ML work almost always involves joins. I built an e-commerce behavior dataset with separate tables for users, products, events, and transactions specifically to practice multi-table feature engineering.
+
+The dataset supports several project types: purchase prediction, user segmentation, product recommendation, and funnel analysis. The event-level granularity (view, add-to-cart, purchase) makes sessionization and sequence modeling possible without any additional preprocessing.
+
+Dataset:
+https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior
+
+If anyone is looking for a dataset to practice relational feature engineering or customer lifetime value modeling, this one is designed for that.
+
+---
+
+## Draft 71: ML Interview Questions Dataset for Study Prep
+
+**Target forum:** General
+**Category:** Dataset Spotlight
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-21
+**Status:** ready
+
+### ML Interview Questions Dataset - Structured for Systematic Study
+
+I compiled a dataset of ML interview questions organized by topic, difficulty, and company type. The categories cover classical ML, deep learning, NLP, computer vision, system design, and statistics. Each question includes a reference answer and the concept it tests.
+
+The practical use I have gotten out of it is building a spaced repetition study loop -- filtering by topic, sorting by difficulty, and tracking which concepts I consistently miss. It also works as a source for building quiz apps or flashcard generators.
+
+Dataset:
+https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
+
+---
+
+## Draft 72: When to Use SHAP vs Permutation Importance
+
+**Target forum:** Getting Started
+**Category:** Tips & Tricks
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-23
+**Status:** ready
+
+### When to Use SHAP vs Permutation Importance
+
+I get asked this a lot so here is the short version from my experience. Permutation importance tells you how much your model's overall performance degrades when a feature is shuffled. SHAP tells you how much each feature contributes to each individual prediction. They answer different questions and you often need both.
+
+Use permutation importance when you want a quick global ranking and your features are not heavily correlated. Use SHAP when you need to explain individual predictions, debug unexpected outputs, or when feature correlations make permutation importance unreliable. SHAP is slower but more informative; permutation importance is faster but can mislead when features are redundant.
+
+I wrote a longer walkthrough with code examples here:
+https://www.kaggle.com/code/lorenzoscaturchio/shap-model-explainability-masterclass
+
+---
+
+## Draft 73: Optuna vs GridSearch - When Hyperparameter Optimization Matters
+
+**Target forum:** Getting Started
+**Category:** Tips & Tricks
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-25
+**Status:** ready
+
+### Optuna vs GridSearch - When It Actually Matters
+
+After using both extensively, my rule of thumb is: GridSearch is fine when you have 2-3 hyperparameters with small ranges. Beyond that, Optuna's Bayesian optimization finds better configurations in a fraction of the time. On a recent tabular competition, Optuna found a LightGBM configuration in 50 trials that GridSearch had not reached after 200 combinations.
+
+The more important insight is that hyperparameter optimization matters most after your feature engineering is solid. I have seen people spend hours tuning a model on weak features when the same time spent on feature engineering would have yielded 5x the improvement. Optimize features first, then let Optuna handle the tuning.
+
+Full guide with practical examples:
+https://www.kaggle.com/code/lorenzoscaturchio/optuna-hyperparameter-optimization-guide
+
+---
+
+## Draft 74: RAG Pipeline from Scratch - What I Learned Building One
+
+**Target forum:** General
+**Category:** Educational
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-04-27
+**Status:** ready
+
+### What I Learned Building a RAG Pipeline from Scratch
+
+I built a retrieval-augmented generation pipeline from first principles and the biggest lesson was that retrieval quality matters more than generation quality. A mediocre LLM with excellent retrieval outperforms a strong LLM with noisy retrieval every time. Most of the engineering effort should go into chunking strategy, embedding model selection, and retrieval evaluation.
+
+The second lesson was that naive cosine similarity over document embeddings works surprisingly well as a baseline. Reranking with a cross-encoder on top of that initial retrieval gives a meaningful boost, but the complexity cost is real. Start simple, measure retrieval recall at k, and only add complexity when you can show it helps.
+
+Full walkthrough:
+https://www.kaggle.com/code/lorenzoscaturchio/rag-from-scratch-first-principles
+
+---
+
+## Draft 75: Graph Neural Networks - Practical Use Cases Beyond Social Networks
+
+**Target forum:** General
+**Category:** Educational
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-04-29
+**Status:** ready
+
+### GNNs Beyond Social Networks - Practical Use Cases
+
+Graph neural networks get introduced through social network examples, but the use cases I have found most practical are molecular property prediction, supply chain optimization, and fraud detection in transaction networks. In each case the graph structure encodes relationships that tabular features would miss or represent poorly.
+
+The key insight from my experiments: GNNs shine when the neighborhood structure is informative and the graph is not too sparse. On very sparse graphs, message passing has too few neighbors to aggregate over and performance drops below a well-engineered tabular baseline. Knowing when not to use a GNN is as important as knowing how to build one.
+
+Notebook with worked examples across multiple domains:
+https://www.kaggle.com/code/lorenzoscaturchio/gnn-practical-guide-2026
+
+---
+
+## Draft 76: Why Your Ensemble Is Not Improving - Common Stacking Mistakes
+
+**Target forum:** Getting Started
+**Category:** Tips & Tricks
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-05-01
+**Status:** ready
+
+### Common Stacking Mistakes That Kill Ensemble Performance
+
+The most common reason an ensemble does not improve over the best single model is that the base models are too similar. Three LightGBM variants with slightly different hyperparameters will not give you meaningful diversity. You need models that make different kinds of errors -- combine a tree model, a linear model, and a neural net, and the stack actually has something to learn.
+
+The second mistake is leaking target information into the meta-features. If you generate base model predictions on the same data you train the meta-learner on, you are overfitting. Always use out-of-fold predictions for the training set and hold-out predictions for the test set. This is non-negotiable.
+
+Third, do not overcomplicate the meta-learner. Logistic regression or ridge regression works better than a deep meta-learner in almost every tabular competition I have seen. The meta-learner's job is to learn simple weights, not to relearn the problem.
+
+Notebook with working examples:
+https://www.kaggle.com/code/lorenzoscaturchio/ensemble-stacking-win-competitions
+
+---
+
 *End of drafts. The March 10 additions are ready to queue. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
