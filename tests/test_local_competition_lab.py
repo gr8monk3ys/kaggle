@@ -121,11 +121,161 @@ def test_march_submission_pairs_parses_stage_ids():
     ]
 
 
+def test_march_massey_features_uses_latest_window_and_trend():
+    massey = pd.DataFrame(
+        [
+            {"Season": 2025, "RankingDayNum": 125, "SystemName": "SYS1", "TeamID": 1101, "OrdinalRank": 10},
+            {"Season": 2025, "RankingDayNum": 125, "SystemName": "SYS2", "TeamID": 1101, "OrdinalRank": 12},
+            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1101, "OrdinalRank": 8},
+            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS2", "TeamID": 1101, "OrdinalRank": 9},
+            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1102, "OrdinalRank": 25},
+        ]
+    )
+
+    features = lab._march_massey_features(massey)
+    row = features.loc[features["TeamID"] == 1101].iloc[0]
+
+    assert row["massey_latest_mean"] == 8.5
+    assert row["massey_recent_best"] == 8
+    assert row["massey_latest_count"] == 2
+    assert row["massey_trend"] == 2.5
+
+
+def test_march_team_features_adds_schedule_and_massey_columns():
+    results = pd.DataFrame(
+        [
+            {
+                "Season": 2025,
+                "DayNum": 10,
+                "WTeamID": 1101,
+                "WScore": 80,
+                "LTeamID": 1102,
+                "LScore": 70,
+                "WLoc": "N",
+                "NumOT": 0,
+                "WFGM": 28,
+                "WFGA": 60,
+                "WFGM3": 8,
+                "WFGA3": 20,
+                "WFTM": 16,
+                "WFTA": 20,
+                "WOR": 10,
+                "WDR": 25,
+                "WAst": 15,
+                "WTO": 11,
+                "WStl": 7,
+                "WBlk": 4,
+                "WPF": 14,
+                "LFGM": 24,
+                "LFGA": 58,
+                "LFGM3": 6,
+                "LFGA3": 18,
+                "LFTM": 16,
+                "LFTA": 22,
+                "LOR": 9,
+                "LDR": 22,
+                "LAst": 12,
+                "LTO": 13,
+                "LStl": 5,
+                "LBlk": 3,
+                "LPF": 16,
+            },
+            {
+                "Season": 2025,
+                "DayNum": 20,
+                "WTeamID": 1102,
+                "WScore": 75,
+                "LTeamID": 1101,
+                "LScore": 72,
+                "WLoc": "H",
+                "NumOT": 0,
+                "WFGM": 26,
+                "WFGA": 57,
+                "WFGM3": 7,
+                "WFGA3": 19,
+                "WFTM": 16,
+                "WFTA": 21,
+                "WOR": 8,
+                "WDR": 24,
+                "WAst": 14,
+                "WTO": 10,
+                "WStl": 6,
+                "WBlk": 2,
+                "WPF": 15,
+                "LFGM": 25,
+                "LFGA": 56,
+                "LFGM3": 7,
+                "LFGA3": 19,
+                "LFTM": 15,
+                "LFTA": 20,
+                "LOR": 9,
+                "LDR": 23,
+                "LAst": 13,
+                "LTO": 12,
+                "LStl": 6,
+                "LBlk": 3,
+                "LPF": 17,
+            },
+        ]
+    )
+    seeds = pd.DataFrame(
+        [
+            {"Season": 2025, "Seed": "W01", "TeamID": 1101},
+            {"Season": 2025, "Seed": "W04", "TeamID": 1102},
+        ]
+    )
+    massey = pd.DataFrame(
+        [
+            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1101, "OrdinalRank": 8},
+            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1102, "OrdinalRank": 20},
+        ]
+    )
+
+    features = lab._march_team_features(results, seeds, massey)
+
+    row = features.loc[features["TeamID"] == 1101].iloc[0]
+    assert row["seed"] == 1
+    assert row["has_massey"] == 1
+    assert "sos_elo" in features.columns
+    assert "net_eff_vs_schedule" in features.columns
+    assert "recent_net_eff" in features.columns
+
+
 def test_march_matchups_uses_sorted_team_ids_and_binary_target():
     features = pd.DataFrame(
         [
-            {"Season": 2026, "TeamID": 1101, "games": 30, "win_pct": 0.8, "avg_score": 75, "avg_allowed": 60, "avg_margin": 15, "recent_win_pct": 0.9, "recent_margin": 18, "elo": 1600, "seed": 1},
-            {"Season": 2026, "TeamID": 1102, "games": 30, "win_pct": 0.7, "avg_score": 72, "avg_allowed": 64, "avg_margin": 8, "recent_win_pct": 0.7, "recent_margin": 9, "elo": 1540, "seed": 4},
+            {
+                "Season": 2026,
+                "TeamID": 1101,
+                "games": 30,
+                "win_pct": 0.8,
+                "avg_score": 75,
+                "avg_allowed": 60,
+                "avg_margin": 15,
+                "recent_win_pct": 0.9,
+                "recent_margin": 18,
+                "elo": 1600,
+                "seed": 1,
+                "net_eff": 20,
+                "recent_net_eff": 24,
+                "massey_latest_mean": 9,
+            },
+            {
+                "Season": 2026,
+                "TeamID": 1102,
+                "games": 30,
+                "win_pct": 0.7,
+                "avg_score": 72,
+                "avg_allowed": 64,
+                "avg_margin": 8,
+                "recent_win_pct": 0.7,
+                "recent_margin": 9,
+                "elo": 1540,
+                "seed": 4,
+                "net_eff": 11,
+                "recent_net_eff": 12,
+                "massey_latest_mean": 22,
+            },
         ]
     )
     games = pd.DataFrame(
@@ -142,6 +292,10 @@ def test_march_matchups_uses_sorted_team_ids_and_binary_target():
     assert row["Team2"] == 1102
     assert row["target"] == 0
     assert row["elo_diff"] == 60
+    assert row["is_women"] == 0
+    assert row["seed_abs_diff"] == 3
+    assert row["elo_win_prob_1"] > 0.5
+    assert row["massey_win_prob_1"] > 0.5
 
 
 def test_benchmarks_include_new_entered_competitions():
