@@ -1,0 +1,22 @@
+{
+  "id": "lorenzoscaturchio/ai-data-jobs-skills-salaries-analysis",
+  "title": "AI & Data Jobs Skills Salaries Analysis",
+  "code_file": "ai_data_jobs_market_analysis.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "business",
+    "regression",
+    "classification",
+    "nlp",
+    "jobs"
+  ],
+  "dataset_sources": [
+    "lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}
