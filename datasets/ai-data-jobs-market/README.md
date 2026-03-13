@@ -5,7 +5,7 @@
 **License:** GPL-3.0  
 
 **Kaggle:** [lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026)  
-**Companion notebook:** [lorenzoscaturchio/ai-data-jobs-market-explorer](https://www.kaggle.com/code/lorenzoscaturchio/ai-data-jobs-market-explorer)
+**Companion notebook:** [lorenzoscaturchio/ai-data-jobs-skills-salaries-analysis](https://www.kaggle.com/code/lorenzoscaturchio/ai-data-jobs-skills-salaries-analysis)
 
 ## Description
 
