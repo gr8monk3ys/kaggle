@@ -42,7 +42,7 @@
 **Active competitions:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
 |-------------|-------|----------|-----------------|----------|
-| Deep Past Akkadian | 1,321 | Mar 23, 2026 | Hard (large field) | ByT5 seq2seq |
+| Deep Past Akkadian | 1,321 | Mar 23, 2026 | Hard (large field) | ByT5-base fine-tuned + TF-IDF hybrid (submission upgraded) |
 | Stanford RNA 3D Folding 2 | 480 | Mar 25, 2026 | Medium | Geometric deep learning |
 | AIMO3 | 1,560 | Apr 15, 2026 | Very Hard | LLM math reasoning |
 | Hull Tactical Market | 3,677 | Jun 16, 2026 | Hard | Ensemble tree models |

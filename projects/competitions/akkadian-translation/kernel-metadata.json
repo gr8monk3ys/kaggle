@@ -1,23 +1,26 @@
 {
-  "id": "lorenzoscaturchio/akkadian-translation-sentence-match-baseline",
-  "title": "Akkadian Translation Sentence-Match Baseline",
+  "id": "lorenzoscaturchio/akkadian-byt5-seq2seq-hybrid",
+  "title": "Akkadian Translation: ByT5 Seq2Seq + Retrieval Hybrid",
   "code_file": "akkadian_submission_baseline.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": true,
-  "enable_gpu": false,
+  "enable_gpu": true,
   "enable_internet": false,
   "keywords": [
     "nlp",
     "machine translation",
     "ancient languages",
     "akkadian",
-    "retrieval",
-    "sentence alignment",
+    "byt5",
+    "seq2seq",
+    "fine-tuning",
+    "beam search",
     "competition",
     "old assyrian"
   ],
   "dataset_sources": [],
   "kernel_sources": [],
+  "model_sources": ["google/byt5/transformers/base/1"],
   "competition_sources": ["deep-past-initiative-machine-translation"]
 }

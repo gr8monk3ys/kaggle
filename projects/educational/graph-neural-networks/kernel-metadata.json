@@ -1,6 +1,6 @@
 {
-  "id": "lorenzoscaturchio/gnn-guide-2026",
-  "title": "GNN Guide 2026",
+  "id": "lorenzoscaturchio/graph-neural-networks-practical-guide",
+  "title": "Graph Neural Networks: Practical Guide",
   "code_file": "gnn_practical_guide.ipynb",
   "language": "python",
   "kernel_type": "notebook",
@@ -9,5 +9,14 @@
   "enable_internet": true,
   "dataset_sources": [],
   "kernel_sources": [],
-  "keywords": []
+  "keywords": [
+    "graph neural networks",
+    "gnn",
+    "pytorch geometric",
+    "node classification",
+    "graph classification",
+    "deep learning",
+    "tutorial",
+    "machine learning"
+  ]
 }

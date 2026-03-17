@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Build a competition-compliant Akkadian sentence-match baseline notebook."""
+"""Build a competition-compliant Akkadian ByT5 seq2seq submission notebook.
+
+Upgrades the original TF-IDF retrieval baseline to ByT5-base fine-tuning
+with beam search inference, keeping TF-IDF as a safety fallback.
+"""
 
 import os as _os
 import sys as _sys
@@ -25,121 +29,367 @@ from kaggle_portfolio.shared.build_utils import code, md, write_notebook
 
 cells: list[dict] = []
 
+# ── Title ──────────────────────────────────────────────────────────────
+
 cells.append(
     md(
-        """# Akkadian Translation Sentence-Match Baseline
+        """# Akkadian Translation: ByT5 Seq2Seq + Retrieval Hybrid
 **Competition:** [Deep Past Challenge - Translate Akkadian to English](https://www.kaggle.com/competitions/deep-past-initiative-machine-translation)
-**Runtime:** competition-safe baseline with internet disabled
 
-## What this notebook does
-- loads the real competition files plus the auxiliary published-text tables shipped with the competition
-- finds the closest published Akkadian text to the hidden test tablet
-- reconstructs the four competition output rows from line-numbered sentence translations
-- falls back to train-set retrieval if no sentence-aligned published match is available
-- writes a valid `submission.csv`
+## Approach
+1. **ByT5-base fine-tuning** on competition training data (character-level seq2seq)
+2. **Beam search inference** (num_beams=5) for translation quality
+3. **TF-IDF retrieval fallback** using published-text corpus for safety
+4. **Hybrid selection**: uses ByT5 predictions when non-empty, TF-IDF otherwise
 
-This is still a lightweight baseline, but it uses the strongest structure Kaggle gives us: the published-text corpus and sentence alignments."""
+### Why ByT5?
+Akkadian transliteration is syllabic (e.g. `a-na A-shur qi2-bi2-ma`) with hyphens,
+Sumerograms, and morphological complexity. ByT5 operates at the **byte level**,
+so it handles rare subword patterns and character-level structure natively —
+no tokenization artifacts from unseen syllables."""
     )
 )
+
+# ── Section 1: Setup ──────────────────────────────────────────────────
 
 cells.append(md("## 1. Setup"))
 
 cells.append(
     code(
-        """from pathlib import Path
+        """import gc
 import re
+from pathlib import Path
 
+import numpy as np
 import pandas as pd
+import torch
+from torch.utils.data import Dataset, DataLoader
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
-candidates = [
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f'Device: {DEVICE}')
+if DEVICE == 'cuda':
+    print(f'GPU: {torch.cuda.get_device_name(0)}')
+    print(f'Memory: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB')"""
+    )
+)
+
+# ── Section 2: Load Competition Data ──────────────────────────────────
+
+cells.append(md("## 2. Load Competition Data"))
+
+cells.append(
+    code(
+        """candidates = [
     Path('/kaggle/input/deep-past-initiative-machine-translation'),
     Path('/tmp/akkadian-live/extracted'),
     Path('.'),
 ]
-data_dir = next((path for path in candidates if (path / 'train.csv').exists()), None)
+data_dir = next((p for p in candidates if (p / 'train.csv').exists()), None)
 if data_dir is None:
-    raise FileNotFoundError('Competition files not found in /kaggle/input or local fallback paths')
+    raise FileNotFoundError('Competition files not found')
+print(f'Data directory: {data_dir}')
 
-print(f'Using data directory: {data_dir}')"""
-    )
-)
+train = pd.read_csv(data_dir / 'train.csv')
+test = pd.read_csv(data_dir / 'test.csv')
+sample = pd.read_csv(data_dir / 'sample_submission.csv')
 
-cells.append(md("## 2. Load Competition Files"))
-
-cells.append(
-    code(
-        """train = pd.read_csv(data_dir / 'train.csv')
-test = pd.read_csv(data_dir / 'test.csv').sort_values(['line_start', 'line_end']).reset_index(drop=True)
-sample = pd.read_csv(data_dir / 'sample_submission.csv').sort_values('id').reset_index(drop=True)
-
-def load_optional_csv(path: Path, required_columns: list[str]) -> pd.DataFrame:
+# Optional auxiliary files (for TF-IDF fallback)
+def load_optional(path, cols):
     if not path.exists():
-        return pd.DataFrame(columns=required_columns)
-    frame = pd.read_csv(path)
-    for column in required_columns:
-        if column not in frame.columns:
-            frame[column] = pd.Series(dtype='object')
-    return frame
+        return pd.DataFrame(columns=cols)
+    df = pd.read_csv(path)
+    for c in cols:
+        if c not in df.columns:
+            df[c] = pd.Series(dtype='object')
+    return df
 
-published = load_optional_csv(
-    data_dir / 'published_texts.csv',
-    ['transliteration', 'label', 'aliases', 'note'],
-)
-sentences = load_optional_csv(
-    data_dir / 'Sentences_Oare_FirstWord_LinNum.csv',
-    ['display_name', 'line_number', 'translation'],
-)
+published = load_optional(data_dir / 'published_texts.csv',
+                          ['transliteration', 'label', 'aliases', 'note'])
+sentences = load_optional(data_dir / 'Sentences_Oare_FirstWord_LinNum.csv',
+                          ['display_name', 'line_number', 'translation'])
 
-print('Train shape      :', train.shape)
-print('Test shape       :', test.shape)
-print('Published texts  :', published.shape, '(optional)')
-print('Sentence matches :', sentences.shape, '(optional)')
-print('\\nTest rows:')
-print(test.head(10).to_string(index=False))
-if len(test) > 10:
-    print(f'... ({len(test) - 10} additional test rows omitted)')"""
+print(f'Train: {train.shape}  |  Test: {test.shape}')
+print(f'Published texts: {published.shape}  |  Sentences: {sentences.shape}')
+print(f'\\nTrain columns: {list(train.columns)}')
+print(f'Test columns: {list(test.columns)}')
+print(f'\\nSample train row:')
+print(train.iloc[0].to_string())"""
     )
 )
 
-cells.append(md("## 3. Match Against Published Texts"))
+# ── Section 3: Load ByT5 Model ────────────────────────────────────────
+
+cells.append(md("## 3. Load ByT5-base Model"))
 
 cells.append(
     code(
-        """def normalize_transliteration(text: str) -> str:
+        """# Kaggle Models paths (offline, no internet needed)
+MODEL_PATHS = [
+    '/kaggle/input/byt5-base/transformers/default/1',
+    '/kaggle/input/byt5/transformers/base/1',
+    '/kaggle/input/byt5-base',
+    '/kaggle/input/google-byt5-base',
+    'google/byt5-base',  # online fallback for local testing
+]
+
+model = None
+tokenizer = None
+model_path = None
+
+for path in MODEL_PATHS:
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(path)
+        model = AutoModelForSeq2SeqLM.from_pretrained(path)
+        model_path = path
+        break
+    except Exception:
+        continue
+
+if model is not None:
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f'Loaded model from: {model_path}')
+    print(f'Parameters: {total_params:,}')
+    print(f'Size: ~{total_params * 2 / 1e9:.2f} GB (FP16)')
+else:
+    print('WARNING: ByT5 model not found. Will use TF-IDF fallback only.')
+    print('To fix: Add google/byt5-base as a Model source in notebook settings.')"""
+    )
+)
+
+# ── Section 4: Dataset & Training ─────────────────────────────────────
+
+cells.append(md("## 4. Fine-tune ByT5 on Training Data"))
+
+cells.append(
+    code(
+        """class AkkadianDataset(Dataset):
+    def __init__(self, df, tokenizer, max_src=512, max_tgt=512,
+                 src_col='transliteration', tgt_col='translation'):
+        self.df = df.reset_index(drop=True)
+        self.tokenizer = tokenizer
+        self.max_src = max_src
+        self.max_tgt = max_tgt
+        self.src_col = src_col
+        self.tgt_col = tgt_col
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
+        source = f"translate Akkadian to English: {row[self.src_col]}"
+        enc = self.tokenizer(source, max_length=self.max_src,
+                             padding='max_length', truncation=True,
+                             return_tensors='pt')
+        result = {
+            'input_ids': enc['input_ids'].squeeze(),
+            'attention_mask': enc['attention_mask'].squeeze(),
+        }
+        if self.tgt_col in row.index:
+            tgt_enc = self.tokenizer(str(row[self.tgt_col]),
+                                     max_length=self.max_tgt,
+                                     padding='max_length', truncation=True,
+                                     return_tensors='pt')
+            labels = tgt_enc['input_ids'].squeeze()
+            labels[labels == self.tokenizer.pad_token_id] = -100
+            result['labels'] = labels
+        return result
+
+
+def train_model(model, tokenizer, train_df, val_df,
+                epochs=10, batch_size=4, grad_accum=4, lr=3e-4):
+    model = model.to(DEVICE)
+    use_amp = (DEVICE == 'cuda')
+    scaler = torch.amp.GradScaler('cuda', enabled=use_amp)
+
+    train_ds = AkkadianDataset(train_df, tokenizer)
+    val_ds = AkkadianDataset(val_df, tokenizer)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
+                              num_workers=2, pin_memory=True)
+    val_loader = DataLoader(val_ds, batch_size=batch_size * 2,
+                            num_workers=2, pin_memory=True)
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
+    total_steps = len(train_loader) * epochs // grad_accum
+    warmup_steps = total_steps // 10
+
+    def lr_lambda(step):
+        if step < warmup_steps:
+            return step / max(warmup_steps, 1)
+        progress = (step - warmup_steps) / max(total_steps - warmup_steps, 1)
+        return 0.5 * (1 + np.cos(np.pi * progress))
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
+    best_val_loss = float('inf')
+    best_state = None
+    step = 0
+
+    for epoch in range(epochs):
+        model.train()
+        total_loss = 0
+        n_batches = 0
+
+        for batch_idx, batch in enumerate(train_loader):
+            input_ids = batch['input_ids'].to(DEVICE)
+            attention_mask = batch['attention_mask'].to(DEVICE)
+            labels = batch['labels'].to(DEVICE)
+
+            with torch.amp.autocast('cuda', enabled=use_amp):
+                loss = model(input_ids=input_ids,
+                             attention_mask=attention_mask,
+                             labels=labels).loss
+                loss = loss / grad_accum
+
+            scaler.scale(loss).backward()
+            total_loss += loss.item() * grad_accum
+            n_batches += 1
+
+            if (batch_idx + 1) % grad_accum == 0:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad()
+                scheduler.step()
+                step += 1
+
+        avg_train = total_loss / max(n_batches, 1)
+
+        # Validation
+        model.eval()
+        val_loss = 0
+        val_n = 0
+        with torch.no_grad():
+            for batch in val_loader:
+                input_ids = batch['input_ids'].to(DEVICE)
+                attention_mask = batch['attention_mask'].to(DEVICE)
+                labels = batch['labels'].to(DEVICE)
+                with torch.amp.autocast('cuda', enabled=use_amp):
+                    loss = model(input_ids=input_ids,
+                                 attention_mask=attention_mask,
+                                 labels=labels).loss
+                val_loss += loss.item()
+                val_n += 1
+        avg_val = val_loss / max(val_n, 1)
+
+        improved = avg_val < best_val_loss
+        if improved:
+            best_val_loss = avg_val
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+
+        print(f'Epoch {epoch+1}/{epochs} -- '
+              f'train_loss: {avg_train:.4f}  val_loss: {avg_val:.4f}'
+              f'{" *" if improved else ""}')
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        model = model.to(DEVICE)
+        print(f'\\nRestored best checkpoint (val_loss: {best_val_loss:.4f})')
+
+    return model
+
+
+print('Training helpers defined.')"""
+    )
+)
+
+cells.append(
+    code(
+        """if model is not None:
+    # Split: 90% train, 10% validation
+    val_size = max(int(len(train) * 0.1), 1)
+    shuffled = train.sample(frac=1, random_state=42).reset_index(drop=True)
+    train_split = shuffled.iloc[:-val_size]
+    val_split = shuffled.iloc[-val_size:]
+    print(f'Training: {len(train_split)} | Validation: {len(val_split)}')
+
+    model = train_model(model, tokenizer, train_split, val_split,
+                        epochs=10, batch_size=4, grad_accum=4, lr=3e-4)
+    gc.collect()
+    if DEVICE == 'cuda':
+        torch.cuda.empty_cache()
+else:
+    print('Skipping training (no model loaded).')"""
+    )
+)
+
+# ── Section 5: ByT5 Inference ─────────────────────────────────────────
+
+cells.append(md("## 5. ByT5 Beam Search Inference"))
+
+cells.append(
+    code(
+        """def translate_batch(model, tokenizer, texts, batch_size=8,
+                       max_src=512, max_tgt=512, num_beams=5):
+    model.eval()
+    all_translations = []
+
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i:i+batch_size]
+        prefixed = [f'translate Akkadian to English: {t}' for t in batch_texts]
+        inputs = tokenizer(prefixed, max_length=max_src, padding=True,
+                           truncation=True, return_tensors='pt').to(DEVICE)
+
+        with torch.no_grad(), torch.amp.autocast('cuda', enabled=(DEVICE == 'cuda')):
+            outputs = model.generate(
+                **inputs,
+                max_length=max_tgt,
+                num_beams=num_beams,
+                length_penalty=1.0,
+                early_stopping=True,
+                no_repeat_ngram_size=3,
+            )
+
+        translations = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        all_translations.extend(translations)
+
+        if (i // batch_size) % 5 == 0:
+            print(f'  Translated {min(i + batch_size, len(texts))}/{len(texts)}')
+
+    return all_translations
+
+
+byt5_predictions = None
+
+if model is not None:
+    test_texts = test['transliteration'].astype(str).tolist()
+    print(f'Translating {len(test_texts)} test rows with ByT5...')
+    byt5_predictions = translate_batch(model, tokenizer, test_texts)
+
+    print(f'\\nSample ByT5 translations:')
+    for i in range(min(3, len(byt5_predictions))):
+        print(f'  [{i+1}] {test_texts[i][:60]}...')
+        print(f'      -> {byt5_predictions[i][:80]}')
+else:
+    print('No ByT5 model -- skipping neural inference.')"""
+    )
+)
+
+# ── Section 6: TF-IDF Retrieval Fallback ──────────────────────────────
+
+cells.append(md("## 6. TF-IDF Retrieval Fallback"))
+
+cells.append(
+    code(
+        r"""def normalize_transliteration(text):
     normalized = str(text or '').lower()
     for old, new in {
-        '…': ' ',
-        '...': ' ',
-        '„': ' ',
-        '“': ' ',
-        '”': ' ',
-        '"': ' ',
-        "'": ' ',
-        '`': ' ',
-        '´': ' ',
-        '{': ' ',
-        '}': ' ',
-        '(': ' ',
-        ')': ' ',
-        '[': ' ',
-        ']': ' ',
-        '/': ' ',
-        '\\\\': ' ',
-        ',': ' ',
-        '.': ' ',
-        ';': ' ',
-        ':': ' ',
-        '!': ' ',
-        '?': ' ',
+        '\u2026': ' ', '...': ' ', '\u201e': ' ', '\u201c': ' ',
+        '\u201d': ' ', '\u201f': ' ',
+        "'": ' ', '`': ' ', '\u00b4': ' ', '{': ' ', '}': ' ', '(': ' ',
+        ')': ' ', '[': ' ', ']': ' ', '/': ' ', '\\': ' ', ',': ' ',
+        '.': ' ', ';': ' ', ':': ' ', '!': ' ', '?': ' ',
     }.items():
         normalized = normalized.replace(old, new)
     normalized = re.sub(r'<[^>]+>', ' ', normalized)
     return ' '.join(normalized.split())
 
 
-def best_match(corpus: pd.Series, query: str) -> tuple[int, float]:
+def best_match(corpus, query):
     corpus_norm = corpus.fillna('').map(normalize_transliteration)
     query_norm = normalize_transliteration(query)
     char_vec = TfidfVectorizer(analyzer='char_wb', ngram_range=(3, 6), min_df=1)
@@ -153,174 +403,94 @@ def best_match(corpus: pd.Series, query: str) -> tuple[int, float]:
     return best_idx, float(scores[best_idx])
 
 
-def display_name_candidates(row: pd.Series) -> list[str]:
-    names: list[str] = []
-    for value in [row.get('label', ''), row.get('aliases', ''), row.get('note', '')]:
-        raw = str(value or '').strip()
-        if not raw or raw.lower() == 'nan':
-            continue
-        for part in [item.strip() for item in raw.split('|')]:
-            if not part:
-                continue
-            names.append(part)
-            stripped = re.sub(r'^cuneiform\\s+(tablet|envelope)\\s+', '', part, flags=re.IGNORECASE).strip()
-            if stripped and stripped != part:
-                names.append(stripped)
-    deduped = []
-    seen = set()
-    for name in names:
-        key = name.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(name)
-    return deduped
-
-
-query = ' '.join(test['transliteration'].astype(str))
-candidate_rows = pd.DataFrame()
-published_score = 0.0
-published_row = pd.Series(dtype='object')
-published_available = (
-    not published.empty
-    and 'transliteration' in published
-    and published['transliteration'].notna().any()
-)
-sentences_available = (
-    not sentences.empty
-    and {'display_name', 'line_number', 'translation'}.issubset(set(sentences.columns))
-)
-
-if published_available:
-    published_idx, published_score = best_match(published['transliteration'], query)
-    published_row = published.iloc[published_idx]
-    if sentences_available:
-        display_names = sentences['display_name'].astype(str).str.strip()
-        for name in display_name_candidates(published_row):
-            matched = sentences.loc[display_names == name]
-            if len(matched) > len(candidate_rows):
-                candidate_rows = matched
-
-        candidate_rows = (
-            candidate_rows[['line_number', 'translation']]
-            .dropna(subset=['line_number', 'translation'])
-            .sort_values('line_number')
-            .reset_index(drop=True)
-        )
-    else:
-        print('Sentence alignment file unavailable on this run; using train retrieval fallback.')
-else:
-    print('Published-text auxiliary file unavailable on this run; using train retrieval fallback.')
-
-print('Best published match score:', round(published_score, 5))
-print('Best published label      :', published_row.get('label'))
-print('Sentence rows found       :', len(candidate_rows))
-candidate_rows.head(10)"""
-    )
-)
-
-cells.append(md("## 4. Build Hybrid Submission"))
-
-cells.append(
-    code(
-        """def assign_sentences_to_rows(test_rows: pd.DataFrame, sentence_rows: pd.DataFrame) -> list[str]:
-    predictions: list[str] = []
-    ordered_test = test_rows.sort_values(['line_start', 'line_end']).reset_index(drop=True)
-    ordered_sentences = sentence_rows.sort_values('line_number').reset_index(drop=True)
-    for idx, row in ordered_test.iterrows():
-        start = int(row['line_start'])
-        next_start = int(ordered_test.loc[idx + 1, 'line_start']) if idx + 1 < len(ordered_test) else None
-        if next_start is None:
-            mask = ordered_sentences['line_number'] >= start
-        else:
-            mask = (ordered_sentences['line_number'] >= start) & (ordered_sentences['line_number'] < next_start)
-        predictions.append(' '.join(ordered_sentences.loc[mask, 'translation'].astype(str)).strip())
-    return predictions
-
-
-def split_translation_by_rows(text: str, test_rows: pd.DataFrame) -> list[str]:
+def split_translation_by_rows(text, test_rows):
     ordered = test_rows.sort_values(['line_start', 'line_end']).reset_index(drop=True)
     weights = (
         ordered['line_end'].fillna(ordered['line_start']).astype(int)
-        - ordered['line_start'].astype(int)
-        + 1
+        - ordered['line_start'].astype(int) + 1
     ).clip(lower=1).tolist()
     words = str(text or '').split()
     if not words:
         return ['' for _ in weights]
-    total_weight = sum(weights) or len(weights)
-    chunks: list[str] = []
-    position = 0
-    for idx, weight in enumerate(weights):
-        remaining_words = len(words) - position
-        remaining_groups = len(weights) - idx
+    chunks = []
+    pos = 0
+    for idx, w in enumerate(weights):
+        remaining = len(words) - pos
+        groups_left = len(weights) - idx
         if idx == len(weights) - 1:
-            take = remaining_words
+            take = remaining
         else:
-            take = max(1, round(len(words) * weight / total_weight))
-            take = min(take, remaining_words - (remaining_groups - 1))
-        chunks.append(' '.join(words[position : position + take]).strip())
-        position += take
+            take = max(1, round(len(words) * w / sum(weights)))
+            take = min(take, remaining - (groups_left - 1))
+        chunks.append(' '.join(words[pos:pos+take]).strip())
+        pos += take
     return chunks
 
 
-def train_retrieval_predictions() -> tuple[list[str], float]:
-    best_idx, best_score = best_match(train['transliteration'], query)
-    best_translation = str(train.iloc[best_idx]['translation'])
-    preds = split_translation_by_rows(best_translation, test)
-    fallback = sample['translation'].astype(str).tolist()
-    preds = [pred.strip() or fallback[idx] for idx, pred in enumerate(preds)]
-    return preds, best_score
+# TF-IDF retrieval from training set
+query = ' '.join(test['transliteration'].astype(str))
+train_idx, train_score = best_match(train['transliteration'], query)
+train_translation = str(train.iloc[train_idx]['translation'])
+tfidf_predictions = split_translation_by_rows(train_translation, test)
 
+# Fill empty predictions with sample submission
+fallback = sample['translation'].astype(str).tolist()
+tfidf_predictions = [p.strip() or fallback[i] for i, p in enumerate(tfidf_predictions)]
 
-sentence_predictions = assign_sentences_to_rows(test, candidate_rows) if not candidate_rows.empty else []
-train_predictions, train_score = train_retrieval_predictions()
-coverage = (
-    sum(1 for pred in sentence_predictions if pred.strip()) / len(test)
-    if len(sentence_predictions) == len(test)
-    else 0.0
-)
-published_decision_score = min(1.0, published_score + 0.15 * coverage)
-
-if coverage == 1.0 and published_score >= 0.6 and published_decision_score >= train_score:
-    chosen_model = 'published_sentence_match'
-    predictions = sentence_predictions
-    chosen_score = published_decision_score
-else:
-    chosen_model = 'train_retrieval'
-    predictions = train_predictions
-    chosen_score = train_score
-
-diagnostics = pd.DataFrame(
-    [
-        {'model': 'published_sentence_match', 'decision_score': round(published_decision_score, 5)},
-        {'model': 'train_retrieval', 'decision_score': round(train_score, 5)},
-    ]
-)
-print('Chosen model:', chosen_model)
-print('Chosen score:', round(chosen_score, 5))
-diagnostics"""
+print(f'TF-IDF best match score: {train_score:.4f}')
+print(f'TF-IDF predictions: {len(tfidf_predictions)} rows')"""
     )
 )
 
-cells.append(md("## 5. Write Submission"))
+# ── Section 7: Build Submission ───────────────────────────────────────
+
+cells.append(md("## 7. Build Hybrid Submission"))
 
 cells.append(
     code(
-        """submission = pd.DataFrame({'id': test['id'], 'translation': predictions})
+        """if byt5_predictions is not None:
+    # Use ByT5 as primary, fall back to TF-IDF for empty predictions
+    final_predictions = []
+    byt5_used = 0
+    tfidf_used = 0
+
+    for i, pred in enumerate(byt5_predictions):
+        if pred and pred.strip() and len(pred.strip()) > 2:
+            final_predictions.append(pred.strip())
+            byt5_used += 1
+        else:
+            final_predictions.append(tfidf_predictions[i])
+            tfidf_used += 1
+
+    chosen_model = f'ByT5 hybrid (ByT5: {byt5_used}, TF-IDF fallback: {tfidf_used})'
+else:
+    final_predictions = tfidf_predictions
+    chosen_model = 'TF-IDF retrieval only (no ByT5 model available)'
+
+print(f'Model: {chosen_model}')
+print(f'Predictions: {len(final_predictions)} rows')
+
+submission = pd.DataFrame({'id': test['id'], 'translation': final_predictions})
 submission.to_csv('submission.csv', index=False)
 
-print('submission.csv written')
+print(f'\\nsubmission.csv written ({len(submission)} rows)')
 print(submission.head(10).to_string(index=False))
 if len(submission) > 10:
-    print(f'... ({len(submission) - 10} additional submission rows omitted)')"""
+    print(f'... ({len(submission) - 10} additional rows omitted)')"""
     )
 )
+
+# ── Notes ─────────────────────────────────────────────────────────────
 
 cells.append(
     md(
         """## Notes
-This notebook is intentionally conservative: it uses only competition-provided files and prefers exact or near-exact published-text sentence matches before falling back to generic train-set retrieval. That makes it a good code-competition baseline when a hidden test tablet already exists in the auxiliary corpus."""
+- **Model**: ByT5-base (580M params) fine-tuned on competition training data
+- **Inference**: beam search (num_beams=5, length_penalty=1.0, no_repeat_ngram_size=3)
+- **Training**: 10 epochs, AdamW (lr=3e-4), linear warmup + cosine decay, FP16
+- **Fallback**: TF-IDF char+word retrieval from training set (same as original baseline)
+- **Metric**: competition uses sqrt(BLEU x chrF++) -- ByT5's byte-level architecture
+  naturally optimizes both word-level (BLEU) and character-level (chrF++) overlap"""
     )
 )
 
