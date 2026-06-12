@@ -55,12 +55,11 @@ def _write_dataset_metadata(dir_path: Path) -> None:
 
 
 def _set_mtime_days_ago(path: Path, days: int) -> None:
-    """Set a file's mtime to N days ago from 2026-03-02."""
-    # Use a fixed reference so tests are deterministic
-    ref = 1740873600  # approx 2025-03-02 00:00:00 UTC
-    # We actually want "days ago from the test's --today", so just set
-    # mtime far enough back.  Using os.utime with a timestamp.
-    target_ts = time.time() - (days * 86400)
+    """Set a file's mtime to N days ago from 2026-03-02 (the tests' frozen today)."""
+    # Anchor to the same fixed date the tests pass as `today`, at local noon so
+    # DST shifts cannot move the resulting calendar date.
+    ref = time.mktime(date(2026, 3, 2).timetuple()) + 43200
+    target_ts = ref - (days * 86400)
     os.utime(path, (target_ts, target_ts))
 
 
@@ -110,7 +109,7 @@ def test_custom_max_age_threshold(tmp_path):
     _write_notebook(nb_file)
     _set_mtime_days_ago(nb_file, 40)
 
-    today = date.today()
+    today = date(2026, 3, 2)
 
     # With default 60, should not be stale
     assert len(scd.find_stale_notebooks(tmp_path, today, max_age_days=60)) == 0
