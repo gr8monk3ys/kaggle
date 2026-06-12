@@ -2,7 +2,7 @@
 set -euo pipefail
 
 KAGGLE_DIR="$(cd "$(dirname "$0")" && pwd)"
-MODULE_ROOT="/workspaces/kaggle"
+MODULE_ROOT="${KAGGLE_DIR}"
 export KAGGLE_DIR
 export PYTHONPATH="${MODULE_ROOT}:${PYTHONPATH:-}"
 
