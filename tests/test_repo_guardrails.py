@@ -91,14 +91,14 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "max_overdue_scheduled:" in content
     assert "max_days_until_next_post:" in content
     assert 'default: "85"' in content
-    assert "doctor --strict" in content
+    assert "doctor --output-root /tmp/medal_ops_health --strict" in content
     assert "python -m kaggle_portfolio.quality.notebook_quality" in content
     assert "python -m kaggle_portfolio.datasets.dataset_usability" in content
     assert "dataset-usability.log" in content
     assert "dataset-usability-tracker.log" in content
     assert "python -m kaggle_portfolio.ops.discussion_scheduler --health-check" in content
     assert "draft-ops.log" in content
-    assert "sync --dry-run" in content
+    assert "sync --output-root /tmp/medal_ops_health --dry-run" in content
     assert "Open or update incident issue" in content
 
 
