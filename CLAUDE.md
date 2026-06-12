@@ -6,14 +6,19 @@ This is a monorepo containing Kaggle competition entries, educational notebooks,
 
 ```
 kaggle/
-├── manage.sh                          # CLI for Kaggle push/pull/status operations
+├── manage.sh                          # CLI wrapper for kaggle_portfolio (44 subcommands)
+├── kaggle_portfolio/                  # Python package behind manage.sh (CLI, ops, quality, campaigns)
+├── tests/                             # pytest suite for the kaggle_portfolio package
+├── medal_ops/                         # Generated scorecards/plans/reports (gitignored except README)
+├── pi-automation/                     # Dockerized Playwright/cron automation for Kaggle engagement
 ├── docs/
 │   ├── reports/
-│   │   ├── grandmaster-tracker.md     # Progress across 4 Grandmaster categories
-│   │   └── competition-scout-report.md # Active competition analysis
-│   └── discussions/
-│       ├── engagement-strategy.md     # 12-week community plan
-│       └── discussion-drafts.md       # Pre-written discussion posts
+│   │   ├── grandmaster-tracker.md     # Progress across 4 Grandmaster categories (synced via medal_ops)
+│   │   └── competition-scout-report.md # Active competition analysis (regenerated via scout)
+│   ├── discussions/
+│   │   ├── engagement-strategy.md     # 12-week community plan
+│   │   └── discussion-drafts.md       # Pre-written discussion posts
+│   └── superpowers/                   # Design specs and implementation plans
 │
 ├── projects/
 │   ├── competitions/
@@ -63,19 +68,29 @@ kaggle/
 
 ## Management Script
 
-`manage.sh` is the primary CLI tool for interacting with Kaggle:
+`manage.sh` is the primary CLI tool for interacting with Kaggle. It wraps the
+`kaggle_portfolio` package (dispatch table in `kaggle_portfolio/manage_commands.py`,
+44 subcommands — run `./manage.sh help` for the full list). Run it from the repo root.
 
 ```bash
-./manage.sh push-notebook <folder>    # Push notebook to Kaggle
-./manage.sh push-dataset <folder>     # Push dataset to Kaggle
+./manage.sh push <dir>                # Push a specific notebook/dataset directory
+./manage.sh push-nb                   # Push all notebooks
+./manage.sh push-ds                   # Push all datasets
 ./manage.sh status                    # Check publication status
+
+./manage.sh doctor                    # Preflight checks (tracker, env, credentials)
+./manage.sh sync --dry-run            # Preview tracker metric sync from live Kaggle
+./manage.sh scorecard                 # Medal progress scorecard
+./manage.sh weekly-plan               # 7-day execution plan
+./manage.sh quality --min-score 70 --scope all   # Notebook quality rubric
+./manage.sh scout --update            # Regenerate competition-scout-report.md
 ```
 
 ## Key Context
 
 - **Goal**: Kaggle Grandmaster across all 4 categories (Competitions, Notebooks, Datasets, Discussion)
-- **Current status**: 21 notebooks live, 4 datasets published, 1 competition entered
-- **Priority competitions**: Med-Gemma (highest medal probability, 58 teams), Vesuvius, Akkadian
+- **Current status**: 70 notebooks live (3 bronze), 12 datasets published (1 silver, 1 bronze), 12 competitions entered — see `docs/reports/grandmaster-tracker.md` for live numbers (synced 2026-06-11)
+- **Priority competitions**: AI Agent Security: Tool Attacks (best medal odds, 19 teams, Sep 1), Hull Tactical Market (Jun 25), Orbit Wars (Jun 23)
 - **Discussion strategy**: 2-3 posts/week targeting 50+ bronze medals over 12 weeks
 
 ## Development Workflow
