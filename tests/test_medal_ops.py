@@ -135,6 +135,26 @@ def test_parse_args_accepts_shared_flags_after_subcommand(monkeypatch):
     assert args.today == "2026-03-09"
 
 
+def test_parse_args_accepts_shared_flags_before_subcommand(monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "medal_ops.py",
+            "--output-root",
+            "custom-out",
+            "--today",
+            "2026-03-09",
+            "badge-plan",
+        ],
+    )
+
+    args = medal_ops.parse_args()
+
+    assert args.command == "badge-plan"
+    assert args.output_root == "custom-out"
+    assert args.today == "2026-03-09"
+
+
 def test_pace_report_computes_velocity():
     first = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 15))
     second = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 22))
