@@ -41,7 +41,7 @@ def _patched_manage_script(tmp_path: Path) -> Path:
         1,
     )
     patched = patched.replace(
-        'MODULE_ROOT="/workspaces/kaggle"',
+        'MODULE_ROOT="${KAGGLE_DIR}"',
         f'MODULE_ROOT="{ROOT}"',
         1,
     )

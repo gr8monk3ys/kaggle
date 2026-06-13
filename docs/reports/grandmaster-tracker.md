@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-06-11
 
 ---
 
@@ -42,24 +42,25 @@
 **Active competitions to enter:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
 |-------------|-------|----------|-----------------|----------|
-| Med-Gemma Impact Challenge | 58 | Feb 24, 2026 | Easiest (small field) | Fine-tune MedGemma, LoRA approach |
-| Vesuvius Surface Detection | 759 | Feb 13, 2026 | Medium | 3D U-Net baseline, iterate |
-| CAFA 6 Protein Function | 2,061 | Feb 2, 2026 | Hard (large field) | Protein LM embeddings |
-| Deep Past Akkadian | 1,321 | Mar 23, 2026 | Hard (large field) | ByT5 seq2seq |
-| Stanford RNA 3D Folding 2 | 480 | Mar 25, 2026 | Medium | Geometric deep learning |
-| Hull Tactical Market | 3,677 | Jun 16, 2026 | Hard | Ensemble tree models |
-| AIMO3 | 1,560 | Apr 15, 2026 | Very Hard | LLM math reasoning |
+| Orbit Wars | 4,318 | Jun 23, 2026 | Hard (large field) | Fast baseline, iterate on leaderboard |
+| Hull Tactical Market | 3,677 | Jun 25, 2026 | Hard (large field) | Ensemble tree models |
+| Playground Series S6E6 | 1,368 | Jun 30, 2026 | Medium (playground) | GBM ensemble tabular pipeline |
+| NeuroGolf 2026 | 1,844 | Jul 15, 2026 | Medium | Feature engineering + GBM baseline |
+| Rogii Wellbore Geology | 2,819 | Aug 5, 2026 | Hard (large field) | Sequence features + GBM baseline |
+| AI Agent Security: Tool Attacks | 19 | Sep 1, 2026 | Easiest (small field) | Prompt-attack detection pipeline |
+| ARC Prize 2026 (ARC-AGI-2) | 819 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
+| ARC Prize 2026 (ARC-AGI-3) | 1,160 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
 
-**Priority: Med-Gemma (58 teams = best medal odds by far)**
+**Priority: AI Agent Security (19 teams = best medal odds by far)**
 ### Notebooks
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 65 (on Kaggle) |
+| Total notebooks | 30+ | 70 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
-| Bronze medals (5+ votes) | — | 2 |
-| Total votes | — | 51 |
+| Bronze medals (5+ votes) | — | 3 |
+| Total votes | — | 67 |
 
 **Tracked notebook portfolio (curated live + pipeline subset):**
 | # | Notebook | Votes | Status |
@@ -101,12 +102,12 @@
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (5 gold) | Novice |
-| Total datasets | 7+ | 11 (on Kaggle) |
+| Total datasets | 7+ | 12 (on Kaggle) |
 | Gold medals (50+ votes) | 5 | 0 |
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
-| Total votes | — | 33 |
-| Total downloads | — | 450 |
+| Total votes | — | 54 |
+| Total downloads | — | 1750 |
 
 **Datasets on Kaggle:**
 | # | Dataset | Votes | Downloads | Usability |
