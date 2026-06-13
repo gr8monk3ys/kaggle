@@ -100,10 +100,17 @@ def kaggle_cli_path() -> str | None:
 
 
 def _kaggle_cli_module_available() -> bool:
-    """Return whether the ``kaggle.cli`` module can be imported."""
+    """Return whether the ``kaggle.cli`` module can be imported.
+
+    ``find_spec`` imports the parent ``kaggle`` package, which may fail in
+    several ways: ``ModuleNotFoundError`` when it is not installed, other
+    ``ImportError`` subtypes when a transitive dependency is missing, and
+    ``OSError`` in versions that touch credentials at import time. For a
+    boolean availability probe, any such failure means "not usable".
+    """
     try:
         return importlib.util.find_spec("kaggle.cli") is not None
-    except ModuleNotFoundError:
+    except (ImportError, OSError):
         return False
 
 

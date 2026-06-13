@@ -1543,10 +1543,21 @@ def write_report(path: Path, content: str) -> None:
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
 
 
-def add_shared_cli_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--tracker", default=str(DEFAULT_TRACKER_PATH), help="Path to grandmaster tracker markdown file.")
-    parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Output directory for history and reports.")
-    parser.add_argument("--today", default=None, help="Override date in YYYY-MM-DD format.")
+def add_shared_cli_args(parser: argparse.ArgumentParser, *, is_subparser: bool = False) -> None:
+    # The shared flags are registered on both the top-level parser and each
+    # subparser so they are accepted before OR after the subcommand. On the
+    # subparsers we suppress the defaults: without this, a subparser default
+    # would overwrite a value already parsed from before the subcommand (e.g.
+    # ``medal_ops --output-root X scorecard`` would silently reset to the
+    # default). With SUPPRESS the subparser only sets these attributes when the
+    # flag is actually given after the subcommand; otherwise the top-level
+    # parser's value (given or default) is preserved.
+    tracker_default = argparse.SUPPRESS if is_subparser else str(DEFAULT_TRACKER_PATH)
+    output_default = argparse.SUPPRESS if is_subparser else str(DEFAULT_OUTPUT_ROOT)
+    today_default = argparse.SUPPRESS if is_subparser else None
+    parser.add_argument("--tracker", default=tracker_default, help="Path to grandmaster tracker markdown file.")
+    parser.add_argument("--output-root", default=output_default, help="Output directory for history and reports.")
+    parser.add_argument("--today", default=today_default, help="Override date in YYYY-MM-DD format.")
 
 
 def parse_args() -> argparse.Namespace:
@@ -1555,15 +1566,15 @@ def parse_args() -> argparse.Namespace:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
     scorecard_parser = subparsers.add_parser("scorecard", help="Generate scorecard report and save snapshot.")
-    add_shared_cli_args(scorecard_parser)
+    add_shared_cli_args(scorecard_parser, is_subparser=True)
     badge_plan_parser = subparsers.add_parser("badge-plan", help="Generate ordered Kaggle badge roadmap.")
-    add_shared_cli_args(badge_plan_parser)
+    add_shared_cli_args(badge_plan_parser, is_subparser=True)
     weekly_parser = subparsers.add_parser("weekly-plan", help="Generate weekly execution plan.")
-    add_shared_cli_args(weekly_parser)
+    add_shared_cli_args(weekly_parser, is_subparser=True)
     pace_parser = subparsers.add_parser("pace", help="Generate progress velocity and ETA analysis.")
-    add_shared_cli_args(pace_parser)
+    add_shared_cli_args(pace_parser, is_subparser=True)
     sync_parser = subparsers.add_parser("sync", help="Sync tracker metrics from live Kaggle CLI data.")
-    add_shared_cli_args(sync_parser)
+    add_shared_cli_args(sync_parser, is_subparser=True)
     sync_parser.add_argument("--dry-run", action="store_true", help="Generate sync report without writing tracker changes.")
     sync_parser.add_argument("--kernels-csv", default=None, help="Path to exported kernels CSV.")
     sync_parser.add_argument("--datasets-csv", default=None, help="Path to exported datasets CSV.")
@@ -1575,7 +1586,7 @@ def parse_args() -> argparse.Namespace:
     template_parser = subparsers.add_parser(
         "sync-template", help="Generate CSV templates and helper script for offline sync."
     )
-    add_shared_cli_args(template_parser)
+    add_shared_cli_args(template_parser, is_subparser=True)
     template_parser.add_argument(
         "--out-dir",
         default=None,
@@ -1586,7 +1597,7 @@ def parse_args() -> argparse.Namespace:
         "doctor",
         help="Run preflight checks for tracker health, environment readiness, and sync inputs.",
     )
-    add_shared_cli_args(doctor_parser)
+    add_shared_cli_args(doctor_parser, is_subparser=True)
     doctor_parser.add_argument(
         "--strict",
         action="store_true",
