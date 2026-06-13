@@ -6,7 +6,7 @@ This is a monorepo containing Kaggle competition entries, educational notebooks,
 
 ```
 kaggle/
-├── manage.sh                          # CLI wrapper for kaggle_portfolio (44 subcommands)
+├── manage.sh                          # CLI wrapper for kaggle_portfolio (run ./manage.sh help)
 ├── kaggle_portfolio/                  # Python package behind manage.sh (CLI, ops, quality, campaigns)
 ├── tests/                             # pytest suite for the kaggle_portfolio package
 ├── medal_ops/                         # Generated scorecards/plans/reports (gitignored except README)
@@ -69,8 +69,8 @@ kaggle/
 ## Management Script
 
 `manage.sh` is the primary CLI tool for interacting with Kaggle. It wraps the
-`kaggle_portfolio` package (dispatch table in `kaggle_portfolio/manage_commands.py`,
-44 subcommands — run `./manage.sh help` for the full list). Run it from the repo root.
+`kaggle_portfolio` package (dispatch table in `kaggle_portfolio/manage_commands.py`
+— run `./manage.sh help` for the full list of subcommands). Run it from the repo root.
 
 ```bash
 ./manage.sh push <dir>                # Push a specific notebook/dataset directory
@@ -89,8 +89,8 @@ kaggle/
 ## Key Context
 
 - **Goal**: Kaggle Grandmaster across all 4 categories (Competitions, Notebooks, Datasets, Discussion)
-- **Current status**: 70 notebooks live (3 bronze), 12 datasets published (1 silver, 1 bronze), 12 competitions entered — see `docs/reports/grandmaster-tracker.md` for live numbers (synced 2026-06-11)
-- **Priority competitions**: AI Agent Security: Tool Attacks (best medal odds, 19 teams, Sep 1), Hull Tactical Market (Jun 25), Orbit Wars (Jun 23)
+- **Current status**: tracked in `docs/reports/grandmaster-tracker.md` — refresh with `./manage.sh sync` (live counts) rather than hardcoding numbers here, which go stale
+- **Priority competitions**: see `docs/reports/competition-scout-report.md` — regenerate with `./manage.sh scout --update`
 - **Discussion strategy**: 2-3 posts/week targeting 50+ bronze medals over 12 weeks
 
 ## Development Workflow
