@@ -32,3 +32,32 @@ def test_kaggle_command_falls_back_to_legacy_module(monkeypatch):
     cmd = kaggle_utils.kaggle_command()
 
     assert cmd[1:] == ["-m", "kaggle.cli"]
+
+
+def _raise_module_not_found(name):
+    raise ModuleNotFoundError("No module named 'kaggle'")
+
+
+def test_kaggle_command_survives_missing_kaggle_package(monkeypatch):
+    monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
+    monkeypatch.setattr(kaggle_utils.importlib.util, "find_spec", _raise_module_not_found)
+
+    assert kaggle_utils.kaggle_command() == ["kaggle"]
+
+
+def test_has_kaggle_cli_survives_missing_kaggle_package(monkeypatch):
+    monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
+    monkeypatch.setattr(kaggle_utils.importlib.util, "find_spec", _raise_module_not_found)
+
+    assert kaggle_utils.has_kaggle_cli() is False
+
+
+def test_kaggle_command_survives_broken_kaggle_install(monkeypatch):
+    def _raise_os_error(name):
+        raise OSError("Could not find kaggle.json. Make sure it's located in ...")
+
+    monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
+    monkeypatch.setattr(kaggle_utils.importlib.util, "find_spec", _raise_os_error)
+
+    assert kaggle_utils.kaggle_command() == ["kaggle"]
+    assert kaggle_utils.has_kaggle_cli() is False

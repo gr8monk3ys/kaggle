@@ -1,11 +1,14 @@
 import json
 import os
-import time
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
 from kaggle_portfolio.ops import stale_content_detector as scd
+
+# Frozen "today" shared by the mtime helper and the tests' `today=` arguments.
+# Both must agree for the days-ago math to hold, so they reference one constant.
+FROZEN_TODAY = date(2026, 3, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -55,12 +58,12 @@ def _write_dataset_metadata(dir_path: Path) -> None:
 
 
 def _set_mtime_days_ago(path: Path, days: int) -> None:
-    """Set a file's mtime to N days ago from 2026-03-02."""
-    # Use a fixed reference so tests are deterministic
-    ref = 1740873600  # approx 2025-03-02 00:00:00 UTC
-    # We actually want "days ago from the test's --today", so just set
-    # mtime far enough back.  Using os.utime with a timestamp.
-    target_ts = time.time() - (days * 86400)
+    """Set a file's mtime to N days before FROZEN_TODAY at local noon.
+
+    Anchoring at noon keeps a DST shift from moving the resulting calendar date.
+    """
+    noon = datetime(FROZEN_TODAY.year, FROZEN_TODAY.month, FROZEN_TODAY.day, 12)
+    target_ts = noon.timestamp() - (days * 86400)
     os.utime(path, (target_ts, target_ts))
 
 
@@ -78,7 +81,7 @@ def test_stale_notebook_flagged(tmp_path):
     _write_notebook(nb_file)
     _set_mtime_days_ago(nb_file, 90)
 
-    today = date(2026, 3, 2)
+    today = FROZEN_TODAY
     stale = scd.find_stale_notebooks(tmp_path, today, max_age_days=60)
 
     assert len(stale) == 1
@@ -110,7 +113,7 @@ def test_custom_max_age_threshold(tmp_path):
     _write_notebook(nb_file)
     _set_mtime_days_ago(nb_file, 40)
 
-    today = date.today()
+    today = FROZEN_TODAY
 
     # With default 60, should not be stale
     assert len(scd.find_stale_notebooks(tmp_path, today, max_age_days=60)) == 0
@@ -134,7 +137,7 @@ def test_stale_dataset_flagged(tmp_path):
     csv_file.write_text("a,b\n1,2\n")
     _set_mtime_days_ago(csv_file, 120)
 
-    today = date(2026, 3, 2)
+    today = FROZEN_TODAY
     stale = scd.find_stale_datasets(tmp_path, today, max_age_days=90)
 
     assert len(stale) == 1
@@ -185,7 +188,7 @@ def test_parquet_files_detected(tmp_path):
     pq_file.write_bytes(b"\x00")  # minimal placeholder
     _set_mtime_days_ago(pq_file, 100)
 
-    today = date(2026, 3, 2)
+    today = FROZEN_TODAY
     stale = scd.find_stale_datasets(tmp_path, today, max_age_days=90)
 
     assert len(stale) == 1
@@ -360,7 +363,7 @@ def test_markdown_report_format():
 
     report = scd.build_markdown_report(
         stale_nbs, stale_ds, outdated,
-        today=date(2026, 3, 2), max_nb_age=60, max_ds_age=90,
+        today=FROZEN_TODAY, max_nb_age=60, max_ds_age=90,
     )
 
     assert "# Stale Content Report" in report
@@ -381,7 +384,7 @@ def test_markdown_report_empty():
     """Empty report should say no stale items found."""
     report = scd.build_markdown_report(
         [], [], [],
-        today=date(2026, 3, 2), max_nb_age=60, max_ds_age=90,
+        today=FROZEN_TODAY, max_nb_age=60, max_ds_age=90,
     )
 
     assert "No stale notebooks found" in report
@@ -395,7 +398,7 @@ def test_json_report_structure():
     report = scd.build_json_report(
         [{"rel_dir": "x", "nb_path": "/x", "last_modified": "2025-01-01", "days_stale": 100}],
         [], [],
-        today=date(2026, 3, 2), max_nb_age=60, max_ds_age=90,
+        today=FROZEN_TODAY, max_nb_age=60, max_ds_age=90,
     )
 
     assert report["generated"] == "2026-03-02"
