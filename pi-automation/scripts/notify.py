@@ -3,6 +3,11 @@ import sys
 import requests
 
 
+def _redact(text: str, token: str) -> str:
+    """Replace the bot token with '***' so it never reaches logs."""
+    return text.replace(token, "***") if token else text
+
+
 def send(message: str) -> None:
     """Send a Telegram message via Bot API.
 
@@ -24,11 +29,14 @@ def send(message: str) -> None:
             timeout=10,
         )
     except requests.RequestException as exc:
-        print(f"Telegram API request failed: {exc}", file=sys.stderr)
+        print(f"Telegram API request failed: {_redact(str(exc), token)}", file=sys.stderr)
         return
 
     if response.status_code != 200:
-        print(f"Telegram API error {response.status_code}: {response.text}", file=sys.stderr)
+        print(
+            f"Telegram API error {response.status_code}: {_redact(response.text, token)}",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":
