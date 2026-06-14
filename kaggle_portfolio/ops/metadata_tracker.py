@@ -94,10 +94,12 @@ def collect_metadata() -> dict[str, dict]:
     return results
 
 
-def fetch_vote_counts() -> dict[str, int]:
+def fetch_vote_counts() -> dict[str, int] | None:
     """Fetch vote counts from Kaggle CLI for all owned kernels.
 
-    Returns a dict mapping kernel slug (e.g., 'feature-engineering') to votes.
+    Returns a dict mapping kernel slug to votes on success (possibly empty), or
+    None if the Kaggle CLI call fails — so callers can distinguish 'fetch
+    failed' from 'genuinely zero votes' instead of silently recording zeros.
     """
     votes: dict[str, int] = {}
     try:
@@ -107,7 +109,12 @@ def fetch_vote_counts() -> dict[str, int]:
             capture_output=True, text=True,
         )
         if result.returncode != 0:
-            return votes
+            print(
+                f"{YELLOW}Vote fetch failed{RESET}: "
+                f"{summarize_subprocess_error(result.stdout, result.stderr)}",
+                file=sys.stderr,
+            )
+            return None
 
         reader = csv.DictReader(io.StringIO(result.stdout))
         for row in reader:
@@ -122,14 +129,22 @@ def fetch_vote_counts() -> dict[str, int]:
                     votes[slug] = int(row[vote_col] or 0)
                 except (ValueError, TypeError):
                     pass
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"{YELLOW}Vote fetch failed{RESET}: {exc}", file=sys.stderr)
+        return None
     return votes
 
 
-def _merge_votes(metadata: dict[str, dict], votes: dict[str, int]) -> dict[str, dict]:
-    """Merge vote counts into metadata entries, matching by slug."""
+def _merge_votes(metadata: dict[str, dict], votes: dict[str, int] | None) -> dict[str, dict]:
+    """Merge vote counts into metadata entries, matching by slug.
+
+    When ``votes`` is None (a failed fetch), record votes as None rather than 0
+    so downstream reporting can distinguish 'unknown' from 'genuinely zero'.
+    """
     for dir_name, entry in metadata.items():
+        if votes is None:
+            entry["votes"] = None
+            continue
         kernel_id = entry.get("id", "")
         slug = kernel_id.split("/")[-1] if "/" in kernel_id else dir_name
         entry["votes"] = votes.get(slug, 0)
@@ -143,8 +158,11 @@ def _merge_votes(metadata: dict[str, dict], votes: dict[str, int]) -> dict[str, 
 def cmd_snapshot(dry_run: bool = False, votes: dict[str, int] | None = None) -> int:
     """Take a snapshot of all metadata + votes and append to the log."""
     metadata = collect_metadata()
+    votes_unavailable = False
     if votes is None:
         votes = fetch_vote_counts()
+        if votes is None:
+            votes_unavailable = True
 
     metadata = _merge_votes(metadata, votes)
 
@@ -152,6 +170,7 @@ def cmd_snapshot(dry_run: bool = False, votes: dict[str, int] | None = None) -> 
         "timestamp": datetime.now(tz=timezone.utc).isoformat(),
         "notebooks": metadata,
         "annotation": None,
+        "votes_available": not votes_unavailable,
     }
 
     if dry_run:
@@ -162,11 +181,17 @@ def cmd_snapshot(dry_run: bool = False, votes: dict[str, int] | None = None) -> 
                   f"title={entry.get('title', '?')[:50]}")
         return 0
 
+    if votes_unavailable:
+        print(f"{YELLOW}Warning{RESET}: vote counts unavailable (Kaggle CLI "
+              "fetch failed); recording votes as unknown for this snapshot.",
+              file=sys.stderr)
+
     log = _load_log()
     log.append(snapshot)
     _save_log(log)
+    total_votes = sum((e.get("votes") or 0) for e in metadata.values())
     print(f"{GREEN}Snapshot saved{RESET} — {len(metadata)} notebooks, "
-          f"{sum(e.get('votes', 0) for e in metadata.values())} total votes")
+          f"{total_votes} total votes")
     return 0
 
 
@@ -212,19 +237,22 @@ def cmd_report(as_json: bool = False) -> int:
             p = prev_nbs.get(name, {})
             c = curr_nbs.get(name, {})
 
-            vote_delta = c.get("votes", 0) - p.get("votes", 0)
+            c_votes = c.get("votes")
+            p_votes = p.get("votes")
+            votes_known = c_votes is not None and p_votes is not None
+            vote_delta = (c_votes - p_votes) if votes_known else 0
             title_changed = p.get("title") != c.get("title") and p.get("title")
             keywords_changed = (
                 set(p.get("keywords", [])) != set(c.get("keywords", []))
                 and p.get("keywords") is not None
             )
 
-            if vote_delta != 0 or title_changed or keywords_changed:
+            if (votes_known and vote_delta != 0) or title_changed or keywords_changed:
                 entry = {
                     "timestamp": ts,
                     "notebook": name,
-                    "vote_delta": vote_delta,
-                    "votes_now": c.get("votes", 0),
+                    "vote_delta": vote_delta if votes_known else None,
+                    "votes_now": c_votes,
                 }
                 if title_changed:
                     entry["title_from"] = p.get("title", "")
@@ -255,8 +283,12 @@ def cmd_report(as_json: bool = False) -> int:
         name = ch["notebook"][:34]
         delta = ch["vote_delta"]
         votes = ch["votes_now"]
-        delta_color = GREEN if delta > 0 else (RED if delta < 0 else RESET)
-        delta_str = f"{'+' if delta > 0 else ''}{delta}"
+        if delta is None:
+            delta_color = YELLOW
+            delta_str = "?"
+        else:
+            delta_color = GREEN if delta > 0 else (RED if delta < 0 else RESET)
+            delta_str = f"{'+' if delta > 0 else ''}{delta}"
 
         parts = []
         if "title_to" in ch:
@@ -269,7 +301,8 @@ def cmd_report(as_json: bool = False) -> int:
             parts.append(f"[{ch['annotation'][:30]}]")
 
         desc = "  ".join(parts) if parts else "(vote change only)"
-        print(f"{name:<35} {votes:>6} {delta_color}{delta_str:>7}{RESET}  {desc}")
+        votes_str = f"{votes:>6}" if votes is not None else f"{'?':>6}"
+        print(f"{name:<35} {votes_str} {delta_color}{delta_str:>7}{RESET}  {desc}")
 
     return 0
 
