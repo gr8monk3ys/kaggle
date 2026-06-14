@@ -144,3 +144,15 @@ def test_kaggle_session_cookie_is_gitignored():
         check=False,
     )
     assert result.returncode == 0, "kaggle_storage_state.json must be gitignored"
+
+
+def test_medal_ops_history_is_tracked_not_ignored():
+    """Daily snapshots must be committable so pace history accumulates."""
+    result = subprocess.run(
+        ["git", "check-ignore", "-q", "medal_ops/history/snapshot-sample.json"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    # returncode 1 == NOT ignored (what we want); 0 == ignored (fail)
+    assert result.returncode == 1, "medal_ops/history/ must NOT be gitignored"

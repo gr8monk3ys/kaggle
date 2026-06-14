@@ -13,8 +13,7 @@ catboost_info/
 # Jupyter
 .ipynb_checkpoints/
 
-# Medal ops generated artifacts
-medal_ops/history/
+# Medal ops generated artifacts (history is committed for pace tracking; reports/sync_inputs stay local)
 medal_ops/reports/
 medal_ops/sync_inputs/
 .competition_lab/
