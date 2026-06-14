@@ -815,6 +815,7 @@ COMMANDS = [
     Command("badge-plan", "Generate ordered Kaggle badge roadmap report", lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["badge-plan", *a])),
     Command("weekly-plan", "Generate weekly execution plan report", lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["weekly-plan", *a])),
     Command("pace", "Generate medal progress pace analysis report", lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["pace", *a])),
+    Command("digest", "Print a one-message daily Grandmaster digest", lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["digest", *a])),
     Command("sync", "Sync tracker metrics from live Kaggle CLI data", lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["sync", *a])),
     Command("sync-template", "Generate CSV templates + export helper for offline sync", lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["sync-template", *a])),
     Command("doctor", "Run preflight checks (tracker, sync inputs, environment)", lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["doctor", *a])),
