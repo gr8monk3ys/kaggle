@@ -60,3 +60,8 @@ def test_has_kaggle_credentials_accepts_api_token(monkeypatch: pytest.MonkeyPatc
 
     assert ok is True
     assert "environment-token" in sources
+
+
+def test_digest_command_is_registered():
+    names = [c.name for c in manage_commands.COMMANDS]
+    assert "digest" in names
