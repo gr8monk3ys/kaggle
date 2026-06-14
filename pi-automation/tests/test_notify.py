@@ -63,3 +63,22 @@ def test_send_handles_request_exception(monkeypatch, capsys):
 
     captured = capsys.readouterr()
     assert "request failed" in captured.err.lower()
+
+
+def test_send_redacts_token_in_request_exception(monkeypatch, capsys):
+    """A request failure must not leak the bot token into stderr."""
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "secret-token-123")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "123456")
+
+    exc = requests.RequestException(
+        "HTTPSConnectionPool: url=https://api.telegram.org/botsecret-token-123/sendMessage failed"
+    )
+    with patch("notify.requests.post", side_effect=exc):
+        import importlib
+        import notify
+        importlib.reload(notify)
+        notify.send("leaky")
+
+    captured = capsys.readouterr()
+    assert "secret-token-123" not in captured.err
+    assert "***" in captured.err
