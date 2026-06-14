@@ -842,6 +842,7 @@ COMMANDS = [
     Command("create-competition-entry", "Scaffold a new competition entry from a competition slug", lambda a: run_module("kaggle_portfolio.notebooks.competition_entry", a), "<slug> [--gpu] [--push]"),
     Command("competition-lab", "Benchmark local competition models and optionally submit from the CLI", lambda a: run_module("kaggle_portfolio.notebooks.local_competition_lab", a), "<slug> [--write-submission] [--submit] [--force-download]"),
     Command("metadata-tracker", "Track metadata changes vs vote deltas over time", lambda a: run_module("kaggle_portfolio.ops.metadata_tracker", a), "<snapshot|annotate|report> [args...]"),
+    Command("leaderboard", "Record/report competition leaderboard rank history", lambda a: run_module("kaggle_portfolio.ops.leaderboard_tracker", a), "<record|report> [--dry-run] [--json]", requires_kaggle=True),
     Command("smoke-live", "Safely exercise live Kaggle publish/post prerequisites without mutating Kaggle state", lambda a: run_module("kaggle_portfolio.ops.repo_ops", ["smoke-live", *a]), "[--owner OWNER] [--check-discussion-login]"),
     Command("upload-covers", "Upload cover images to Kaggle datasets via Playwright", cmd_upload_covers),
     Command("follow-users", "Follow Kaggle users to build visibility via Playwright", cmd_follow_users),

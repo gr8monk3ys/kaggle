@@ -65,3 +65,10 @@ def test_has_kaggle_credentials_accepts_api_token(monkeypatch: pytest.MonkeyPatc
 def test_digest_command_is_registered():
     names = [c.name for c in manage_commands.COMMANDS]
     assert "digest" in names
+
+
+def test_leaderboard_command_is_registered():
+    from kaggle_portfolio import manage_commands
+    names = [c.name for c in manage_commands.COMMANDS] if hasattr(manage_commands, "COMMANDS") \
+        else list(manage_commands.command_table().keys())
+    assert "leaderboard" in names
