@@ -1,70 +1,64 @@
 # ML/DS Interview Questions & Answers (500+)
 
-> 502 synthetic machine learning and data science interview questions with detailed answers, topic labels, and difficulty levels.
+> 500+ ML/DS interview Q&A with 10 categories and 3 difficulty levels
 
-**Kaggle dataset:** [lorenzoscaturchio/ml-interview-qa](https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa)  
-**License:** GPL-3.0
+**License:** GPL-3.0  
 
-## Overview
+**Kaggle:** [lorenzoscaturchio/ml-interview-qa](https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa)  
 
-This dataset is structured for technical interview preparation and NLP workflows. It covers 10 categories including statistics, ML theory, deep learning, NLP, computer vision, system design, SQL, Python, feature engineering, and A/B testing.
+## Description
 
-Each row contains:
-- a unique question
-- an expert-style answer
-- a coarse category
-- a difficulty label
-- company tags
-- fine-grained topic tags
+502 machine learning and data science interview questions with expert-level answers (50–200 words each), tagged across 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Three difficulty levels (easy/medium/hard) and company_tags linking questions to Google, Meta, Amazon, Microsoft, Apple, and others.
 
-The content is synthetic and intended for study, retrieval, classification, and RAG prototyping.
+Built for: interview preparation and study, LLM fine-tuning on technical Q&A, text classification by category or difficulty, RAG system prototyping with a structured knowledge base, and embedding similarity search. The company_tags field enables targeted preparation for specific employers.
 
-## Quick Facts
+Notable features: answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category; the mix of conceptual, coding, and system design questions reflects real interview breadth. All content is synthetic.
 
-| Property | Value |
-|---|---|
-| File | `ml_interview_questions.csv` |
-| Rows | `502` |
-| Columns | `8` |
-| Categories | `10` |
-| Difficulty levels | `3` |
-| Coverage | `2020-01-01` to `2025-12-31` |
-| Geography | `Global (synthetic)` |
+## Tags
 
-## Recommended Use Cases
+`education`, `nlp`, `deep learning`, `python`, `sql`
 
-1. Interview-prep search or filtering by category, topic, or company.
-2. Text classification by category or difficulty.
-3. Embedding and semantic-search demos.
-4. Retrieval-augmented generation prototypes for technical Q&A.
-5. LLM evaluation or fine-tuning experiments on concise expert answers.
+## Authors
 
-## Schema
+- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
 
-| Column | Meaning |
-|---|---|
-| `id` | unique question identifier |
-| `question` | interview question text |
-| `answer` | detailed answer written in expert style |
-| `category` | broad topic area |
-| `difficulty` | `easy`, `medium`, or `hard` |
-| `company_tags` | pipe-separated companies associated with the question style |
-| `topic_tags` | pipe-separated fine-grained topic labels |
-| `answer_length` | answer word count |
+## Coverage
 
-## Practical Notes
+- Temporal: 2020-01-01 to 2025-12-31
+- Geospatial: Global (synthetic)
 
-- `company_tags` is useful for targeted interview-prep slices.
-- `topic_tags` supports multi-label or retrieval experiments.
-- `answer_length` makes it easy to separate flashcard-style answers from longer explanations.
-- Because the content is synthetic, it is safer for educational benchmarking than scraped interview corpora.
+## DOI and Citations
+
+- DOI: Not assigned
+- Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (500+). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
 
 ## Provenance
 
-- Synthetic data generation scripts in this repository
-- Public schema conventions and domain patterns for educational simulation
-- Programmatic generation with seeded constraints to preserve structure while avoiding personal data
+- Source: Synthetic data generation scripts in this repository
+- Source: Public domain schemas and domain conventions for educational simulation
+- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
 
-## Citation
+## ml_interview_questions.csv
 
-Scaturchio, Lorenzo (2026). *ML/DS Interview Questions & Answers (500+).* Kaggle Dataset. <https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa>
+**Rows:** 502  |  **Columns:** 8  |  **Size:** 241.5 KB
+
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `id` | string | 0.0% | 502 | `aa928e5348`, `e940376e2c`, `a0d8ce2738` |
+| `question` | string | 0.0% | 502 | `Describe the ConvNeXt architecture and its key innovations.`, `How would you design a medical diagnosis support system?`, `Explain neural network pruning in deep learning.` |
+| `answer` | string | 0.0% | 362 | — |
+| `category` | string | 0.0% | 10 | `Python`, `Deep Learning`, `System Design` |
+| `difficulty` | string | 0.0% | 3 | `medium`, `hard`, `easy` |
+| `company_tags` | string | 0.0% | 471 | `Amazon|Databricks`, `OpenAI|Meta|Databricks|Robinhood`, `Bloomberg|Google` |
+| `topic_tags` | string | 0.0% | 241 | `architecture|deep learning`, `data augmentation|training|regularization`, `system design|production` |
+| `answer_length` | integer | 0.0% | 65 | `39`, `62`, `42` |
+
+## Suggested Use Cases
+
+- Text classification (TF-IDF, BERT embeddings)
+- Named entity recognition or topic modeling
+- Salary prediction (regression)
+- Job category classification (multi-class)
+
+---
+*Generated by `dataset_optimizer.py` — dataset_optimizer.py*
