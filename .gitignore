@@ -1,6 +1,7 @@
 # Secrets
 kaggle.json
 **/kaggle.json
+**/kaggle_storage_state.json
 .kaggle/
 
 # Python
