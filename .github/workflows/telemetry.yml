@@ -1,0 +1,87 @@
+name: Telemetry Snapshot
+
+on:
+  schedule:
+    - cron: "30 9 * * *"   # daily, offset from medal-ops-health (10 9)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.11"
+
+      - name: Install Kaggle CLI + deps (live mode only)
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
+            echo "No Kaggle credentials configured; telemetry needs live data. Exiting cleanly."
+            echo "SKIP=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          python -m pip install --upgrade pip
+          python -m pip install kaggle requests
+
+      - name: Configure Kaggle credentials (live mode only)
+        if: env.SKIP != '1'
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.kaggle
+          printf '{"username":"%s","key":"%s"}' "${KAGGLE_USERNAME}" "${KAGGLE_KEY}" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+
+      - name: Sync tracker + record snapshot
+        if: env.SKIP != '1'
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          set -euo pipefail
+          python -m kaggle_portfolio.ops.medal_ops sync
+          python -m kaggle_portfolio.ops.medal_ops scorecard
+          python -m kaggle_portfolio.notebooks.competition_scout --update || echo "scout refresh skipped"
+
+      - name: Compose + send digest
+        if: env.SKIP != '1'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set -euo pipefail
+          MSG="$(python -m kaggle_portfolio.ops.medal_ops digest || echo 'digest generation failed')"
+          echo "$MSG"
+          if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
+            python pi-automation/scripts/notify.py "$MSG" || echo "notify failed (non-fatal)"
+          else
+            echo "No Telegram token; digest printed to log only."
+          fi
+
+      - name: Commit telemetry
+        if: env.SKIP != '1'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/reports/grandmaster-tracker.md medal_ops/history/ || true
+          git add docs/reports/competition-scout-report.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No telemetry changes to commit."
+          else
+            git commit -m "chore(telemetry): daily snapshot $(date -u +%Y-%m-%d) [skip ci]"
+            git push
+          fi

@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -156,3 +157,21 @@ def test_medal_ops_history_is_tracked_not_ignored():
     )
     # returncode 1 == NOT ignored (what we want); 0 == ignored (fail)
     assert result.returncode == 1, "medal_ops/history/ must NOT be gitignored"
+
+
+def test_telemetry_workflow_records_and_commits_snapshots():
+    import yaml
+    wf_path = ROOT / ".github" / "workflows" / "telemetry.yml"
+    assert wf_path.exists(), "telemetry.yml must exist"
+    wf = yaml.safe_load(wf_path.read_text(encoding="utf-8"))
+
+    on = wf.get(True, wf.get("on"))   # PyYAML may parse bare `on:` as boolean True
+    assert "schedule" in on
+    assert "workflow_dispatch" in on
+    assert wf.get("permissions", {}).get("contents") == "write"
+
+    body = wf_path.read_text(encoding="utf-8")
+    assert "medal_ops sync" in body
+    assert "medal_ops scorecard" in body   # scorecard is what actually writes the snapshot
+    assert "--dry-run" not in body
+    assert "medal_ops digest" in body
