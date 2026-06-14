@@ -1,123 +1,77 @@
 # Spotify Tracks: Audio Features (50K Songs)
 
-> 50,000 synthetic Spotify-style tracks for genre classification, popularity regression, clustering, and recommendation demos.
+> 50K tracks with audio features, popularity, and genre labels
 
-**Kaggle dataset:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)  
-**Companion notebook:** [Spotify Tracks EDA & Popularity Prediction](https://www.kaggle.com/code/lorenzoscaturchio/spotify-tracks-eda-popularity-prediction)  
-**License:** GPL-3.0
+**License:** GPL-3.0  
 
-## Overview
+**Kaggle:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)  
 
-This dataset is built to feel like a compact export from Spotify's audio-feature ecosystem without relying on proprietary listener data. It is large enough for real baseline models, small enough for fast iteration, and structured for portfolio-quality visualizations.
+## Description
 
-Each row represents one synthetic track with:
-- track identity and release metadata
-- a primary genre label
-- a popularity target on a 0-100 scale
-- the core continuous audio descriptors most practitioners expect from Spotify-style feature tables
+50,000 synthetic Spotify-style tracks spanning 2000–2024 across 20 genres. Each row includes track metadata plus the core Spotify-style audio features used for recommendation, clustering, and predictive modeling: danceability, energy, loudness, speechiness, acousticness, instrumentalness, liveness, valence, tempo, key, mode, and time signature.
 
-## Why This Dataset Is Useful
+Built for popularity prediction, genre classification, playlist mood clustering, trend analysis, and recommender-system prototyping. The dataset is intentionally lightweight enough for notebook workflows while still large enough to support non-trivial tabular ML experiments.
 
-- One clean CSV with **50,000 rows** and **21 columns**, so it is fast to load and easy to benchmark.
-- Includes both **supervised targets** (`popularity`, `genre`) and unsupervised structure in the audio feature space.
-- Works well for beginner EDA and for stronger baselines such as gradient boosting, tabular neural nets, UMAP, and recommendation heuristics.
-- Safe to share and remix because the data is synthetic rather than scraped from the Spotify API.
+Notable properties: genre-aware feature correlations, Zipf-like popularity distribution, realistic tempo ranges, and synthetic generation designed for educational benchmarking rather than exact catalog reconstruction.
 
-## Quick Start
+## Tags
 
-```python
-import pandas as pd
+`music`, `classification`, `regression`, `beginner`, `clustering`
 
-df = pd.read_csv("spotify_tracks.csv")
-print(df.shape)
-print(df[["genre", "popularity", "danceability", "energy"]].head())
-```
+## Authors
 
-Common starter tasks:
+- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
 
-- Predict `popularity` from audio features and metadata.
-- Classify `genre` across 20 classes.
-- Cluster tracks into playlist moods using `valence`, `energy`, `danceability`, and `tempo`.
-- Build simple nearest-neighbor recommendations from standardized audio features.
+## Coverage
 
-## Quick Facts
+- Temporal: 2000-01-01 to 2024-12-31
+- Geospatial: Global (synthetic)
 
-| Property | Value |
-|---|---|
-| File | `spotify_tracks.csv` |
-| Rows | `50,000` |
-| Columns | `21` |
-| Coverage | `2000-01-01` to `2024-12-31` |
-| Genres | `20` |
-| Geography | `Global (synthetic)` |
+## DOI and Citations
 
-## Recommended Starting Tasks
-
-1. Genre classification from structured acoustic features.
-2. Popularity regression without lyrics, playlists, or artist-follower metadata.
-3. Mood clustering with PCA, UMAP, or K-Means.
-4. Similarity search and recommendation prototypes using feature distance.
-5. Feature-importance demos for tree ensembles and boosting models.
-
-## Column Guide
-
-### Identity and release metadata
-
-- `track_id`: unique synthetic identifier
-- `track_name`: track title
-- `artist_name`: primary artist name
-- `album_name`: album title
-- `release_year`: release year from 2000 to 2024
-- `genre`: primary genre label
-- `explicit`: boolean explicit-content flag
-
-### Target / outcome field
-
-- `popularity`: synthetic 0-100 popularity score for ranking and regression tasks
-
-### Audio features
-
-- `danceability`: how rhythmically suitable the track is for dancing
-- `energy`: perceptual intensity and activity level
-- `loudness`: overall loudness in dB
-- `speechiness`: spoken-word intensity
-- `acousticness`: confidence that the track is acoustic
-- `instrumentalness`: confidence that the track has little or no vocal content
-- `liveness`: likelihood of live audience presence
-- `valence`: musical positivity
-- `tempo`: estimated BPM
-- `key`: encoded musical key from 0 to 11
-- `mode`: 1 for major, 0 for minor
-- `time_signature`: estimated beats per bar
-- `duration_ms`: track duration in milliseconds
-
-## Linked Assets
-
-- Dataset page: <https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k>
-- Explore notebook: <https://www.kaggle.com/code/lorenzoscaturchio/spotify-tracks-eda-popularity-prediction>
-
-## Practical Notes
-
-- Genre patterns are intentionally distinct enough to support classification baselines.
-- Popularity is harder than genre because the table omits playlist, social, and artist-network effects.
-- This is synthetic data intended for education, prototyping, and benchmarking rather than production music analytics.
-
-## Notes and Caveats
-
-- This dataset is **synthetic**. It is designed for benchmarking, tutorials, and prototyping rather than for reproducing real Spotify catalog statistics exactly.
-- `release_year` is intentionally broad enough for trend analysis, but it should not be treated as a precise historical reconstruction of the music industry.
-- Audio features are generated with genre-aware distributions, so they are realistic enough for ML practice while still being simulation data.
-
-## Changelog
-
-- 2026-03-08: tightened the README, clarified benchmark tasks, and added a quick-start workflow.
+- DOI: Not assigned
+- Scaturchio, Lorenzo (2026). Spotify Tracks: Audio Features (50K Songs). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k
 
 ## Provenance
 
-- Generated from repository scripts in this project
-- Built with seeded statistical rules and genre-aware feature distributions
-- Designed for reproducible ML demos, EDA, and teaching workflows
+- Source: Synthetic data generation scripts in this repository
+- Source: Public domain schemas and domain conventions for educational simulation
+- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
 
-## Citation
+## spotify_tracks.csv
 
-Scaturchio, Lorenzo (2026). *Spotify Tracks: Audio Features (50K Songs).* Kaggle Dataset. <https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k>
+**Rows:** 5,000  |  **Columns:** 21  |  **Size:** 13,032.7 KB
+
+| Column | Type | Null% | Unique | Sample values |
+|--------|------|-------|--------|---------------|
+| `track_id` | string | 0.0% | 5,000 | `P3fAbnFbmOHnKYaXRvj7uf`, `M2wleOV911xCZkwPRQeNHp`, `4JSnE2NiiUHUAKw9iEU1jj` |
+| `track_name` | string | 0.0% | 1,908 | `Last Mountain`, `One Dance (Acoustic Version)`, `Forever Song (Remix)` |
+| `artist_name` | string | 0.0% | 415 | `Desert Wind`, `Alex Rodriguez`, `The Midnight` |
+| `album_name` | string | 0.0% | 450 | `The Night Album`, `Volume 1`, `Burning Soul` |
+| `release_year` | integer | 0.0% | 25 | `2024`, `2019`, `2007` |
+| `genre` | string | 0.0% | 20 | `latin`, `rock`, `electronic` |
+| `popularity` | integer | 0.0% | 106 | `14`, `11`, `23` |
+| `duration_ms` | integer | 0.0% | 4,926 | `189042`, `186805`, `121814` |
+| `explicit` | boolean | 0.0% | 2 | `False`, `True` |
+| `danceability` | float | 0.0% | 4,900 | `0.4277226245720831`, `0.4486344722988519`, `0.7079233572097434` |
+| `energy` | float | 0.0% | 4,789 | `1.0`, `0.7309111795456993`, `0.7449967500248068` |
+| `loudness` | float | 0.0% | 4,886 | `-4.702460124170008`, `-7.110031405122221`, `-7.30511983668819` |
+| `speechiness` | float | 0.0% | 4,592 | `0.050634521722032776`, `0.0`, `0.1440911273803575` |
+| `acousticness` | float | 0.0% | 4,367 | `0.23950553786088696`, `0.0444630046890899`, `0.11838033303144793` |
+| `instrumentalness` | float | 0.0% | 3,646 | `0.0`, `0.1813947783322327`, `0.09781763735300866` |
+| `liveness` | float | 0.0% | 4,800 | `0.1330525614065048`, `0.43594880310377926`, `0.2622544912103189` |
+| `valence` | float | 0.0% | 4,931 | `0.43138400653789466`, `0.5591349532819402`, `0.5168734525043466` |
+| `tempo` | float | 0.0% | 4,997 | `141.04873460781306`, `131.8332874783402`, `127.13295392507133` |
+| `key` | integer | 0.0% | 12 | `11`, `7`, `0` |
+| `mode` | integer | 0.0% | 2 | `1`, `0` |
+| `time_signature` | integer | 0.0% | 5 | `4`, `3`, `5` |
+
+## Suggested Use Cases
+
+- Text classification (TF-IDF, BERT embeddings)
+- Named entity recognition or topic modeling
+- Music popularity prediction (regression)
+- Genre clustering with audio features (k-means, UMAP)
+
+---
+*Generated by `dataset_optimizer.py` — dataset_optimizer.py*
