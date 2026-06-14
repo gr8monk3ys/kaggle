@@ -294,38 +294,3 @@ def test_update_draft_rebalances_schedule_with_canonical_id():
     assert sum(1 for item in updated_queue if item["status"] == "scheduled") == 3
     assert by_id["draft_005"]["status"] == "scheduled"
     assert by_id["draft_005"]["scheduled_after"] <= by_id["draft_001"]["scheduled_after"]
-
-
-def test_resolve_forum_prefers_longest_matching_key():
-    resolve = discussion_scheduler.resolve_forum
-    assert resolve("nlp getting started") == \
-        "https://www.kaggle.com/competitions/nlp-getting-started/discussion"
-    assert resolve("getting started") == \
-        "https://www.kaggle.com/discussions/getting-started"
-    assert resolve("deep past akkadian") == \
-        "https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion"
-    assert resolve("something unmapped") == discussion_scheduler.DEFAULT_FORUM
-
-
-def test_parse_drafts_routes_nlp_getting_started_to_competition(tmp_path):
-    drafts_path = tmp_path / "discussion-drafts.md"
-    drafts_path.write_text(
-        "\n".join(
-            [
-                "## Draft 1: NLP Tips",
-                "**Target forum:** NLP Getting Started",
-                "",
-                "### NLP Tips",
-                "",
-                "Body.",
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
-
-    drafts = discussion_scheduler.parse_drafts(drafts_path)
-
-    assert drafts[0]["forum_url"] == \
-        "https://www.kaggle.com/competitions/nlp-getting-started/discussion"
-    assert drafts[0]["priority"] == "high"

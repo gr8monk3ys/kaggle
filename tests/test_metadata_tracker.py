@@ -1,6 +1,8 @@
 """Tests for metadata_tracker.py."""
 import json
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -195,3 +197,51 @@ class TestReport:
         assert rc == 0
         captured = capsys.readouterr()
         assert "Need at least 2" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# Vote fetch failure
+# ---------------------------------------------------------------------------
+
+class TestVoteFetchFailure:
+    def test_fetch_returns_none_on_cli_failure(self, monkeypatch):
+        monkeypatch.setattr(tracker, "kaggle_command", lambda: ["kaggle"])
+        monkeypatch.setattr(
+            tracker.subprocess, "run",
+            lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr="boom"),
+        )
+        assert tracker.fetch_vote_counts() is None
+
+    def test_merge_records_none_when_votes_unavailable(self, mock_root):
+        meta = tracker.collect_metadata()
+        merged = tracker._merge_votes(meta, None)
+        assert all(entry["votes"] is None for entry in merged.values())
+
+    def test_snapshot_records_unknown_votes_on_fetch_failure(self, mock_root):
+        with patch.object(tracker, "fetch_vote_counts", return_value=None):
+            rc = tracker.cmd_snapshot()
+        assert rc == 0
+        log = tracker._load_log()
+        assert log[-1]["votes_available"] is False
+        assert all(e["votes"] is None for e in log[-1]["notebooks"].values())
+
+    def test_report_skips_phantom_delta_when_votes_unknown(self, mock_root, capsys):
+        tracker.cmd_snapshot(votes={"feature-engineering": 10, "attention-guide": 5})
+        with patch.object(tracker, "fetch_vote_counts", return_value=None):
+            tracker.cmd_snapshot()
+        rc = tracker.cmd_report()
+        captured = capsys.readouterr()
+        assert rc == 0
+        # The phantom "votes dropped to 0" delta (-10) must not appear.
+        assert "-10" not in captured.out
+
+    def test_report_handles_title_change_with_unknown_votes(self, mock_root):
+        tracker.cmd_snapshot(votes={"feature-engineering": 10, "attention-guide": 5})
+        meta_path = mock_root / "feature-engineering" / "kernel-metadata.json"
+        data = json.loads(meta_path.read_text(encoding="utf-8"))
+        data["title"] = "New SEO Title"
+        meta_path.write_text(json.dumps(data), encoding="utf-8")
+        with patch.object(tracker, "fetch_vote_counts", return_value=None):
+            tracker.cmd_snapshot()
+        rc = tracker.cmd_report()  # must not raise
+        assert rc == 0
