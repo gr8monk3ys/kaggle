@@ -8,6 +8,7 @@ import csv
 import io
 import json
 import os
+import socket
 import subprocess
 import sys
 import tempfile
@@ -104,9 +105,12 @@ def dataset_id_owners(root: Path) -> tuple[dict[str, int], list[str]]:
     return owners, malformed
 
 
-def probe_public_listing(owner: str) -> tuple[bool, str]:
+def probe_public_listing(owner: str, timeout: int) -> tuple[bool, str]:
     cmd = [*kaggle_command(), "datasets", "list", "-s", owner, "--csv"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return False, f"public listing probe timed out after {timeout}s"
     if result.returncode != 0:
         return False, summarize_subprocess_error(result.stdout, result.stderr)
     reader = csv.DictReader(io.StringIO(result.stdout))
@@ -117,7 +121,9 @@ def probe_public_listing(owner: str) -> tuple[bool, str]:
 def probe_blob_upload_auth(timeout: int) -> tuple[bool, str]:
     """Check whether Kaggle's official upload-start flow accepts the local credentials."""
     temp_path: str | None = None
+    previous_timeout = socket.getdefaulttimeout()
     try:
+        socket.setdefaulttimeout(timeout)
         with tempfile.NamedTemporaryFile("wb", prefix="kaggle-auth-doctor-", suffix=".txt", delete=False) as handle:
             handle.write(b"auth-doctor upload probe\n")
             temp_path = handle.name
@@ -146,6 +152,7 @@ def probe_blob_upload_auth(timeout: int) -> tuple[bool, str]:
             return False, f"official upload-start probe rejected credentials ({message})"
         return False, f"official upload-start probe failed: {message}"
     finally:
+        socket.setdefaulttimeout(previous_timeout)
         if temp_path:
             Path(temp_path).unlink(missing_ok=True)
 
@@ -200,7 +207,7 @@ def main() -> int:
     else:
         warnings.append("no dataset metadata IDs found for owner consistency check")
 
-    listing_ok, listing_msg = probe_public_listing(expected_owner)
+    listing_ok, listing_msg = probe_public_listing(expected_owner, timeout=args.timeout)
     if listing_ok:
         print(f"Public listing probe: {GREEN}OK{RESET} ({listing_msg})")
     else:
