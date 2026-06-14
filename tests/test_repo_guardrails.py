@@ -133,3 +133,14 @@ def test_live_smoke_workflow_exists_and_is_manual():
     assert "smoke-live" in content
     assert "--check-discussion-login" in content
     assert "--no-discussion" in content
+
+
+def test_kaggle_session_cookie_is_gitignored():
+    """The Playwright session-cookie file must never be committable."""
+    result = subprocess.run(
+        ["git", "check-ignore", "-q", "pi-automation/data/kaggle_storage_state.json"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, "kaggle_storage_state.json must be gitignored"
