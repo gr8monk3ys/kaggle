@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -103,3 +104,30 @@ def test_probe_blob_upload_auth_status_classification(monkeypatch):
     ok, msg = kaggle_auth_doctor.probe_blob_upload_auth(timeout=1)
     assert ok is True
     assert "succeeded" in msg
+
+
+def test_probe_public_listing_passes_timeout_to_subprocess(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(returncode=0, stdout="ref\nuser/x\n", stderr="")
+
+    monkeypatch.setattr(kaggle_auth_doctor, "kaggle_command", lambda: ["kaggle"])
+    monkeypatch.setattr(kaggle_auth_doctor.subprocess, "run", fake_run)
+
+    ok, _ = kaggle_auth_doctor.probe_public_listing("owner", timeout=13)
+    assert ok is True
+    assert captured.get("timeout") == 13
+
+
+def test_probe_public_listing_reports_timeout(monkeypatch):
+    def fake_run(cmd, **kwargs):
+        raise subprocess.TimeoutExpired(cmd, kwargs.get("timeout"))
+
+    monkeypatch.setattr(kaggle_auth_doctor, "kaggle_command", lambda: ["kaggle"])
+    monkeypatch.setattr(kaggle_auth_doctor.subprocess, "run", fake_run)
+
+    ok, msg = kaggle_auth_doctor.probe_public_listing("owner", timeout=2)
+    assert ok is False
+    assert "timed out" in msg
