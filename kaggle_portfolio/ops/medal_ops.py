@@ -1262,6 +1262,76 @@ def generate_pace_markdown(snapshots: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _fmt_delta(value: int | None) -> str:
+    if value is None:
+        return "—"
+    return f"+{value}" if value > 0 else str(value)
+
+
+def generate_digest(snapshots: list[dict[str, Any]], queue_health: dict[str, Any]) -> str:
+    """Compose a one-message daily Grandmaster digest (Markdown) from snapshot history.
+
+    Pure function: takes the chronological snapshot list and a draft-queue health
+    dict (may be empty), returns a Telegram-ready Markdown string.
+    """
+    if not snapshots:
+        return "No snapshots available yet — run `medal_ops sync` first."
+
+    current = snapshots[-1]
+    previous = snapshots[-2] if len(snapshots) >= 2 else None
+    lines = [f"\U0001F4CA *Grandmaster digest — {current.get('generated_on', '?')}*", ""]
+
+    if previous is None:
+        lines.append("_First snapshot recorded — deltas start next run._")
+    else:
+        movers = [
+            ("Comp entered", ("categories", "competitions", "entered")),
+            ("Notebook votes", ("categories", "notebooks", "total_votes")),
+            ("Dataset votes", ("categories", "datasets", "total_votes")),
+            ("Discussion posts", ("categories", "discussion", "total_posts")),
+        ]
+        bits = []
+        for label, path in movers:
+            d = delta(current, previous, path)
+            if d:
+                bits.append(f"{label} {_fmt_delta(d)}")
+        lines.append("*Since last snapshot:* " + (", ".join(bits) if bits else "no change"))
+
+    upcoming = [
+        c for c in current.get("active_competitions", [])
+        if isinstance(c.get("days_to_deadline"), int) and c["days_to_deadline"] >= 0
+    ]
+    if upcoming:
+        nearest = min(upcoming, key=lambda c: c["days_to_deadline"])
+        lines.append(f"*Nearest deadline:* {nearest.get('competition', '?')} "
+                     f"in {nearest['days_to_deadline']}d")
+    else:
+        lines.append("*Nearest deadline:* none tracked")
+
+    if queue_health:
+        nd = queue_health.get("days_until_next_post")
+        nd_str = f"{nd}d" if isinstance(nd, int) else "n/a"
+        lines.append(
+            f"*Draft queue:* {queue_health.get('ready_now', 0)} ready, "
+            f"next post in {nd_str}, {queue_health.get('overdue_scheduled', 0)} overdue"
+        )
+
+    actions = top_actions(current)
+    if actions:
+        lines.append(f"*Top action today:* {actions[0]}")
+
+    return "\n".join(lines)
+
+
+def _load_queue_health() -> dict[str, Any]:
+    """Best-effort draft-queue health for the digest; empty dict if unavailable."""
+    try:
+        from kaggle_portfolio.ops.discussion_scheduler import build_ops_summary, load_queue
+        return build_ops_summary(load_queue())
+    except Exception:
+        return {}
+
+
 def generate_sync_markdown(
     tracker_path: Path,
     today: date,
@@ -1621,6 +1691,8 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Path to exported competitions CSV (optional).",
     )
+    digest_parser = subparsers.add_parser("digest", help="Print a one-message daily Grandmaster digest to stdout.")
+    add_shared_cli_args(digest_parser, is_subparser=True)
     return parser.parse_args()
 
 
@@ -1695,6 +1767,13 @@ def main() -> int:
 
     content = tracker_path.read_text(encoding="utf-8")
     snapshot = build_snapshot(content, today)
+
+    if args.command == "digest":
+        snapshots = load_all_snapshots(history_dir)
+        if not snapshots:
+            snapshots = [snapshot]
+        print(generate_digest(snapshots, _load_queue_health()))
+        return 0
 
     if args.command == "scorecard":
         previous = load_latest_snapshot(history_dir)

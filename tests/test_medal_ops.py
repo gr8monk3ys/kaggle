@@ -542,3 +542,61 @@ def test_run_preflight_checks_respects_max_stale_days(tmp_path):
     )
 
     assert not any("Tracker is stale" in item for item in checks["warnings"])
+
+
+class TestDigest:
+    @staticmethod
+    def _snap(generated_on, *, entered, nb_votes, ds_votes, posts, stale_days=0, comps=None):
+        return {
+            "generated_on": generated_on,
+            "tracker_last_updated": generated_on,
+            "tracker_stale_days": stale_days,
+            "categories": {
+                "competitions": {"gold": 0, "silver": 0, "bronze": 0, "entered": entered,
+                                  "tier": "Novice", "gold_goal": 5, "gold_gap": 5,
+                                  "expert_bronze_goal": 1, "expert_bronze_gap": 1},
+                "notebooks": {"gold": 0, "silver": 0, "bronze": 0, "total_notebooks": 10,
+                              "total_votes": nb_votes, "tier": "Novice", "gold_goal": 15,
+                              "gold_gap": 15, "expert_bronze_goal": 1, "expert_bronze_gap": 1},
+                "datasets": {"gold": 0, "silver": 0, "bronze": 0, "total_datasets": 5,
+                             "total_votes": ds_votes, "tier": "Novice", "gold_goal": 5,
+                             "gold_gap": 5, "expert_bronze_goal": 1, "expert_bronze_gap": 1},
+                "discussion": {"gold": 0, "silver": 0, "bronze": 0, "total_posts": posts,
+                               "tier": "Novice", "gold_goal": 50, "gold_gap": 50,
+                               "total_goal": 500, "total_gap": 500,
+                               "expert_bronze_goal": 50, "expert_bronze_gap": 50},
+            },
+            "active_competitions": comps or [],
+        }
+
+    def test_digest_with_two_snapshots_shows_deltas_deadline_and_action(self):
+        comps = [
+            {"competition": "Orbit Wars", "days_to_deadline": 12, "deadline_date": "2026-06-26"},
+            {"competition": "Hull Tactical", "days_to_deadline": 3, "deadline_date": "2026-06-17"},
+        ]
+        s1 = self._snap("2026-06-13", entered=10, nb_votes=60, ds_votes=54, posts=0)
+        s2 = self._snap("2026-06-14", entered=11, nb_votes=68, ds_votes=54, posts=2, comps=comps)
+        health = {"ready_now": 2, "days_until_next_post": 4, "overdue_scheduled": 0}
+
+        out = medal_ops.generate_digest([s1, s2], health)
+
+        assert "2026-06-14" in out
+        assert "+8" in out                 # notebook votes 60 -> 68
+        assert "Hull Tactical" in out and "3" in out   # nearest deadline (not Orbit Wars at 12)
+        assert "Orbit Wars" not in out
+        assert "ready" in out.lower()
+        assert "Top action" in out
+
+    def test_digest_first_snapshot_has_no_deltas(self):
+        s1 = self._snap("2026-06-14", entered=10, nb_votes=60, ds_votes=54, posts=0)
+        out = medal_ops.generate_digest([s1], {})
+        assert "First snapshot" in out
+
+    def test_digest_no_snapshots(self):
+        assert "No snapshots" in medal_ops.generate_digest([], {})
+
+    def test_digest_tolerates_missing_queue_health(self):
+        s1 = self._snap("2026-06-13", entered=10, nb_votes=60, ds_votes=54, posts=0)
+        s2 = self._snap("2026-06-14", entered=10, nb_votes=60, ds_votes=54, posts=0)
+        out = medal_ops.generate_digest([s1, s2], {})
+        assert "2026-06-14" in out
