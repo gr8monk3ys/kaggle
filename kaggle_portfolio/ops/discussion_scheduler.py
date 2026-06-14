@@ -124,6 +124,19 @@ def infer_priority(forum_url: str, category: str) -> str:
     return "medium"
 
 
+def resolve_forum(forum_key: str) -> str:
+    """Map a parsed 'Target forum' label to a forum URL.
+
+    Matches the longest FORUM_MAP key contained in the label first, so specific
+    boards (e.g. 'nlp getting started') win over generic substrings
+    ('getting started').
+    """
+    for key in sorted(FORUM_MAP, key=len, reverse=True):
+        if key in forum_key:
+            return FORUM_MAP[key]
+    return DEFAULT_FORUM
+
+
 def parse_drafts(drafts_path: Path) -> list[dict]:
     """Parse discussion-drafts.md into a list of draft dicts."""
     content = drafts_path.read_text(encoding="utf-8")
@@ -141,9 +154,7 @@ def parse_drafts(drafts_path: Path) -> list[dict]:
         # Extract metadata lines
         forum_m = re.search(r"\*\*Target forum:\*\*\s*(.+)", body_block)
         forum_key = forum_m.group(1).strip().lower() if forum_m else "getting started"
-        forum_url = next(
-            (v for k, v in FORUM_MAP.items() if k in forum_key), DEFAULT_FORUM
-        )
+        forum_url = resolve_forum(forum_key)
         category_m = re.search(r"\*\*Category:\*\*\s*(.+)", body_block)
         category = category_m.group(1).strip() if category_m else ""
         expected_medal_m = re.search(r"\*\*Expected medal:\*\*\s*(.+)", body_block)
