@@ -834,6 +834,7 @@ COMMANDS = [
     Command("post-discussion", "Post next queued discussion draft or rebuild queue window", lambda a: run_module("kaggle_portfolio.ops.discussion_scheduler", a), "[--dry-run|--init|--schedule-weeks N]"),
     Command("draft-ops", "Show draft backlog stage counts + priority queue", cmd_draft_ops),
     Command("draft-set", "Update draft metadata and rebalance queue schedule window", cmd_draft_set, "<id> [--status STATUS] [--priority PRIORITY] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]"),
+    Command("next-post", "Show the next ready discussion draft to post manually (safe assist)", lambda a: run_module("kaggle_portfolio.ops.discussion_scheduler", ["--next-post", *a])),
     Command("dataset-ui-sync", "Sync Kaggle UI-only dataset sections", cmd_dataset_ui_sync, "[--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]"),
     Command("promote-notebooks", "Generate notebook promotion plan for competition forums", lambda a: run_module("kaggle_portfolio.notebooks.notebook_promoter", a), "[--auto]"),
     Command("scout", "Scout active competitions ranked by medal opportunity", lambda a: run_module("kaggle_portfolio.notebooks.competition_scout", a), "[--update]"),
