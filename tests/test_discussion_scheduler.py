@@ -329,3 +329,62 @@ def test_parse_drafts_routes_nlp_getting_started_to_competition(tmp_path):
     assert drafts[0]["forum_url"] == \
         "https://www.kaggle.com/competitions/nlp-getting-started/discussion"
     assert drafts[0]["priority"] == "high"
+
+
+def test_select_next_post_prefers_most_overdue_due_item():
+    from datetime import datetime, timezone
+    now = datetime(2026, 6, 14, 12, 0, tzinfo=timezone.utc)
+    queue = [
+        {"id": "draft_010", "status": "scheduled", "priority": "high",
+         "scheduled_after": "2026-06-20T10:00:00+00:00"},   # future
+        {"id": "draft_011", "status": "ready", "priority": "low",
+         "scheduled_after": "2026-06-10T10:00:00+00:00"},   # due, most overdue
+        {"id": "draft_012", "status": "ready", "priority": "high",
+         "scheduled_after": "2026-06-13T10:00:00+00:00"},   # due, newer
+        {"id": "draft_013", "status": "posted", "priority": "high",
+         "scheduled_after": "2026-06-09T10:00:00+00:00"},   # not postable
+    ]
+    assert discussion_scheduler.select_next_post(queue, now=now)["id"] == "draft_011"
+
+
+def test_select_next_post_none_when_no_postable():
+    assert discussion_scheduler.select_next_post([{"id": "d", "status": "posted"}]) is None
+
+
+def test_extract_post_body_strips_ops_metadata(tmp_path):
+    md = tmp_path / "drafts.md"
+    md.write_text("\n".join([
+        "## Draft 7: Sample",
+        "**Target forum:** General",
+        "**Category:** Strategy",
+        "**Status:** ready",
+        "",
+        "### Sample Post Title",
+        "",
+        "This is the real post body.",
+        "Second line.",
+        "",
+    ]), encoding="utf-8")
+    body = discussion_scheduler.extract_post_body(md, "Draft 7")
+    assert "**Target forum:**" not in body
+    assert "### Sample Post Title" in body
+    assert "This is the real post body." in body
+
+
+def test_cmd_next_post_outputs_copy_block(tmp_path, capsys):
+    md = tmp_path / "drafts.md"
+    md.write_text("## Draft 7: Sample\n**Target forum:** General\n\n### Title\n\nBody text.\n", encoding="utf-8")
+    queue = [{"id": "draft_007", "status": "ready", "priority": "high", "title": "Sample",
+              "forum_url": "https://www.kaggle.com/discussions/general",
+              "body_section": "Draft 7", "scheduled_after": "2026-06-01T10:00:00+00:00"}]
+    rc = discussion_scheduler.cmd_next_post(queue=queue, drafts_path=md)
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Sample" in out and "Body text." in out
+    assert "draft-set draft_007 --status posted" in out
+
+
+def test_cmd_next_post_no_postable(capsys):
+    rc = discussion_scheduler.cmd_next_post(queue=[{"id": "d", "status": "posted"}])
+    assert rc == 0
+    assert "No postable drafts" in capsys.readouterr().out
