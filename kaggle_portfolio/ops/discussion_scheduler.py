@@ -617,6 +617,70 @@ def do_post(queue: list[dict], schedule_weeks: int = DEFAULT_SCHEDULE_WEEKS) -> 
     return result.returncode
 
 
+def select_next_post(queue: list[dict], now: datetime | None = None) -> dict | None:
+    """Pick the next postable draft: due items first (most overdue), then soonest upcoming; priority breaks ties."""
+    now = now or datetime.now(tz=timezone.utc)
+    postable = [item for item in queue if normalize_status(item.get("status")) in POSTABLE_STATUSES]
+    if not postable:
+        return None
+
+    def sort_key(item: dict) -> tuple:
+        sched = parse_scheduled_datetime(item.get("scheduled_after"))
+        is_due = 0 if (sched is None or sched <= now) else 1
+        sched_ord = sched.timestamp() if sched is not None else 0.0
+        prio = PRIORITY_RANK.get(normalize_priority(item.get("priority")), 1)
+        return (is_due, sched_ord, prio, str(item.get("id", "")))
+
+    return sorted(postable, key=sort_key)[0]
+
+
+def extract_post_body(drafts_path: Path, body_section: str) -> str:
+    """Return a draft's post content (ops `**Field:**` metadata lines stripped) from the drafts markdown."""
+    if not body_section:
+        return ""
+    try:
+        content = Path(drafts_path).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    pattern = re.compile(rf"## {re.escape(body_section)}:.*?\n(.*?)(?=\n## Draft |\Z)", re.DOTALL)
+    match = pattern.search(content)
+    if not match:
+        return ""
+    body_lines = [
+        line for line in match.group(1).splitlines()
+        if not re.match(r"\s*\*\*[A-Za-z /]+:\*\*", line)
+    ]
+    return "\n".join(body_lines).strip()
+
+
+def format_next_post(draft: dict, body: str) -> str:
+    """Render a postable draft as a copy-paste block for manual posting."""
+    draft_id = draft.get("id", "?")
+    return "\n".join([
+        f"Next post to publish - {draft.get('title', '(untitled)')}",
+        f"Forum: {draft.get('forum_url', '?')}",
+        f"After posting, mark it done: ./manage.sh draft-set {draft_id} --status posted",
+        "",
+        "----- copy below this line -----",
+        body or "(no body found for this draft in discussion-drafts.md)",
+        "----- end -----",
+    ])
+
+
+def cmd_next_post(queue: list[dict] | None = None, drafts_path: Path | None = None,
+                  now: datetime | None = None) -> int:
+    """Surface the next ready draft for manual posting (safe assist; never automates posting)."""
+    queue = load_queue() if queue is None else queue
+    draft = select_next_post(queue, now=now)
+    if draft is None:
+        print("No postable drafts queued. Mark a draft 'ready' first "
+              "(./manage.sh draft-set <id> --status ready).")
+        return 0
+    body = extract_post_body(drafts_path or DRAFTS_FILE, draft.get("body_section", ""))
+    print(format_next_post(draft, body))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Discussion queue scheduler.")
     parser.add_argument("--dry-run", action="store_true",
@@ -654,6 +718,8 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Set draft deadline (YYYY-MM-DD) for --set-id.")
     parser.add_argument("--clear-deadline", action="store_true",
                         help="Clear draft deadline for --set-id.")
+    parser.add_argument("--next-post", action="store_true",
+                        help="Surface the next ready draft to post manually (safe assist; no automation).")
     return parser
 
 
@@ -712,6 +778,8 @@ def run_selected_mode(args: argparse.Namespace, queue: list[dict]) -> int:
         )
         return 0
 
+    if args.next_post:
+        return cmd_next_post(queue)
     if args.dry_run:
         show_dry_run(queue, n=args.show)
         return 0
@@ -751,13 +819,14 @@ def main(argv: list[str] | None = None) -> int:
         1 if args.ops_report else 0,
         1 if args.health_check else 0,
         1 if args.set_id else 0,
+        1 if args.next_post else 0,
     ])
     if mode_count > 1:
-        parser.error("Choose only one of --dry-run, --ops-report, --health-check, or --set-id.")
+        parser.error("Choose only one of --dry-run, --ops-report, --health-check, --set-id, or --next-post.")
 
     queue_initialized = initialize_queue_if_needed(args)
     if queue_initialized:
-        if not args.dry_run and not args.ops_report and not args.health_check and not args.set_id:
+        if not args.dry_run and not args.ops_report and not args.health_check and not args.set_id and not args.next_post:
             return 0
 
     queue = load_queue()
