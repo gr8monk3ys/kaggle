@@ -1,0 +1,20 @@
+{
+  "id": "lorenzoscaturchio/playground-s6e6-stellar-classification",
+  "title": "Playground S6E6 Stellar Classification (GALAXY/QSO/STAR)",
+  "code_file": "playground_s6e6_stellar.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "xgboost",
+    "astronomy",
+    "tabular"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [
+    "playground-series-s6e6"
+  ]
+}
