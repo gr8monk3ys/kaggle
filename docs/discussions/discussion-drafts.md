@@ -5056,4 +5056,305 @@ Curious whether others are seeing more gains from preprocessing or from architec
 
 ---
 
-*End of drafts. The March 10 additions are ready to queue. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
+## Draft 57: Stellar Classification (S6E6) - Redshift Does Most of the Work
+
+**Target forum:** Playground Series S6E6
+**Category:** EDA Findings
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-06-30
+**Status:** ready
+
+### Stellar Classification (S6E6): Redshift Does Most of the Work
+
+I spent some time on the S6E6 data (classifying each object as `GALAXY`, `QSO`, or `STAR`) before building anything, and the structure here is unusually clean if you lean on the astronomy behind it. Sharing the three findings that shaped my baseline.
+
+#### 1. The classes are imbalanced - track macro-F1, not just accuracy
+
+The training set is 577,347 rows with no missing values, and the label split is:
+
+- GALAXY: ~65%
+- QSO: ~20%
+- STAR: ~14%
+
+A model that quietly gives up on the minority STAR class can still look fine on raw accuracy. I report macro-F1 alongside accuracy for exactly this reason - it weights all three classes equally, so it actually tells you whether STAR is being recovered.
+
+```python
+print(train['class'].value_counts(normalize=True).round(4))
+```
+
+#### 2. `redshift` is the single strongest separator
+
+This is the physics check, and it holds cleanly:
+
+- **STARs** are inside our own galaxy, so their light is essentially not redshifted - `redshift` clusters tightly around **0**.
+- **GALAXYs** are distant but moderately redshifted - a hump at small positive values.
+- **QSOs** (quasars) are extremely distant, so they carry the **largest** redshifts with a long tail.
+
+```python
+print(train.groupby('class')['redshift'].median().round(4))
+```
+
+A near-zero redshift is almost a deterministic STAR signal. If you only kept one feature, this would be it.
+
+#### 3. The `u-g` vs `g-r` color-color diagram isolates QSOs
+
+Astronomers separate object types by **color** (the difference between adjacent-band magnitudes) rather than raw brightness. The classic `u-g` vs `g-r` color-color plot famously pulls quasars off the stellar locus, and it shows up here too:
+
+```python
+sample = train.sample(20000, random_state=42)
+sample['u_g'] = sample['u'] - sample['g']
+sample['g_r'] = sample['g'] - sample['r']
+```
+
+GALAXY and STAR overlap more in color space (which is why redshift carries so much of the load), but QSO is visibly displaced.
+
+#### Implications for modeling
+
+- Stratified K-fold is worth it given the imbalance - random folds can starve STAR.
+- Engineer the adjacent color indices (`u-g`, `g-r`, `r-i`, `i-z`) explicitly; tree models find them faster when you hand them over.
+- A near-zero-redshift rule is a strong sanity check on whatever your model predicts for STAR.
+
+I walk through all of this with charts in my notebook: https://www.kaggle.com/code/lorenzoscaturchio/playground-s6e6-stellar-classification
+
+Has anyone found a feature that helps separate GALAXY from STAR specifically? That overlap is where most of my residual error lives.
+
+---
+
+## Draft 58: Color-Index Features for Tabular Astro Classification
+
+**Target forum:** Playground Series S6E6
+**Category:** Technique Tutorial
+**Expected medal:** Bronze
+**Priority:** high
+**Deadline:** 2026-06-30
+**Status:** ready
+
+### Color-Index Features for Tabular Astro Classification (a small, reliable lift)
+
+If you are working S6E6 (or any survey-photometry tabular task) with raw `u, g, r, i, z` magnitudes, the single most reliable feature-engineering step is also one of the simplest: add the **color indices**, i.e. the differences between adjacent bands.
+
+#### Why differences, not raw magnitudes
+
+A magnitude measures brightness in one band, which depends heavily on how far away and how luminous the object is. The **difference** between two bands cancels most of that distance/luminosity scaling and leaves the *shape* of the spectrum - which is what actually distinguishes a star from a quasar. This is why astronomers classify on color-color diagrams, not brightness.
+
+#### The features
+
+I use the four adjacent SDSS colors plus a few broader spans:
+
+```python
+COLORS = [("u","g"), ("g","r"), ("r","i"), ("i","z"),  # adjacent
+          ("u","r"), ("g","i"), ("r","z")]              # broad
+
+def add_colors(df):
+    out = df.copy()
+    for a, b in COLORS:
+        out[f"{a}_{b}"] = df[a] - df[b]
+    return out
+```
+
+That is the whole technique. Seven extra columns, no fitting, no leakage risk (each row is computed from itself), and it works identically on train and test.
+
+#### Gotchas worth knowing
+
+1. **Do not drop the raw magnitudes.** Colors complement them; the model still uses absolute brightness for some splits. Keep both.
+2. **Adjacent colors carry the most signal.** `u-g` and `g-r` are the classic quasar separators. The broad spans (`u-r`, `g-i`) are mild extras, not the core.
+3. **Tree models benefit even though they can subtract internally.** A gradient-boosted tree can in principle learn `u - g`, but it costs splits to do so. Handing it the difference directly frees those splits for genuinely non-linear structure, and in practice it converges to a slightly better solution.
+4. **`redshift` still dominates** on S6E6 - colors are the supporting cast that cleans up the GALAXY/STAR overlap that redshift leaves behind.
+
+I fold these into a HistGBM + XGBoost blend in my notebook, with the full feature list and honest CV: https://www.kaggle.com/code/lorenzoscaturchio/playground-s6e6-stellar-classification
+
+If you have tried magnitude *ratios* or normalized colors instead of plain differences, I would be curious whether they helped - differences have been enough for me so far.
+
+---
+
+## Draft 59: S6E6 - Why I Report macro-F1 and Blend Two GBMs
+
+**Target forum:** Playground Series S6E6
+**Category:** Validation Strategy
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-06-30
+**Status:** ready
+
+### S6E6: Why I Report macro-F1 and Blend Two GBMs
+
+A quick note on the validation and modeling setup I landed on for the stellar classification (S6E6) playground, in case it saves anyone a detour.
+
+#### Report macro-F1, not just accuracy
+
+With a 65/20/14 GALAXY/QSO/STAR split, raw accuracy flatters you - a model that under-serves the 14% STAR class barely dents accuracy but craters on the rare class. I track **both** accuracy and macro-F1 under stratified 5-fold cross-validation, and I trust macro-F1 as the honest yardstick.
+
+#### A two-model blend buys a small but real lift
+
+I evaluated two gradient-boosted models and an equal-weight probability blend, all under the same stratified 5-fold OOF setup:
+
+| Model | CV accuracy | CV macro-F1 |
+|-------|-------------|-------------|
+| HistGBM baseline | 0.96734 | 0.95589 |
+| HistGBM + XGB blend | 0.96781 | 0.95662 |
+
+The blend buys roughly **+0.0005 accuracy** and **+0.0007 macro-F1**. Small, but it is a free, stable gain because the two models reach similar accuracy via *different* errors - averaging their class probabilities cancels some of the independent error.
+
+```python
+# equal-weight probability blend over OOF predictions
+blend_proba = 0.5 * hist_proba + 0.5 * xgb_proba
+```
+
+#### Sanity checks I actually look at
+
+- **Per-fold spread:** the HistGBM baseline sits in a tight 0.9664-0.9681 band across folds. No single high-variance fold, so I trust the pooled OOF number.
+- **Predicted test class mix:** the refit model predicts GALAXY 65.5% / QSO 20.2% / STAR 14.3%, which matches the training priors - a cheap calibration check before submitting.
+
+Full notebook with the OOF confusion matrix and per-fold plot: https://www.kaggle.com/code/lorenzoscaturchio/playground-s6e6-stellar-classification
+
+Curious whether anyone has found a weighting other than 50/50 that consistently beats the equal-weight blend here - my Nelder-Mead weight search did not reliably improve on it given the variance.
+
+---
+
+## Draft 60: Stop Trusting Black-Box Feature Importance - Use SHAP
+
+**Target forum:** Getting Started
+**Category:** Technique Tutorial
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-06-30
+**Status:** ready
+
+### Stop Trusting Black-Box Feature Importance - Use SHAP
+
+Built-in `feature_importances_` from a tree model tells you which features got *split on a lot*. It does not tell you which direction a feature pushes a prediction, whether the effect is monotonic, or how features interact. For anything where the explanation matters - fraud, credit, medical - that gap is a real problem. SHAP closes it.
+
+#### The one-minute mental model
+
+SHAP assigns each feature a signed contribution to each individual prediction, such that the contributions sum to (prediction - baseline). It is grounded in Shapley values from cooperative game theory, so the attribution is fair in a precise sense rather than a heuristic.
+
+#### Global view: which features matter, and in which direction
+
+```python
+import shap
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_valid)
+shap.summary_plot(shap_values, X_valid)   # one dot per row, colored by value
+```
+
+The summary plot is the upgrade over a bar chart: each point is one observation, the spread shows effect size, and the color shows whether high feature values push the prediction up or down. You immediately see, for example, that high transaction amount at an unusual hour pushes toward fraud.
+
+#### Local view: explain a single decision
+
+```python
+shap.plots.waterfall(shap.Explanation(
+    values=shap_values[i], base_values=explainer.expected_value,
+    data=X_valid.iloc[i], feature_names=X_valid.columns))
+```
+
+This is what you show a stakeholder who asks "why did the model flag *this* transaction?".
+
+#### Two gotchas
+
+1. **`TreeExplainer` is exact and fast for trees** - use it for XGBoost/LightGBM/CatBoost/HistGBM. Reach for `KernelExplainer` only for non-tree models, and expect it to be slow.
+2. **SHAP on a leaky feature looks "great".** If one feature dominates the summary plot with a clean separation, that is often a sign of target leakage, not a brilliant feature. SHAP is a useful leakage detector for free.
+
+I work through global plots, dependence plots, interaction values, and local explanations end-to-end here: https://www.kaggle.com/code/lorenzoscaturchio/shap-model-explainability-masterclass
+
+What is the most surprising thing SHAP has revealed in one of your models? Mine was a feature I was about to drop turning out to carry a strong interaction effect.
+
+---
+
+## Draft 61: A Practical Optuna Workflow for Kaggle (Beyond grid_search)
+
+**Target forum:** Getting Started
+**Category:** Technique Tutorial
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-06-30
+**Status:** ready
+
+### A Practical Optuna Workflow for Kaggle (Beyond grid_search)
+
+Grid search wastes most of its budget on combinations you already know are bad. Optuna's Bayesian search (TPE) spends its trials where the score is actually improving, and the API is small enough to learn in one sitting. Here is the workflow I actually use.
+
+#### The core loop
+
+```python
+import optuna
+
+def objective(trial):
+    params = {
+        "num_leaves": trial.suggest_int("num_leaves", 16, 256),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1, log=True),
+        "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+        "feature_fraction": trial.suggest_float("feature_fraction", 0.5, 1.0),
+    }
+    return cross_val_score_with(params)   # return the CV metric
+
+study = optuna.create_study(direction="maximize")
+study.optimize(objective, n_trials=100)
+print(study.best_params)
+```
+
+#### The three things that made the biggest difference for me
+
+1. **`log=True` on learning rate and regularization.** These span orders of magnitude. A log-uniform prior samples `0.001` and `0.1` with equal attention instead of crowding near the top of the range.
+2. **Pruning.** Wrap your CV with `MedianPruner` so hopeless trials get killed early instead of training to completion. This easily doubles the number of useful trials you can run in a fixed time budget.
+3. **Optimize on the CV metric, never the public LB.** Optuna will happily overfit whatever signal you give it. Give it honest out-of-fold CV.
+
+#### Reading the results
+
+```python
+optuna.visualization.plot_param_importances(study)  # which params actually mattered
+optuna.visualization.plot_optimization_history(study)
+```
+
+The parameter-importance plot is underrated: it often shows that two of your six "tuned" parameters drive almost all the variance, so next time you can fix the rest and search a tighter, smarter space.
+
+Full guide with pruning, multi-objective search, and study persistence: https://www.kaggle.com/code/lorenzoscaturchio/optuna-tuning-a-practical-kaggle-guide
+
+What is your trial budget per competition? I have found diminishing returns past ~150 trials on most tabular problems, but I am curious where others draw the line.
+
+---
+
+## Draft 62: New Dataset - Credit Card Fraud (200K Transactions, Realistic Imbalance)
+
+**Target forum:** Datasets
+**Category:** Dataset Spotlight
+**Expected medal:** Bronze
+**Priority:** medium
+**Deadline:** 2026-06-30
+**Status:** ready
+
+### New Dataset: Credit Card Fraud (200K Transactions, Realistic Imbalance)
+
+I published a credit card fraud detection dataset built for people who want to practice imbalanced-classification techniques without fighting a real PII problem first. Sharing it here in case it is useful.
+
+**Dataset:** https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud-detection-synthetic
+
+#### What is in it
+
+- ~200K transactions with a binary `Class` label (fraud vs legitimate)
+- Anonymized `V1`-`V28` component-style features, plus interpretable columns: `Amount`, `Hour of Day`, `Day of Week`, `Is Weekend`, and `Merchant Category`
+- A realistic, heavy class imbalance - fraud is the rare class, exactly the setting where naive accuracy is meaningless
+
+#### Why I made it
+
+Most fraud tutorials either use a dataset you cannot redistribute or one so small the imbalance disappears. I wanted something large enough to make resampling and threshold tuning behave like they do in production, while keeping a few human-readable columns (hour, merchant category) so you can sanity-check what the model learns.
+
+#### Good practice problems it supports
+
+1. **Metric choice under imbalance** - PR-AUC and recall-at-fixed-precision instead of accuracy.
+2. **Resampling comparisons** - SMOTE vs class weights vs undersampling, measured honestly with stratified CV.
+3. **Explainability** - the interpretable columns make it a clean target for SHAP (high amount at an odd hour pushing toward fraud is a satisfying thing to see in a dependence plot).
+
+```python
+import pandas as pd
+df = pd.read_csv('/kaggle/input/credit-card-fraud-detection-synthetic/credit_card_transactions.csv')
+print(df['Class'].value_counts(normalize=True))
+```
+
+There is a companion EDA + detection notebook here: https://www.kaggle.com/code/lorenzoscaturchio/credit-card-fraud-eda-detection
+
+If you build something with it or spot a column you wish it had, let me know and I will fold it into the next version.
+
+---
+
+*End of drafts. The June additions (57-62) are anchored to real repo assets - the S6E6 stellar notebook, the SHAP and Optuna educational notebooks, and the credit-card-fraud dataset. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
