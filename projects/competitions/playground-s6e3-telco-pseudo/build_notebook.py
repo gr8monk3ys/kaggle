@@ -233,7 +233,7 @@ cells.append(
         "orig_rate = _churn01(orig['Churn']).astype(float).mean()\n"
         "\n"
         "fig, ax = plt.subplots(1, 2, figsize=(11, 4))\n"
-        "counts = _churn01(train['Churn']).value_counts().sort_index()\n"
+        "counts = _churn01(train['Churn']).value_counts().reindex([0, 1], fill_value=0)\n"
         "ax[0].bar(['No churn (0)', 'Churn (1)'], counts.values, color=['#4C72B0', '#C44E52'])\n"
         "ax[0].set_title('Competition train: churn class counts')\n"
         "ax[0].set_ylabel('customers')\n"
