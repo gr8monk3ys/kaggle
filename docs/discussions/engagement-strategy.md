@@ -2,7 +2,7 @@
 
 **Goal:** Earn 50 bronze discussion medals to reach **Discussion Expert** tier
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Current Assets:** 17 notebooks, 4 datasets
+**Current Assets:** ~59 notebooks, 11 datasets (live counts; see `docs/reports/grandmaster-tracker.md`)
 **Target Timeline:** 8-12 weeks (aggressive) / 16 weeks (steady)
 
 ---

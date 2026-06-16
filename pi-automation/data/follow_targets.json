@@ -1,4 +1,21 @@
 {
-  "description": "Kaggle usernames to follow. Curated from competition leaderboards and active discussion contributors.",
+  "description": "Kaggle usernames to follow, for conservative/ToS-safe visibility building. follow_users.py reads only the `users` array; the other keys document how to curate it. Leave `users` empty until you (or an explicit go-ahead) add real, verified, relevant peers per selection_criteria. Do NOT bulk-add.",
+  "selection_criteria": [
+    "Co-competitors visible on the public leaderboards of boards you have entered",
+    "Authors of notebooks/datasets you have genuinely upvoted",
+    "Active participants in discussion threads you join",
+    "Plausibly reciprocal peers (similar level/topics) -- not Grandmasters who rarely follow back, not random accounts"
+  ],
+  "guardrails": {
+    "max_follows_per_session": 10,
+    "max_sessions_per_week": 3,
+    "run_mode": "manual / headed only -- never an unattended tight loop",
+    "rationale": "Bulk automated following is a Kaggle ToS gray area that can flag/suspend the account the whole medal effort depends on. Pace and genuineness are the guardrails."
+  },
+  "candidate_sources": [
+    "kaggle competitions leaderboard <competition> --show  (verify display names map to real usernames before adding)",
+    "Profiles of people you upvote while reading notebooks/datasets",
+    "Discussion threads on boards you actively compete in"
+  ],
   "users": []
 }
