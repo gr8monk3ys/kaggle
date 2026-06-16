@@ -1,0 +1,8 @@
+# Competition data + generated artifacts stay local (download via kaggle CLI
+# after accepting the competition rules on the website).
+*.csv
+*.zip
+kaggle_evaluation/
+data/
+*.pkl
+__pycache__/

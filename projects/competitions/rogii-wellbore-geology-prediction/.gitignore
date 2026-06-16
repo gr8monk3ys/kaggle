@@ -1,0 +1,7 @@
+# Competition data + generated submissions stay local (download via kaggle CLI
+# after accepting the competition rules on the website).
+*.csv
+*.zip
+*.png
+*.pptx
+data/
