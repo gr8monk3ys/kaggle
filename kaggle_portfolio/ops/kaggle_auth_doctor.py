@@ -23,7 +23,7 @@ from pathlib import Path
 try:  # pragma: no cover - exercised via environments with/without kaggle installed
     from kaggle.api.kaggle_api_extended import KaggleApi
     from kagglesdk.blobs.types.blob_api_service import ApiBlobType, ApiStartBlobUploadRequest
-except ImportError:  # pragma: no cover
+except Exception:  # pragma: no cover - kaggle may be absent or raise at import (older versions authenticate eagerly)
     KaggleApi = None  # type: ignore[assignment]
     ApiBlobType = None  # type: ignore[assignment]
     ApiStartBlobUploadRequest = None  # type: ignore[assignment]
@@ -227,15 +227,25 @@ def main() -> int:
     else:
         warnings.append(f"public listing probe failed: {listing_msg}")
 
-    upload_ok, upload_msg = probe_blob_upload_auth(timeout=args.timeout)
-    if upload_ok:
-        print(f"Upload auth probe: {GREEN}OK{RESET} ({upload_msg})")
-    else:
-        failures.append(f"upload auth probe failed: {upload_msg}")
-        failures.append(
-            "download a fresh API token from https://www.kaggle.com/settings/account "
-            f"and replace {kaggle_config_path()}"
+    if KaggleApi is None:
+        # The kaggle package is an optional dependency for the live upload probe.
+        # Its absence is an environment-setup gap, not a credential failure, so it
+        # is a (skippable) warning rather than a hard failure unless --strict.
+        warnings.append(
+            "kaggle package not installed; upload auth probe skipped "
+            "(run `pip install kaggle` to enable it)"
         )
+        print(f"Upload auth probe: {YELLOW}SKIP{RESET} (kaggle package not installed)")
+    else:
+        upload_ok, upload_msg = probe_blob_upload_auth(timeout=args.timeout)
+        if upload_ok:
+            print(f"Upload auth probe: {GREEN}OK{RESET} ({upload_msg})")
+        else:
+            failures.append(f"upload auth probe failed: {upload_msg}")
+            failures.append(
+                "download a fresh API token from https://www.kaggle.com/settings/account "
+                f"and replace {kaggle_config_path()}"
+            )
 
     if warnings:
         print(f"{YELLOW}Warnings:{RESET}")

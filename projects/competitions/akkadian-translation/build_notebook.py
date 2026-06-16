@@ -647,6 +647,7 @@ def split_translation_by_rows(text: str, test_rows: pd.DataFrame) -> list[str]:
         else:
             take = max(1, round(len(words) * weight / total_weight))
             take = min(take, remaining_words - (remaining_groups - 1))
+            take = max(0, take)  # guard: fewer words than rows -> 0 (row falls back), never negative
         chunks.append(' '.join(words[position : position + take]).strip())
         position += take
     return chunks
