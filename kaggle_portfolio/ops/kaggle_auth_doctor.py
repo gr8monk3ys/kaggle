@@ -15,8 +15,19 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from kaggle.api.kaggle_api_extended import KaggleApi
-from kagglesdk.blobs.types.blob_api_service import ApiBlobType, ApiStartBlobUploadRequest
+# The `kaggle` package is only needed for the live upload-auth probe. Import it
+# lazily so this module (and everything that imports it, e.g. leaderboard_tracker
+# and the manage.sh CLI) loads cleanly in minimal environments where kaggle is
+# not installed. The probe degrades gracefully when the names are unavailable,
+# and tests monkeypatch `KaggleApi` directly.
+try:  # pragma: no cover - exercised via environments with/without kaggle installed
+    from kaggle.api.kaggle_api_extended import KaggleApi
+    from kagglesdk.blobs.types.blob_api_service import ApiBlobType, ApiStartBlobUploadRequest
+except ImportError:  # pragma: no cover
+    KaggleApi = None  # type: ignore[assignment]
+    ApiBlobType = None  # type: ignore[assignment]
+    ApiStartBlobUploadRequest = None  # type: ignore[assignment]
+
 from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
 
 
@@ -120,6 +131,9 @@ def probe_public_listing(owner: str, timeout: int) -> tuple[bool, str]:
 
 def probe_blob_upload_auth(timeout: int) -> tuple[bool, str]:
     """Check whether Kaggle's official upload-start flow accepts the local credentials."""
+    if KaggleApi is None or ApiStartBlobUploadRequest is None or ApiBlobType is None:
+        return False, "kaggle package not installed; skipping official upload-start probe"
+
     temp_path: str | None = None
     previous_timeout = socket.getdefaulttimeout()
     try:
