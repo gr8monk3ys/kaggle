@@ -293,10 +293,6 @@ def build_report_payload(
     return payload
 
 
-def print_candidate_table(candidates: list[PublishCandidate]) -> None:
-    print_candidate_table(candidates)
-
-
 def run_publish_targets(targets: list[PublishCandidate]) -> tuple[int, int, list[dict]]:
     success = 0
     failed = 0

@@ -90,18 +90,6 @@ def score_notebook_dir(nb_dir: Path) -> tuple[float, str]:
         return 0.0, f"scoring failed: {exc}"
 
 
-def _parse_score(line: str) -> float:
-    """Extract numeric score from a quality output line."""
-    import re
-    m = re.search(r"(\d+(?:\.\d+)?)\s*/\s*100", line)
-    if m:
-        return float(m.group(1))
-    m = re.search(r"Score[:\s]+(\d+(?:\.\d+)?)", line, re.IGNORECASE)
-    if m:
-        return float(m.group(1))
-    return 0.0
-
-
 def push_notebook(nb_dir: Path) -> tuple[bool, str]:
     """Push a notebook directory to Kaggle."""
     cli = kaggle_command()
