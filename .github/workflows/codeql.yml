@@ -1,0 +1,56 @@
+name: codeql
+
+# Restores GitHub code scanning for Python after the broken org-codeql
+# workflow was removed. CodeQL builds a semantic database of the repo and
+# runs the default Python security/quality query suites, surfacing findings
+# in the repository's Security > Code scanning alerts tab.
+#
+# NOTE: This will only actually execute once GitHub Actions billing is
+# restored for the org/account; until then it is registered but skipped.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Weekly run (Mondays 07:00 UTC) so scanning happens even without commits.
+    - cron: "0 7 * * 1"
+
+permissions:
+  # Required to upload CodeQL results to the code-scanning API.
+  security-events: write
+  # Required by the CodeQL action to read the Actions workflow run metadata.
+  actions: read
+  # Required to check out the repository source.
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (python)
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - python
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The @v3 tags below are floating major versions. Dependabot can pin
+      # these to a specific commit SHA later (with a `# vX.Y.Z` comment),
+      # matching the SHA-pinning convention used by the other workflows.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

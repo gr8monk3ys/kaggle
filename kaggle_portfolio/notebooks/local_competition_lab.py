@@ -2222,7 +2222,7 @@ def _house_rmse(y_true: Any, y_pred: Any) -> float:
     return float(np.sqrt(np.mean((y_true_arr - y_pred_arr) ** 2)))
 
 
-def _house_blend_candidates(names: list[str], step: float = 0.05) -> list[tuple[str, ...]]:
+def _house_blend_candidates(names: list[str]) -> list[tuple[str, ...]]:
     return [combo for size in range(2, min(4, len(names)) + 1) for combo in combinations(names, size)]
 
 
