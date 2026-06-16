@@ -2,7 +2,13 @@
 kaggle.json
 **/kaggle.json
 **/kaggle_storage_state.json
+# Playwright session storage state can carry login cookies/tokens
+*_storage_state.json
 .kaggle/
+
+# Browser automation runtime artifacts
+.playwright-cli/
+.playwright-mcp/
 
 # Python
 __pycache__/

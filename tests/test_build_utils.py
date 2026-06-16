@@ -130,12 +130,18 @@ def test_write_notebook_no_exporter_key_in_plain_text(tmp_path, repo_root):
 # ── build_notebook.py import smoke tests ─────────────────────────────────────
 
 def _build_scripts_using_imports():
-    """Return all build_notebook.py paths that should import from shared build_utils."""
+    """Return all build_notebook.py paths that should import from shared build_utils.
+
+    Returns a sorted list (not a generator) so pytest.parametrize gets a concrete
+    collection and the parametrization is deterministic.
+    """
     excluded = {"datasets/mental-health-tech", "datasets/spotify-tracks"}
-    for p in ROOT.rglob("build_notebook.py"):
+    scripts = []
+    for p in sorted(ROOT.rglob("build_notebook.py")):
         rel = str(p.relative_to(ROOT).parent)
         if rel not in excluded:
-            yield p
+            scripts.append(p)
+    return scripts
 
 
 @pytest.mark.parametrize("script", _build_scripts_using_imports())
