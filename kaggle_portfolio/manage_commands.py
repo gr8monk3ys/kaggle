@@ -838,6 +838,8 @@ COMMANDS = [
     Command("dataset-ui-sync", "Sync Kaggle UI-only dataset sections", cmd_dataset_ui_sync, "[--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]"),
     Command("promote-notebooks", "Generate notebook promotion plan for competition forums", lambda a: run_module("kaggle_portfolio.notebooks.notebook_promoter", a), "[--auto]"),
     Command("scout", "Scout active competitions ranked by medal opportunity", lambda a: run_module("kaggle_portfolio.notebooks.competition_scout", a), "[--update]"),
+    Command("flywheel-status", "Print the growth-flywheel Reach-Score dashboard", lambda a: run_module("kaggle_portfolio.growth.flywheel", ["status", *a])),
+    Command("flywheel-tick", "Run one growth-flywheel tick: score, gate, dispatch top safe actions", lambda a: run_module("kaggle_portfolio.growth.flywheel", ["tick", *a]), "[--dry-run]", True),
     Command("stale-content", "Detect stale notebooks, datasets, and outdated library versions", lambda a: run_module("kaggle_portfolio.ops.stale_content_detector", a), "[--max-nb-age N] [--max-ds-age N]"),
     Command("build-explore-notebooks", "Generate rich EDA explore notebooks for all datasets", lambda a: run_module("kaggle_portfolio.datasets.dataset_explore_generator", ["--all", *a]), "[--push]"),
     Command("create-competition-entry", "Scaffold a new competition entry from a competition slug", lambda a: run_module("kaggle_portfolio.notebooks.competition_entry", a), "<slug> [--gpu] [--push]"),

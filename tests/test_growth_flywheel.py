@@ -350,3 +350,13 @@ def test_main_status_runs_offline(monkeypatch, capsys):
     rc = fw.main(["status"])
     assert rc == 0
     assert "Reach Score" in capsys.readouterr().out
+
+
+# --- Task 7: command registration --------------------------------------------
+from kaggle_portfolio import manage_commands
+
+
+def test_flywheel_commands_registered():
+    assert "flywheel-tick" in manage_commands.COMMAND_INDEX
+    assert "flywheel-status" in manage_commands.COMMAND_INDEX
+    assert manage_commands.COMMAND_INDEX["flywheel-tick"].requires_kaggle is True
