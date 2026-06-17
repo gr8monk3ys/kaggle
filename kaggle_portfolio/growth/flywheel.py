@@ -37,8 +37,13 @@ def load_history(path: Path) -> list[dict]:
     rows = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
-        if line:
+        if not line:
+            continue
+        try:
             rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue  # skip a corrupted line; never drop the whole history
+                       # (losing it would break dedupe -> risk double-posting)
     return rows
 
 
@@ -80,12 +85,19 @@ def _default_executor(action: actions.Action) -> DispatchResult:  # pragma: no c
     )
 
 
+def _coerce_int(value) -> int:
+    """Parse an int from messy tracker strings like '3,677' or '—'; 0 on failure."""
+    digits = "".join(ch for ch in str(value) if ch.isdigit())
+    return int(digits) if digits else 0
+
+
 def _audience_by_comp(gs) -> dict[str, int]:
     out = {}
-    for comp in gs.snapshot.get("active_competitions", []):
-        name = str(comp.get("competition", "")).lower().replace(" ", "-")
-        if comp.get("teams"):
-            out[name] = int(comp["teams"])
+    for comp in (gs.snapshot.get("active_competitions") or []):
+        name = str(comp.get("competition", "")).strip().lower().replace(" ", "-")
+        teams = _coerce_int(comp.get("teams"))
+        if name and teams:
+            out[name] = teams
     return out
 
 
@@ -142,11 +154,15 @@ def tick(*, now: datetime | None = None, dry_run: bool = False,
         else:
             break  # stop on first failure (captcha/login/not-wired) this tick
 
-    new_weights = feedback.attribute(
-        load_history(history_path), prev_snapshot, gs.snapshot, weights, cfg, now,
-    )
-    feedback.save_weights(GROWTH_DIR / WEIGHTS_NAME, new_weights)
-    _save_last_snapshot(gs.snapshot)
+    # Learn + advance the attribution baseline only when we actually acted, so a
+    # capped / closed-window / killed tick doesn't drift the baseline and starve
+    # the next real dispatch of its vote delta.
+    if dispatched > 0:
+        new_weights = feedback.attribute(
+            load_history(history_path), prev_snapshot, gs.snapshot, weights, cfg, now,
+        )
+        feedback.save_weights(GROWTH_DIR / WEIGHTS_NAME, new_weights)
+        _save_last_snapshot(gs.snapshot)
     return dispatched
 
 

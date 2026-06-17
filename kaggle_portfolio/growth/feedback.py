@@ -2,18 +2,26 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .config import FlywheelConfig
+
+
+def _aware(dt: datetime) -> datetime:
+    """Treat a tz-naive datetime as UTC so aware/naive comparisons never crash."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 def load_weights(path: Path) -> dict[str, float]:
     if not path.exists():
         return {}
     try:
-        return {k: float(v) for k, v in json.loads(path.read_text(encoding="utf-8")).items()}
-    except (ValueError, json.JSONDecodeError):
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict):
+            return {}
+        return {k: float(v) for k, v in raw.items()}
+    except (ValueError, TypeError, json.JSONDecodeError, OSError):
         return {}
 
 
@@ -25,7 +33,9 @@ def save_weights(path: Path, weights: dict[str, float]) -> None:
 def _notebook_votes(snapshot: dict | None) -> int:
     if not snapshot:
         return 0
-    return int(snapshot.get("categories", {}).get("notebooks", {}).get("total_votes", 0) or 0)
+    cats = snapshot.get("categories") or {}
+    notebooks = cats.get("notebooks") or {}
+    return int(notebooks.get("total_votes", 0) or 0)
 
 
 def attribute(history, prev_snapshot, cur_snapshot, weights, cfg: FlywheelConfig, now: datetime):
@@ -35,7 +45,14 @@ def attribute(history, prev_snapshot, cur_snapshot, weights, cfg: FlywheelConfig
     Effectiveness signal per acting kind = (vote_gain / n_acting_done) around a
     1.0 baseline; kinds that acted but saw no gain decay back toward 1.0.
     """
+    # No prior snapshot -> there is no delta baseline to attribute. Returning the
+    # weights unchanged avoids crediting an action with the entire historical
+    # vote count on the very first tick (which would inflate its weight ~30x).
+    if prev_snapshot is None:
+        return dict(weights)
+
     alpha = cfg.ema_alpha
+    now = _aware(now)
     gain = max(0, _notebook_votes(cur_snapshot) - _notebook_votes(prev_snapshot))
 
     window_start = now - timedelta(days=1)
@@ -44,7 +61,7 @@ def attribute(history, prev_snapshot, cur_snapshot, weights, cfg: FlywheelConfig
         if row.get("status") != "done":
             continue
         try:
-            ts = datetime.fromisoformat(str(row.get("tick_ts", "")))
+            ts = _aware(datetime.fromisoformat(str(row.get("tick_ts", ""))))
         except (ValueError, TypeError):
             continue
         if ts >= window_start:

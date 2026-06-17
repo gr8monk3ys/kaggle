@@ -360,3 +360,89 @@ def test_flywheel_commands_registered():
     assert "flywheel-tick" in manage_commands.COMMAND_INDEX
     assert "flywheel-status" in manage_commands.COMMAND_INDEX
     assert manage_commands.COMMAND_INDEX["flywheel-tick"].requires_kaggle is True
+
+
+# --- Hardening: regressions for adversarial-review findings -------------------
+def _state_with_snapshot(snapshot, items=()):
+    return GrowthState(followers=0, items=list(items), discussion_medals=0,
+                       discussion_total_posts=0, snapshot=snapshot)
+
+
+def test_audience_handles_comma_and_junk_team_counts():
+    # The real tracker stores teams as "3,677"; int("3,677") used to crash tick().
+    gs = _state_with_snapshot({"active_competitions": [
+        {"competition": "Hull Tactical Market", "teams": "3,677"},
+        {"competition": "Mystery Comp", "teams": "—"},
+    ]})
+    aud = fw._audience_by_comp(gs)
+    assert aud["hull-tactical-market"] == 3677
+    assert "mystery-comp" not in aud  # junk team count -> skipped, not a crash
+
+
+def test_audience_none_active_competitions_does_not_crash():
+    assert fw._audience_by_comp(_state_with_snapshot({"active_competitions": None})) == {}
+
+
+def test_lookup_audience_matches_slug_by_containment():
+    aud = {"hull-tactical-market": 3677}
+    assert actmod._lookup_audience("hull-tactical-market-prediction", aud) == 3677
+    assert actmod._lookup_audience("unrelated-comp", aud) == 0
+
+
+def test_attribute_first_tick_none_prev_returns_unchanged():
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    history = [{"tick_ts": "2026-06-17T09:00:00+00:00", "kind": "forum_drop",
+                "target_id": "x", "status": "done"}]
+    # prev=None must NOT credit the action with the entire 500-vote history.
+    assert fbmod.attribute(history, None, _snap(500), {"forum_drop": 1.0}, _cfg(), now) == {"forum_drop": 1.0}
+
+
+def test_notebook_votes_handles_none_categories():
+    assert fbmod._notebook_votes({"categories": None}) == 0
+    assert fbmod._notebook_votes({"categories": {"notebooks": None}}) == 0
+
+
+def test_load_history_skips_malformed_lines(tmp_path):
+    p = tmp_path / "flywheel_history.jsonl"
+    p.write_text('{"a": 1}\n{bad json}\n{"b": 2}\n', encoding="utf-8")
+    assert fw.load_history(p) == [{"a": 1}, {"b": 2}]  # corrupt line skipped, rest intact
+
+
+def test_safety_handles_naive_history_timestamps():
+    history = [{"tick_ts": "2026-06-17T14:00:00", "kind": "discussion_post",  # naive
+                "target_id": "discussion_post:055", "status": "done"}]
+    counts = safetymod.recent_counts(history, _now())  # aware now
+    assert counts["posts_today"] == 1  # parsed + compared without TypeError
+
+
+def test_load_config_ignores_non_dict_json(tmp_path):
+    p = tmp_path / "flywheel_config.json"
+    p.write_text(json.dumps([1, 2, 3]), encoding="utf-8")
+    assert cfgmod.load_config(p) == cfgmod.FlywheelConfig()
+
+
+def test_load_weights_ignores_non_dict_json(tmp_path):
+    p = tmp_path / "flywheel_weights.json"
+    p.write_text(json.dumps(["a", "b"]), encoding="utf-8")
+    assert fbmod.load_weights(p) == {}
+
+
+def test_discussion_action_handles_null_forum(tmp_path, monkeypatch):
+    q = tmp_path / "discussion_queue.json"
+    q.write_text(json.dumps([{"id": "057", "title": "A", "status": "ready", "forum": None}]),
+                 encoding="utf-8")
+    monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([], []))
+    acts = actmod.enumerate_actions(_state(), discussion_queue_path=q)
+    assert acts[0].payload["forum"] == ""  # null -> "", not None
+
+
+def test_tick_no_dispatch_does_not_persist_baseline(tmp_path, monkeypatch):
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    monkeypatch.setenv("FLYWHEEL_DISABLED", "1")
+    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
+    monkeypatch.setattr(fw.actions, "enumerate_actions",
+                        lambda *a, **k: [actmod.Action("discussion_post", "discussion_post:057", "x", {})])
+    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
+    fw.tick(now=now, executor=lambda a: fw.DispatchResult(ok=True), cfg=_cfg())
+    assert not (tmp_path / "flywheel_last_snapshot.json").exists()
+    assert not (tmp_path / "flywheel_weights.json").exists()

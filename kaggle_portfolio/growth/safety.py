@@ -2,10 +2,15 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .actions import Action
 from .config import FlywheelConfig
+
+
+def _aware(dt: datetime) -> datetime:
+    """Treat a tz-naive datetime as UTC so aware/naive comparisons never crash."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 def in_posting_window(hour: int, cfg: FlywheelConfig) -> bool:
@@ -14,12 +19,13 @@ def in_posting_window(hour: int, cfg: FlywheelConfig) -> bool:
 
 def _parse(ts: str) -> datetime | None:
     try:
-        return datetime.fromisoformat(ts)
+        return _aware(datetime.fromisoformat(ts))
     except (ValueError, TypeError):
         return None
 
 
 def recent_counts(history: list[dict], now: datetime) -> dict:
+    now = _aware(now)
     day_ago = now - timedelta(days=1)
     week_ago = now - timedelta(days=7)
     posts_today = posts_week = 0
@@ -37,7 +43,7 @@ def recent_counts(history: list[dict], now: datetime) -> dict:
             if ts >= week_ago:
                 posts_week += 1
         elif kind == "forum_drop" and ts >= week_ago:
-            comp = str(row.get("competition", ""))
+            comp = str(row.get("competition") or "")
             forum_drops_week[comp] = forum_drops_week.get(comp, 0) + 1
     return {"posts_today": posts_today, "posts_week": posts_week,
             "forum_drops_week": forum_drops_week}
@@ -45,6 +51,7 @@ def recent_counts(history: list[dict], now: datetime) -> dict:
 
 def gate(ranked, history, cfg: FlywheelConfig, now: datetime):
     """Filter (action, score) pairs down to the dispatchable, safe subset."""
+    now = _aware(now)
     if not cfg.enabled or os.getenv("FLYWHEEL_DISABLED") == "1":
         return []
     if not in_posting_window(now.hour, cfg):
@@ -65,7 +72,7 @@ def gate(ranked, history, cfg: FlywheelConfig, now: datetime):
             posts_left_day -= 1
             posts_left_week -= 1
         elif action.kind == "forum_drop":
-            comp = str(action.payload.get("competition", ""))
+            comp = str(action.payload.get("competition") or "")
             used = counts["forum_drops_week"].get(comp, 0)
             if used >= cfg.max_forum_drops_per_comp_per_week:
                 continue
