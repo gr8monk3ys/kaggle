@@ -121,3 +121,50 @@ def test_build_tolerates_vote_fetch_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(stmod, "GROWTH_DIR", tmp_path)
     gs = stmod.build(today=date(2026, 6, 17))
     assert gs.items == []  # no items rather than a crash
+
+
+# --- Task 3: actions ---------------------------------------------------------
+from kaggle_portfolio.growth import actions as actmod
+from kaggle_portfolio.growth.state import GrowthState, ItemState
+
+
+def _state(items=()):
+    return GrowthState(followers=0, items=list(items), discussion_medals=0,
+                       discussion_total_posts=0, snapshot={})
+
+
+def test_enumerate_includes_ready_discussion_drafts(tmp_path, monkeypatch):
+    q = tmp_path / "discussion_queue.json"
+    q.write_text(json.dumps([
+        {"id": "057", "title": "Draft A", "status": "ready", "forum": "https://k/f"},
+        {"id": "058", "title": "Draft B", "status": "posted", "forum": "https://k/f"},
+    ]), encoding="utf-8")
+    monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([], []))
+    acts = actmod.enumerate_actions(_state(), discussion_queue_path=q)
+    posts = [a for a in acts if a.kind == "discussion_post"]
+    assert [a.target_id for a in posts] == ["discussion_post:057"]  # 'posted' excluded
+
+
+def test_enumerate_includes_forum_drops_for_matched_notebooks(tmp_path, monkeypatch):
+    nb = {"slug": "nb-a", "title": "NB A"}
+    monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([nb], []))
+    monkeypatch.setattr(actmod.notebook_promoter, "match_notebook_to_competitions",
+                        lambda n: ["hull-tactical-market-prediction"])
+    monkeypatch.setattr(actmod.notebook_promoter, "generate_promo_comment", lambda n, s: "comment")
+    monkeypatch.setattr(actmod.notebook_promoter, "notebook_url", lambda n: "https://k/nb-a")
+    gs = _state([ItemState("nb-a", "notebook", 18, "NB A")])
+    acts = actmod.enumerate_actions(
+        gs, discussion_queue_path=tmp_path / "missing.json",
+        audience_by_comp={"hull-tactical-market-prediction": 3677},
+    )
+    drops = [a for a in acts if a.kind == "forum_drop"]
+    assert len(drops) == 1
+    assert drops[0].target_id == "forum_drop:nb-a:hull-tactical-market-prediction"
+    assert drops[0].audience == 3677
+    assert drops[0].item_votes == 18  # carries the item's vote count for scoring
+
+
+def test_enumerate_never_emits_disallowed_kinds(tmp_path, monkeypatch):
+    monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([], []))
+    acts = actmod.enumerate_actions(_state(), discussion_queue_path=tmp_path / "x.json")
+    assert all(a.kind in actmod.ALLOWED_KINDS for a in acts)
