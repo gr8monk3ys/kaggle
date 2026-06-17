@@ -72,3 +72,52 @@ def test_load_config_overrides_from_json(tmp_path):
     assert loaded.max_posts_per_day == 1
     assert loaded.enabled is False
     assert loaded.w_followers == cfgmod.FlywheelConfig().w_followers  # untouched field keeps default
+
+
+# --- Task 2: state -----------------------------------------------------------
+from datetime import date
+from kaggle_portfolio.growth import state as stmod
+
+
+def test_build_assembles_state_from_snapshot_and_votes(tmp_path, monkeypatch):
+    fake_snapshot = {
+        "categories": {
+            "notebooks": {"total_votes": 50},
+            "datasets": {"total_votes": 54},
+            "discussion": {"bronze": 4, "total_posts": 9},
+        }
+    }
+    monkeypatch.setattr(stmod.medal_ops, "build_snapshot", lambda content, today: fake_snapshot)
+    monkeypatch.setattr(stmod, "_read_tracker", lambda: "ignored")
+    monkeypatch.setattr(stmod.metadata_tracker, "fetch_vote_counts", lambda: {"nb-a": 18, "nb-b": 2})
+    monkeypatch.setattr(stmod, "GROWTH_DIR", tmp_path)
+    (tmp_path / "followers.json").write_text('{"followers": 12}', encoding="utf-8")
+
+    gs = stmod.build(today=date(2026, 6, 17))
+    assert gs.followers == 12
+    assert gs.discussion_medals == 4
+    assert gs.discussion_total_posts == 9
+    votes_by_slug = {i.slug: i.votes for i in gs.items}
+    assert votes_by_slug == {"nb-a": 18, "nb-b": 2}
+    assert all(i.kind == "notebook" for i in gs.items)
+
+
+def test_build_defaults_followers_to_zero_when_file_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(stmod.medal_ops, "build_snapshot",
+                        lambda content, today: {"categories": {"discussion": {}}})
+    monkeypatch.setattr(stmod, "_read_tracker", lambda: "ignored")
+    monkeypatch.setattr(stmod.metadata_tracker, "fetch_vote_counts", lambda: {})
+    monkeypatch.setattr(stmod, "GROWTH_DIR", tmp_path)  # no followers.json inside
+    gs = stmod.build(today=date(2026, 6, 17))
+    assert gs.followers == 0
+    assert gs.items == []
+
+
+def test_build_tolerates_vote_fetch_failure(tmp_path, monkeypatch):
+    monkeypatch.setattr(stmod.medal_ops, "build_snapshot",
+                        lambda content, today: {"categories": {"discussion": {}}})
+    monkeypatch.setattr(stmod, "_read_tracker", lambda: "ignored")
+    monkeypatch.setattr(stmod.metadata_tracker, "fetch_vote_counts", lambda: None)  # CLI failed
+    monkeypatch.setattr(stmod, "GROWTH_DIR", tmp_path)
+    gs = stmod.build(today=date(2026, 6, 17))
+    assert gs.items == []  # no items rather than a crash
