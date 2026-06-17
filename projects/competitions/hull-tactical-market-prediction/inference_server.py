@@ -63,10 +63,13 @@ def predict(test_row: "pd.DataFrame") -> float:
     """
     if _MODEL is None:
         load_or_train_model()
-    # Align to the exact training feature order; fill any missing column with 0.
+    # Align to the exact training feature order. Fill any missing column with NaN
+    # (NOT 0.0): the HistGradientBoosting model handles NaN natively as "missing",
+    # matching training, whereas a hard 0.0 is an out-of-distribution value that
+    # silently skews predictions.
     x = pd.DataFrame(index=test_row.index)
     for c in _FEATS:
-        x[c] = test_row[c] if c in test_row.columns else 0.0
+        x[c] = test_row[c] if c in test_row.columns else np.nan
     x = x.replace([np.inf, -np.inf], np.nan).to_numpy()
     mu = _MODEL.predict(x)
     alloc = allocation_from_pred(mu, _SIGMA)

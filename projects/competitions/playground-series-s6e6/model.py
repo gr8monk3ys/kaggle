@@ -87,7 +87,10 @@ def main() -> int:
     le = LabelEncoder()
     y = le.fit_transform(train[TARGET].to_numpy())
     n_classes = len(le.classes_)
-    encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+    # Unseen test categories -> NaN (missing), not -1: NaN is treated as "missing"
+    # by both HistGBM (categorical) and XGBoost (numeric), whereas -1 is a real
+    # low-valued code XGBoost can split on, distorting unknown categories.
+    encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=np.nan)
     X, cat_mask = build_matrix(train, encoder, fit=True)
     X_test, _ = build_matrix(test, encoder, fit=False)
 
