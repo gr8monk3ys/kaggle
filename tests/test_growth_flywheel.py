@@ -499,3 +499,39 @@ def test_notebook_slug_from_id_tail():
     assert actmod._notebook_slug({"id": "user/digit-recognizer-cnn"}) == "digit-recognizer-cnn"
     assert actmod._notebook_slug({"ref": "user/foo-bar"}) == "foo-bar"
     assert actmod._notebook_slug({"title": "No Id Here"}) == "No Id Here"
+
+
+# --- Code-review round 2 fixes -----------------------------------------------
+def test_discussion_emits_single_next_due_draft(tmp_path, monkeypatch):
+    # Aligns with do_post -> select_next_post: ONE action for the draft that will
+    # actually be posted, not one-per-draft (which would starve the selected one).
+    q = tmp_path / "discussion_queue.json"
+    q.write_text(json.dumps([
+        {"id": "057", "title": "A", "status": "scheduled", "scheduled_after": "2026-06-10T14:00:00+00:00"},
+        {"id": "058", "title": "B", "status": "scheduled", "scheduled_after": "2026-06-20T14:00:00+00:00"},
+    ]), encoding="utf-8")
+    monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([], []))
+    posts = [a for a in actmod.enumerate_actions(_state(), discussion_queue_path=q)
+             if a.kind == "discussion_post"]
+    assert len(posts) == 1                                # not one-per-draft
+    assert posts[0].target_id == "discussion_post:057"    # earliest-scheduled selected
+
+
+def test_lookup_audience_prefers_longest_match():
+    aud = {"house": 100, "house-prices": 5000}
+    assert actmod._lookup_audience("house-prices-advanced-regression-techniques", aud) == 5000
+
+
+def test_cross_link_not_dispatchable_without_cap():
+    # cross_link has no safety.gate cap yet -> must not be a constructible action.
+    assert "cross_link" not in actmod.ALLOWED_KINDS
+    import pytest
+    with pytest.raises(ValueError):
+        actmod.Action("cross_link", "cross_link:x", "x", {})
+
+
+def test_attribute_tolerates_history_row_missing_kind():
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    history = [{"tick_ts": "2026-06-17T09:00:00+00:00", "status": "done"}]  # no 'kind'
+    # Must not KeyError; with no valid acting kind, weights stay unchanged.
+    assert fbmod.attribute(history, _snap(50), _snap(56), {"x": 1.0}, _cfg(), now) == {"x": 1.0}

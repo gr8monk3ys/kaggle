@@ -64,8 +64,9 @@ def attribute(history, prev_snapshot, cur_snapshot, weights, cfg: FlywheelConfig
             ts = _aware(datetime.fromisoformat(str(row.get("tick_ts", ""))))
         except (ValueError, TypeError):
             continue
-        if ts >= window_start:
-            acting[row["kind"]] = acting.get(row["kind"], 0) + 1
+        kind = row.get("kind")
+        if kind and ts >= window_start:
+            acting[kind] = acting.get(kind, 0) + 1
 
     updated = dict(weights)
     if not acting:
