@@ -43,7 +43,8 @@ def _discussion_actions(queue_path: Path) -> list[Action]:
                 kind="discussion_post",
                 target_id=f"discussion_post:{did}",
                 title=str(e.get("title", did)),
-                payload={"draft_id": did, "forum": e.get("forum") or ""},
+                # The live queue uses 'forum_url'; tolerate the older 'forum' too.
+                payload={"draft_id": did, "forum": e.get("forum_url") or e.get("forum") or ""},
             ))
     return out
 
@@ -64,12 +65,19 @@ def _lookup_audience(comp_slug: str, audience_by_comp: dict[str, int]) -> int:
     return 0
 
 
+def _notebook_slug(nb: dict) -> str:
+    """Kernel slug for a notebook dict, matching metadata_tracker.fetch_vote_counts
+    keys (ref/id tail). load_notebooks() exposes id as 'user/kernel-slug'."""
+    nb_id = str(nb.get("id") or nb.get("ref") or "")
+    return nb_id.split("/")[-1] if nb_id else str(nb.get("title", ""))
+
+
 def _forum_drop_actions(gs: GrowthState, audience_by_comp: dict[str, int]) -> list[Action]:
     notebooks, _ = notebook_promoter.load_notebooks()
     votes_by_slug = {i.slug: i.votes for i in gs.items}
     out = []
     for nb in notebooks:
-        slug = str(nb.get("slug") or nb.get("ref") or nb.get("title", ""))
+        slug = _notebook_slug(nb)
         for comp in notebook_promoter.match_notebook_to_competitions(nb):
             out.append(Action(
                 kind="forum_drop",

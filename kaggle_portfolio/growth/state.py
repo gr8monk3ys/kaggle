@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -11,7 +12,20 @@ from kaggle_portfolio.ops import metadata_tracker
 
 ROOT = Path(__file__).resolve().parents[2]
 TRACKER_PATH = ROOT / "docs" / "reports" / "grandmaster-tracker.md"
-GROWTH_DIR = ROOT / "medal_ops" / "growth"
+
+
+def _default_growth_dir() -> Path:
+    """Flywheel state directory.
+
+    Overridable via the FLYWHEEL_DIR env var so deployments where the repo is
+    mounted read-only (e.g. the pi-automation container at /repo:ro) can point
+    writes at a writable volume such as /data/growth.
+    """
+    override = os.environ.get("FLYWHEEL_DIR")
+    return Path(override) if override else ROOT / "medal_ops" / "growth"
+
+
+GROWTH_DIR = _default_growth_dir()
 
 
 @dataclass(frozen=True)

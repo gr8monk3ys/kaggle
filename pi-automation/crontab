@@ -15,3 +15,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Discussion poster -- Tuesday and Friday 10:00 UTC
 0 10 * * 2,5 python3 /scripts/discussion_post.py >> /var/log/cron.log 2>&1
+
+# Growth flywheel -- OBSERVE phase: dry-run only, posts nothing -- Tue/Thu/Sat 14:00 UTC
+# Logs the scored decisions it WOULD make so you can watch it before going live.
+# Go live (rollout Phase 2/3): drop --dry-run, set "enabled": true in
+# medal_ops/growth/flywheel_config.json, set FLYWHEEL_DIR=/data/growth (the repo
+# mount is read-only), and retire the discussion-poster line above.
+0 14 * * 2,4,6 cd /repo && FLYWHEEL_DIR=/data/growth ./manage.sh flywheel-tick --dry-run >> /var/log/cron.log 2>&1

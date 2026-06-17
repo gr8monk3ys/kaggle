@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -70,18 +70,28 @@ def _save_last_snapshot(snapshot: dict) -> None:
 
 
 def _default_executor(action: actions.Action) -> DispatchResult:  # pragma: no cover - live only
-    """Live dispatch seam.
+    """Live dispatch seam (only reached when the kill switch is OFF).
 
-    Posting is wired during rollout Phase 2 (see the design spec): `discussion_post`
-    through the discussion poster and `forum_drop` once `notebook_promoter --auto`
-    lands. Until then this raises loudly so a live `flywheel-tick` (without
-    `--dry-run`) fails SAFE and visibly instead of silently pretending to post.
-    `tick()` wraps this call and records a `failed` history row, so the engine
-    no-ops rather than crashing. Run `flywheel-tick --dry-run` until this is wired.
+    `discussion_post` delegates to the existing, production discussion poster
+    (`discussion_scheduler.do_post` -> pi-automation/scripts/discussion_post.py),
+    which selects the next due draft and posts it via Playwright; that script's own
+    queue-status update is the authoritative double-post guard. `forum_drop` has no
+    live path yet (its upstream `notebook_promoter --auto` is unimplemented), so it
+    returns a clear failure rather than pretending to post. `tick()` wraps this call
+    and records a `failed` row on any error, so the engine no-ops safely.
     """
-    raise NotImplementedError(
-        f"live dispatch for {action.kind!r} is wired during rollout Phase 2; "
-        "use `flywheel-tick --dry-run` until then"
+    if action.kind == "discussion_post":
+        from kaggle_portfolio.ops import discussion_scheduler as ds
+        rc = ds.do_post(ds.load_queue())
+        return DispatchResult(
+            ok=(rc == 0),
+            post_url=action.payload.get("draft_id"),
+            error=None if rc == 0 else f"discussion_post.py exited {rc}",
+        )
+    return DispatchResult(
+        ok=False,
+        error=(f"live dispatch for {action.kind!r} is not yet available "
+               "(notebook_promoter --auto is upstream-pending); use --dry-run"),
     )
 
 
@@ -125,13 +135,18 @@ def tick(*, now: datetime | None = None, dry_run: bool = False,
     weights = feedback.load_weights(GROWTH_DIR / WEIGHTS_NAME)
 
     ranked = _ranked(gs, cfg, weights)
-    safe = safety.gate(ranked, history, cfg, now)
 
     if dry_run:
-        for action, score in safe:
+        # Preview ignores the kill switch so the OBSERVE phase shows real decisions
+        # even while enabled:false; window / caps / dedupe still apply.
+        preview = safety.gate(ranked, history, replace(cfg, enabled=True), now)
+        if not preview:
+            print("(no candidate actions pass window/caps/dedupe right now)")
+        for action, score in preview:
             print(f"WOULD DISPATCH [{score:.2f}] {action.kind}: {action.target_id}")
         return 0
 
+    safe = safety.gate(ranked, history, cfg, now)
     prev_snapshot = _load_last_snapshot()
     dispatched = 0
     for action, score in safe:
