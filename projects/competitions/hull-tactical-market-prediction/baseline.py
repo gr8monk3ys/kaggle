@@ -124,6 +124,7 @@ def allocation_from_pred(mu: np.ndarray, sigma: float) -> np.ndarray:
     """
     if sigma <= 0 or not np.isfinite(sigma):
         sigma = 1.0
+    mu = np.atleast_1d(mu)  # a scalar/0-d prediction must still index as alloc[0]
     alloc = 1.0 + mu / (2.0 * sigma)
     return np.clip(alloc, MIN_ALLOC, MAX_ALLOC)
 
@@ -154,6 +155,9 @@ def time_series_cv(df: pd.DataFrame, target: str) -> float:
         model.fit(X[tr], y[tr])
         pred = model.predict(X[va])
         rmse = float(np.sqrt(mean_squared_error(y[va], pred)))
+        # Size validation allocations from the TRAINING fold's volatility only
+        # (honest, no look-ahead). The deployed model uses the full-train sigma
+        # (fit_model), so this proxy is approximate, not identical to live.
         sigma = float(np.nanstd(y[tr]))
         alloc = allocation_from_pred(pred, sigma)
         # Realized strategy excess return = allocation * realized fwd return.
@@ -211,6 +215,10 @@ def run_smoke_test():
         alloc = allocation_from_pred(mu, sigma)
         assert MIN_ALLOC <= alloc[0] <= MAX_ALLOC, alloc
         assert np.isfinite(alloc[0])
+        # A scalar (0-d) prediction must still be indexable as alloc[0] (the live
+        # gateway path calls allocation_from_pred then reads alloc[0]).
+        scalar_alloc = allocation_from_pred(float(mu[0]), sigma)
+        assert scalar_alloc.shape == (1,) and np.isfinite(scalar_alloc[0])
         print(f"Last-day predicted edge={mu[0]:.5f} -> allocation={alloc[0]:.3f} "
               f"(bounded in [{MIN_ALLOC},{MAX_ALLOC}])")
         print(f"SMOKE TEST PASSED (synthetic strategy Sharpe proxy={sharpe:.3f}). "

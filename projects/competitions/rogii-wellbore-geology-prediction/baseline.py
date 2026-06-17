@@ -153,9 +153,10 @@ def add_features(df: pd.DataFrame, md_col: str) -> pd.DataFrame:
 
 
 def assemble(split_dir: str) -> tuple[pd.DataFrame, list[str], str]:
+    well_ids = list_well_ids(split_dir)  # list once; the returned ids must match the frame
     frames = []
     md_col = None
-    for wid in list_well_ids(split_dir):
+    for wid in well_ids:
         wt = build_well_table(split_dir, wid)
         md_col = wt["_md_col"].iloc[0]
         wt = add_features(wt, md_col)
@@ -164,7 +165,7 @@ def assemble(split_dir: str) -> tuple[pd.DataFrame, list[str], str]:
         raise FileNotFoundError(f"No *__horizontal_well.csv under {split_dir}")
     full = pd.concat(frames, ignore_index=True)
     full = full.drop(columns=["_md_col"])
-    return full, list_well_ids(split_dir), md_col
+    return full, well_ids, md_col
 
 
 def feature_matrix(df: pd.DataFrame, target_col: str | None):
@@ -215,12 +216,34 @@ def fit_full_and_predict(train, test, target_col, feats):
 
 
 def write_submission(test, preds, sample_path, out_path, target_col):
+    test = test.copy()
+    test["_pred"] = preds
     if os.path.exists(sample_path):
         sub = pd.read_csv(sample_path)
-        pred_col = [c for c in sub.columns
-                    if _first_present([c], TARGET_CANDIDATES)]
-        pred_col = pred_col[0] if pred_col else sub.columns[-1]
-        if len(sub) == len(preds):
+        matched = [c for c in sub.columns if _first_present([c], TARGET_CANDIDATES)]
+        pred_col = matched[0] if matched else sub.columns[-1]
+        # Align predictions to sample_submission by the id column(s) the two frames
+        # SHARE, not positionally: `test` is in well/MD order while the sample may be
+        # in a different (e.g. id-sorted) order, so `sub[pred_col] = preds` would
+        # silently mis-assign every prediction. Fall back to positional only when no
+        # shared unique key exists, and say so loudly.
+        key_cols = [c for c in sub.columns if c in test.columns and c != pred_col]
+        keyed_unique = bool(key_cols) and not test[key_cols].duplicated().any()
+        if keyed_unique and len(sub) == len(test):
+            merged = sub.drop(columns=[pred_col], errors="ignore").merge(
+                test[key_cols + ["_pred"]], on=key_cols, how="left")
+            sub[pred_col] = merged["_pred"].to_numpy()
+            missing = int(pd.isna(sub[pred_col]).sum())
+            if missing:
+                fill = float(np.nanmean(preds))
+                print(f"WARNING: {missing}/{len(sub)} submission rows had no matching "
+                      f"prediction (id mismatch); filled with mean {fill:.4f}.",
+                      file=sys.stderr)
+                sub[pred_col] = sub[pred_col].fillna(fill)
+        elif len(sub) == len(preds):
+            print("WARNING: no shared unique id column between sample_submission and "
+                  "test; using POSITIONAL alignment -- verify the row order matches!",
+                  file=sys.stderr)
             sub[pred_col] = preds
         else:
             print(f"WARNING: sample rows ({len(sub)}) != preds ({len(preds)});"
@@ -266,7 +289,7 @@ def run_smoke_test():
         make_synthetic(tmp, n_wells=12, with_target=True)
         make_synthetic(tmp, n_wells=4, with_target=False)
         train, _, md_col = assemble(os.path.join(tmp, "train"))
-        test, _, _ = assemble(os.path.join(tmp, "test"))
+        test, _, test_md = assemble(os.path.join(tmp, "test"))
         target_col = _first_present(train.columns, TARGET_CANDIDATES)
         assert target_col, "target not found in synthetic train"
         print(f"train rows={len(train)}  test rows={len(test)}  "
@@ -278,6 +301,25 @@ def run_smoke_test():
         write_submission(test, preds, "/nonexistent", out, target_col)
         assert len(preds) == len(test)
         assert np.isfinite(preds).all()
+
+        # Verify id-based alignment: a sample_submission whose rows are SHUFFLED
+        # relative to `test` must still receive each row's correct prediction.
+        sample = test[["well_id", test_md]].copy()
+        sample[target_col] = 0.0
+        sample = sample.sample(frac=1.0, random_state=1).reset_index(drop=True)
+        sample_path = os.path.join(tmp, "sample_submission.csv")
+        sample.to_csv(sample_path, index=False)
+        aligned = os.path.join(tmp, "aligned.csv")
+        write_submission(test, preds, sample_path, aligned, target_col)
+        written = pd.read_csv(aligned)
+        expect = test[["well_id", test_md]].copy()
+        expect["_p"] = preds
+        check = written.merge(expect, on=["well_id", test_md])
+        assert len(check) == len(test), "alignment merge lost/duplicated rows"
+        assert np.allclose(check[target_col].to_numpy(), check["_p"].to_numpy()), (
+            "submission predictions are MISALIGNED to sample_submission rows")
+        print("Alignment check PASSED (predictions matched shuffled sample rows by id).")
+
         print(f"SMOKE TEST PASSED (synthetic CV RMSE={cv:.4f}, "
               f"{len(feats)} features). Pipeline logic is sound.")
 
