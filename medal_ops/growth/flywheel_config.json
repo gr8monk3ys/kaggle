@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "max_posts_per_day": 2,
+  "max_posts_per_week": 8,
+  "max_forum_drops_per_comp_per_week": 1,
+  "window_start_hour": 13,
+  "window_end_hour": 23
+}

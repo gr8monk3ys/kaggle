@@ -22,6 +22,10 @@ catboost_info/
 # Medal ops generated artifacts (history is committed for pace tracking; reports/sync_inputs stay local)
 medal_ops/reports/
 medal_ops/sync_inputs/
+# Growth flywheel runtime state (caches; in the container these live in /data/growth)
+medal_ops/growth/flywheel_history.jsonl
+medal_ops/growth/flywheel_weights.json
+medal_ops/growth/flywheel_last_snapshot.json
 .competition_lab/
 
 .env

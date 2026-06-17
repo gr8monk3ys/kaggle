@@ -146,7 +146,7 @@ def test_enumerate_includes_ready_discussion_drafts(tmp_path, monkeypatch):
 
 
 def test_enumerate_includes_forum_drops_for_matched_notebooks(tmp_path, monkeypatch):
-    nb = {"slug": "nb-a", "title": "NB A"}
+    nb = {"id": "user/nb-a", "title": "NB A"}  # slug derived from id tail
     monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([nb], []))
     monkeypatch.setattr(actmod.notebook_promoter, "match_notebook_to_competitions",
                         lambda n: ["hull-tactical-market-prediction"])
@@ -258,7 +258,6 @@ def test_attribute_decays_toward_one_when_no_gain():
 
 
 # --- Task 6: conductor -------------------------------------------------------
-import pytest
 from kaggle_portfolio.growth import flywheel as fw
 
 
@@ -326,11 +325,12 @@ def test_tick_wraps_executor_exception_as_failed(tmp_path, monkeypatch):
     assert hist[-1]["status"] == "failed" and "playwright exploded" in hist[-1]["error"]
 
 
-def test_default_executor_is_safe_stub():
-    # Live posting is wired in rollout Phase 2; until then the default must fail
-    # loudly (never silently "succeed") so a premature live tick is visible+safe.
-    with pytest.raises(NotImplementedError):
-        fw._default_executor(actmod.Action("discussion_post", "discussion_post:057", "x", {}))
+def test_default_executor_forum_drop_unavailable_is_safe():
+    # forum_drop has no live path yet -> returns a clear failure (not an exception
+    # and never a false success), so tick() records 'failed' and no-ops safely.
+    res = fw._default_executor(
+        actmod.Action("forum_drop", "forum_drop:nb:hull", "x", {"competition": "hull"}))
+    assert res.ok is False and "not yet available" in (res.error or "")
 
 
 def test_kill_switch_env_blocks_dispatch(tmp_path, monkeypatch):
@@ -436,6 +436,16 @@ def test_discussion_action_handles_null_forum(tmp_path, monkeypatch):
     assert acts[0].payload["forum"] == ""  # null -> "", not None
 
 
+def test_discussion_action_reads_forum_url(tmp_path, monkeypatch):
+    # The live queue stores the forum as 'forum_url' (not 'forum').
+    q = tmp_path / "discussion_queue.json"
+    q.write_text(json.dumps([{"id": "057", "title": "A", "status": "scheduled",
+                              "forum_url": "https://k/forum/x"}]), encoding="utf-8")
+    monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([], []))
+    acts = actmod.enumerate_actions(_state(), discussion_queue_path=q)
+    assert acts[0].payload["forum"] == "https://k/forum/x"
+
+
 def test_tick_no_dispatch_does_not_persist_baseline(tmp_path, monkeypatch):
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
     monkeypatch.setenv("FLYWHEEL_DISABLED", "1")
@@ -446,3 +456,46 @@ def test_tick_no_dispatch_does_not_persist_baseline(tmp_path, monkeypatch):
     fw.tick(now=now, executor=lambda a: fw.DispatchResult(ok=True), cfg=_cfg())
     assert not (tmp_path / "flywheel_last_snapshot.json").exists()
     assert not (tmp_path / "flywheel_weights.json").exists()
+
+
+# --- Phase completion: deployment wiring -------------------------------------
+def test_growth_dir_honors_env_override(monkeypatch):
+    # The container mounts the repo read-only; state must be redirectable to /data.
+    monkeypatch.setenv("FLYWHEEL_DIR", "/data/growth")
+    assert str(stmod._default_growth_dir()) == "/data/growth"
+    monkeypatch.delenv("FLYWHEEL_DIR", raising=False)
+    assert stmod._default_growth_dir() == stmod.ROOT / "medal_ops" / "growth"
+
+
+def test_tick_dry_run_previews_even_when_disabled(monkeypatch, capsys, tmp_path):
+    # The OBSERVE-phase cron runs --dry-run while enabled:false; the kill switch
+    # must NOT suppress the preview, or there'd be nothing to observe.
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
+    monkeypatch.setattr(fw.actions, "enumerate_actions",
+                        lambda *a, **k: [actmod.Action("discussion_post", "discussion_post:057", "x", {})])
+    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
+    called = []
+    n = fw.tick(now=now, dry_run=True,
+                executor=lambda a: called.append(a) or fw.DispatchResult(ok=True),
+                cfg=_cfg(enabled=False))  # kill switch ON
+    out = capsys.readouterr().out
+    assert n == 0 and called == []      # still posts nothing
+    assert "WOULD DISPATCH" in out      # preview not suppressed by the kill switch
+
+
+def test_crontab_runs_flywheel_observe(repo_root):
+    crontab = (repo_root / "pi-automation" / "crontab").read_text(encoding="utf-8")
+    assert "flywheel-tick --dry-run" in crontab  # observe phase wired (no live posting)
+
+
+def test_seed_config_ships_disabled(repo_root):
+    cfg = cfgmod.load_config(repo_root / "medal_ops" / "growth" / "flywheel_config.json")
+    assert cfg.enabled is False  # ships safe; flip to true only after observing dry-runs
+
+
+def test_notebook_slug_from_id_tail():
+    # Must match metadata_tracker.fetch_vote_counts keys so forum-drops pick up votes.
+    assert actmod._notebook_slug({"id": "user/digit-recognizer-cnn"}) == "digit-recognizer-cnn"
+    assert actmod._notebook_slug({"ref": "user/foo-bar"}) == "foo-bar"
+    assert actmod._notebook_slug({"title": "No Id Here"}) == "No Id Here"
