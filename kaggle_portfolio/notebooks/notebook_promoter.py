@@ -50,6 +50,22 @@ COMPETITION_TOPICS = {
         "url": "https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/discussion",
         "topics": ["regression", "feature engineering", "house prices", "ensemble", "stacking"],
     },
+    # Currently-active competitions (kept in sync with the tracker's Active
+    # Competitions table) so the growth flywheel can promote real entries in the
+    # right forums and resolve audience (team count) for them. Topics are kept
+    # specific to avoid pulling unrelated tutorials into a focused comp forum.
+    "playground-series-s6e6": {
+        "url": "https://www.kaggle.com/competitions/playground-series-s6e6/discussion",
+        "topics": ["stellar", "astronomy", "redshift", "classification", "tabular", "xgboost"],
+    },
+    "hull-tactical-market-prediction": {
+        "url": "https://www.kaggle.com/competitions/hull-tactical-market-prediction/discussion",
+        "topics": ["market", "financial", "sharpe", "allocation", "time series", "forecasting"],
+    },
+    "rogii-wellbore-geology-prediction": {
+        "url": "https://www.kaggle.com/competitions/rogii-wellbore-geology-prediction/discussion",
+        "topics": ["geology", "wellbore", "geosteering", "depth", "petrophysical", "regression"],
+    },
 }
 
 

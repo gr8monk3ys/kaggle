@@ -86,3 +86,20 @@ def test_filter_notebooks_matches_ref_slug_and_directory():
 
     assert [item["id"] for item in filtered] == ["user/one", "user/two"]
     assert missing == ["missing"]
+
+
+def test_active_competitions_registered_and_matchable():
+    # Active competitions must be in the topic map so the growth flywheel can
+    # promote real entries and resolve their audience/forum.
+    for slug in [
+        "playground-series-s6e6",
+        "hull-tactical-market-prediction",
+        "rogii-wellbore-geology-prediction",
+    ]:
+        assert slug in notebook_promoter.COMPETITION_TOPICS
+        assert notebook_promoter.COMPETITION_TOPICS[slug]["url"].endswith(f"{slug}/discussion")
+
+    # An entry notebook matches its own competition via competition_sources.
+    nb = {"id": "u/s6e6-entry", "title": "S6E6 Stellar",
+          "competition_sources": ["playground-series-s6e6"]}
+    assert "playground-series-s6e6" in notebook_promoter.match_notebook_to_competitions(nb)
