@@ -43,9 +43,25 @@ def _discussion_actions(queue_path: Path) -> list[Action]:
                 kind="discussion_post",
                 target_id=f"discussion_post:{did}",
                 title=str(e.get("title", did)),
-                payload={"draft_id": did, "forum": e.get("forum", "")},
+                payload={"draft_id": did, "forum": e.get("forum") or ""},
             ))
     return out
+
+
+def _lookup_audience(comp_slug: str, audience_by_comp: dict[str, int]) -> int:
+    """Audience (team count) for a competition slug.
+
+    The tracker keys audience by normalized display name (e.g. 'hull-tactical-
+    market') while `notebook_promoter` returns the full Kaggle slug (e.g. 'hull-
+    tactical-market-prediction'); match on exact, then either-way containment so
+    the two namespaces line up when they overlap.
+    """
+    if comp_slug in audience_by_comp:
+        return audience_by_comp[comp_slug]
+    for name, teams in audience_by_comp.items():
+        if name and (name in comp_slug or comp_slug in name):
+            return teams
+    return 0
 
 
 def _forum_drop_actions(gs: GrowthState, audience_by_comp: dict[str, int]) -> list[Action]:
@@ -64,7 +80,7 @@ def _forum_drop_actions(gs: GrowthState, audience_by_comp: dict[str, int]) -> li
                     "comment": notebook_promoter.generate_promo_comment(nb, comp),
                     "notebook_url": notebook_promoter.notebook_url(nb),
                 },
-                audience=int(audience_by_comp.get(comp, 0)),
+                audience=_lookup_audience(comp, audience_by_comp),
                 item_votes=votes_by_slug.get(slug),
             ))
     return out

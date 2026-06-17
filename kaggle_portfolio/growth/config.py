@@ -31,6 +31,11 @@ def load_config(path: Path) -> FlywheelConfig:
     """Load config from JSON, ignoring unknown keys; missing file -> defaults."""
     if not path.exists():
         return FlywheelConfig()
-    raw = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return FlywheelConfig()
+    if not isinstance(raw, dict):
+        return FlywheelConfig()
     known = {f.name for f in fields(FlywheelConfig)}
     return FlywheelConfig(**{k: v for k, v in raw.items() if k in known})
