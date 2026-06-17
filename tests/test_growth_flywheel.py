@@ -255,3 +255,98 @@ def test_attribute_decays_toward_one_when_no_gain():
                 "target_id": "forum_drop:nb-a:hull", "status": "done"}]
     updated = fbmod.attribute(history, _snap(50), _snap(50), {"forum_drop": 2.0}, _cfg(), now)
     assert updated["forum_drop"] < 2.0  # no gain -> EMA pulls the inflated weight down
+
+
+# --- Task 6: conductor -------------------------------------------------------
+import pytest
+from kaggle_portfolio.growth import flywheel as fw
+
+
+def test_tick_dispatches_highest_scored_safe_action(tmp_path, monkeypatch):
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    gs = _state([ItemState("nb-a", "notebook", 18, "NB A")])
+    a_low = actmod.Action("discussion_post", "discussion_post:057", "low", {})
+    a_high = actmod.Action("forum_drop", "forum_drop:nb-a:hull",
+                           "high", {"competition": "hull"}, audience=4000, item_votes=18)
+    monkeypatch.setattr(fw, "_load_state", lambda today: gs)
+    monkeypatch.setattr(fw.actions, "enumerate_actions", lambda *a, **k: [a_low, a_high])
+    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
+
+    dispatched = []
+    def fake_exec(action):
+        dispatched.append(action.target_id)
+        return fw.DispatchResult(ok=True, post_url="https://k/post/1")
+
+    n = fw.tick(now=now, executor=fake_exec,
+                cfg=_cfg(max_posts_per_day=1, max_forum_drops_per_comp_per_week=1))
+    assert n == 2  # one of each kind fits the caps
+    assert "forum_drop:nb-a:hull" in dispatched  # higher score acted
+    hist = fw.load_history(tmp_path / "flywheel_history.jsonl")
+    assert any(h["status"] == "done" for h in hist)
+
+
+def test_tick_dry_run_posts_nothing(tmp_path, monkeypatch):
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
+    monkeypatch.setattr(fw.actions, "enumerate_actions",
+                        lambda *a, **k: [actmod.Action("discussion_post", "discussion_post:057", "x", {})])
+    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
+    called = []
+    n = fw.tick(now=now, dry_run=True, executor=lambda a: called.append(a) or fw.DispatchResult(ok=True))
+    assert n == 0
+    assert called == []  # executor never invoked in dry-run
+    assert not (tmp_path / "flywheel_history.jsonl").exists()
+
+
+def test_tick_failed_dispatch_logged_failed_and_no_cap_consumed(tmp_path, monkeypatch):
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
+    monkeypatch.setattr(fw.actions, "enumerate_actions",
+                        lambda *a, **k: [actmod.Action("discussion_post", "discussion_post:057", "x", {})])
+    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
+    n = fw.tick(now=now, executor=lambda a: fw.DispatchResult(ok=False, error="captcha"), cfg=_cfg())
+    assert n == 0
+    hist = fw.load_history(tmp_path / "flywheel_history.jsonl")
+    assert hist and hist[-1]["status"] == "failed"
+
+
+def test_tick_wraps_executor_exception_as_failed(tmp_path, monkeypatch):
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
+    monkeypatch.setattr(fw.actions, "enumerate_actions",
+                        lambda *a, **k: [actmod.Action("discussion_post", "discussion_post:057", "x", {})])
+    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
+
+    def boom(action):
+        raise RuntimeError("playwright exploded")
+
+    n = fw.tick(now=now, executor=boom, cfg=_cfg())
+    assert n == 0
+    hist = fw.load_history(tmp_path / "flywheel_history.jsonl")
+    assert hist[-1]["status"] == "failed" and "playwright exploded" in hist[-1]["error"]
+
+
+def test_default_executor_is_safe_stub():
+    # Live posting is wired in rollout Phase 2; until then the default must fail
+    # loudly (never silently "succeed") so a premature live tick is visible+safe.
+    with pytest.raises(NotImplementedError):
+        fw._default_executor(actmod.Action("discussion_post", "discussion_post:057", "x", {}))
+
+
+def test_kill_switch_env_blocks_dispatch(tmp_path, monkeypatch):
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    monkeypatch.setenv("FLYWHEEL_DISABLED", "1")
+    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
+    monkeypatch.setattr(fw.actions, "enumerate_actions",
+                        lambda *a, **k: [actmod.Action("discussion_post", "discussion_post:057", "x", {})])
+    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
+    called = []
+    n = fw.tick(now=now, executor=lambda a: called.append(a) or fw.DispatchResult(ok=True), cfg=_cfg())
+    assert n == 0 and called == []
+
+
+def test_main_status_runs_offline(monkeypatch, capsys):
+    monkeypatch.setattr(fw, "_load_state", lambda today: _state([ItemState("nb-a", "notebook", 18, "A")]))
+    rc = fw.main(["status"])
+    assert rc == 0
+    assert "Reach Score" in capsys.readouterr().out
