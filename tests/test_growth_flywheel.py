@@ -223,3 +223,35 @@ def test_failed_history_rows_do_not_consume_caps():
     ranked = [(_post_action("057"), 9.0), (_post_action("058"), 8.0)]
     kept = safetymod.gate(ranked, history, cfg, _now())
     assert len(kept) == 2  # failed row doesn't count -> both slots free
+
+
+# --- Task 5: feedback --------------------------------------------------------
+from kaggle_portfolio.growth import feedback as fbmod
+
+
+def _snap(notebook_votes):
+    return {"categories": {"notebooks": {"total_votes": notebook_votes}}}
+
+
+def test_weights_roundtrip(tmp_path):
+    p = tmp_path / "flywheel_weights.json"
+    fbmod.save_weights(p, {"discussion_post": 1.4})
+    assert fbmod.load_weights(p) == {"discussion_post": 1.4}
+    assert fbmod.load_weights(tmp_path / "missing.json") == {}
+
+
+def test_attribute_credits_recent_action_kind_for_vote_gain():
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    history = [{"tick_ts": "2026-06-17T09:00:00+00:00", "kind": "forum_drop",
+                "target_id": "forum_drop:nb-a:hull", "status": "done"}]
+    updated = fbmod.attribute(history, _snap(50), _snap(56), {}, _cfg(), now)
+    assert updated["forum_drop"] > 1.0
+    assert "discussion_post" not in updated or updated["discussion_post"] <= 1.0
+
+
+def test_attribute_decays_toward_one_when_no_gain():
+    now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
+    history = [{"tick_ts": "2026-06-17T09:00:00+00:00", "kind": "forum_drop",
+                "target_id": "forum_drop:nb-a:hull", "status": "done"}]
+    updated = fbmod.attribute(history, _snap(50), _snap(50), {"forum_drop": 2.0}, _cfg(), now)
+    assert updated["forum_drop"] < 2.0  # no gain -> EMA pulls the inflated weight down
