@@ -168,3 +168,58 @@ def test_enumerate_never_emits_disallowed_kinds(tmp_path, monkeypatch):
     monkeypatch.setattr(actmod.notebook_promoter, "load_notebooks", lambda: ([], []))
     acts = actmod.enumerate_actions(_state(), discussion_queue_path=tmp_path / "x.json")
     assert all(a.kind in actmod.ALLOWED_KINDS for a in acts)
+
+
+# --- Task 4: safety ----------------------------------------------------------
+from datetime import datetime, timezone
+from kaggle_portfolio.growth import safety as safetymod
+
+
+def _now(hour=15):
+    return datetime(2026, 6, 17, hour, 0, tzinfo=timezone.utc)
+
+
+def _post_action(i):
+    return actmod.Action("discussion_post", f"discussion_post:{i}", f"D{i}", {})
+
+
+def test_kill_switch_blocks_everything():
+    cfg = _cfg(enabled=False)
+    ranked = [(_post_action("057"), 9.0)]
+    assert safetymod.gate(ranked, [], cfg, _now()) == []
+
+
+def test_posting_window_blocks_off_hours():
+    cfg = _cfg(window_start_hour=13, window_end_hour=23)
+    assert safetymod.in_posting_window(15, cfg) is True
+    assert safetymod.in_posting_window(3, cfg) is False
+    ranked = [(_post_action("057"), 9.0)]
+    assert safetymod.gate(ranked, [], cfg, _now(hour=3)) == []
+
+
+def test_dedupe_drops_already_done_targets():
+    history = [{"tick_ts": "2026-06-16T15:00:00+00:00", "kind": "discussion_post",
+                "target_id": "discussion_post:057", "status": "done"}]
+    ranked = [(_post_action("057"), 9.0), (_post_action("058"), 8.0)]
+    kept = safetymod.gate(ranked, history, _cfg(), _now())
+    assert [a.target_id for a, _ in kept] == ["discussion_post:058"]
+
+
+def test_daily_cap_limits_remaining_posts():
+    today = "2026-06-17T14:00:00+00:00"
+    history = [{"tick_ts": today, "kind": "discussion_post",
+                "target_id": "discussion_post:055", "status": "done"}]
+    cfg = _cfg(max_posts_per_day=2, max_posts_per_week=8)
+    ranked = [(_post_action("057"), 9.0), (_post_action("058"), 8.0)]
+    kept = safetymod.gate(ranked, history, cfg, _now())
+    assert len(kept) == 1  # 1 already done today, cap 2 -> only 1 slot left
+
+
+def test_failed_history_rows_do_not_consume_caps():
+    today = "2026-06-17T14:00:00+00:00"
+    history = [{"tick_ts": today, "kind": "discussion_post",
+                "target_id": "discussion_post:055", "status": "failed"}]
+    cfg = _cfg(max_posts_per_day=2)
+    ranked = [(_post_action("057"), 9.0), (_post_action("058"), 8.0)]
+    kept = safetymod.gate(ranked, history, cfg, _now())
+    assert len(kept) == 2  # failed row doesn't count -> both slots free
