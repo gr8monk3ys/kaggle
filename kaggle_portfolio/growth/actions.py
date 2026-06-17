@@ -6,10 +6,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from kaggle_portfolio.notebooks import notebook_promoter
+from kaggle_portfolio.ops import discussion_scheduler
 from .state import GrowthState
 
-ALLOWED_KINDS = frozenset({"discussion_post", "forum_drop", "cross_link"})
-_POSTABLE_STATUSES = {"ready", "scheduled"}
+# Only kinds with a real generator AND a safety.gate rate-cap branch belong here.
+# cross_link is a future Phase-3 action; re-add it once it has both (otherwise it
+# would pass through safety.gate uncapped).
+ALLOWED_KINDS = frozenset({"discussion_post", "forum_drop"})
 
 
 @dataclass(frozen=True)
@@ -35,18 +38,21 @@ def _discussion_actions(queue_path: Path) -> list[Action]:
         return []
     if not isinstance(entries, list):
         return []
-    out = []
-    for e in entries:
-        if str(e.get("status", "")).strip().lower() in _POSTABLE_STATUSES:
-            did = str(e.get("id", ""))
-            out.append(Action(
-                kind="discussion_post",
-                target_id=f"discussion_post:{did}",
-                title=str(e.get("title", did)),
-                # The live queue uses 'forum_url'; tolerate the older 'forum' too.
-                payload={"draft_id": did, "forum": e.get("forum_url") or e.get("forum") or ""},
-            ))
-    return out
+    # Emit ONE action for the draft the live poster will actually post next
+    # (discussion_scheduler.do_post -> select_next_post). Enumerating one action
+    # per draft would let the flywheel mark a different draft 'done' than the one
+    # do_post posts, permanently starving the flywheel-selected draft.
+    nxt = discussion_scheduler.select_next_post(entries)
+    if not nxt:
+        return []
+    did = str(nxt.get("id", ""))
+    return [Action(
+        kind="discussion_post",
+        target_id=f"discussion_post:{did}",
+        title=str(nxt.get("title", did)),
+        # The live queue uses 'forum_url'; tolerate the older 'forum' too.
+        payload={"draft_id": did, "forum": nxt.get("forum_url") or nxt.get("forum") or ""},
+    )]
 
 
 def _lookup_audience(comp_slug: str, audience_by_comp: dict[str, int]) -> int:
@@ -59,10 +65,13 @@ def _lookup_audience(comp_slug: str, audience_by_comp: dict[str, int]) -> int:
     """
     if comp_slug in audience_by_comp:
         return audience_by_comp[comp_slug]
+    # Prefer the longest (most specific) containment match so e.g. 'house-prices'
+    # wins over a shorter 'house' key for 'house-prices-advanced-...'.
+    best_teams, best_len = 0, -1
     for name, teams in audience_by_comp.items():
-        if name and (name in comp_slug or comp_slug in name):
-            return teams
-    return 0
+        if name and (name in comp_slug or comp_slug in name) and len(name) > best_len:
+            best_teams, best_len = teams, len(name)
+    return best_teams
 
 
 def _notebook_slug(nb: dict) -> str:

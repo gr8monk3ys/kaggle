@@ -77,5 +77,9 @@ def gate(ranked, history, cfg: FlywheelConfig, now: datetime):
             if used >= cfg.max_forum_drops_per_comp_per_week:
                 continue
             counts["forum_drops_week"][comp] = used + 1
+        else:
+            # Fail closed: a kind without an explicit rate-cap branch is never
+            # dispatched uncapped (guards future action kinds added without a cap).
+            continue
         kept.append((action, score))
     return kept

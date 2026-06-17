@@ -85,7 +85,7 @@ def _default_executor(action: actions.Action) -> DispatchResult:  # pragma: no c
         rc = ds.do_post(ds.load_queue())
         return DispatchResult(
             ok=(rc == 0),
-            post_url=action.payload.get("draft_id"),
+            post_url=None,  # do_post returns only an exit code, not the post URL
             error=None if rc == 0 else f"discussion_post.py exited {rc}",
         )
     return DispatchResult(
@@ -204,7 +204,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="Print the Reach-Score dashboard.")
     args = parser.parse_args(argv)
     if args.command == "tick":
-        tick(dry_run=args.dry_run)
+        n = tick(dry_run=args.dry_run)
+        if not args.dry_run:
+            print(f"flywheel: dispatched {n} action(s)")
         return 0
     return status()
 
