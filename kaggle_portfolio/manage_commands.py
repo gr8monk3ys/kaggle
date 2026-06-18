@@ -831,6 +831,7 @@ COMMANDS = [
     Command("auth-doctor", "Validate Kaggle credentials, owner alignment, and upload auth", lambda a: run_module("kaggle_portfolio.ops.kaggle_auth_doctor", a)),
     Command("build-all", "Build all notebooks with build_notebook.py scripts", lambda a: run_module("kaggle_portfolio.notebooks.notebook_pipeline", a), "[--stale-only] [--push] [--validate-only] [--min-score N]"),
     Command("optimize-datasets", "Generate README.md + improve dataset descriptions", lambda a: run_module("kaggle_portfolio.datasets.dataset_optimizer", a), "[--push]"),
+    Command("vote-plan", "Rank datasets by distance-to-medal + discoverability gaps", lambda a: run_module("kaggle_portfolio.datasets.dataset_vote_planner", a), "[--owner OWNER] [--json]", requires_kaggle=True),
     Command("post-discussion", "Post next queued discussion draft or rebuild queue window", lambda a: run_module("kaggle_portfolio.ops.discussion_scheduler", a), "[--dry-run|--init|--schedule-weeks N]"),
     Command("draft-ops", "Show draft backlog stage counts + priority queue", cmd_draft_ops),
     Command("draft-set", "Update draft metadata and rebalance queue schedule window", cmd_draft_set, "<id> [--status STATUS] [--priority PRIORITY] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]"),
