@@ -14,7 +14,11 @@
     "classification",
     "regression",
     "beginner",
-    "clustering"
+    "clustering",
+    "data visualization",
+    "tabular",
+    "feature engineering",
+    "recommender systems"
   ],
   "resources": [
     {

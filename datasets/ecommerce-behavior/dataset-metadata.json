@@ -13,7 +13,11 @@
     "classification",
     "clustering",
     "regression",
-    "beginner"
+    "beginner",
+    "tabular",
+    "data analytics",
+    "exploratory data analysis",
+    "intermediate"
   ],
   "resources": [
     {
