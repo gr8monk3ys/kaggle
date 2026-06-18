@@ -38,6 +38,7 @@ PI_SCRIPTS = ROOT / "pi-automation" / "scripts"
 FORUM_MAP = {
     "getting started": "https://www.kaggle.com/discussions/getting-started",
     "general": "https://www.kaggle.com/discussions/general",
+    "datasets": "https://www.kaggle.com/discussions/datasets",
     "med-gemma competition": "https://www.kaggle.com/competitions/med-gemma-challenge/discussion",
     "deep past competition": "https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion",
     "deep past akkadian": "https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion",

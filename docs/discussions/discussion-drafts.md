@@ -5355,6 +5355,174 @@ There is a companion EDA + detection notebook here: https://www.kaggle.com/code/
 
 If you build something with it or spot a column you wish it had, let me know and I will fold it into the next version.
 
+## Draft 63: 50K Spotify tracks with full audio features — for genre, mood & popularity ML
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Silver
+
+### 50K Spotify tracks with full audio features — for genre, mood & popularity ML
+
+I put together a 50,000-track dataset with the full set of Spotify-style audio features — danceability, energy, valence, acousticness, tempo, loudness, and more — spanning 2000–2024 across 20 genres.
+
+A few things that make it fun to model:
+- **Genre-aware feature correlations** — energy and acousticness separate genres surprisingly cleanly, so it's a strong multi-class playground.
+- A **Zipf-like popularity distribution**, which keeps popularity regression realistically hard.
+- Clean, no missing values, and notebook-sized.
+
+Good for genre classification, popularity prediction, mood/playlist clustering, and recommender prototyping. A starter EDA notebook is attached.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k
+
+What feature would you reach for first to predict genre? Curious what works best on this one.
+
+## Draft 64: Synthetic e-commerce customer behavior — sessions, carts & conversions
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Bronze
+
+### Synthetic e-commerce customer behavior — sessions, carts & conversions
+
+A synthetic e-commerce behavior dataset built for funnel and conversion modeling: customer sessions, product interactions, cart events, and purchase outcomes, with realistic drop-off between stages.
+
+Why it's useful:
+- Clean target for **conversion / purchase prediction** and **churn** experiments.
+- Enough structure for **RFM segmentation** and customer clustering.
+- Small enough to iterate on in a notebook, big enough to be non-trivial.
+
+Use it for conversion modeling, customer segmentation, recommendation, or just practicing feature engineering on behavioral data. Starter EDA notebook included.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior
+
+If you've modeled conversion funnels before — do you treat each funnel stage as a separate target or one multi-class outcome? Would love takes.
+
+## Draft 65: 5K+ GitHub repositories with stars, forks, issues & activity
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Silver
+
+### 5K+ GitHub repositories with stars, forks, issues & activity
+
+A dataset of 5,000+ GitHub repositories with their popularity and health signals — stars, forks, open/closed issues, contributors, language, and activity recency.
+
+Fun angles:
+- **Predict stars** from repo characteristics (a nice log-scaled regression target).
+- Model **project health** (issue close rate, activity) vs. popularity.
+- Cluster repos by ecosystem and maintenance style.
+
+Handy for popularity modeling, open-source analytics, and EDA practice on real-world-shaped software data. Starter notebook attached.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics
+
+Does star count track project health, or do popular repos quietly accumulate issue debt? The data has opinions.
+
+## Draft 66: 10K students with grades, study habits & demographics
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Bronze
+
+### 10K students with grades, study habits & demographics
+
+A clean 10,000-row education dataset linking study habits, attendance, demographics, and support factors to academic performance.
+
+What you can do with it:
+- **Predict final grades** (regression) or pass/fail (classification).
+- Quantify which habits actually move outcomes (great for **explainability** demos).
+- Practice clean tabular pipelines without fighting missing data.
+
+A solid teaching dataset for intro ML, feature importance, and fairness-aware modeling. Starter EDA notebook included.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset
+
+Which factor do you think dominates — study hours, attendance, or prior performance? Curious before you peek at the SHAP plot.
+
+## Draft 67: 500+ ML/DS interview questions & answers (text dataset)
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Bronze
+
+### 500+ ML/DS interview questions & answers (text dataset)
+
+500+ machine-learning and data-science interview questions with answers and topic labels — equally useful for **studying** and for **NLP practice**.
+
+Ideas:
+- Build a **topic classifier** or a semantic search over questions.
+- Fine-tune or RAG a small "interview prep" assistant.
+- Cluster questions to map what actually gets asked.
+
+A compact, clean text dataset that's easy to prototype with. Starter notebook attached.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
+
+What's the one question you'd add that this set is missing? Happy to fold good ones into the next version.
+
+## Draft 68: Mental health in tech — a 5K-response survey dataset
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Bronze
+
+### Mental health in tech — a 5K-response survey dataset
+
+A 5,000-response survey dataset on mental health in the tech workplace: attitudes, employer support, openness, and demographic context.
+
+Why it's worth a look:
+- A meaningful, human-centered classification/EDA subject.
+- Mixed categorical + numeric features — good for **survey-analysis** and encoding practice.
+- Clean and ready for notebook work.
+
+Use it for attitude prediction, support-gap analysis, or thoughtful EDA. Starter notebook included.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k
+
+If you've worked survey data: do you one-hot the Likert scales or treat them as ordinal? Genuinely split on this.
+
+## Draft 69: Programming language benchmarks — runtime, memory & throughput
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Bronze
+
+### Programming language benchmarks — runtime, memory & throughput
+
+A benchmarking dataset comparing programming languages across tasks: runtime, memory footprint, and throughput, with task and language metadata.
+
+Things to try:
+- Model **runtime/memory trade-offs** across languages.
+- Rank languages per workload and visualize the Pareto front.
+- Simple, satisfying EDA with clear stories in the data.
+
+Great for performance analysis, visualization practice, and lightweight regression. Starter notebook attached.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks
+
+Which language do you expect to win on memory efficiency? The benchmarks might surprise you.
+
+## Draft 70: 200K synthetic credit-card transactions for fraud detection
+
+**Target forum:** Datasets
+**Category:** Dataset Release
+**Expected medal:** Silver
+
+### 200K synthetic credit-card transactions for fraud detection
+
+200,000 synthetic credit-card transactions with a realistic, **heavily imbalanced** fraud label — built for practicing the hard part of fraud detection: the imbalance.
+
+What makes it useful:
+- A genuine **class-imbalance** challenge (great for SMOTE, class weights, threshold tuning, PR-AUC).
+- Transaction, amount, time, and merchant-style features for feature engineering.
+- Synthetic, so no privacy concerns — safe to share notebooks freely.
+
+Use it for anomaly detection, imbalanced-classification practice, and cost-sensitive learning. Starter EDA notebook included.
+
+Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud-detection-synthetic
+
+For imbalanced fraud — are you team resampling or team class-weights? Curious what wins on this one.
+
 ---
 
-*End of drafts. The June additions (57-62) are anchored to real repo assets - the S6E6 stellar notebook, the SHAP and Optuna educational notebooks, and the credit-card-fraud dataset. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
+*End of drafts. Drafts 63-70 are dataset spotlights: each links a published dataset (Spotify, e-commerce, GitHub metrics, student performance, ML interview QA, mental health, language benchmarks, credit-card fraud), so posting one earns a Discussion medal AND drives that dataset's votes toward Datasets Expert/Gold. The June additions (57-62) are anchored to real repo assets - the S6E6 stellar notebook, the SHAP and Optuna educational notebooks, and the credit-card-fraud dataset. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
