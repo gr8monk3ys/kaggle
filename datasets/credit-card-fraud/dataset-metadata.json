@@ -14,7 +14,12 @@
     "classification",
     "binary classification",
     "regression",
-    "clustering"
+    "clustering",
+    "finance",
+    "tabular",
+    "anomaly detection",
+    "feature engineering",
+    "intermediate"
   ],
   "resources": [
     {

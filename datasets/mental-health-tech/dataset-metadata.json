@@ -14,7 +14,12 @@
     "classification",
     "regression",
     "clustering",
-    "education"
+    "education",
+    "health",
+    "tabular",
+    "data analytics",
+    "exploratory data analysis",
+    "intermediate"
   ],
   "resources": [
     {

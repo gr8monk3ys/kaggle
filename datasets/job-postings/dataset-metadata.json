@@ -14,7 +14,10 @@
     "text classification",
     "classification",
     "regression",
-    "business"
+    "business",
+    "tabular",
+    "data analytics",
+    "intermediate"
   ],
   "resources": [
     {
