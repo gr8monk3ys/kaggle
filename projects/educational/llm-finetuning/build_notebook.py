@@ -75,7 +75,7 @@ cells.append(md(
 # ── 5. Install / Import code ─────────────────────────────────────────────
 cells.append(code(
     "# ── Install Kaggle-missing deps (trl ships outside the base image) ──\n"
-    "!pip install -q trl bitsandbytes\n"
+    "!pip install -q 'trl<0.11' bitsandbytes  # pin: notebook uses the classic SFTTrainer API\n"
     "\n"
     "import os\n"
     "import random\n"
