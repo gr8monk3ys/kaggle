@@ -74,8 +74,8 @@ cells.append(md(
 
 # ── 5. Install / Import code ─────────────────────────────────────────────
 cells.append(code(
-    "# ── Install (uncomment on Kaggle / Colab) ──────────────────────────\n"
-    "# !pip install -q torch transformers peft bitsandbytes datasets trl accelerate\n"
+    "# ── Install Kaggle-missing deps (trl ships outside the base image) ──\n"
+    "!pip install -q trl bitsandbytes\n"
     "\n"
     "import os\n"
     "import random\n"

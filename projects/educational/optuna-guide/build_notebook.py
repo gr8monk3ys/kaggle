@@ -139,7 +139,7 @@ cells.append(md(
 
 # ── Cell 6: Setup code ────────────────────────────────────────────────────────
 cells.append(code(
-'!pip install optuna optuna-integration -q\n'
+'!pip install optuna optuna-integration cmaes -q\n'
 '\n'
 'import optuna\n'
 'import numpy as np\n'
