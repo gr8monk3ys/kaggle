@@ -1,13 +1,21 @@
 {
-  "id": "lorenzoscaturchio/shap-model-explainability-masterclass",
-  "title": "SHAP: Model Explainability Masterclass",
+  "id": "lorenzoscaturchio/shap-explainability-xai-masterclass",
+  "title": "SHAP Explainability XAI Masterclass",
   "code_file": "shap_explainability_guide.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": false,
   "enable_gpu": false,
   "enable_internet": true,
-  "keywords": ["shap", "explainability", "xai", "feature importance", "interpretable ml", "machine learning", "tutorial"],
+  "keywords": [
+    "shap",
+    "explainability",
+    "xai",
+    "feature importance",
+    "interpretable ml",
+    "machine learning",
+    "tutorial"
+  ],
   "dataset_sources": [],
   "kernel_sources": [],
   "competition_sources": []
