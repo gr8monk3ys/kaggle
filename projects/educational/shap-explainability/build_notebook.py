@@ -389,20 +389,16 @@ cells.append(code(
 ))
 
 cells.append(code(
-'# Matplotlib-rendered force plots for multiple samples (stacked)\n'
+'# Interactive stacked force plot for multiple samples (JS-rendered).\n'
+'# matplotlib=True only supports a single sample, so the multi-sample\n'
+'# stacked view uses the interactive JS renderer (shap.initjs() ran above).\n'
 'n_samples_force = 50\n'
 '\n'
-'plt.figure(figsize=(14, 5))\n'
 'shap.force_plot(\n'
 '    explainer.expected_value,\n'
 '    shap_values.values[:n_samples_force],\n'
 '    X_test.iloc[:n_samples_force],\n'
-'    matplotlib=True,\n'
-'    show=False\n'
-')\n'
-'plt.title(f"Force Plot -- First {n_samples_force} Test Samples", fontsize=12)\n'
-'plt.tight_layout()\n'
-'plt.show()'
+')'
 ))
 
 # ── Cell 19: Section 6 - Waterfall Plots (markdown) ───────────────────────────
