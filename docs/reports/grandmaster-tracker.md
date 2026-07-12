@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-07-12
 
 ---
 
@@ -37,14 +37,11 @@
 | Gold medals | 5 | 0 |
 | Silver medals | — | 0 |
 | Bronze medals | — | 0 |
-| Entered | — | 12 |
+| Entered | — | 13 |
 
 **Active competitions to enter:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
 |-------------|-------|----------|-----------------|----------|
-| Orbit Wars | 4,318 | Jun 23, 2026 | Hard (large field) | Fast baseline, iterate on leaderboard |
-| Hull Tactical Market | 3,677 | Jun 25, 2026 | Hard (large field) | Ensemble tree models |
-| Playground Series S6E6 | 1,368 | Jun 30, 2026 | Medium (playground) | GBM ensemble tabular pipeline |
 | NeuroGolf 2026 | 1,844 | Jul 15, 2026 | Medium | Feature engineering + GBM baseline |
 | Rogii Wellbore Geology | 2,819 | Aug 5, 2026 | Hard (large field) | Sequence features + GBM baseline |
 | AI Agent Security: Tool Attacks | 19 | Sep 1, 2026 | Easiest (small field) | Prompt-attack detection pipeline |
@@ -56,11 +53,11 @@
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 70 (on Kaggle) |
+| Total notebooks | 30+ | 73 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 3 |
-| Total votes | — | 67 |
+| Total votes | — | 71 |
 
 **Tracked notebook portfolio (curated live + pipeline subset):**
 | # | Notebook | Votes | Status |
@@ -107,7 +104,7 @@
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
 | Total votes | — | 54 |
-| Total downloads | — | 1750 |
+| Total downloads | — | 1897 |
 
 **Datasets on Kaggle:**
 | # | Dataset | Votes | Downloads | Usability |
