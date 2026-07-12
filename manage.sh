@@ -9,7 +9,8 @@ export PYTHONPATH="${MODULE_ROOT}:${PYTHONPATH:-}"
 PYTHON_BIN="python3"
 if [[ -x "${KAGGLE_DIR}/.venv/bin/python3" ]]; then
     PYTHON_BIN="${KAGGLE_DIR}/.venv/bin/python3"
-    export PATH="${KAGGLE_DIR}/.venv/bin:${PATH}"
+    # Fallback only: a kaggle binary already on the caller's PATH must win.
+    export PATH="${PATH}:${KAGGLE_DIR}/.venv/bin"
 fi
 
 exec "${PYTHON_BIN}" -m kaggle_portfolio.cli "$@"
