@@ -42,13 +42,14 @@
 **Active competitions to enter:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
 |-------------|-------|----------|-----------------|----------|
-| NeuroGolf 2026 | 1,844 | Jul 15, 2026 | Medium | Feature engineering + GBM baseline |
-| Rogii Wellbore Geology | 2,819 | Aug 5, 2026 | Hard (large field) | Sequence features + GBM baseline |
-| AI Agent Security: Tool Attacks | 19 | Sep 1, 2026 | Easiest (small field) | Prompt-attack detection pipeline |
-| ARC Prize 2026 (ARC-AGI-2) | 819 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
-| ARC Prize 2026 (ARC-AGI-3) | 1,160 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
+| Playground Series S6E7 | 1,480 | Jul 31, 2026 | Medium (playground) | Reuse S6E6 PS-playbook (augment + 4-model stack) |
+| Autonomous Agent Prediction (beta) | 102 | Aug 6, 2026 | Easier (small field) | Fast baseline, iterate |
+| Rogii Wellbore Geology | 4,769 | Aug 5, 2026 | Hard (large field) | Sequence features + GBM baseline |
+| AI Agent Security: Tool Attacks | 1,794 | Sep 1, 2026 | Medium (was 19 teams in June, now 1,794) | Prompt-attack detection pipeline |
+| ARC Prize 2026 (ARC-AGI-2) | 1,132 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
+| ARC Prize 2026 (ARC-AGI-3) | 1,704 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
 
-**Priority: AI Agent Security (19 teams = best medal odds by far)**
+**Priority: AI Agent Security (scout score 85) + Playground S6E7 (PS-playbook ready to reuse). NeuroGolf dropped — ARC-style tasks, 3,002 teams, 3 days left.**
 ### Notebooks
 | Status | Target | Current |
 |--------|--------|---------|
