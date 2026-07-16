@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-07-12
+**Last Updated:** 2026-07-15
 
 ---
 
@@ -54,11 +54,11 @@
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 73 (on Kaggle) |
+| Total notebooks | 30+ | 74 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 3 |
-| Total votes | — | 71 |
+| Total votes | — | 75 |
 
 **Tracked notebook portfolio (curated live + pipeline subset):**
 | # | Notebook | Votes | Status |
@@ -95,7 +95,7 @@
 | 30 | House Prices: Complete EDA + Feature Engineering | — | In progress |
 | 31 | Digit Recognizer: CNN from Scratch to 99%+ | — | In progress |
 
-**Note:** The table above is a curated portfolio subset, not the full live inventory. Kaggle sync currently reports 59 notebooks and 50 total notebook votes.
+**Note:** The table above is a curated portfolio subset, not the full live inventory (and its per-row vote counts and "Local (not pushed)" flags are stale — all educational notebooks are live as of 2026-07-15). The authoritative totals are the synced figures above: 74 notebooks, 75 votes.
 ### Datasets
 | Status | Target | Current |
 |--------|--------|---------|
@@ -104,8 +104,8 @@
 | Gold medals (50+ votes) | 5 | 0 |
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
-| Total votes | — | 54 |
-| Total downloads | — | 1897 |
+| Total votes | — | 55 |
+| Total downloads | — | 1920 |
 
 **Datasets on Kaggle:**
 | # | Dataset | Votes | Downloads | Usability |
@@ -133,7 +133,7 @@
 | Bronze medals (1+ vote) | — | 0 |
 
 **Strategy:** See ../discussions/engagement-strategy.md for 12-week plan
-**Total drafts:** 50 (being expanded)
+**Total drafts:** 70 ready in queue (0 posted — blocked on Playwright login capture)
 
 ---
 
