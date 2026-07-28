@@ -1,5 +1,9 @@
 # Kaggle ML Portfolio
 
+<p align="center">
+  <img src="docs/assets/hero.png" alt="kaggle preview" width="640">
+</p>
+
 [![Medal Ops Health](https://github.com/gr8monk3ys/kaggle/actions/workflows/medal-ops-health.yml/badge.svg)](https://github.com/gr8monk3ys/kaggle/actions/workflows/medal-ops-health.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
