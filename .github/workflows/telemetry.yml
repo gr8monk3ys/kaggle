@@ -2,11 +2,15 @@ name: Telemetry Snapshot
 
 on:
   schedule:
-    - cron: "30 9 * * *"   # daily, offset from medal-ops-health (10 9)
+    - cron: "30 9 * * 1"   # weekly (minute-safe policy; was daily)
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: telemetry-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   snapshot:

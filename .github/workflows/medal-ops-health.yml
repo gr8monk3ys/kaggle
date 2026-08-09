@@ -6,8 +6,8 @@ on:
       - main
       - push-sync
   schedule:
-    # Daily at 09:10 UTC.
-    - cron: "10 9 * * *"
+    # Weekly at 09:10 UTC Saturday (minute-safe policy; was daily).
+    - cron: "10 9 * * 6"
   workflow_dispatch:
     inputs:
       mode:
@@ -58,6 +58,10 @@ on:
 permissions:
   contents: read
   issues: write
+
+concurrency:
+  group: medal-ops-health-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   health-check:

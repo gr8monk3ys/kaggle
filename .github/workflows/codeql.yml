@@ -9,15 +9,9 @@ name: codeql
 # restored for the org/account; until then it is registered but skipped.
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
   schedule:
-    # Weekly run (Mondays 07:00 UTC) so scanning happens even without commits.
-    - cron: "0 7 * * 1"
+    - cron: "49 2 13 * *"  # monthly (minute-safe policy)
 
 permissions:
   # Required to upload CodeQL results to the code-scanning API.
@@ -26,6 +20,10 @@ permissions:
   actions: read
   # Required to check out the repository source.
   contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
