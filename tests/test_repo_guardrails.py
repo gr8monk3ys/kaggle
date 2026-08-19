@@ -79,7 +79,7 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     content = workflow.read_text(encoding="utf-8")
     assert 'name: Medal Ops Health' in content
     assert "schedule:" in content
-    assert 'cron: "10 9 * * *"' in content
+    assert 'cron: "10 9 * * 6"' in content
     assert "workflow_dispatch:" in content
     assert "mode:" in content
     assert "max_stale_days:" in content
@@ -112,7 +112,12 @@ def test_ci_workflow_runs_preflight_gate_and_script_smokes():
     assert workflow.exists()
     content = workflow.read_text(encoding="utf-8")
     assert "bash manage.sh preflight" in content
-    assert "--strict-doctor" in content
+    # PR CI must not enforce content-cadence SLAs (that is the scheduled
+    # health workflow's job) and must not pin --today: a frozen date plus a
+    # moving discussion queue once made every PR fail permanently.
+    assert "--max-overdue-scheduled" in content
+    preflight_step = content.split("bash manage.sh preflight")[1].split("- name:")[0]
+    assert "--today" not in preflight_step
     assert "--no-pytest" in content
     assert "pytest -q --cov=." in content
     assert "python -m kaggle_portfolio.datasets.dataset_explore_generator" in content

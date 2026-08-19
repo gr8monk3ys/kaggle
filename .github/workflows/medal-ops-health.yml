@@ -6,8 +6,8 @@ on:
       - main
       - push-sync
   schedule:
-    # Daily at 09:10 UTC.
-    - cron: "10 9 * * *"
+    # Weekly (Sat 09:10 UTC) — free-plan private-repo minutes are capped.
+    - cron: "10 9 * * 6"
   workflow_dispatch:
     inputs:
       mode:
@@ -44,30 +44,36 @@ on:
         required: true
         default: "1.0"
         type: string
+      # Draft-SLA caps are relaxed while Phase 2 posting is gated on a host —
+      # no cadence exists to enforce yet. Re-tighten (0 / 7) when posting starts.
       max_overdue_scheduled:
         description: "maximum overdue scheduled drafts"
         required: true
-        default: "0"
+        default: "999"
         type: string
       max_days_until_next_post:
         description: "maximum days allowed until next scheduled discussion post"
         required: true
-        default: "7"
+        default: "999"
         type: string
 
 permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: medal-ops-health
+  cancel-in-progress: false
+
 jobs:
   health-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
 
@@ -111,8 +117,8 @@ jobs:
           MIN_DATASET_USABILITY_SCORE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.min_dataset_usability_score || '85' }}
           LIVE_ALERT_UNDER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.live_alert_under || '0.8' }}
           LIVE_TARGET_RATING: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.live_target_rating || '1.0' }}
-          MAX_OVERDUE_SCHEDULED: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_overdue_scheduled || '0' }}
-          MAX_DAYS_UNTIL_NEXT_POST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_days_until_next_post || '7' }}
+          MAX_OVERDUE_SCHEDULED: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_overdue_scheduled || '999' }}
+          MAX_DAYS_UNTIL_NEXT_POST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_days_until_next_post || '999' }}
         run: |
           set -euo pipefail
           MODE="${FORCE_MODE}"
