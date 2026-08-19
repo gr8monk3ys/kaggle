@@ -1,6 +1,6 @@
-# ML/DS Interview Questions & Answers (500+)
+# ML/DS Interview Questions & Answers (Hand-Curated)
 
-> 500+ ML/DS interview Q&A with 10 categories and 3 difficulty levels
+> 119 hand-written ML/DS interview Q&A across 10 categories
 
 **License:** GPL-3.0  
 
@@ -8,57 +8,53 @@
 
 ## Description
 
-502 machine learning and data science interview questions with expert-level answers (50–200 words each), tagged across 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Three difficulty levels (easy/medium/hard) and company_tags linking questions to Google, Meta, Amazon, Microsoft, Apple, and others.
+119 hand-written machine learning and data science interview questions with hand-written answers (roughly 45-85 words each), organized into 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Each question carries a hand-assigned difficulty label (easy/medium/hard) and fine-grained topic tags.
 
-Built for: interview preparation and study, LLM fine-tuning on technical Q&A, text classification by category or difficulty, RAG system prototyping with a structured knowledge base, and embedding similarity search. The company_tags field enables targeted preparation for specific employers.
+Every row was written by a person: there is no templated, scraped, or model-generated content, and no artificially inflated question count. Earlier versions of this dataset padded the bank to 500+ rows with template-generated questions sharing boilerplate answers and randomly assigned difficulty/company labels; those rows have been removed.
 
-Notable features: answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category; the mix of conceptual, coding, and system design questions reflects real interview breadth. All content is synthetic.
+Built for: interview preparation and study, text classification by category (the meaningful label for modeling), RAG system prototyping with a small structured knowledge base, and embedding similarity search. answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category. Note the dataset is small (119 rows), so treat any classification experiment as a toy/teaching exercise rather than a benchmark.
 
 ## Tags
 
-`education`, `nlp`, `deep learning`, `python`, `sql`
+`education`, `nlp`, `deep learning`, `python`, `sql`, `data analytics`, `intermediate`, `data cleaning`
 
 ## Authors
 
-- **Lorenzo Scaturchio**: Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping.
+- **Lorenzo Scaturchio**: Independent ML engineer building education-first datasets for reproducible benchmarking and prototyping.
 
 ## Coverage
 
 - Temporal: 2020-01-01 to 2025-12-31
-- Geospatial: Global (synthetic)
+- Geospatial: Global
 
 ## DOI and Citations
 
 - DOI: Not assigned
-- Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (500+). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
+- Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (Hand-Curated). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
 
 ## Provenance
 
-- Source: Synthetic data generation scripts in this repository
-- Source: Public domain schemas and domain conventions for educational simulation
-- Collection methodology: Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data.
+- Source: Hand-written questions and answers maintained in this repository (create_dataset.py)
+- Collection methodology: All questions, answers, difficulty labels, and topic tags were written by hand and reviewed in the generator script; the script only assembles and deterministically shuffles the rows.
 
 ## ml_interview_questions.csv
 
-**Rows:** 502  |  **Columns:** 8  |  **Size:** 241.5 KB
+**Rows:** 119  |  **Columns:** 7  |  **Size:** 71.2 KB
 
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
-| `id` | string | 0.0% | 502 | `aa928e5348`, `e940376e2c`, `a0d8ce2738` |
-| `question` | string | 0.0% | 502 | `Describe the ConvNeXt architecture and its key innovations.`, `How would you design a medical diagnosis support system?`, `Explain neural network pruning in deep learning.` |
-| `answer` | string | 0.0% | 362 | — |
-| `category` | string | 0.0% | 10 | `Python`, `Deep Learning`, `System Design` |
-| `difficulty` | string | 0.0% | 3 | `medium`, `hard`, `easy` |
-| `company_tags` | string | 0.0% | 471 | `Amazon|Databricks`, `OpenAI|Meta|Databricks|Robinhood`, `Bloomberg|Google` |
-| `topic_tags` | string | 0.0% | 241 | `architecture|deep learning`, `data augmentation|training|regularization`, `system design|production` |
-| `answer_length` | integer | 0.0% | 65 | `39`, `62`, `42` |
+| `id` | string | 0.0% | 119 | `03ab89d94d`, `520c63abb2`, `d8282bb3be` |
+| `question` | string | 0.0% | 119 | `Explain diffusion models and how they generate images.`, `What is the difference between mean, median, and mode?`, `What is batch normalization?` |
+| `answer` | string | 0.0% | 119 | — |
+| `category` | string | 0.0% | 10 | `Statistics`, `Deep Learning`, `SQL` |
+| `difficulty` | string | 0.0% | 3 | `medium`, `easy`, `hard` |
+| `topic_tags` | string | 0.0% | 119 | `generative models|diffusion|image generation`, `joins|SQL basics`, `descriptive statistics|central tendency` |
+| `answer_length` | integer | 0.0% | 36 | `70`, `66`, `54` |
 
 ## Suggested Use Cases
 
 - Text classification (TF-IDF, BERT embeddings)
 - Named entity recognition or topic modeling
-- Salary prediction (regression)
-- Job category classification (multi-class)
 
 ---
 *Generated by `dataset_optimizer.py` — dataset_optimizer.py*

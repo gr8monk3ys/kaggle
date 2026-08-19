@@ -72,13 +72,13 @@ Use this when Kaggle asks for `Sources`, `Collection methodology`, and column de
 - Resource file: `mental_health_tech.csv`
 - Field count: `27`
 
-### ML/DS Interview Questions & Answers (500+)
+### ML/DS Interview Questions & Answers (Hand-Curated)
 
 - Dataset ref: `lorenzoscaturchio/ml-interview-qa`
 - Metadata file: `datasets/ml-interview-qa/dataset-metadata.json`
 - Column descriptors copy from: `resources[0].schema.fields`
 - Resource file: `ml_interview_questions.csv`
-- Field count: `8`
+- Field count: `7`
 
 ### Programming Language Benchmarks Dataset
 
