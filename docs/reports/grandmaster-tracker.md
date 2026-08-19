@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-07-15
 
 ---
 
@@ -37,30 +37,28 @@
 | Gold medals | 5 | 0 |
 | Silver medals | — | 0 |
 | Bronze medals | — | 0 |
-| Entered | — | 12 |
+| Entered | — | 13 |
 
 **Active competitions to enter:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
 |-------------|-------|----------|-----------------|----------|
-| Orbit Wars | 4,318 | Jun 23, 2026 | Hard (large field) | Fast baseline, iterate on leaderboard |
-| Hull Tactical Market | 3,677 | Jun 25, 2026 | Hard (large field) | Ensemble tree models |
-| Playground Series S6E6 | 1,368 | Jun 30, 2026 | Medium (playground) | GBM ensemble tabular pipeline |
-| NeuroGolf 2026 | 1,844 | Jul 15, 2026 | Medium | Feature engineering + GBM baseline |
-| Rogii Wellbore Geology | 2,819 | Aug 5, 2026 | Hard (large field) | Sequence features + GBM baseline |
-| AI Agent Security: Tool Attacks | 19 | Sep 1, 2026 | Easiest (small field) | Prompt-attack detection pipeline |
-| ARC Prize 2026 (ARC-AGI-2) | 819 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
-| ARC Prize 2026 (ARC-AGI-3) | 1,160 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
+| Playground Series S6E7 | 1,480 | Jul 31, 2026 | Medium (playground) | Reuse S6E6 PS-playbook (augment + 4-model stack) |
+| Autonomous Agent Prediction (beta) | 102 | Aug 6, 2026 | Easier (small field) | Fast baseline, iterate |
+| Rogii Wellbore Geology | 4,769 | Aug 5, 2026 | Hard (large field) | Sequence features + GBM baseline |
+| AI Agent Security: Tool Attacks | 1,794 | Sep 1, 2026 | Medium (was 19 teams in June, now 1,794) | Prompt-attack detection pipeline |
+| ARC Prize 2026 (ARC-AGI-2) | 1,132 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
+| ARC Prize 2026 (ARC-AGI-3) | 1,704 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
 
-**Priority: AI Agent Security (19 teams = best medal odds by far)**
+**Priority: AI Agent Security (scout score 85) + Playground S6E7 (PS-playbook ready to reuse). NeuroGolf dropped — ARC-style tasks, 3,002 teams, 3 days left.**
 ### Notebooks
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 70 (on Kaggle) |
+| Total notebooks | 30+ | 74 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 3 |
-| Total votes | — | 67 |
+| Total votes | — | 75 |
 
 **Tracked notebook portfolio (curated live + pipeline subset):**
 | # | Notebook | Votes | Status |
@@ -97,7 +95,7 @@
 | 30 | House Prices: Complete EDA + Feature Engineering | — | In progress |
 | 31 | Digit Recognizer: CNN from Scratch to 99%+ | — | In progress |
 
-**Note:** The table above is a curated portfolio subset, not the full live inventory. Kaggle sync currently reports 59 notebooks and 50 total notebook votes.
+**Note:** The table above is a curated portfolio subset, not the full live inventory (and its per-row vote counts and "Local (not pushed)" flags are stale — all educational notebooks are live as of 2026-07-15). The authoritative totals are the synced figures above: 74 notebooks, 75 votes.
 ### Datasets
 | Status | Target | Current |
 |--------|--------|---------|
@@ -106,8 +104,8 @@
 | Gold medals (50+ votes) | 5 | 0 |
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
-| Total votes | — | 54 |
-| Total downloads | — | 1750 |
+| Total votes | — | 55 |
+| Total downloads | — | 1920 |
 
 **Datasets on Kaggle:**
 | # | Dataset | Votes | Downloads | Usability |
@@ -135,7 +133,7 @@
 | Bronze medals (1+ vote) | — | 0 |
 
 **Strategy:** See ../discussions/engagement-strategy.md for 12-week plan
-**Total drafts:** 50 (being expanded)
+**Total drafts:** 70 ready in queue (0 posted — blocked on Playwright login capture)
 
 ---
 

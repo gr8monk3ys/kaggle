@@ -14,6 +14,7 @@ kaggle.json
 __pycache__/
 *.py[cod]
 .venv/
+.coverage
 catboost_info/
 
 # Jupyter
