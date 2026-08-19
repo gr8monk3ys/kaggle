@@ -45,15 +45,6 @@ cells.append(md("""## Objective & Evaluation Strategy
 **Hypothesis:** lagged demand, holiday context, and exogenous oil signals should explain most forecast lift because they capture recurring seasonal behavior.
 """))
 
-cells.append(md("""## March 2026 Refresh
-
-- Tightened the opening section so the first screen explains the full forecasting plan immediately.
-- Added a compact leaderboard playbook to show which feature blocks usually move RMSLE the most.
-- Linked the competition forum for faster iteration once the notebook is live.
-
-**Competition discussion:** [Store Sales forum](https://www.kaggle.com/competitions/store-sales-time-series-forecasting/discussion)
-"""))
-
 cells.append(md("""## Leaderboard Playbook
 
 | Lever | Why it matters for RMSLE | Used here |
@@ -63,6 +54,8 @@ cells.append(md("""## Leaderboard Playbook
 | Holiday context | Prevent false spikes and dips around Ecuador holiday shifts | Yes |
 | Oil price | Adds macro context for broad spending behavior | Yes |
 | Temporal validation | Keeps local gains closer to what the Kaggle leaderboard rewards | Yes |
+
+**Competition discussion:** [Store Sales forum](https://www.kaggle.com/competitions/store-sales-time-series-forecasting/discussion)
 """))
 
 cells.append(md("## 1. Setup & Data Loading"))

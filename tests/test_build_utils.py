@@ -138,8 +138,11 @@ def _build_scripts_using_imports():
     excluded = {"datasets/mental-health-tech", "datasets/spotify-tracks"}
     scripts = []
     for p in sorted(ROOT.rglob("build_notebook.py")):
-        rel = str(p.relative_to(ROOT).parent)
-        if rel not in excluded:
+        rel_path = p.relative_to(ROOT)
+        # Skip hidden dirs — .claude/worktrees holds agent worktree copies of the repo.
+        if any(part.startswith(".") for part in rel_path.parts):
+            continue
+        if str(rel_path.parent) not in excluded:
             scripts.append(p)
     return scripts
 

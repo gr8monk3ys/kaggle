@@ -679,13 +679,14 @@ for i in range(len(df)):
 
 You could use:
 ```python
-# Vectorized version
-result = df.apply(process, axis=1)
-# Or even better with native pandas:
-result = df['column'].map(process_func)
+# Truly vectorized: operate on whole columns at once
+result = df['a'] * df['b'] + df['c'].clip(lower=0)
+# If process() can't be expressed column-wise, np.where / np.select
+# often covers conditional row logic without a Python-level loop:
+result = np.where(df['a'] > 0, df['b'], df['c'])
 ```
 
-This should be [X]x faster because [explanation of why vectorized operations are faster in pandas/numpy]. I tested this on [similar dataset] and saw [specific speedup].
+(Careful: `df.apply(func, axis=1)` is *not* vectorized — it is the same Python-level row loop with extra overhead, and suggesting it usually earns a correction.) Measure before claiming a speedup: `%timeit` both versions on the actual data and report the real numbers.
 ```
 
 ---
