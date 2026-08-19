@@ -9,7 +9,7 @@
     "deadline": "2026-03-12",
     "category": "Competition Update",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-06-19T14:00:00+00:00",
+    "scheduled_after": "2026-07-17T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -24,7 +24,7 @@
     "deadline": "2026-03-13",
     "category": "Competition Update",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-06-22T14:00:00+00:00",
+    "scheduled_after": "2026-07-20T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -39,7 +39,7 @@
     "deadline": "2026-03-14",
     "category": "Competition Update",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-06-24T14:00:00+00:00",
+    "scheduled_after": "2026-07-22T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -69,7 +69,7 @@
     "deadline": "2026-06-30",
     "category": "EDA Findings",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-06-26T14:00:00+00:00",
+    "scheduled_after": "2026-07-24T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -84,7 +84,7 @@
     "deadline": "2026-06-30",
     "category": "Technique Tutorial",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-06-29T14:00:00+00:00",
+    "scheduled_after": "2026-07-27T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -99,7 +99,7 @@
     "deadline": null,
     "category": "EDA Findings",
     "expected_medal": "Silver",
-    "scheduled_after": "2026-07-01T14:00:00+00:00",
+    "scheduled_after": "2026-07-29T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -114,7 +114,7 @@
     "deadline": "2026-03-16",
     "category": "Validation Strategy",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-07-03T14:00:00+00:00",
+    "scheduled_after": "2026-07-31T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -129,7 +129,7 @@
     "deadline": "2026-03-18",
     "category": "Dataset Spotlight",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-07-06T14:00:00+00:00",
+    "scheduled_after": "2026-08-03T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -144,7 +144,7 @@
     "deadline": "2026-06-30",
     "category": "Validation Strategy",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-07-08T14:00:00+00:00",
+    "scheduled_after": "2026-08-05T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -196,7 +196,7 @@
   },
   {
     "id": "draft_001",
-    "title": "5 Feature Engineering Tricks That Won Me Bronze",
+    "title": "5 Feature Engineering Tricks That Move Tabular Scores",
     "forum_url": "https://www.kaggle.com/discussions/getting-started",
     "body_section": "Draft 1",
     "body_file": "discussion-drafts.md",

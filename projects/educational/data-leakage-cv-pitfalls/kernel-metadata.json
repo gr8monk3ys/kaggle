@@ -1,0 +1,14 @@
+{
+  "id": "lorenzoscaturchio/5-ways-your-cross-validation-lies-to-you",
+  "title": "5 Ways Your Cross-Validation Lies to You",
+  "code_file": "data_leakage_cv_pitfalls.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["data leakage", "cross validation", "model validation", "tabular", "intermediate"],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

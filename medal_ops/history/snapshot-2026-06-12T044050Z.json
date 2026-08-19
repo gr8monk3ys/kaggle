@@ -1,0 +1,129 @@
+{
+  "generated_on": "2026-06-11",
+  "tracker_last_updated": "2026-06-11",
+  "tracker_stale_days": 0,
+  "categories": {
+    "competitions": {
+      "tier": "Novice",
+      "gold": 0,
+      "silver": 0,
+      "bronze": 0,
+      "entered": 12,
+      "gold_goal": 5,
+      "gold_gap": 5,
+      "expert_bronze_goal": 2,
+      "expert_bronze_gap": 2
+    },
+    "notebooks": {
+      "tier": "Novice",
+      "total_notebooks": 70,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 3,
+      "total_votes": 67,
+      "gold_goal": 15,
+      "gold_gap": 15,
+      "expert_bronze_goal": 5,
+      "expert_bronze_gap": 2
+    },
+    "datasets": {
+      "tier": "Novice",
+      "total_datasets": 12,
+      "gold": 0,
+      "silver": 1,
+      "bronze": 1,
+      "total_votes": 54,
+      "gold_goal": 5,
+      "gold_gap": 5,
+      "expert_bronze_goal": 3,
+      "expert_bronze_gap": 2
+    },
+    "discussion": {
+      "tier": "Novice",
+      "total_posts": 0,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 0,
+      "gold_goal": 50,
+      "gold_gap": 50,
+      "total_goal": 500,
+      "total_gap": 500,
+      "expert_bronze_goal": 50,
+      "expert_bronze_gap": 50
+    }
+  },
+  "active_competitions": [
+    {
+      "competition": "Orbit Wars",
+      "deadline_raw": "Jun 23, 2026",
+      "deadline_date": "2026-06-23",
+      "days_to_deadline": 12,
+      "teams": "4,318",
+      "difficulty": "Hard (large field)",
+      "strategy": "Fast baseline, iterate on leaderboard"
+    },
+    {
+      "competition": "Hull Tactical Market",
+      "deadline_raw": "Jun 25, 2026",
+      "deadline_date": "2026-06-25",
+      "days_to_deadline": 14,
+      "teams": "3,677",
+      "difficulty": "Hard (large field)",
+      "strategy": "Ensemble tree models"
+    },
+    {
+      "competition": "Playground Series S6E6",
+      "deadline_raw": "Jun 30, 2026",
+      "deadline_date": "2026-06-30",
+      "days_to_deadline": 19,
+      "teams": "1,368",
+      "difficulty": "Medium (playground)",
+      "strategy": "GBM ensemble tabular pipeline"
+    },
+    {
+      "competition": "NeuroGolf 2026",
+      "deadline_raw": "Jul 15, 2026",
+      "deadline_date": "2026-07-15",
+      "days_to_deadline": 34,
+      "teams": "1,844",
+      "difficulty": "Medium",
+      "strategy": "Feature engineering + GBM baseline"
+    },
+    {
+      "competition": "Rogii Wellbore Geology",
+      "deadline_raw": "Aug 5, 2026",
+      "deadline_date": "2026-08-05",
+      "days_to_deadline": 55,
+      "teams": "2,819",
+      "difficulty": "Hard (large field)",
+      "strategy": "Sequence features + GBM baseline"
+    },
+    {
+      "competition": "AI Agent Security: Tool Attacks",
+      "deadline_raw": "Sep 1, 2026",
+      "deadline_date": "2026-09-01",
+      "days_to_deadline": 82,
+      "teams": "19",
+      "difficulty": "Easiest (small field)",
+      "strategy": "Prompt-attack detection pipeline"
+    },
+    {
+      "competition": "ARC Prize 2026 (ARC-AGI-2)",
+      "deadline_raw": "Nov 2, 2026",
+      "deadline_date": "2026-11-02",
+      "days_to_deadline": 144,
+      "teams": "819",
+      "difficulty": "Very Hard (reasoning)",
+      "strategy": "Program synthesis + LLM hybrid"
+    },
+    {
+      "competition": "ARC Prize 2026 (ARC-AGI-3)",
+      "deadline_raw": "Nov 2, 2026",
+      "deadline_date": "2026-11-02",
+      "days_to_deadline": 144,
+      "teams": "1,160",
+      "difficulty": "Very Hard (reasoning)",
+      "strategy": "Program synthesis + LLM hybrid"
+    }
+  ]
+}
