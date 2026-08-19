@@ -1,0 +1,14 @@
+{
+  "id": "lorenzoscaturchio/polars-on-kaggle-the-complete-speed-guide",
+  "title": "Polars on Kaggle: The Complete Speed Guide",
+  "code_file": "polars_speed_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["polars", "pandas", "data analytics", "tabular", "beginner"],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}
