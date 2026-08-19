@@ -220,8 +220,28 @@ cells.append(code(
 cells.append(md(
 'The query named 3 of the table\'s 7 columns, so DuckDB read 3 columns off disk,\n'
 'not 7 — and only the row-groups whose `country` statistics permit a `US` match.\n'
-'On a real competition file of tens of GB, this is the difference between an\n'
-'instant answer and an out-of-memory kernel crash. We quantify it next.'
+'You do not have to take that on faith: `EXPLAIN` prints the physical plan, and\n'
+'the pushdown is visible in it.'
+))
+
+cells.append(code(
+'plan = duckdb.sql(f"""\n'
+'    EXPLAIN SELECT category, SUM(price * quantity) AS us_revenue\n'
+'    FROM read_parquet(\'{PARQUET}\')\n'
+'    WHERE country = \'US\'\n'
+'    GROUP BY category\n'
+'""").fetchall()\n'
+'\n'
+'print(plan[0][1])'
+))
+
+cells.append(md(
+'Read the plan from the bottom up: the `PARQUET_SCAN` node lists only the\n'
+'columns the query needs, with the `country=US` filter attached directly to the\n'
+'scan — the filter runs *while reading the file*, not on a loaded table\n'
+'afterwards. That placement is the entire out-of-core story, and on a real\n'
+'competition file of tens of GB it is the difference between an instant answer\n'
+'and an out-of-memory kernel crash. We quantify it next.'
 ))
 
 # ── Cell 8: §5 benchmark method ───────────────────────────────────────────────
@@ -436,9 +456,12 @@ cells.append(md(
 'window). The unifying rule: **DuckDB wins when the query lets it avoid work** —\n'
 'skipping unread Parquet columns and row-groups, or running a set-based window\n'
 'in one pass. When the data is already a DataFrame in RAM and the operation is\n'
-'something pandas is tuned for, the SQL round-trip is pure overhead. That split —\n'
-'not a blanket "SQL is faster" — is the takeaway. Fork this notebook and your\n'
-'bars will differ in magnitude but not in shape.'
+'something pandas is tuned for, the SQL round-trip is pure overhead. Underneath\n'
+'both wins and losses sits one trade-off: SQL buys pushdown and streaming at the\n'
+'cost of a serialization boundary with Python, so the more rows that must cross\n'
+'that boundary, the faster the advantage erodes. That split — not a blanket "SQL\n'
+'is faster" — is the takeaway. Fork this notebook and your bars will differ in\n'
+'magnitude but not in shape.'
 ))
 
 # ── Cell 11: §8 larger than RAM ───────────────────────────────────────────────
@@ -562,7 +585,31 @@ cells.append(md(
 '  rest untouched.\n'
 '- **`GROUP BY ALL`** — group by every non-aggregated column automatically.\n'
 '- **`COLUMNS(\'price_.*\')`** — apply an aggregate across all columns matching a\n'
-'  regex.'
+'  regex.\n'
+'\n'
+'One caveat as you adopt these: they are DuckDB dialect, not portable SQL — fine\n'
+'inside a kernel, worth flagging before pasting a query into a shared warehouse.\n'
+'They are also easy to verify live, so let us run three of them on our table:'
+))
+
+cells.append(code(
+'print("-- GROUP BY ALL: no more repeating the SELECT columns --")\n'
+'print(con.execute("""\n'
+'    SELECT category, country, ROUND(SUM(price * quantity), 0) AS rev\n'
+'    FROM pdf WHERE country IN (\'US\', \'GB\')\n'
+'    GROUP BY ALL ORDER BY rev DESC LIMIT 5\n'
+'""").df().to_string(index=False))\n'
+'\n'
+'print("\\n-- EXCLUDE + REPLACE: tweak one column, keep the rest --")\n'
+'print(con.execute("""\n'
+'    SELECT * EXCLUDE (ts, user_id) REPLACE (ROUND(price * 1.1, 2) AS price)\n'
+'    FROM pdf LIMIT 3\n'
+'""").df().to_string(index=False))\n'
+'\n'
+'print("\\n-- COLUMNS() regex: one aggregate over every matching column --")\n'
+'print(con.execute("""\n'
+'    SELECT MAX(COLUMNS(\'(price|quantity)\')) FROM pdf\n'
+'""").df().to_string(index=False))'
 ))
 
 # ── Cell 14: §11 conclusion ───────────────────────────────────────────────────
@@ -581,10 +628,11 @@ cells.append(md(
 '4. Aggregate inside SQL and return a *small* result; do not materialise millions\n'
 '   of joined rows back to Python and expect a speedup.\n'
 '\n'
-'**Next experiments to try on your own**\n'
+'**Next steps — experiments to try on your own**\n'
 '\n'
 '- Point `read_parquet` at a real multi-GB competition dataset and time a\n'
-'   feature aggregation you currently do in chunked pandas.\n'
+'   feature aggregation you currently do in chunked pandas. This is the\n'
+'   recommended first experiment, because it is where the payoff is largest.\n'
 '- Compare `.arrow()` versus `.df()` return time on a wide result — the zero-copy\n'
 '   Arrow path can matter when the output is large.\n'
 '- Rebuild one of your pandas feature pipelines as a single SQL CTE chain and\n'

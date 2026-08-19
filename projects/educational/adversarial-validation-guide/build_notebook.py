@@ -158,7 +158,27 @@ cells.append(code(
 cells.append(md(
 'The means table already whispers the answer for `f0`, but real datasets have\n'
 'dozens of features and shifts hide in variance, correlations, and interactions\n'
-'that a means table cannot show. Adversarial validation finds them all at once.'
+'that a means table cannot show. Look at the two shifted features directly:'
+))
+
+cells.append(code(
+'fig, axes = plt.subplots(1, 2, figsize=(10, 3.5), sharey=True)\n'
+'for ax, feat in zip(axes, ["f0", "f1"]):\n'
+'    ax.hist(train[feat], bins=60, alpha=0.55, color="#2E7CD6", label="train", density=True)\n'
+'    ax.hist(test[feat],  bins=60, alpha=0.55, color="#D64550", label="test",  density=True)\n'
+'    ax.set_title(f"{feat}: train vs test", loc="left")\n'
+'    ax.spines[["top", "right"]].set_visible(False)\n'
+'axes[0].legend(frameon=False)\n'
+'plt.tight_layout(); plt.show()'
+))
+
+cells.append(md(
+'Two different kinds of drift, side by side: `f0` keeps its shape but slides\n'
+'right (mean shift), while `f1` keeps its centre and fattens its tails (variance\n'
+'shift). The second observation is the important one — variance drift barely\n'
+'registers in a means table, which is why summary statistics alone make an\n'
+'unreliable detector and we want a classifier that sees the whole joint\n'
+'distribution. Adversarial validation finds both kinds at once.'
 ))
 
 # ── Cell 6: §4 core test ──────────────────────────────────────────────────────
@@ -186,7 +206,30 @@ cells.append(md(
 'than chance, confirming the distributions differ. As a rough field guide:\n'
 '**~0.5** is ideal (safe to trust random CV), **0.6-0.8** means meaningful shift\n'
 'worth handling, and **>0.9** means train and test are nearly disjoint — random\n'
-'CV will badly mislead you.'
+'CV will badly mislead you.\n'
+'\n'
+'Since we control the injected shift, we can also map how the score responds to\n'
+'severity — useful calibration for reading the number on real data:'
+))
+
+cells.append(code(
+'for s in [0.0, 0.25, 0.5, 1.0, 2.0]:\n'
+'    test_s = pd.DataFrame(make(n, s), columns=cols)\n'
+'    X_s = pd.concat([train, test_s], ignore_index=True)\n'
+'    lbl = np.r_[np.zeros(len(train)), np.ones(len(test_s))]\n'
+'    auc_s = cross_val_score(\n'
+'        RandomForestClassifier(n_estimators=100, random_state=SEED, n_jobs=-1),\n'
+'        X_s, lbl, cv=3, scoring="roc_auc").mean()\n'
+'    print(f"injected shift = {s:4.2f}  ->  adversarial AUC = {auc_s:.3f}")'
+))
+
+cells.append(md(
+'The response is steep and monotonic: even a quarter-strength shift lifts the\n'
+'AUC clearly off 0.5, and by shift 2.0 the sets are almost separable. Two\n'
+'practical consequences. First, the test is *sensitive* — an elevated score is\n'
+'worth acting on long before it approaches 1.0. Second, the AUC ranks severity\n'
+'but is not a percentage of drifted rows; use it to compare datasets, features,\n'
+'or preprocessing variants against each other, not as an absolute quantity.'
 ))
 
 # ── Cell 7: §5 control ────────────────────────────────────────────────────────
@@ -251,7 +294,32 @@ cells.append(md(
 'your\n'
 'to-do: each high-importance feature is either genuinely predictive drift you\n'
 'must handle, or an artefact (an ID, a timestamp, a row-order proxy) that should\n'
-'not have been a feature at all.'
+'not have been a feature at all.\n'
+'\n'
+'Importances from one multivariate model can be shared out oddly between\n'
+'correlated features, so it is worth cross-checking with the simplest possible\n'
+'view — an adversarial AUC per feature, one column at a time:'
+))
+
+cells.append(code(
+'single = {}\n'
+'for f in cols:\n'
+'    single[f] = cross_val_score(\n'
+'        RandomForestClassifier(n_estimators=60, random_state=SEED, n_jobs=-1),\n'
+'        X_all[[f]], is_test, cv=3, scoring="roc_auc").mean()\n'
+'\n'
+'single = pd.Series(single).sort_values(ascending=False)\n'
+'print("single-feature adversarial AUC (0.5 = no drift):")\n'
+'print(single.round(3).to_string())'
+))
+
+cells.append(md(
+'The single-feature view agrees with the importances and adds a nuance: `f0`\n'
+'separates strongly on its own, while `f1` scores lower because a variance\n'
+'change moves the tails more than the bulk, so univariate separability\n'
+'understates it. The disagreement pattern is the diagnostic to remember — if\n'
+'every per-feature AUC sits near 0.5 while the full-model AUC is high, the drift\n'
+'lives in feature *interactions*, and no single-column fix will remove it.'
 ))
 
 # ── Cell 9: §7 using it ───────────────────────────────────────────────────────
@@ -266,13 +334,39 @@ cells.append(md(
 'We attach a target that depends on the shifted features (so the choice of\n'
 'validation rows genuinely matters), then compare a **random** holdout against an\n'
 '**adversarial** holdout by how well each predicts the true error on the real\n'
-'test set.'
+'test set. First, the raw material — the distribution of test-likeness across\n'
+'training rows:'
 ))
 
 cells.append(code(
 '# P(test) for each training row, from the adversarial model\n'
 'p_test = adv_model.predict_proba(train[cols])[:, 1]\n'
 '\n'
+'cutoff = np.quantile(p_test, 0.75)\n'
+'fig, ax = plt.subplots(figsize=(8, 3.2))\n'
+'ax.hist(p_test, bins=50, color="#2E7CD6", zorder=3)\n'
+'ax.axvline(cutoff, color="#D64550", linestyle="--",\n'
+'           label=f"top-25% cutoff ({cutoff:.2f}) -> validation candidates")\n'
+'ax.set_xlabel("P(row looks like test)"); ax.set_ylabel("training rows")\n'
+'ax.set_title("Test-likeness of the training rows", loc="left")\n'
+'ax.legend(frameon=False)\n'
+'ax.spines[["top", "right"]].set_visible(False)\n'
+'ax.grid(axis="y", color="#DDDDDD", linewidth=0.6, zorder=0)\n'
+'plt.tight_layout(); plt.show()\n'
+'\n'
+'print(f"P(test) quartiles: {np.quantile(p_test, [0.25, 0.5, 0.75]).round(3)}")'
+))
+
+cells.append(md(
+'A broad, single-mode spread: most training rows are somewhat test-like and a\n'
+'tail is very test-like — which is what a moderate mean/variance shift should\n'
+'produce. If this histogram were bimodal, with one spike near 0 and one near 1,\n'
+'that would say the test set contains a sub-population training barely covers,\n'
+'and no reshuffling of training rows could fully fix validation. The shape is\n'
+'worth a look before trusting any downstream remedy. Now the payoff experiment:'
+))
+
+cells.append(code(
 '# a target that leans on the drifted features\n'
 'def target(df, rng_seed):\n'
 '    noise = np.random.RandomState(rng_seed).randn(len(df)) * 0.5\n'
@@ -336,7 +430,56 @@ cells.append(md(
 '  period, use time-based splits; if it is new entities, use grouped splits.\n'
 '\n'
 'What you should *not* do is tune hyperparameters against a random-CV score you\n'
-'now know is measuring the wrong distribution.'
+'now know is measuring the wrong distribution.\n'
+'\n'
+'The reweighting remedy is two lines, so let us run it rather than describe it:'
+))
+
+cells.append(code(
+'# Remedy in action: weight each training row by its odds of being test-like\n'
+'w = p_test / np.clip(1 - p_test, 1e-3, None)   # importance weights P(test)/P(train)\n'
+'w = np.clip(w / w.mean(), 0.1, 10.0)           # normalise, clip extreme weights\n'
+'\n'
+'m_plain    = Ridge().fit(train[cols], y_train)\n'
+'m_weighted = Ridge().fit(train[cols], y_train, sample_weight=w)\n'
+'\n'
+'print(f"weight range after clipping: {w.min():.2f} - {w.max():.2f}")\n'
+'print(f"test RMSE, unweighted training        = {rmse(y_test, m_plain.predict(test[cols])):.3f}")\n'
+'print(f"test RMSE, importance-weighted        = {rmse(y_test, m_weighted.predict(test[cols])):.3f}")'
+))
+
+cells.append(md(
+'The two scores land close together — an honest outcome worth understanding. The\n'
+'relationship we planted is linear and identical in both distributions, so a\n'
+'correctly-specified model gains nothing from reweighting; the remedy matters\n'
+'when the model is flexible enough to fit region-specific structure and the\n'
+'test-like region is under-represented in training. Note the clipping step:\n'
+'importance weighting carries a bias-variance trade-off, and without the clip a\n'
+'handful of enormous-weight rows can dominate the fit. One further caveat before\n'
+'reaching for it on a real competition — if the adversarial AUC is very high\n'
+'(>0.9), the weights concentrate on a sliver of rows and effectively shrink your\n'
+'training set. Fixing the validation split, as in Section 7, is usually the\n'
+'better first move.\n'
+'\n'
+'Finally, the whole diagnostic packaged as one function you can paste into any\n'
+'competition pipeline:'
+))
+
+cells.append(code(
+'def adversarial_validation(train_df, test_df, features=None, n_estimators=200, seed=SEED):\n'
+'    """Return (drift AUC, per-feature importances, P(test) per training row)."""\n'
+'    feats = list(features) if features is not None else list(train_df.columns)\n'
+'    X = pd.concat([train_df[feats], test_df[feats]], ignore_index=True)\n'
+'    lbl = np.r_[np.zeros(len(train_df)), np.ones(len(test_df))]\n'
+'    model = RandomForestClassifier(n_estimators=n_estimators, random_state=seed, n_jobs=-1)\n'
+'    auc = cross_val_score(model, X, lbl, cv=5, scoring="roc_auc").mean()\n'
+'    model.fit(X, lbl)\n'
+'    imp = pd.Series(model.feature_importances_, index=feats).sort_values(ascending=False)\n'
+'    return auc, imp, model.predict_proba(train_df[feats])[:, 1]\n'
+'\n'
+'auc_chk, imp_chk, p_chk = adversarial_validation(train, test)\n'
+'print(f"reusable function, sanity check: AUC = {auc_chk:.3f} (matches Section 4)")\n'
+'print(f"top drifted features: {list(imp_chk.index[:2])}")'
 ))
 
 # ── Cell 11: §9 conclusion ────────────────────────────────────────────────────
@@ -364,6 +507,20 @@ cells.append(md(
 '- [ ] Top drifted features — genuine signal, or leaky IDs/timestamps to drop?\n'
 '- [ ] Is your validation fold built from test-like rows, or just random?\n'
 '- [ ] Does the resulting local score finally move with the leaderboard?\n'
+'\n'
+'**Next steps to try on your own data**\n'
+'\n'
+'- Run `adversarial_validation()` on your current competition before the next\n'
+'  submission — ten minutes of compute either buys trust in random CV or tells\n'
+'  you exactly what to fix. If the AUC is elevated, I recommend re-validating\n'
+'  with a test-like holdout first; it is the cheapest change that can improve\n'
+'  the CV-to-leaderboard correlation.\n'
+'- Re-run the severity ladder on time-sliced halves of your *training* data to\n'
+'  see whether drift is growing over time (a sign the test period continues a\n'
+'  trend your CV ignores).\n'
+'- Swap the RandomForest for a gradient-boosted model and compare the drift\n'
+'  AUCs — agreement between two model families is strong evidence the shift is\n'
+'  real and not one model\'s quirk.\n'
 '\n'
 '**Related notebooks in this series:**\n'
 '\n'
