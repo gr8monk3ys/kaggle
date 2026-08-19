@@ -18,14 +18,23 @@ MANAGE = ROOT / "manage.sh"
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
+def _repo_metas(name: str) -> list[Path]:
+    """All <name> paths in the repo, skipping hidden dirs (.claude/worktrees
+    holds agent worktree copies of the whole repo)."""
+    return [
+        p for p in ROOT.rglob(name)
+        if not any(part.startswith(".") for part in p.relative_to(ROOT).parts)
+    ]
+
+
 def _find_kernel_metas():
     """Return all kernel-metadata.json paths in the repo."""
-    return list(ROOT.rglob("kernel-metadata.json"))
+    return _repo_metas("kernel-metadata.json")
 
 
 def _find_dataset_metas():
     """Return all dataset-metadata.json paths in the repo."""
-    return list(ROOT.rglob("dataset-metadata.json"))
+    return _repo_metas("dataset-metadata.json")
 
 
 def _load(path: Path) -> dict:

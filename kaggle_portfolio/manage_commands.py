@@ -23,6 +23,7 @@ DEFAULT_CREDENTIALS = Path.home() / ".kaggle" / "kaggle.json"
 LOCAL_CREDENTIALS = ROOT / "kaggle.json"
 METADATA_NAMES = {"kernel-metadata.json", "dataset-metadata.json"}
 SKIP_DIRS = {
+    ".claude",
     ".git",
     ".venv",
     ".pytest_cache",
