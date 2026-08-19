@@ -7,6 +7,10 @@ on:
 
 permissions: read-all
 
+concurrency:
+  group: security-baseline
+  cancel-in-progress: false
+
 jobs:
   security-baseline:
     runs-on: ubuntu-latest

@@ -6,8 +6,8 @@ on:
       - main
       - push-sync
   schedule:
-    # Daily at 09:10 UTC.
-    - cron: "10 9 * * *"
+    # Weekly (Sat 09:10 UTC) — free-plan private-repo minutes are capped.
+    - cron: "10 9 * * 6"
   workflow_dispatch:
     inputs:
       mode:
@@ -44,20 +44,26 @@ on:
         required: true
         default: "1.0"
         type: string
+      # Draft-SLA caps are relaxed while Phase 2 posting is gated on a host —
+      # no cadence exists to enforce yet. Re-tighten (0 / 7) when posting starts.
       max_overdue_scheduled:
         description: "maximum overdue scheduled drafts"
         required: true
-        default: "0"
+        default: "999"
         type: string
       max_days_until_next_post:
         description: "maximum days allowed until next scheduled discussion post"
         required: true
-        default: "7"
+        default: "999"
         type: string
 
 permissions:
   contents: read
   issues: write
+
+concurrency:
+  group: medal-ops-health
+  cancel-in-progress: false
 
 jobs:
   health-check:
@@ -111,8 +117,8 @@ jobs:
           MIN_DATASET_USABILITY_SCORE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.min_dataset_usability_score || '85' }}
           LIVE_ALERT_UNDER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.live_alert_under || '0.8' }}
           LIVE_TARGET_RATING: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.live_target_rating || '1.0' }}
-          MAX_OVERDUE_SCHEDULED: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_overdue_scheduled || '0' }}
-          MAX_DAYS_UNTIL_NEXT_POST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_days_until_next_post || '7' }}
+          MAX_OVERDUE_SCHEDULED: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_overdue_scheduled || '999' }}
+          MAX_DAYS_UNTIL_NEXT_POST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_days_until_next_post || '999' }}
         run: |
           set -euo pipefail
           MODE="${FORCE_MODE}"

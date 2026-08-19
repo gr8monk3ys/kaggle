@@ -7,6 +7,10 @@ on:
 
 permissions: read-all
 
+concurrency:
+  group: semgrep
+  cancel-in-progress: false
+
 jobs:
   semgrep:
     runs-on: ubuntu-latest
