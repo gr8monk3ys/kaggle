@@ -22,6 +22,9 @@ PI_SCRIPTS = PACKAGE_ROOT / "pi-automation" / "scripts"
 DEFAULT_CREDENTIALS = Path.home() / ".kaggle" / "kaggle.json"
 LOCAL_CREDENTIALS = ROOT / "kaggle.json"
 METADATA_NAMES = {"kernel-metadata.json", "dataset-metadata.json"}
+# Kaggle rejects dataset uploads carrying more than this many keywords with
+# "You have exceeded the max category limit". Measured 2026-08-19: 7 fails, 6 succeeds.
+MAX_KEYWORDS = 6
 SKIP_DIRS = {
     ".claude",
     ".git",
@@ -312,6 +315,13 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
     for field in required:
         if field not in payload:
             errors.append(f"missing '{field}'")
+
+    keywords = payload.get("keywords")
+    if isinstance(keywords, list) and len(keywords) > MAX_KEYWORDS:
+        errors.append(
+            f"{len(keywords)} keywords exceeds Kaggle's limit of {MAX_KEYWORDS}; "
+            "the upload is rejected with 'You have exceeded the max category limit'"
+        )
 
     ident = str(payload.get("id", "")).strip()
     title = str(payload.get("title", "")).strip()

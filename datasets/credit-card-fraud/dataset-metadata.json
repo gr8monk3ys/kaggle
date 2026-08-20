@@ -10,16 +10,12 @@
     }
   ],
   "keywords": [
+    "finance",
     "business",
     "classification",
-    "binary classification",
-    "regression",
-    "clustering",
-    "finance",
-    "tabular",
     "anomaly detection",
-    "feature engineering",
-    "intermediate"
+    "tabular",
+    "binary classification"
   ],
   "resources": [
     {
