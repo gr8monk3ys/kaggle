@@ -2,7 +2,7 @@
   "id": "lorenzoscaturchio/ai-ml-research-papers-trends",
   "title": "AI/ML Research Papers Trends (3K+ Papers)",
   "subtitle": "3200+ AI/ML papers with metadata for trend analysis",
-  "description": "3,200 synthetic AI/ML research papers spanning 2018\u20132025 across arXiv categories including cs.CV, cs.LG, cs.CL, cs.AI, and cs.RO. Each record includes title, abstract, author list, venue (NeurIPS, ICML, CVPR, ICLR, EMNLP, etc.), citation count, primary methodology, dataset used, and flags for code release and survey papers.\n\nBuilt for: citation count prediction (regression), publication venue classification, trend analysis over time, topic modeling with LDA or BERTopic, author collaboration network analysis, and bibliometric research.\n\nNotable features: the 'has_code' flag enables reproducibility studies; 'primary_method' covers transformers, diffusion models, GNNs, RL, and contrastive learning; citation counts follow a realistic Zipf distribution. All data is synthetic and generated for educational and prototyping purposes.",
+  "description": "3,200 synthetic AI/ML research papers spanning 2018–2025 across arXiv categories including cs.CV, cs.LG, cs.CL, cs.AI, and cs.RO. Each record includes title, abstract, author list, venue (NeurIPS, ICML, CVPR, ICLR, EMNLP, etc.), citation count, primary methodology, dataset used, and flags for code release and survey papers.\n\nBuilt for: citation count prediction (regression), publication venue classification, trend analysis over time, topic modeling with LDA or BERTopic, author collaboration network analysis, and bibliometric research.\n\nNotable features: the 'has_code' flag enables reproducibility studies; 'primary_method' covers transformers, diffusion models, GNNs, RL, and contrastive learning; citation counts follow a realistic Zipf distribution. All data is synthetic and generated for educational and prototyping purposes.",
   "isPrivate": false,
   "licenses": [
     {
@@ -10,15 +10,12 @@
     }
   ],
   "keywords": [
-    "education",
     "nlp",
     "deep learning",
     "research",
+    "education",
     "classification",
-    "data analytics",
-    "exploratory data analysis",
-    "intermediate",
-    "data cleaning"
+    "data analytics"
   ],
   "resources": [
     {

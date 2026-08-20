@@ -245,7 +245,24 @@ def gen_student_performance(data_dir):
     save_fig(fig, data_dir / "cover.png")
 
 
+def gen_ai_data_jobs(data_dir):
+    df = pd.read_csv(data_dir / "jobs.csv")
+    fig, ax = plt.subplots(figsize=FIG_SIZE)
+    med = (
+        df.groupby("role_family")["salary_mid_usd"]
+        .median()
+        .sort_values()
+        .tail(10)
+    )
+    colors = [ACCENT_COLORS[i % len(ACCENT_COLORS)] for i in range(len(med))]
+    ax.barh(med.index, med.values, color=colors)
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"${v/1000:.0f}k"))
+    style_ax(ax, "Median Salary by AI/Data Role Family", "Median salary (USD)", "")
+    save_fig(fig, data_dir / "cover.png")
+
+
 GENERATORS = {
+    "ai-data-jobs-market": gen_ai_data_jobs,
     "ai-research-trends": gen_ai_research,
     "credit-card-fraud": gen_credit_card_fraud,
     "ecommerce-behavior": gen_ecommerce,

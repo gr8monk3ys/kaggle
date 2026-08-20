@@ -2,7 +2,7 @@
   "title": "Synthetic E-Commerce Customer Behavior Dataset",
   "id": "lorenzoscaturchio/ecommerce-behavior",
   "subtitle": "10K customers, 120K transactions, 25K reviews for ML projects",
-  "description": "Five relational tables covering the full e-commerce lifecycle: 10K customer profiles, 1K products across 8 categories, 120K transactions, 80K browsing sessions, and 25K product reviews. Tables join cleanly on customer_id and product_id \u2014 ready for multi-table ML pipelines without extra preprocessing.\n\nBuilt for: churn prediction (is_churned label on customers), customer lifetime value regression, product recommendation systems, market basket analysis and association rules, RFM segmentation, conversion rate optimization (converted/bounced on sessions), and sentiment analysis on review text.\n\nNotable design choices: transactions include refunded and cancelled statuses for realistic imbalance; sessions capture device, channel, and cart additions for funnel analysis; customers include Premium/Regular/Budget segments for stratified modeling. All data is synthetic.",
+  "description": "Five relational tables covering the full e-commerce lifecycle: 10K customer profiles, 1K products across 8 categories, 120K transactions, 80K browsing sessions, and 25K product reviews. Tables join cleanly on customer_id and product_id — ready for multi-table ML pipelines without extra preprocessing.\n\nBuilt for: churn prediction (is_churned label on customers), customer lifetime value regression, product recommendation systems, market basket analysis and association rules, RFM segmentation, conversion rate optimization (converted/bounced on sessions), and sentiment analysis on review text.\n\nNotable design choices: transactions include refunded and cancelled statuses for realistic imbalance; sessions capture device, channel, and cart additions for funnel analysis; customers include Premium/Regular/Budget segments for stratified modeling. All data is synthetic.",
   "licenses": [
     {
       "name": "GPL-3.0"
@@ -13,11 +13,8 @@
     "classification",
     "clustering",
     "regression",
-    "beginner",
     "tabular",
-    "data analytics",
-    "exploratory data analysis",
-    "intermediate"
+    "data analytics"
   ],
   "resources": [
     {
