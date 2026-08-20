@@ -31,6 +31,10 @@ from kaggle_portfolio.shared.kaggle_utils import parse_iso_date
 
 ROOT = Path(__file__).resolve().parents[2]
 DRAFTS_FILE = ROOT / "docs" / "discussions" / "discussion-drafts.md"
+# Written into every queue item as `body_file` and resolved relative to the repo
+# root by the posting scripts, so it must stay repo-relative — a bare filename
+# resolves to the root, where this file has not lived since the layout reorg.
+DRAFTS_REL = str(DRAFTS_FILE.relative_to(ROOT))
 QUEUE_FILE = ROOT / "pi-automation" / "data" / "discussion_queue.json"
 PI_SCRIPTS = ROOT / "pi-automation" / "scripts"
 
@@ -58,8 +62,13 @@ RED = "\033[0;31m"
 BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
-VALID_STATUSES = {"idea", "ready", "scheduled", "posted", "won-medal", "pending", "skipped"}
+VALID_STATUSES = {"idea", "ready", "scheduled", "posted", "won-medal", "pending", "skipped", "expired"}
 POSTABLE_STATUSES = {"ready", "scheduled", "pending"}
+# Statuses the scheduler must carry through untouched instead of assigning a
+# slot to. Derived from the postable set so a newly added status is excluded by
+# default — hardcoding this list previously let "expired" drafts be rescheduled
+# as postable.
+TERMINAL_STATUSES = VALID_STATUSES - POSTABLE_STATUSES
 PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
 POST_DAYS = {0, 2, 4}  # Mon, Wed, Fri
 POSTS_PER_WEEK = len(POST_DAYS)
@@ -70,6 +79,9 @@ def normalize_status(value: str | None) -> str:
     if not value:
         return "ready"
     normalized = value.strip().lower()
+    # Drafts annotate a status with a reason ("expired - do not post"); keep the
+    # status word so the annotation does not fall through to the default.
+    normalized = re.split(r"\s+[-–—]\s+", normalized, maxsplit=1)[0].strip()
     if normalized == "pending":
         return "scheduled"
     if normalized == "skipped":
@@ -185,7 +197,7 @@ def parse_drafts(drafts_path: Path) -> list[dict]:
             "forum_url": forum_url,
             "body_section": draft_label,
             "body_title": title_from_header,
-            "body_file": "discussion-drafts.md",
+            "body_file": DRAFTS_REL,
             "category": category,
             "expected_medal": expected_medal,
             "priority": priority,
@@ -227,7 +239,7 @@ def generate_queue(
 
     for draft in sorted(drafts, key=sort_key):
         draft_status = normalize_status(draft.get("status"))
-        if draft_status in {"posted", "won-medal", "idea", "skipped"}:
+        if draft_status in TERMINAL_STATUSES:
             scheduled_after = None
             item_status = draft_status
         elif scheduled_count >= max_scheduled:
@@ -273,7 +285,7 @@ def rebalance_existing_queue(
             "title": item.get("title", ""),
             "forum_url": item.get("forum_url", DEFAULT_FORUM),
             "body_section": item.get("body_section", ""),
-            "body_file": item.get("body_file", "discussion-drafts.md"),
+            "body_file": item.get("body_file", DRAFTS_REL),
             "category": item.get("category", ""),
             "expected_medal": item.get("expected_medal", ""),
             "priority": normalize_priority(item.get("priority")),
