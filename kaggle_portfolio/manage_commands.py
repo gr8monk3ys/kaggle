@@ -34,6 +34,22 @@ SKIP_DIRS = {
 SUSPICIOUS_PATTERN = re.compile(
     r"(password|secret|api_key|kgat_|kaggle_token)", re.IGNORECASE
 )
+
+
+def is_skipped(path: Path, root: Path = ROOT) -> bool:
+    """True when path lies inside a skipped directory, judged relative to root.
+
+    Relative, not absolute: the checkout itself can sit under a hidden
+    directory (agent worktrees live in .claude/worktrees/), and matching on
+    absolute parts would then skip every file in the repo.
+    """
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return True
+    return any(part in SKIP_DIRS for part in rel.parts)
+
+
 TRUTHY = {"1", "true", "yes", "on"}
 
 GREEN = "\033[0;32m"
@@ -47,7 +63,7 @@ RESET = "\033[0m"
 def discover_notebook_dirs() -> list[str]:
     items: list[str] = []
     for meta in sorted(ROOT.rglob("kernel-metadata.json")):
-        if any(part in SKIP_DIRS for part in meta.parts):
+        if is_skipped(meta):
             continue
         try:
             rel = meta.parent.relative_to(ROOT)
@@ -62,7 +78,7 @@ def discover_notebook_dirs() -> list[str]:
 def discover_dataset_dirs() -> list[str]:
     items: list[str] = []
     for meta in sorted(ROOT.rglob("dataset-metadata.json")):
-        if any(part in SKIP_DIRS for part in meta.parts):
+        if is_skipped(meta):
             continue
         try:
             items.append(str(meta.parent.relative_to(ROOT)))
@@ -238,7 +254,7 @@ def iter_metadata_files(scope: Path | None) -> list[Path]:
     for path in ROOT.rglob("*-metadata.json"):
         if path.name not in METADATA_NAMES:
             continue
-        if any(part in SKIP_DIRS for part in path.parts):
+        if is_skipped(path):
             continue
         if in_scope(path, scope):
             files.append(path)

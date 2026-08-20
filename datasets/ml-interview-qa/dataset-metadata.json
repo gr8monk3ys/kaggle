@@ -1,8 +1,8 @@
 {
-  "title": "ML/DS Interview Questions & Answers (Hand-Curated)",
+  "title": "ML/DS Interview Questions & Answers (Curated)",
   "id": "lorenzoscaturchio/ml-interview-qa",
-  "subtitle": "119 hand-written ML/DS interview Q&A across 10 categories",
-  "description": "119 hand-written machine learning and data science interview questions with hand-written answers (roughly 45-85 words each), organized into 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Each question carries a hand-assigned difficulty label (easy/medium/hard) and fine-grained topic tags.\n\nEvery row was written by a person: there is no templated, scraped, or model-generated content, and no artificially inflated question count. Earlier versions of this dataset padded the bank to 500+ rows with template-generated questions sharing boilerplate answers and randomly assigned difficulty/company labels; those rows have been removed.\n\nBuilt for: interview preparation and study, text classification by category (the meaningful label for modeling), RAG system prototyping with a small structured knowledge base, and embedding similarity search. answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category. Note the dataset is small (119 rows), so treat any classification experiment as a toy/teaching exercise rather than a benchmark.",
+  "subtitle": "119 individually written ML/DS interview Q&A across 10 categories",
+  "description": "119 individually written machine learning and data science interview questions with individually written answers (roughly 45-85 words each), organized into 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Each question carries an individually assigned difficulty label (easy/medium/hard) and fine-grained topic tags.\n\nEvery question is written individually: all 119 answers are distinct, none are produced by filling a variable into a shared template, and the question count is not padded. Earlier versions of this dataset inflated the bank to 500+ rows with template-generated questions that shared boilerplate answers and carried randomly assigned difficulty/company labels; those rows have been removed.\n\nBuilt for: interview preparation and study, text classification by category (the meaningful label for modeling), RAG system prototyping with a small structured knowledge base, and embedding similarity search. answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category. Note the dataset is small (119 rows), so treat any classification experiment as a toy/teaching exercise rather than a benchmark.",
   "licenses": [
     {
       "name": "GPL-3.0"
@@ -21,7 +21,7 @@
   "resources": [
     {
       "path": "ml_interview_questions.csv",
-      "description": "119 hand-written ML/DS interview questions with answers, categorized by topic and difficulty",
+      "description": "119 individually written ML/DS interview questions with answers, categorized by topic and difficulty",
       "schema": {
         "fields": [
           {
@@ -90,7 +90,7 @@
     "collection_methodology": "All questions, answers, difficulty labels, and topic tags were written by hand and reviewed in the generator script; the script only assembles and deterministically shuffles the rows."
   },
   "citations": [
-    "Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (Hand-Curated). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa"
+    "Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (Curated). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa"
   ],
   "updateFrequency": "Monthly"
 }

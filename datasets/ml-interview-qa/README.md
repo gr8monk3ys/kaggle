@@ -1,6 +1,6 @@
-# ML/DS Interview Questions & Answers (Hand-Curated)
+# ML/DS Interview Questions & Answers (Curated)
 
-> 119 hand-written ML/DS interview Q&A across 10 categories
+> 119 individually written ML/DS interview Q&A across 10 categories
 
 **License:** GPL-3.0  
 
@@ -8,9 +8,9 @@
 
 ## Description
 
-119 hand-written machine learning and data science interview questions with hand-written answers (roughly 45-85 words each), organized into 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Each question carries a hand-assigned difficulty label (easy/medium/hard) and fine-grained topic tags.
+119 individually written machine learning and data science interview questions with individually written answers (roughly 45-85 words each), organized into 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Each question carries an individually assigned difficulty label (easy/medium/hard) and fine-grained topic tags.
 
-Every row was written by a person: there is no templated, scraped, or model-generated content, and no artificially inflated question count. Earlier versions of this dataset padded the bank to 500+ rows with template-generated questions sharing boilerplate answers and randomly assigned difficulty/company labels; those rows have been removed.
+Every question is written individually: all 119 answers are distinct, none are produced by filling a variable into a shared template, and the question count is not padded. Earlier versions of this dataset inflated the bank to 500+ rows with template-generated questions that shared boilerplate answers and carried randomly assigned difficulty/company labels; those rows have been removed.
 
 Built for: interview preparation and study, text classification by category (the meaningful label for modeling), RAG system prototyping with a small structured knowledge base, and embedding similarity search. answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category. Note the dataset is small (119 rows), so treat any classification experiment as a toy/teaching exercise rather than a benchmark.
 
@@ -30,7 +30,7 @@ Built for: interview preparation and study, text classification by category (the
 ## DOI and Citations
 
 - DOI: Not assigned
-- Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (Hand-Curated). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
+- Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (Curated). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
 
 ## Provenance
 
