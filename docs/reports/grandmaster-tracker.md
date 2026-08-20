@@ -127,13 +127,30 @@
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (50 gold + 500 total) | Novice |
-| Total posts | 500+ | 0 |
-| Gold medals (10+ votes) | 50 | 0 |
-| Silver medals (5+ votes) | — | 0 |
-| Bronze medals (1+ vote) | — | 0 |
+| Total posts | 500+ | 28 |
+| — of which topics | — | 5 |
+| — of which comments | — | 23 |
+| Net votes | — | 17 |
+| Votes per post | — | 0.6 |
+
+**Source:** read from the public profile on 2026-08-19. There is no Kaggle API
+endpoint for discussion activity, so `sync` cannot refresh these — they are
+read by hand from <https://www.kaggle.com/lorenzoscaturchio/discussion> and
+must be re-read manually. This table previously recorded 0 posts, which was
+never true and made Discussion look like an untouched category in every plan
+derived from it.
+
+**Per-medal counts are not broken out** because the profile reports only net
+votes in aggregate; counting bronze/silver/gold needs a per-post pass.
+
+**Note:** 23 of the 28 contributions are comments. Comments earn discussion
+medals on the same terms as topics, which makes commenting the lowest-friction
+route to Discussion Expert (50 bronze, bronze = 1 net vote).
 
 **Strategy:** See ../discussions/engagement-strategy.md for 12-week plan
-**Total drafts:** 70 ready in queue (0 posted — blocked on Playwright login capture)
+**Total drafts:** 62 in queue, integrity-checked 2026-08-19 (see PR #50);
+posting is still manual — `./manage.sh next-post` prints the copy, since the
+Playwright session (`kaggle_storage_state.json`) has never been captured.
 
 ---
 
