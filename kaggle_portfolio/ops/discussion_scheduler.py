@@ -62,7 +62,13 @@ RED = "\033[0;31m"
 BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
-VALID_STATUSES = {"idea", "ready", "scheduled", "posted", "won-medal", "pending", "skipped", "expired"}
+VALID_STATUSES = {
+    "idea", "ready", "scheduled", "posted", "won-medal", "pending", "skipped",
+    "expired",
+    # Asserts a measured result the repo cannot back. Non-postable until the
+    # number is either produced for real or removed from the draft.
+    "unverified",
+}
 POSTABLE_STATUSES = {"ready", "scheduled", "pending"}
 # Statuses the scheduler must carry through untouched instead of assigning a
 # slot to. Derived from the postable set so a newly added status is excluded by
@@ -73,6 +79,33 @@ PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
 POST_DAYS = {0, 2, 4}  # Mon, Wed, Fri
 POSTS_PER_WEEK = len(POST_DAYS)
 DEFAULT_SCHEDULE_WEEKS = 4
+
+
+# A draft that reports a measured result must say where the number came from.
+# Fabricated benchmark tables read exactly like real ones, so the rule is
+# mechanical: assert a measurement, cite evidence, or stay unpostable.
+MEASUREMENT_CLAIM = re.compile(
+    r"\bI (?:benchmark|test|ran|run|measur|compar|evaluat)\w*\b", re.IGNORECASE
+)
+RESULT_TABLE = re.compile(r"\|\s*(?:AUC|RMSE|RMSLE|MAE|Accuracy|F1|Score|LB|CV)\b", re.IGNORECASE)
+METRIC_NUMBER = re.compile(r"\b0\.\d{3,5}\b")
+# Anchored to line start: an evidence pointer is its own line. Matching it
+# mid-sentence let a draft clear the check merely by *mentioning* evidence.
+EVIDENCE_LINE = re.compile(r"^\*\*Evidence:\*\*\s*\S+", re.MULTILINE)
+
+
+def asserts_unbacked_results(body: str) -> bool:
+    """True when a draft reports measurements without citing where they came from.
+
+    Flags either a results-style table or a first-person measurement claim
+    accompanied by metric-shaped numbers. An explicit `**Evidence:**` line
+    naming the source clears the draft.
+    """
+    if EVIDENCE_LINE.search(body):
+        return False
+    if RESULT_TABLE.search(body):
+        return True
+    return bool(MEASUREMENT_CLAIM.search(body) and METRIC_NUMBER.search(body))
 
 
 def normalize_status(value: str | None) -> str:

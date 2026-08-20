@@ -708,6 +708,7 @@ I've seen this cause 10-20% inflated CV scores vs. honest temporal validation. D
 **Target forum:** Getting Started
 **Category:** Tips & Tricks
 **Expected medal:** Silver
+**Status:** unverified — reports measured results the repo cannot back. Either produce the numbers for real and add an `**Evidence:**` line pointing at the script/notebook, or remove the results table before posting.
 
 ### My End-to-End ML Competition Pipeline
 
@@ -1383,6 +1384,7 @@ What is your go-to parameter to tune first? I know some people start with regula
 **Target forum:** Getting Started
 **Category:** Tips & Tricks
 **Expected medal:** Bronze
+**Status:** unverified — reports measured results the repo cannot back. Either produce the numbers for real and add an `**Evidence:**` line pointing at the script/notebook, or remove the results table before posting.
 
 ### Handling Missing Data: 7 Strategies Compared
 
@@ -1772,6 +1774,7 @@ What is your preferred outlier strategy for tabular competitions? Drop a comment
 **Target forum:** Machine Learning
 **Category:** Tips & Tricks
 **Expected medal:** Bronze
+**Status:** unverified — reports measured results the repo cannot back. Either produce the numbers for real and add an `**Evidence:**` line pointing at the script/notebook, or remove the results table before posting.
 
 ### Log Transform vs Box-Cox vs Yeo-Johnson: Which One?
 
@@ -2048,6 +2051,7 @@ What's your teaming strategy — solo or team? Share your experience in the comm
 **Target forum:** Getting Started
 **Category:** Tips & Tricks
 **Expected medal:** Bronze
+**Status:** unverified — reports measured results the repo cannot back. Either produce the numbers for real and add an `**Evidence:**` line pointing at the script/notebook, or remove the results table before posting.
 
 ### My Post-Competition Analysis Template
 
@@ -3098,6 +3102,7 @@ What preprocessing step has made the biggest difference in your NLP competitions
 **Target forum:** Deep Learning
 **Category:** Technique Tutorial
 **Expected medal:** Bronze
+**Status:** unverified — reports measured results the repo cannot back. Either produce the numbers for real and add an `**Evidence:**` line pointing at the script/notebook, or remove the results table before posting.
 
 ### Embedding Comparison: TF-IDF vs Word2Vec vs BERT
 
@@ -4484,6 +4489,7 @@ Has anyone else built tools like this around their Kaggle workflow? I am curious
 **Target forum:** Getting Started
 **Category:** Tips & Tricks
 **Expected medal:** Gold
+**Status:** unverified — reports measured results the repo cannot back. Either produce the numbers for real and add an `**Evidence:**` line pointing at the script/notebook, or remove the results table before posting.
 
 ### How I Organize My Kaggle Workflow
 
