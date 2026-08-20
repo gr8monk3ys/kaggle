@@ -22,6 +22,8 @@ from typing import Any, Generator
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STORAGE_STATE = REPO_ROOT / "pi-automation" / "data" / "kaggle_storage_state.json"
 DEFAULT_TIMEOUT_MS = 20_000
+# How long --manual-login waits for a human to finish signing in.
+MANUAL_LOGIN_TIMEOUT_S = 300
 BROWSER_CHALLENGE_MESSAGE = (
     "Kaggle browser challenge detected. Clear the Cloudflare/reCAPTCHA check in a headed browser "
     "and retry with --manual-login."
@@ -104,6 +106,23 @@ def is_browser_challenge(page) -> bool:
     )
 
 
+def wait_for_challenge_to_clear(page, *, timeout_s: int = 180) -> bool:
+    """Poll until Kaggle's bot challenge is gone. Returns False on timeout.
+
+    Polled rather than gated on input(): these scripts run from wrappers and
+    shells with no TTY, where reading stdin raises EOFError immediately.
+    """
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        time.sleep(3)
+        try:
+            if not is_browser_challenge(page):
+                return True
+        except Exception:
+            return False
+    return False
+
+
 def _wait_and_check_auth(page, *, timeout_ms: int) -> bool:
     """Wait for the page to settle, then check auth robustly.
 
@@ -144,7 +163,9 @@ def maybe_login(
     if is_browser_challenge(page):
         if manual_login:
             print("Kaggle browser challenge detected. Clear it in the browser window.")
-            input("Press Enter after the challenge clears...")
+            print("Waiting for the challenge to clear (no keypress needed)...")
+            if not wait_for_challenge_to_clear(page):
+                raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
             page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
             page.wait_for_timeout(1500)
         else:
@@ -157,7 +178,9 @@ def maybe_login(
     if is_browser_challenge(page):
         if manual_login:
             print("Kaggle browser challenge detected. Clear it in the browser window.")
-            input("Press Enter after the challenge clears...")
+            print("Waiting for the challenge to clear (no keypress needed)...")
+            if not wait_for_challenge_to_clear(page):
+                raise RuntimeError(BROWSER_CHALLENGE_MESSAGE)
             page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
             page.wait_for_timeout(1000)
         else:
@@ -202,12 +225,28 @@ def maybe_login(
     if manual_login:
         page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
         print("Manual login required: complete Kaggle login in the opened browser window.")
-        input("Press Enter after login completes...")
-        page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
-        page.wait_for_timeout(1500)
-        if _wait_and_check_auth(page, timeout_ms=timeout_ms):
-            return
-        raise RuntimeError("Kaggle login still appears unauthenticated after manual login.")
+        print(
+            f"Waiting up to {MANUAL_LOGIN_TIMEOUT_S // 60} minutes for login to complete "
+            "(no keypress needed; polling for the signed-in state)."
+        )
+        # Polled rather than gated on input(): this runs from wrappers and shells
+        # with no TTY attached, where reading stdin raises EOFError immediately
+        # and the capture fails before the user can even log in.
+        deadline = time.time() + MANUAL_LOGIN_TIMEOUT_S
+        while time.time() < deadline:
+            time.sleep(3)
+            try:
+                current_url = page.url
+            except Exception:
+                raise RuntimeError("Browser window closed before login completed.") from None
+            if "/account/login" in current_url:
+                continue
+            if _wait_and_check_auth(page, timeout_ms=3000):
+                print("Login detected; capturing session.")
+                return
+        raise RuntimeError(
+            f"Timed out after {MANUAL_LOGIN_TIMEOUT_S}s waiting for manual Kaggle login."
+        )
 
     raise RuntimeError(
         "Kaggle login required but session appears signed out. "
