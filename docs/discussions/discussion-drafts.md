@@ -1284,6 +1284,7 @@ Have you caught a nasty leakage bug in a competition? Drop it in the comments â€
 **Target forum:** Getting Started
 **Category:** Tips & Tricks
 **Expected medal:** Bronze
+**Status:** posted â€” https://www.kaggle.com/discussions/getting-started/736260 (2026-08-19)
 
 ### My Gradient Boosting Tuning Checklist (XGBoost/LightGBM/CatBoost)
 
