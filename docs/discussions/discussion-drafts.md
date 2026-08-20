@@ -108,6 +108,7 @@ I cover all of these (and about 45 more) with full working examples in my **[Fea
 **Target forum:** Med-Gemma Competition
 **Category:** EDA Findings
 **Expected medal:** Silver
+**Status:** expired — the competition closed 2026-02-24 and was never entered, so its forum has no live audience. Rewrite as a general-forum retrospective if this is worth posting at all.
 
 ### Med-Gemma Challenge: Initial EDA Findings
 
