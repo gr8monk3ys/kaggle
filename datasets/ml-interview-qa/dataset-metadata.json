@@ -1,8 +1,8 @@
 {
-  "title": "ML/DS Interview Questions & Answers (500+)",
+  "title": "ML/DS Interview Questions & Answers (Curated)",
   "id": "lorenzoscaturchio/ml-interview-qa",
-  "subtitle": "500+ ML/DS interview Q&A with 10 categories and 3 difficulty levels",
-  "description": "502 machine learning and data science interview questions with expert-level answers (50\u2013200 words each), tagged across 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Three difficulty levels (easy/medium/hard) and company_tags linking questions to Google, Meta, Amazon, Microsoft, Apple, and others.\n\nBuilt for: interview preparation and study, LLM fine-tuning on technical Q&A, text classification by category or difficulty, RAG system prototyping with a structured knowledge base, and embedding similarity search. The company_tags field enables targeted preparation for specific employers.\n\nNotable features: answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category; the mix of conceptual, coding, and system design questions reflects real interview breadth. All content is synthetic.",
+  "subtitle": "119 individually written ML/DS interview Q&A across 10 categories",
+  "description": "119 individually written machine learning and data science interview questions with individually written answers (roughly 45-85 words each), organized into 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Each question carries an individually assigned difficulty label (easy/medium/hard) and fine-grained topic tags.\n\nEvery question is written individually: all 119 answers are distinct, none are produced by filling a variable into a shared template, and the question count is not padded. Earlier versions of this dataset inflated the bank to 500+ rows with template-generated questions that shared boilerplate answers and carried randomly assigned difficulty/company labels; those rows have been removed.\n\nBuilt for: interview preparation and study, text classification by category (the meaningful label for modeling), RAG system prototyping with a small structured knowledge base, and embedding similarity search. answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category. Note the dataset is small (119 rows), so treat any classification experiment as a toy/teaching exercise rather than a benchmark.",
   "licenses": [
     {
       "name": "GPL-3.0"
@@ -21,13 +21,13 @@
   "resources": [
     {
       "path": "ml_interview_questions.csv",
-      "description": "500+ ML/DS interview questions with detailed answers, categorized by topic, difficulty, and company tags",
+      "description": "119 individually written ML/DS interview questions with answers, categorized by topic and difficulty",
       "schema": {
         "fields": [
           {
             "name": "id",
             "title": "Question ID",
-            "description": "Unique identifier for each question (SHA-256 hash)",
+            "description": "Unique identifier for each question (SHA-256 hash prefix)",
             "type": "string"
           },
           {
@@ -38,8 +38,8 @@
           },
           {
             "name": "answer",
-            "title": "Expert Answer",
-            "description": "Detailed expert-level answer (50-200 words)",
+            "title": "Answer",
+            "description": "Hand-written answer (roughly 45-85 words)",
             "type": "string"
           },
           {
@@ -51,13 +51,7 @@
           {
             "name": "difficulty",
             "title": "Difficulty Level",
-            "description": "Question difficulty: easy, medium, or hard",
-            "type": "string"
-          },
-          {
-            "name": "company_tags",
-            "title": "Company Tags",
-            "description": "Pipe-separated company names where this question type is commonly asked (Google, Meta, Amazon, etc.)",
+            "description": "Hand-assigned question difficulty: easy, medium, or hard",
             "type": "string"
           },
           {
@@ -80,24 +74,23 @@
   "authors": [
     {
       "name": "Lorenzo Scaturchio",
-      "bio": "Independent ML engineer building synthetic, education-first datasets for reproducible benchmarking and prototyping."
+      "bio": "Independent ML engineer building education-first datasets for reproducible benchmarking and prototyping."
     }
   ],
   "coverage": {
     "temporal_start_date": "2020-01-01",
     "temporal_end_date": "2025-12-31",
-    "geospatial_coverage": "Global (synthetic)"
+    "geospatial_coverage": "Global"
   },
   "doi": "Not assigned",
   "provenance": {
     "sources": [
-      "Synthetic data generation scripts in this repository",
-      "Public domain schemas and domain conventions for educational simulation"
+      "Hand-written questions and answers maintained in this repository (create_dataset.py)"
     ],
-    "collection_methodology": "Programmatic synthetic generation using seeded statistical distributions and rule-based constraints to mimic realistic structure while avoiding direct personal data."
+    "collection_methodology": "All questions, answers, difficulty labels, and topic tags were written by hand and reviewed in the generator script; the script only assembles and deterministically shuffles the rows."
   },
   "citations": [
-    "Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (500+). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa"
+    "Scaturchio, Lorenzo (2026). ML/DS Interview Questions & Answers (Curated). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa"
   ],
   "updateFrequency": "Monthly"
 }

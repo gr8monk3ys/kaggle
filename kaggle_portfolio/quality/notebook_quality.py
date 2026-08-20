@@ -13,6 +13,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from kaggle_portfolio.manage_commands import is_skipped
 from kaggle_portfolio.shared.kaggle_utils import parse_iso_date, resolve_today
 
 
@@ -144,7 +145,7 @@ def discover_notebooks(root: Path, scope: str) -> tuple[list[Path], list[str]]:
     warnings: list[str] = []
 
     for metadata_path in sorted(root.rglob("kernel-metadata.json")):
-        if any(part in {".git", ".venv", ".claude"} for part in metadata_path.parts):
+        if is_skipped(metadata_path, root):
             continue
         rel_metadata = metadata_path.relative_to(root)
         if scope == "portfolio" and rel_metadata.parts and rel_metadata.parts[0] == "datasets":

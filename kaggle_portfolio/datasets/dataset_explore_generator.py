@@ -46,6 +46,79 @@ TARGET_CANDIDATES = [
     "popularity", "grade", "score", "salary", "price",
 ]
 
+# Per-dataset modeling plans: a real target and metric chosen by reading each
+# dataset's actual columns. `file` optionally overrides the primary file (by
+# default the first CSV alphabetically, which is not always the modeling table).
+# Datasets not listed here fall back to automatic target detection.
+DATASET_PLANS: dict[str, dict[str, str]] = {
+    "ai-data-jobs-market": {
+        "file": "jobs.csv",
+        "target": "salary_mid_usd",
+        "task": "regression",
+        "metric": "MAE (report RMSE alongside)",
+        "validation": "5-fold CV grouped by company_id to avoid company leakage",
+        "rationale": "Salary is the question this jobs table exists to answer; "
+                     "`salary_mid_usd` is the midpoint of the posted band.",
+    },
+    "ai-research-trends": {
+        "target": "citation_count",
+        "task": "regression",
+        "metric": "MAE on log1p(citation_count) — citations are heavy-tailed",
+        "validation": "time-based split: train on earlier years, validate on the latest year",
+        "rationale": "Predicting citation impact from paper metadata (venue, category, "
+                     "author count, code release) is the natural supervised task here.",
+    },
+    "github-repo-metrics": {
+        "target": "stars",
+        "task": "regression",
+        "metric": "MAE on log1p(stars) — star counts span orders of magnitude",
+        "validation": "5-fold CV; check residuals per language",
+        "rationale": "Stars are the standard popularity signal for a repository; "
+                     "activity and hygiene columns are the candidate predictors.",
+    },
+    "job-postings": {
+        "target": "salary_max",
+        "task": "regression",
+        "metric": "MAE (report RMSE alongside)",
+        "validation": "5-fold CV; hold out by company for a stricter generalization check",
+        "rationale": "Salary is the outcome of interest in a postings table; "
+                     "`salary_max` is the top of the posted range (`salary_min` is the alternate).",
+    },
+    "ml-interview-qa": {
+        "target": "category",
+        "task": "classification",
+        "metric": "accuracy and macro-F1 across the 10 categories",
+        "validation": "stratified 5-fold CV (small dataset — expect wide fold variance)",
+        "rationale": "Category is the only hand-assigned label suited to modeling: "
+                     "classify each question's text into its topic category.",
+    },
+    "programming-benchmarks": {
+        "target": "execution_time_ms",
+        "task": "regression",
+        "metric": "MAE on log-scaled runtime",
+        "validation": "grouped CV by benchmark_name (predict a held-out benchmark's runtimes)",
+        "rationale": "Runtime is what a benchmark measures; language traits "
+                     "(paradigm, typing, gc) are the candidate predictors.",
+    },
+    "student-performance": {
+        "target": "math_score",
+        "task": "regression",
+        "metric": "MAE (report RMSE alongside)",
+        "validation": "5-fold CV; exclude overall_gpa from features (it is computed from the subject scores)",
+        "rationale": "Predicting an exam score from study habits and background is the "
+                     "canonical task for this table; math_score is the target, and "
+                     "overall_gpa must stay out of the feature set to avoid leakage.",
+    },
+    "credit-card-fraud": {
+        "target": "Class",
+        "task": "classification",
+        "metric": "PR-AUC (average precision) — ROC-AUC is misleading at this imbalance",
+        "validation": "stratified 5-fold CV with the fraud rate checked per fold",
+        "rationale": "`Class` is the fraud flag; the positive class is rare, so "
+                     "precision-recall trade-offs are the whole problem.",
+    },
+}
+
 
 # ---------------------------------------------------------------------------
 # Column classification helpers
@@ -99,8 +172,12 @@ def _classify_columns(analysis: dict) -> dict:
     }
 
 
-def _find_csv_file(ds_dir: Path) -> Path | None:
+def _find_csv_file(ds_dir: Path, preferred: str | None = None) -> Path | None:
     """Find the primary CSV (or Parquet) in a dataset directory."""
+    if preferred:
+        candidate = ds_dir / preferred
+        if candidate.exists():
+            return candidate
     csvs = sorted(ds_dir.glob("*.csv"))
     if csvs:
         return csvs[0]
@@ -148,8 +225,17 @@ def _cell_title(meta: dict, analysis: dict) -> list[dict]:
     return [md(header)]
 
 
-def _infer_modeling_plan(analysis: dict, classified: dict) -> tuple[str, str, str, str]:
-    """Infer a lightweight modeling recommendation from dataset analysis."""
+def _infer_modeling_plan(
+    analysis: dict, classified: dict, plan: dict | None = None
+) -> tuple[str, str, str, str]:
+    """Return (task, metric, validation, rationale) for a dataset.
+
+    A curated DATASET_PLANS entry wins; otherwise fall back to inference
+    from the detected target column.
+    """
+    if plan:
+        return plan["task"], plan["metric"], plan["validation"], plan["rationale"]
+
     target = classified["target"]
     if target:
         target_meta = next((col for col in analysis.get("columns", []) if col["name"] == target), {})
@@ -172,34 +258,41 @@ def _infer_modeling_plan(analysis: dict, classified: dict) -> tuple[str, str, st
     if classified["numeric"]:
         return (
             "unsupervised exploration + candidate regression/classification framing",
-            "define metric after target selection",
+            "MAE/RMSE once a regression target is fixed, accuracy/macro-F1 for a classification target",
             "hold out a small validation slice once a target is chosen",
             "There is no obvious target yet, so the immediate goal is to surface hypotheses and shortlist modeling targets.",
         )
 
     return (
         "text/categorical exploration",
-        "define metric after labeling a downstream task",
+        "task-appropriate metric once a downstream task is labeled",
         "label a pilot sample before choosing validation",
         "This bundle is strongest for discovery, retrieval, and taxonomy design before supervised modeling.",
     )
 
 
-def _cell_objective_and_evaluation(meta: dict, analysis: dict, classified: dict) -> list[dict]:
+def _cell_objective_and_evaluation(
+    meta: dict, analysis: dict, classified: dict, plan: dict | None = None
+) -> list[dict]:
     """Generate notebook framing for objective, evaluation, and hypotheses."""
     rows = analysis.get("rows", 0)
-    target = classified["target"] or "not yet fixed"
-    task, metric, validation, framing = _infer_modeling_plan(analysis, classified)
+    target = classified["target"]
+    task, metric, validation, framing = _infer_modeling_plan(analysis, classified, plan)
+
+    if target:
+        target_line = f"**Target:** `{target}`."
+    else:
+        target_line = (
+            "**Target:** none fixed yet — this notebook surfaces candidate targets."
+        )
 
     return [
         md(
             "## 1. Objective & Evaluation Plan <a id='objective'></a>\n\n"
             f"**Objective:** turn `{meta.get('title', 'this dataset')}` into a reproducible `{task}` workflow.\n\n"
             f"**Evaluation / validation:** use **{metric}** with **{validation}**.\n\n"
-            f"**Candidate target:** `{target}`.\n\n"
-            f"**Working hypothesis:** {framing}\n\n"
-            "This section makes the modeling goal explicit so later findings can be interpreted in terms of metrics, "
-            "trade-offs, and deployment limitations rather than isolated charts."
+            f"{target_line}\n\n"
+            f"**Why this target:** {framing}"
         ),
         code(
             f"""TARGET_COL = {target!r}
@@ -210,7 +303,7 @@ VALIDATION_PLAN = {validation!r}
 print("Objective framing")
 print("-" * 60)
 print(f"Rows available      : {rows:,}")
-print(f"Candidate target    : {{TARGET_COL}}")
+print(f"Target              : {{TARGET_COL}}")
 print(f"Modeling task       : {{MODELING_TASK}}")
 print(f"Primary metric      : {{PRIMARY_METRIC}}")
 print(f"Validation approach : {{VALIDATION_PLAN}}")"""
@@ -509,9 +602,11 @@ else:
     ]
 
 
-def _cell_evaluation_readiness(analysis: dict, classified: dict) -> list[dict]:
+def _cell_evaluation_readiness(
+    analysis: dict, classified: dict, plan: dict | None = None
+) -> list[dict]:
     """Generate a pre-modeling evaluation checklist."""
-    task, metric, validation, _ = _infer_modeling_plan(analysis, classified)
+    task, metric, validation, _ = _infer_modeling_plan(analysis, classified, plan)
     target = classified["target"] or "manual selection required"
     high_cardinality = classified["high_cardinality"][:5]
     text_hint = ", ".join(high_cardinality) if high_cardinality else "none flagged"
@@ -615,7 +710,9 @@ def generate_explore_notebook(ds_dir: Path) -> list[dict]:
         print(f"  {RED}FAIL{RESET} {ds_dir.name}: bad dataset-metadata.json ({exc})")
         return []
 
-    csv_path = _find_csv_file(ds_dir)
+    plan = DATASET_PLANS.get(ds_dir.name)
+
+    csv_path = _find_csv_file(ds_dir, preferred=plan.get("file") if plan else None)
     if csv_path is None:
         print(f"  {YELLOW}SKIP{RESET} {ds_dir.name}: no CSV/Parquet files")
         return []
@@ -632,10 +729,20 @@ def generate_explore_notebook(ds_dir: Path) -> list[dict]:
 
     classified = _classify_columns(analysis)
 
+    # A curated plan pins the target explicitly (only if the column exists).
+    if plan:
+        col_names = {col["name"] for col in analysis.get("columns", [])}
+        if plan["target"] in col_names:
+            classified["target"] = plan["target"]
+        else:
+            print(f"  {YELLOW}WARN{RESET} {ds_dir.name}: planned target "
+                  f"{plan['target']!r} not in {analysis.get('file')}; falling back")
+            plan = None
+
     # Build cells
     cells: list[dict] = []
     cells.extend(_cell_title(meta, analysis))
-    cells.extend(_cell_objective_and_evaluation(meta, analysis, classified))
+    cells.extend(_cell_objective_and_evaluation(meta, analysis, classified, plan))
     cells.extend(_cell_setup(ds_dir, analysis))
     cells.extend(_cell_overview(analysis))
     cells.extend(_cell_missing_data())
@@ -643,7 +750,7 @@ def generate_explore_notebook(ds_dir: Path) -> list[dict]:
     cells.extend(_cell_categorical(classified))
     cells.extend(_cell_correlations(classified))
     cells.extend(_cell_target(classified))
-    cells.extend(_cell_evaluation_readiness(analysis, classified))
+    cells.extend(_cell_evaluation_readiness(analysis, classified, plan))
     cells.extend(_cell_quality_summary(analysis))
 
     return cells
