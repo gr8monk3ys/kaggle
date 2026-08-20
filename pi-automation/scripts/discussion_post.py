@@ -112,7 +112,13 @@ def load_item_body(item: dict) -> str:
     missing_keys = [key for key in required_keys if not item.get(key)]
     if missing_keys:
         raise ValueError(f"Queue item missing required key(s): {', '.join(missing_keys)}")
-    drafts_path = REPO / str(item["body_file"])
+    body_file = str(item["body_file"])
+    candidates = [REPO / body_file]
+    # Queues written before the layout reorg store a bare filename, which
+    # resolves to the repo root where the drafts file no longer lives.
+    if "/" not in body_file:
+        candidates.append(REPO / "docs" / "discussions" / body_file)
+    drafts_path = next((p for p in candidates if p.is_file()), candidates[0])
     try:
         return dq.extract_body(drafts_path.read_text(encoding="utf-8"), str(item["body_section"]))
     except (FileNotFoundError, ValueError) as exc:
