@@ -84,8 +84,16 @@ DEFAULT_SCHEDULE_WEEKS = 4
 # A draft that reports a measured result must say where the number came from.
 # Fabricated benchmark tables read exactly like real ones, so the rule is
 # mechanical: assert a measurement, cite evidence, or stay unpostable.
+# Allows an auxiliary or adverb between subject and verb: "I have compared",
+# "I've tested", "I recently benchmarked" all assert a measurement just as
+# plainly as "I benchmarked", and the tighter form missed every one of them.
 MEASUREMENT_CLAIM = re.compile(
-    r"\bI (?:benchmark|test|ran|run|measur|compar|evaluat)\w*\b", re.IGNORECASE
+    r"\bI(?:'ve|\s+\w+){0,2}\s+"
+    # Explicit verb forms, not stems: "ran\w*" also matched "range", so every
+    # `for i in range(...)` in a code sample read as a measurement claim.
+    r"(?:benchmarked|benchmarking|tested|testing|ran|running|measured|measuring"
+    r"|compared|comparing|evaluated|evaluating|tried|trying)\b",
+    re.IGNORECASE,
 )
 RESULT_TABLE = re.compile(r"\|\s*(?:AUC|RMSE|RMSLE|MAE|Accuracy|F1|Score|LB|CV)\b", re.IGNORECASE)
 METRIC_NUMBER = re.compile(r"\b0\.\d{3,5}\b")

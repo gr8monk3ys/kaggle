@@ -440,3 +440,16 @@ def test_no_postable_draft_reports_unbacked_results():
         and asserts_unbacked_results(body)
     ]
     assert not offenders, f"Postable drafts report unbacked results: {offenders}"
+
+
+def test_measurement_claim_allows_auxiliaries_but_not_code():
+    """"I have compared" asserts a measurement; `for i in range(...)` does not."""
+    from kaggle_portfolio.ops.discussion_scheduler import MEASUREMENT_CLAIM
+
+    for claim in ("I benchmarked 7 strategies", "I have compared five methods",
+                  "I've tested this", "I recently measured", "I then ran a check"):
+        assert MEASUREMENT_CLAIM.search(claim), claim
+    # "ran\\w*" previously matched "range", flagging every for-loop in a code sample.
+    for benign in ("for i in range(10):", "for i in range(n_splits):",
+                   "I like gradient boosting", "I am new to Kaggle"):
+        assert not MEASUREMENT_CLAIM.search(benign), benign
