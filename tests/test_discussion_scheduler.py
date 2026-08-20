@@ -388,3 +388,55 @@ def test_cmd_next_post_no_postable(capsys):
     rc = discussion_scheduler.cmd_next_post(queue=[{"id": "d", "status": "posted"}])
     assert rc == 0
     assert "No postable drafts" in capsys.readouterr().out
+
+
+# ── fabricated-results guard ─────────────────────────────────────────────────
+
+def test_asserts_unbacked_results_flags_measurement_claims():
+    from kaggle_portfolio.ops.discussion_scheduler import asserts_unbacked_results
+
+    assert asserts_unbacked_results("| Strategy | AUC |\n|---|---|\n| Mean | 0.813 |")
+    assert asserts_unbacked_results("I benchmarked 7 strategies. Best was 0.833 AUC.")
+    # An explicit evidence pointer clears the draft.
+    assert not asserts_unbacked_results(
+        "**Evidence:** projects/competitions/playground-series-s6e6/README.md\n"
+        "| Model | AUC |\n|---|---|\n| GBM | 0.968 |"
+    )
+    # Hyperparameters in code are numbers, not claimed measurements.
+    assert not asserts_unbacked_results("Set learning_rate=0.05 and subsample to 0.800.")
+    assert not asserts_unbacked_results("I tested this approach and liked it.")
+
+
+def test_no_postable_draft_reports_unbacked_results():
+    """A draft claiming measurements must cite evidence or be unpostable.
+
+    Six drafts shipped invented benchmark tables ("I benchmarked 7 strategies
+    on 3 datasets" with AUCs nothing in the repo produced). Posting those under
+    a real identity is the same failure as a fabricated medal claim.
+    """
+    import json
+    import re as _re
+
+    from kaggle_portfolio.ops.discussion_scheduler import (
+        DRAFTS_FILE,
+        POSTABLE_STATUSES,
+        QUEUE_FILE,
+        asserts_unbacked_results,
+    )
+
+    statuses = {i["id"]: i.get("status") for i in json.loads(QUEUE_FILE.read_text())}
+    # parse_drafts() does not return body text, so read the sections directly.
+    sections = _re.findall(
+        r"## Draft (\d+):.*?\n(.*?)(?=\n## Draft |\Z)",
+        DRAFTS_FILE.read_text(encoding="utf-8"),
+        _re.S,
+    )
+    assert sections, "no draft sections parsed — the guard would be vacuous"
+
+    offenders = [
+        f"draft_{int(num):03d}"
+        for num, body in sections
+        if statuses.get(f"draft_{int(num):03d}") in POSTABLE_STATUSES
+        and asserts_unbacked_results(body)
+    ]
+    assert not offenders, f"Postable drafts report unbacked results: {offenders}"
