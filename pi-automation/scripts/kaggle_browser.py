@@ -184,15 +184,43 @@ def session_is_signed_in(context) -> bool:
 
 
 def describe_context(context) -> str:
-    """Short human-readable state summary, printed while polling for login."""
+    """Human-readable state summary printed while polling for login.
+
+    Reports which signal is missing so a stalled capture is diagnosable from the
+    log alone. Cookie *names* only — values are credentials and are never
+    printed.
+    """
+    parts: list[str] = []
     try:
         urls = [str(p.url or "") for p in context.pages]
+        if urls:
+            shown = ", ".join(u.split("?")[0][:60] for u in urls[:3])
+            parts.append(f"{len(urls)} page(s): {shown}")
+        else:
+            parts.append("no open pages")
     except Exception:
-        return "browser state unavailable"
-    if not urls:
-        return "no open pages"
-    shown = ", ".join(u.split("?")[0][:60] for u in urls[:3])
-    return f"{len(urls)} page(s): {shown}"
+        parts.append("pages unavailable")
+
+    try:
+        cookies = context.cookies()
+        kaggle_names = sorted(
+            {
+                str(c.get("name"))
+                for c in cookies
+                if "kaggle" in str(c.get("domain", "")).lower()
+            }
+        )
+        if "CLIENT-TOKEN" in kaggle_names:
+            state = "identifies a user" if _client_token_is_authenticated(context) else "anonymous"
+            parts.append(f"CLIENT-TOKEN present ({state})")
+        else:
+            parts.append(
+                "no CLIENT-TOKEN; kaggle cookies: " + (", ".join(kaggle_names[:6]) or "none")
+            )
+    except Exception:
+        parts.append("cookies unavailable")
+
+    return " | ".join(parts)
 
 
 def _wait_and_check_auth(page, *, timeout_ms: int) -> bool:
