@@ -363,3 +363,68 @@ class TestHumanDelay:
     def test_runs_without_error(self):
         """Just verify it doesn't crash with minimal delay."""
         kb.human_delay(base=0.01, jitter=0.01)
+
+
+# ---------------------------------------------------------------------------
+# Manual-login session detection
+# ---------------------------------------------------------------------------
+
+def _jwt(payload: dict) -> str:
+    """Build a JWT-shaped token whose payload segment decodes to `payload`."""
+    import base64
+
+    body = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    return f"header.{body}.signature"
+
+
+class _FakeContext:
+    def __init__(self, cookies=None, pages=None, raise_on_cookies=False):
+        self._cookies = cookies or []
+        self.pages = pages or []
+        self._raise = raise_on_cookies
+
+    def cookies(self):
+        if self._raise:
+            raise RuntimeError("browser closed")
+        return self._cookies
+
+
+@pytest.mark.parametrize(
+    "payload,expected",
+    [
+        ({"displayName": "lorenzoscaturchio"}, True),
+        ({"userName": "someone"}, True),
+        ({"userId": 12345}, True),
+        ({"sub": ""}, False),          # anonymous visitors also receive CLIENT-TOKEN
+        ({"aud": "kaggle"}, False),
+        ({"userId": 0}, False),
+    ],
+)
+def test_client_token_identifies_signed_in_sessions(payload, expected):
+    ctx = _FakeContext(cookies=[{"name": "CLIENT-TOKEN", "value": _jwt(payload)}])
+    assert kb._client_token_is_authenticated(ctx) is expected
+
+
+def test_client_token_ignores_malformed_and_absent_tokens():
+    assert kb._client_token_is_authenticated(_FakeContext(cookies=[])) is False
+    assert kb._client_token_is_authenticated(
+        _FakeContext(cookies=[{"name": "GCLB", "value": "x"}])
+    ) is False
+    assert kb._client_token_is_authenticated(
+        _FakeContext(cookies=[{"name": "CLIENT-TOKEN", "value": "not-a-jwt"}])
+    ) is False
+
+
+def test_session_is_signed_in_survives_a_closed_browser():
+    """A closed browser must read as 'not signed in', never raise."""
+    assert kb.session_is_signed_in(_FakeContext(raise_on_cookies=True)) is False
+
+
+def test_session_is_signed_in_accepts_cookie_evidence_alone():
+    """OAuth completes in a popup, so the cookie can be the only signal."""
+    ctx = _FakeContext(cookies=[{"name": "CLIENT-TOKEN", "value": _jwt({"userId": 7})}])
+    assert kb.session_is_signed_in(ctx) is True
+
+
+def test_describe_context_reports_open_pages():
+    assert "no open pages" in kb.describe_context(_FakeContext())
