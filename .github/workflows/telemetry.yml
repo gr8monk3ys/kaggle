@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: telemetry
@@ -75,8 +76,13 @@ jobs:
             echo "No Telegram token; digest printed to log only."
           fi
 
-      - name: Commit telemetry
+      # main is a protected branch (PR required, enforced for admins), so the
+      # snapshot goes up as a branch + PR rather than a direct push. The diff
+      # is data-artifact-only, which the fleet merge gate can auto-merge.
+      - name: Open telemetry PR
         if: env.SKIP != '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -85,7 +91,17 @@ jobs:
           git add docs/reports/competition-scout-report.md 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No telemetry changes to commit."
+            exit 0
+          fi
+          STAMP="$(date -u +%Y-%m-%d)"
+          BRANCH="auto/telemetry-${STAMP}"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(telemetry): snapshot ${STAMP} [skip ci]"
+          git push --force-with-lease origin "$BRANCH"
+          if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
+            echo "PR already open for ${BRANCH}; branch updated."
           else
-            git commit -m "chore(telemetry): daily snapshot $(date -u +%Y-%m-%d) [skip ci]"
-            git push
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore(telemetry): snapshot ${STAMP}" \
+              --body "Automated telemetry snapshot: tracker metrics, medal-ops history, and the competition scout report, refreshed from live Kaggle. Data artifacts only — no code changes."
           fi
