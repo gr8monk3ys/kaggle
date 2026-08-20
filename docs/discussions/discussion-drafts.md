@@ -2,8 +2,8 @@
 
 > **Author:** [lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
 > **Created:** 2026-01-25
-> **Status:** Ready to post
-> **Total drafts:** 50
+> **Status:** Draft — integrity-checked 2026-08-19; verify claims against `docs/reports/grandmaster-tracker.md` before posting
+> **Total drafts:** 62
 
 ---
 
@@ -15,7 +15,7 @@
 
 ### 5 Feature Engineering Tricks That Move Tabular Scores
 
-Hey Kagglers! After grinding through several tabular competitions, I distilled the **five feature engineering techniques** I reach for first — the ones that most reliably move my local CV and public score out of the bottom half. Each one is dead simple to implement but surprisingly powerful.
+After grinding through several tabular competitions, I distilled the **five feature engineering techniques** I reach for first — the ones that most reliably move my local CV and public score out of the bottom half. Each one is dead simple to implement but surprisingly powerful.
 
 #### 1. Target Encoding with Smoothing
 
@@ -99,7 +99,7 @@ Note the `shift(1)` inside the rolling window: without it you leak the current v
 
 ---
 
-I cover all of these (and about 45 more) with full working examples in my **[Feature Engineering Cookbook notebook](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook)**. What's your go-to feature engineering trick? Drop it in the comments.
+I cover all of these (and about 45 more) with full working examples in my **[Feature Engineering Cookbook notebook](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook-50-techniques)**. What's your go-to feature engineering trick? Drop it in the comments.
 
 ---
 
@@ -184,7 +184,7 @@ Samples are not uniformly distributed across time. There is a noticeable gap in 
 
 ---
 
-Full analysis in my **[Med-Gemma EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/med-gemma-challenge-eda)**, which I'll keep updating as I dig deeper. If you've spotted anything I missed, or if you're handling the patient-level leakage differently, I'd like to hear it.
+Full analysis in my **[Med-Gemma EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/med-gemma-challenge-medical-ai-eda-baseline)**, which I'll keep updating as I dig deeper. If you've spotted anything I missed, or if you're handling the patient-level leakage differently, I'd like to hear it.
 
 ---
 
@@ -258,7 +258,7 @@ I compared BPE, Unigram, and character-level tokenization on the Akkadian side. 
 
 ---
 
-Full analysis in the **[Akkadian Translation EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda)**. Low-resource ancient language translation is an odd niche but a genuinely interesting one. If you're taking a different tokenization approach or have domain knowledge about Akkadian linguistics, I'd like to hear about it.
+Full analysis in the **[Akkadian Translation EDA notebook](https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-sentence-match-baseline)**. Low-resource ancient language translation is an odd niche but a genuinely interesting one. If you're taking a different tokenization approach or have domain knowledge about Akkadian linguistics, I'd like to hear about it.
 
 ---
 
@@ -381,7 +381,7 @@ Three things that matter for stacking:
 
 ---
 
-My **[Competition Template notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-template)** has a ready-to-use ensembling module. If you have a favorite ensemble trick that's missing here, share it in the comments.
+My **[Competition Template notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-masterclass-full-ml-pipeline)** has a ready-to-use ensembling module. If you have a favorite ensemble trick that's missing here, share it in the comments.
 
 ---
 
@@ -604,7 +604,7 @@ def plot_attention(weights, tokens):
 
 ---
 
-My **[Attention Mechanisms Visualized notebook](https://www.kaggle.com/code/lorenzoscaturchio/attention-mechanisms-guide)** has interactive visualizations and a full transformer implementation from scratch. If there's a part of this that's still not clicking, drop a comment. There's usually something I glossed over.
+My **[Attention Mechanisms Visualized notebook](https://www.kaggle.com/code/lorenzoscaturchio/complete-guide-to-attention-mechanisms)** has interactive visualizations and a full transformer implementation from scratch. If there's a part of this that's still not clicking, drop a comment. There's usually something I glossed over.
 
 ---
 
@@ -820,7 +820,7 @@ Once features are stable, I train multiple model types and ensemble:
 
 ---
 
-Full pipeline code in my **[Competition Masterclass notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-template)**. Curious what others do differently, especially in phases 4 and 5 where things get more competition-specific. Share your process in the comments.
+Full pipeline code in my **[Competition Masterclass notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-masterclass-full-ml-pipeline)**. Curious what others do differently, especially in phases 4 and 5 where things get more competition-specific. Share your process in the comments.
 
 ---
 
@@ -953,7 +953,7 @@ def combined_loss(pred, target, bce_weight=0.5):
 
 ---
 
-Benchmark numbers for all three approaches in the **[Vesuvius Surface Detection notebook](https://www.kaggle.com/code/lorenzoscaturchio/vesuvius-surface-detection)**. Curious what others are trying, especially if you've found a specific z-slice range that performs better or a different loss combination.
+Benchmark numbers for all three approaches in the **[Vesuvius Surface Detection notebook](https://www.kaggle.com/code/lorenzoscaturchio/vesuvius-challenge-3d-surface-detection-eda)**. Curious what others are trying, especially if you've found a specific z-slice range that performs better or a different loss combination.
 
 ---
 
@@ -977,7 +977,7 @@ The best practical introduction to stacking I've found. Clear diagrams, sensible
 
 #### 3. "Feature Engineering Cookbook" by Lorenzo Scaturchio (me)
 
-I wrote this as the reference I wished I had when I started. Target encoding, frequency encoding, interaction features, cyclical encoding, lag features — everything with working code. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook)**
+I wrote this as the reference I wished I had when I started. Target encoding, frequency encoding, interaction features, cyclical encoding, lag features — everything with working code. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook-50-techniques)**
 
 #### 4. "A Data Science Framework: To Achieve 99% Accuracy" by LD Freeman
 
@@ -989,7 +989,7 @@ Feature engineering for house prices, driven by actual domain knowledge about wh
 
 #### 6. "Attention Mechanisms Visualized" by Lorenzo Scaturchio (me)
 
-Self-attention, multi-head attention, and cross-attention from scratch, with interactive visualizations. If transformers are still fuzzy for you, this is probably worth your time. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/attention-mechanisms-guide)**
+Self-attention, multi-head attention, and cross-attention from scratch, with interactive visualizations. If transformers are still fuzzy for you, this is probably worth your time. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/complete-guide-to-attention-mechanisms)**
 
 #### 7. "Hitchhiker's Guide to Feature Extraction" by Chris Deotte
 
@@ -1032,7 +1032,7 @@ If there's a notebook you think should be on this list, drop it in the comments.
 
 ### The Definitive Guide to Cross-Validation Strategies
 
-Hey Kagglers! Cross-validation is the backbone of reliable model evaluation, yet I see people reach for `StratifiedKFold` by default even when it's the wrong tool. Let me walk through the three strategies that actually matter and when to use each one.
+Cross-validation is the backbone of reliable model evaluation, yet I see people reach for `StratifiedKFold` by default even when it's the wrong tool. Let me walk through the three strategies that actually matter and when to use each one.
 
 #### StratifiedKFold — Classification Default
 
@@ -1108,7 +1108,7 @@ What CV strategy trips people up the most in your experience? Drop it in the com
 
 ### How I Stopped Overfitting the Public Leaderboard
 
-Hey Kagglers! There is a special kind of pain that comes from ranking 47th on the public leaderboard and then dropping to 312th after the private reveal. I have been there. Here is what I learned about why it happens and how to avoid it.
+There is a special kind of pain that comes from ranking 47th on the public leaderboard and then dropping to 312th after the private reveal. I have been there. Here is what I learned about why it happens and how to avoid it.
 
 #### Why Public and Private LB Diverge
 
@@ -1183,7 +1183,7 @@ The best competitors I know barely look at the public LB mid-competition. They f
 
 ### Data Leakage: The Silent Killer of Kaggle Models
 
-Hey Kagglers! Nothing feels worse than a 0.99 CV score that collapses to 0.61 on the leaderboard. Nine times out of ten, that gap is data leakage. Let me walk through the three types of leakage I encounter most often, with detection code for each.
+Nothing feels worse than a 0.99 CV score that collapses to 0.61 on the leaderboard. Nine times out of ten, that gap is data leakage. Let me walk through the three types of leakage I encounter most often, with detection code for each.
 
 #### Type 1: Target Leakage
 
@@ -1286,7 +1286,7 @@ Have you caught a nasty leakage bug in a competition? Drop it in the comments �
 
 ### My Gradient Boosting Tuning Checklist (XGBoost/LightGBM/CatBoost)
 
-Hey Kagglers! Gradient boosting is the workhorse of tabular Kaggle competitions. But tuning it randomly wastes hours. I follow a specific order because the parameters interact in predictable ways. Here is my checklist.
+Gradient boosting is the workhorse of tabular Kaggle competitions. But tuning it randomly wastes hours. I follow a specific order because the parameters interact in predictable ways. Here is my checklist.
 
 #### Step 1: Fix the Learning Rate and Use Early Stopping
 
@@ -1384,7 +1384,7 @@ What is your go-to parameter to tune first? I know some people start with regula
 
 ### Handling Missing Data: 7 Strategies Compared
 
-Hey Kagglers! Missing data is unavoidable and the choice of how to handle it actually matters more than most tutorials suggest. I benchmarked 7 strategies on 3 datasets. Here are the results and when to use each one.
+Missing data is unavoidable and the choice of how to handle it actually matters more than most tutorials suggest. I benchmarked 7 strategies on 3 datasets. Here are the results and when to use each one.
 
 #### The 7 Strategies
 
@@ -1484,7 +1484,7 @@ Which imputation method has surprised you most in a competition? Drop a comment 
 
 ### EDA in 20 Minutes: My Pandas Profiling Alternative
 
-Hey Kagglers! I used to reach for `ydata-profiling` (formerly pandas-profiling) at the start of every competition. Then Kaggle kernels started timing out on it for large datasets. I built a lightweight alternative using pure pandas and matplotlib that runs in under 20 minutes on any dataset. Here is the whole thing.
+I used to reach for `ydata-profiling` (formerly pandas-profiling) at the start of every competition. Then Kaggle kernels started timing out on it for large datasets. I built a lightweight alternative using pure pandas and matplotlib that runs in under 20 minutes on any dataset. Here is the whole thing.
 
 #### The EDA Function Library
 
@@ -1583,7 +1583,7 @@ This gives me everything I need in under 20 minutes. The `quick_eda` function is
 
 ### Feature Selection That Actually Works: 5 Methods Ranked
 
-Hey Kagglers! Not all features help your model. Including irrelevant or redundant features adds noise, slows training, and sometimes actively hurts performance. I have compared five feature selection methods across multiple competitions. Here is my honest ranking.
+Not all features help your model. Including irrelevant or redundant features adds noise, slows training, and sometimes actively hurts performance. I have compared five feature selection methods across multiple competitions. Here is my honest ranking.
 
 #### Method 5 (Worst): Variance Threshold
 
@@ -1681,7 +1681,7 @@ My typical workflow: Variance threshold first, SHAP importance second, then opti
 
 ### Outlier Detection Without Dropping Data
 
-Hey Kagglers! Most tutorials tell you to "remove outliers" and then do nothing to explain what to do instead. Dropping rows is often the wrong move in competitions — you lose signal. Here are four detection methods and smarter handling strategies.
+Most tutorials tell you to "remove outliers" and then do nothing to explain what to do instead. Dropping rows is often the wrong move in competitions — you lose signal. Here are four detection methods and smarter handling strategies.
 
 #### Method 1: IQR (Univariate)
 
@@ -1773,7 +1773,7 @@ What is your preferred outlier strategy for tabular competitions? Drop a comment
 
 ### Log Transform vs Box-Cox vs Yeo-Johnson: Which One?
 
-Hey Kagglers! If your regression target is right-skewed, transforming it can dramatically improve model performance. But which transform to use, and when? Here is a practical comparison.
+If your regression target is right-skewed, transforming it can dramatically improve model performance. But which transform to use, and when? Here is a practical comparison.
 
 #### Why Transform the Target?
 
@@ -1870,7 +1870,7 @@ Log transform gets you 90% of the benefit with half the complexity. Box-Cox and 
 
 ### Building Better Categorical Features: Beyond One-Hot Encoding
 
-Hey Kagglers! One-hot encoding is fine for low-cardinality categoricals but breaks down fast once you have hundreds or thousands of unique values. Here are four encoding strategies that scale better and often outperform one-hot.
+One-hot encoding is fine for low-cardinality categoricals but breaks down fast once you have hundreds or thousands of unique values. Here are four encoding strategies that scale better and often outperform one-hot.
 
 #### The Problem with One-Hot at Scale
 
@@ -1970,7 +1970,7 @@ Frequency encoding is my baseline, target encoding with smoothing is my upgrade.
 
 ### How to Form a Kaggle Team (And Not Regret It)
 
-Hey Kagglers! Team merges can double your final score or completely derail your competition experience. After a few good and bad teaming experiences, here is what I have learned about how to do it right.
+Team merges can double your final score or completely derail your competition experience. After a few good and bad teaming experiences, here is what I have learned about how to do it right.
 
 #### When to Team Up
 
@@ -2049,7 +2049,7 @@ What's your teaming strategy — solo or team? Share your experience in the comm
 
 ### My Post-Competition Analysis Template
 
-Hey Kagglers! The competition ends, the private LB drops, and most people close their laptops and move on. That is leaving most of the learning on the table. Here is my post-competition analysis template that I run after every competition.
+The competition ends, the private LB drops, and most people close their laptops and move on. That is leaving most of the learning on the table. Here is my post-competition analysis template that I run after every competition.
 
 #### Step 1: Document Your Own Approach (Within 24 Hours)
 
@@ -2128,7 +2128,7 @@ The delta from reading 10 gold solutions carefully and implementing one new thin
 
 ### The Notebook Competitor's Playbook
 
-Hey Kagglers! Notebook competitions are underrated for building your Kaggle profile. You are not competing for rank on a leaderboard — you are competing for upvotes on quality. The rules are different, and most people play them wrong. Here is the playbook.
+Notebook competitions are underrated for building your Kaggle profile. You are not competing for rank on a leaderboard — you are competing for upvotes on quality. The rules are different, and most people play them wrong. Here is the playbook.
 
 #### What Earns Gold Medals in Notebook Competitions
 
@@ -2218,7 +2218,7 @@ What notebook competition strategies have worked best for you? Drop your tips be
 
 ### Pseudo-Labeling: Double Your Training Data
 
-Hey Kagglers! When your training set is small but your test set is large, pseudo-labeling can be a significant boost. I have used it to add 0.5-1.5% to my CV score in low-data competitions. Here is exactly how it works and when to use it.
+When your training set is small but your test set is large, pseudo-labeling can be a significant boost. I have used it to add 0.5-1.5% to my CV score in low-data competitions. Here is exactly how it works and when to use it.
 
 #### The Core Idea
 
@@ -2308,7 +2308,7 @@ Have you used pseudo-labeling successfully? What threshold did you use? Share yo
 
 ### Stochastic Weight Averaging: A Free +0.3% Boost
 
-Hey Kagglers! Stochastic Weight Averaging (SWA) is one of the most underused tricks in competition deep learning. It takes maybe 10 lines to add to any PyTorch training loop and consistently gives 0.2-0.5% improvement on the validation metric. Here is how it works.
+Stochastic Weight Averaging (SWA) is one of the most underused tricks in competition deep learning. It takes maybe 10 lines to add to any PyTorch training loop and consistently gives 0.2-0.5% improvement on the validation metric. Here is how it works.
 
 #### The Intuition
 
@@ -2404,7 +2404,7 @@ Have you tried SWA? What kind of improvement did you see? Drop your results belo
 
 ### Finding the Perfect Learning Rate: LR Range Test
 
-Hey Kagglers! The learning rate is the most important hyperparameter in deep learning and also the most commonly guessed. Leslie Smith's LR Range Test gives you the optimal value in about 5 minutes of compute. Here is how to use it.
+The learning rate is the most important hyperparameter in deep learning and also the most commonly guessed. Leslie Smith's LR Range Test gives you the optimal value in about 5 minutes of compute. Here is how to use it.
 
 #### What Is the LR Range Test?
 
@@ -2511,7 +2511,7 @@ I run this at the start of every new architecture. It takes 5 minutes and saves 
 
 ### Batch Size Effects: What Nobody Tells You
 
-Hey Kagglers! Most tutorials treat batch size as a memory constraint: "use the largest batch size that fits in GPU memory." That advice is incomplete and sometimes wrong. Batch size affects generalization in ways that matter for competition performance.
+Most tutorials treat batch size as a memory constraint: "use the largest batch size that fits in GPU memory." That advice is incomplete and sometimes wrong. Batch size affects generalization in ways that matter for competition performance.
 
 #### The Basic Relationship
 
@@ -2598,7 +2598,7 @@ What batch size do you default to for your task? Share it in the comments.
 
 ### Data Augmentation for Tabular Data
 
-Hey Kagglers! Data augmentation is well-established for images and text, but for tabular data it is surprisingly underused. Here are four augmentation strategies that can boost tabular model performance, especially in small-data regimes.
+Data augmentation is well-established for images and text, but for tabular data it is surprisingly underused. Here are four augmentation strategies that can boost tabular model performance, especially in small-data regimes.
 
 #### Why Augment Tabular Data?
 
@@ -2693,7 +2693,7 @@ Benchmark: on a 2,000-row fraud detection dataset, Mixup + Gaussian noise reduce
 
 ### Mixed Precision Training: 2x Speed for Free
 
-Hey Kagglers! If you are training PyTorch models on Kaggle GPUs without mixed precision, you are leaving 40-60% of GPU throughput unused. Here is how to enable it in 5 lines and avoid the one pitfall that trips people up.
+If you are training PyTorch models on Kaggle GPUs without mixed precision, you are leaving 40-60% of GPU throughput unused. Here is how to enable it in 5 lines and avoid the one pitfall that trips people up.
 
 #### What Is Mixed Precision?
 
@@ -2779,7 +2779,7 @@ Enable this in every training job by default. There is essentially no downside w
 
 ### Debugging Neural Networks: My Systematic Approach
 
-Hey Kagglers! Neural networks fail silently in ways that gradient boosted trees never do. A GBM either trains or it doesn't. A neural net can "train" for 50 epochs while learning essentially nothing. Here is my systematic debugging checklist.
+Neural networks fail silently in ways that gradient boosted trees never do. A GBM either trains or it doesn't. A neural net can "train" for 50 epochs while learning essentially nothing. Here is my systematic debugging checklist.
 
 #### Step 1: Overfit One Batch First
 
@@ -2888,7 +2888,7 @@ This checklist has saved me hours on every competition. What debugging trick do 
 
 ### BERT Fine-Tuning That Actually Works: 5 Tips
 
-Hey Kagglers! Fine-tuning BERT-family models looks simple in tutorials but there are half a dozen things that quietly destroy performance in practice. Here are five lessons learned the hard way.
+Fine-tuning BERT-family models looks simple in tutorials but there are half a dozen things that quietly destroy performance in practice. Here are five lessons learned the hard way.
 
 #### Tip 1: Learning Rate Schedule Matters More Than the LR Itself
 
@@ -2998,7 +2998,7 @@ This reduces overfitting dramatically on small datasets. What BERT fine-tuning t
 
 ### Text Preprocessing: What to Keep and What to Throw Away
 
-Hey Kagglers! Text preprocessing advice is all over the place — "always lowercase" and "never lowercase" can both be correct depending on your task. Here is a benchmarked guide.
+Text preprocessing advice is all over the place — "always lowercase" and "never lowercase" can both be correct depending on your task. Here is a benchmarked guide.
 
 #### What I Tested
 
@@ -3099,7 +3099,7 @@ What preprocessing step has made the biggest difference in your NLP competitions
 
 ### Embedding Comparison: TF-IDF vs Word2Vec vs BERT
 
-Hey Kagglers! Choosing the right text embedding for your task is not always "just use BERT." Here is an honest comparison across use cases with benchmark numbers.
+Choosing the right text embedding for your task is not always "just use BERT." Here is an honest comparison across use cases with benchmark numbers.
 
 #### The Three Camps
 
@@ -3187,7 +3187,7 @@ Which embedding method surprised you most in a competition context? Share your e
 
 ### Multi-Label Text Classification: Lessons Learned
 
-Hey Kagglers! Multi-label classification (where each sample can belong to multiple classes simultaneously) is trickier than it looks. Here are the specific lessons I learned building a multi-label NLP model.
+Multi-label classification (where each sample can belong to multiple classes simultaneously) is trickier than it looks. Here are the specific lessons I learned building a multi-label NLP model.
 
 #### BCE vs Softmax: The Core Decision
 
@@ -3291,7 +3291,7 @@ What multi-label tricks have worked best for you? Especially curious about rare 
 
 ### How I Built a RAG System in 50 Lines of Python
 
-Hey Kagglers! Most RAG tutorials use LangChain and pile abstraction on top of abstraction until the core concept disappears. Here is a minimal working RAG system in under 50 lines — no LangChain, no vector databases, just numpy and a language model API.
+Most RAG tutorials use LangChain and pile abstraction on top of abstraction until the core concept disappears. Here is a minimal working RAG system in under 50 lines — no LangChain, no vector databases, just numpy and a language model API.
 
 #### The Minimal RAG Stack
 
@@ -3384,87 +3384,6 @@ My full RAG implementation with evaluation is in the **[RAG From Scratch noteboo
 
 ---
 
-## Draft 36: New Dataset: Credit Card Fraud (200K Transactions, 0.5% Fraud Rate)
-
-**Target forum:** Data
-**Category:** Dataset Announcement
-**Expected medal:** Gold
-
-### New Dataset: Credit Card Fraud (200K Transactions, 0.5% Fraud Rate)
-
-Hey Kagglers! I just published a credit card fraud detection dataset that I think fills a gap in what is currently available on Kaggle. Here is what is in it and why I think it is useful.
-
-#### Dataset Overview
-
-- **200,000 transactions** (180K training / 20K test)
-- **0.5% fraud rate** (realistic, not artificially balanced)
-- **30 features**: mix of anonymized transaction features (V1-V28), Amount, Time, and merchant category
-- **Ground truth labels** with confidence scores for borderline cases
-- **[Link to dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud)**
-
-#### What Makes This Different
-
-Most fraud datasets on Kaggle either have the class imbalance pre-balanced (unrealistic) or lack merchant category information (a key feature in real fraud systems). This dataset preserves the natural imbalance and includes merchant category codes.
-
-```python
-import pandas as pd
-
-df = pd.read_csv('/kaggle/input/credit-card-fraud/transactions.csv')
-print(df.shape)         # (200000, 32)
-print(df.dtypes)
-print(f"\nFraud rate: {df['is_fraud'].mean():.3%}")
-
-# Check class distribution
-print(df['is_fraud'].value_counts())
-# 0    199000 (99.5%)
-# 1      1000  (0.5%)
-```
-
-#### Interesting Patterns to Explore
-
-1. **Time patterns**: Fraud peaks between 1 AM and 4 AM. This temporal pattern is strong enough to be a standalone feature.
-
-```python
-import matplotlib.pyplot as plt
-
-df['hour'] = df['Time'] % 86400 // 3600
-fraud_by_hour = df.groupby('hour')['is_fraud'].mean()
-fraud_by_hour.plot(kind='bar', figsize=(12, 4), title='Fraud Rate by Hour')
-plt.ylabel('Fraud Rate')
-plt.show()
-```
-
-2. **Amount distribution**: Fraudulent transactions cluster in two distinct amount ranges — small transactions (testing stolen cards) and large transactions (extraction).
-
-3. **Merchant category**: Three merchant categories account for 40% of all fraud events despite representing only 8% of transactions.
-
-#### Suggested Use Cases
-
-- **Baseline model benchmarking**: Compare XGBoost, LightGBM, neural networks on an imbalanced dataset
-- **Imbalance handling comparison**: SMOTE, class weights, focal loss, threshold tuning
-- **Anomaly detection**: Isolation Forest, LOF, Autoencoder approaches
-- **Explainability**: SHAP analysis on fraud features
-- **Time-series modeling**: treating transactions as temporal sequences per card
-
-#### Evaluation Metric
-
-Area under the Precision-Recall curve (AUC-PR) is more informative than ROC-AUC for highly imbalanced datasets:
-
-```python
-from sklearn.metrics import average_precision_score, PrecisionRecallDisplay
-
-ap_score = average_precision_score(y_test, y_pred_proba)
-print(f"Average Precision: {ap_score:.4f}")
-
-PrecisionRecallDisplay.from_predictions(y_test, y_pred_proba)
-plt.title('Precision-Recall Curve')
-plt.show()
-```
-
-If you build a notebook on this dataset, drop a link in the comments. I will upvote the most creative approaches and feature a few in a follow-up discussion post.
-
----
-
 ## Draft 37: New Dataset: Job Postings NLP (15K Listings, Salary Ranges, Skills)
 
 **Target forum:** Data
@@ -3473,7 +3392,7 @@ If you build a notebook on this dataset, drop a link in the comments. I will upv
 
 ### New Dataset: Job Postings NLP (15K Listings, Salary Ranges, Skills)
 
-Hey Kagglers! I have just published a job postings dataset designed for NLP competitions and salary prediction tasks. Here is the breakdown.
+I have just published a job postings dataset designed for NLP competitions and salary prediction tasks. Here is the breakdown.
 
 #### What Is in the Dataset
 
@@ -3481,7 +3400,7 @@ Hey Kagglers! I have just published a job postings dataset designed for NLP comp
 - **Fields**: job title, company, location, description, required skills, experience level, salary range, remote/onsite flag
 - **Structured salary data**: min and mid salary in USD, cleaned and normalized
 - **Skills taxonomy**: 50+ standardized skill tags per posting
-- **[Link to dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp)**
+- **[Link to dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp-salary-prediction)**
 
 ```python
 df = pd.read_csv('/kaggle/input/job-postings-nlp/postings.csv')
@@ -3562,7 +3481,7 @@ Drop your notebooks in the comments — I will review and upvote the most insigh
 
 ### New Dataset: Programming Language Benchmarks (2200+ Benchmarks)
 
-Hey Kagglers! I just released a programming benchmarks dataset covering 2,200+ benchmarks across 12 programming languages. It is useful for LLM evaluation, code analysis, and language comparison tasks.
+I just released a programming benchmarks dataset covering 2,200+ benchmarks across 12 programming languages. It is useful for LLM evaluation, code analysis, and language comparison tasks.
 
 #### Dataset Overview
 
@@ -3570,7 +3489,7 @@ Hey Kagglers! I just released a programming benchmarks dataset covering 2,200+ b
 - **Fields**: language, task category, benchmark name, description, input/output specification, difficulty level, time complexity class
 - **Difficulty labels**: Easy / Medium / Hard / Expert (aligned with LeetCode-style ratings)
 - **Category labels**: Arrays, Strings, Trees, Graphs, Dynamic Programming, Math, System Design, etc.
-- **[Link to dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/programming-benchmarks)**
+- **[Link to dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks)**
 
 ```python
 df = pd.read_csv('/kaggle/input/programming-benchmarks/benchmarks.csv')
@@ -3632,28 +3551,28 @@ plt.show()
 
 The benchmark descriptions are a natural language corpus. Train a classifier to predict programming language or difficulty from the description text alone.
 
-This dataset pairs naturally with my **[Programming Benchmarks notebook](https://www.kaggle.com/code/lorenzoscaturchio/programming-benchmarks-eda)**. What analysis would you run first? Drop your ideas in the comments.
+This dataset pairs naturally with my **[Programming Benchmarks notebook](https://www.kaggle.com/code/lorenzoscaturchio/programming-language-benchmarks-eda-v2)**. What analysis would you run first? Drop your ideas in the comments.
 
 ---
 
-## Draft 39: New Dataset: ML/DS Interview Questions & Answers (500+)
+## Draft 39: New Dataset: ML/DS Interview Questions & Answers (119 curated)
 
 **Target forum:** Data
 **Category:** Dataset Announcement
 **Expected medal:** Gold
 
-### New Dataset: ML/DS Interview Questions & Answers (500+)
+### New Dataset: ML/DS Interview Questions & Answers (119 curated)
 
-Hey Kagglers! I just published a dataset of 500+ machine learning and data science interview questions with reference answers. It is useful for both NLP tasks and for actual interview prep.
+I just published a dataset of 119 individually written machine learning and data science interview questions with reference answers. It is useful for both NLP tasks and for actual interview prep.
 
 #### Dataset Overview
 
-- **500+ Q&A pairs** covering the full ML/DS interview spectrum
+- **119 Q&A pairs** covering the full ML/DS interview spectrum, every answer distinct
 - **Question categories**: Statistics, ML Fundamentals, Deep Learning, Feature Engineering, System Design, Coding, Case Studies, Behavioral
 - **Difficulty levels**: Junior, Senior, Staff
 - **Company tags**: tagged by which companies commonly ask each question type
 - **Answer quality scores**: community-rated answer quality (1-5)
-- **[Link to dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-questions)**
+- **[Link to dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa)**
 
 ```python
 df = pd.read_csv('/kaggle/input/ml-interview-questions/questions.csv')
@@ -3712,61 +3631,7 @@ The distribution of questions reveals what companies actually care about:
 - **45%** of ML fundamentals questions ask about bias-variance tradeoff or regularization
 - **70%** of system design questions involve scalable model serving or feature pipelines
 
-This dataset pairs well with my **[ML Interview Q&A notebook](https://www.kaggle.com/code/lorenzoscaturchio/ml-interview-qa-eda)**. What interview question category do you find hardest? Drop a comment.
-
----
-
-## Draft 40: 5 Notebooks You Should Upvote This Week
-
-**Target forum:** Getting Started
-**Category:** Discussion
-**Expected medal:** Gold
-
-### 5 Notebooks You Should Upvote This Week
-
-Hey Kagglers! The Kaggle ecosystem only works if quality work gets surfaced. This week I am sharing five notebooks that I think deserve more attention — a mix of my own work and community contributions I have found genuinely useful. Have a look and upvote the ones that help you.
-
-#### 1. Feature Engineering Cookbook
-
-**[Feature Engineering Cookbook](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook)** — 50 feature engineering techniques across 8 categories with working code. If you are working on any tabular competition, this is the reference I go back to repeatedly. Target encoding, interaction features, temporal features, text features — all in one place.
-
-Why it deserves an upvote: it is not a tutorial that explains one technique. It is a reference that covers the full spectrum, with the underlying logic explained for each one.
-
-#### 2. Attention Mechanisms Visualized
-
-**[Attention Mechanisms Guide](https://www.kaggle.com/code/lorenzoscaturchio/attention-mechanisms-guide)** — Self-attention, multi-head attention, cross-attention, and positional encoding built from scratch with interactive visualizations.
-
-Why it deserves an upvote: most transformer tutorials either skip the math or skip the code. This one does both and includes visualizations that make the weight matrices intuitive.
-
-#### 3. LLM Fine-Tuning Cookbook
-
-**[LLM Fine-Tuning Cookbook](https://www.kaggle.com/code/lorenzoscaturchio/llm-finetuning-cookbook)** — LoRA and QLoRA explained from first principles, with a working fine-tuning loop on a 7B parameter model that runs inside Kaggle's free T4 GPU quota.
-
-Why it deserves an upvote: fine-tuning LLMs used to require A100 access. This shows how to do it for free on Kaggle with quantization and LoRA. The memory optimization walkthrough alone is worth reading.
-
-#### 4. Ensemble & Stacking Guide
-
-**[Ensemble Stacking Guide](https://www.kaggle.com/code/lorenzoscaturchio/ensemble-stacking-guide)** — Simple averaging, rank averaging, weighted blending, and stacking with meta-learners. Every technique benchmarked against each other on the same dataset.
-
-Why it deserves an upvote: it goes beyond the standard "average your models" advice and actually shows when each technique outperforms the others. The correlation-based diversity analysis is particularly useful for team competitions.
-
-#### 5. GNN Practical Guide
-
-**[Graph Neural Networks Practical Guide](https://www.kaggle.com/code/lorenzoscaturchio/gnn-practical-guide)** — Message passing, GCN, GraphSAGE, GAT, and practical advice on when to use graph neural networks vs. standard tabular approaches.
-
-Why it deserves an upvote: GNNs have a reputation for being hard to apply. This notebook demystifies the implementation and gives concrete benchmarks against XGBoost on graph-structured data.
-
----
-
-#### How to Find More Quality Notebooks
-
-Beyond these five, here are reliable ways to find quality work:
-
-1. **Sort by "Most Votes" this week** in the Notebooks tab for any active competition
-2. **Follow Grandmasters** whose domain matches yours — their output is consistently high quality
-3. **Check notebook citations**: when a discussion post says "see this notebook for details", that is usually worth reading
-
-What is a notebook you have found invaluable that does not have enough upvotes? Share the link below — I will check it out.
+This dataset pairs well with my **[ML Interview Q&A notebook](https://www.kaggle.com/code/lorenzoscaturchio/ml-interview-qa-explorer-v2)**. What interview question category do you find hardest? Drop a comment.
 
 ---
 
@@ -3778,7 +3643,7 @@ What is a notebook you have found invaluable that does not have enough upvotes? 
 
 ### 10 Pandas Tricks That Save Hours in Kaggle Notebooks
 
-Hey Kagglers! Pandas is the tool every Kaggle notebook starts with, but most people use 20% of its capabilities. Here are 10 tricks I use constantly that dramatically speed up data processing.
+Pandas is the tool every Kaggle notebook starts with, but most people use 20% of its capabilities. Here are 10 tricks I use constantly that dramatically speed up data processing.
 
 #### Trick 1: Reduce Memory Usage Immediately
 
@@ -3919,7 +3784,7 @@ What is your most-used pandas trick that most people do not know about? Drop it 
 
 ### GPU Memory Management in PyTorch: Stop Getting OOM Errors
 
-Hey Kagglers! "CUDA out of memory" is the most common error in Kaggle deep learning notebooks. Here is a systematic approach to diagnosing and fixing GPU OOM errors so you can spend your 30-hour weekly GPU quota actually training models.
+"CUDA out of memory" is the most common error in Kaggle deep learning notebooks. Here is a systematic approach to diagnosing and fixing GPU OOM errors so you can spend your 30-hour weekly GPU quota actually training models.
 
 #### First: Understand Where Your Memory Goes
 
@@ -4054,7 +3919,7 @@ What OOM fix has worked best for you? Share your go-to trick below.
 
 ### The Perfect Kaggle Notebook Template
 
-Hey Kagglers! After dozens of competition notebooks, I have converged on a template that handles all the boilerplate and lets me focus on the actual problem from the first cell. Here is the full thing — fork it and make it your own.
+After dozens of competition notebooks, I have converged on a template that handles all the boilerplate and lets me focus on the actual problem from the first cell. Here is the full thing — fork it and make it your own.
 
 #### Cell 1: Configuration (Everything Tunable in One Place)
 
@@ -4206,7 +4071,7 @@ print("Submission saved.")
 print(submission.head())
 ```
 
-This template is available in my **[Competition Masterclass notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-template)**. What does your notebook template include that mine is missing? Share it below.
+This template is available in my **[Competition Masterclass notebook](https://www.kaggle.com/code/lorenzoscaturchio/competition-masterclass-full-ml-pipeline)**. What does your notebook template include that mine is missing? Share it below.
 
 ---
 
@@ -4218,7 +4083,7 @@ This template is available in my **[Competition Masterclass notebook](https://ww
 
 ### Reproducibility Checklist: Never Get a Different Score Again
 
-Hey Kagglers! Nothing is more frustrating than rerunning your best notebook and getting a different score. Reproducibility issues waste time, cause incorrect A/B comparisons, and can invalidate your best submission. Here is my complete checklist.
+Nothing is more frustrating than rerunning your best notebook and getting a different score. Reproducibility issues waste time, cause incorrect A/B comparisons, and can invalidate your best submission. Here is my complete checklist.
 
 #### Part 1: Random Seeds — All of Them
 
@@ -4362,7 +4227,7 @@ After adopting this checklist, I stopped getting surprise score differences betw
 
 ### How to Use Kaggle's Free TPUs Effectively
 
-Hey Kagglers! Kaggle gives you 30 hours of free TPU (v3-8) quota per week and most people never touch it. TPUs can be 3-5x faster than the T4 GPU for certain workloads. Here is when they help and how to use them.
+Kaggle gives you 30 hours of free TPU (v3-8) quota per week and most people never touch it. TPUs can be 3-5x faster than the T4 GPU for certain workloads. Here is when they help and how to use them.
 
 #### When TPUs Are Worth Using
 
@@ -4462,157 +4327,6 @@ What workloads have you found work best on Kaggle TPUs? Share your experience be
 
 ---
 
-## Draft 46: My Grandmaster Journey: Week 1 Progress Report
-
-**Target forum:** Getting Started
-**Category:** Discussion
-**Expected medal:** Gold
-
-### My Grandmaster Journey: Week 1 Progress Report
-
-Hey Kagglers! I decided to document my attempt to achieve Kaggle Grandmaster across all four categories — Competitions, Notebooks, Datasets, and Discussions. This is the Week 1 update. I will try to be honest about what is working and what is not.
-
-#### The Goal and Why It Is Ambitious
-
-Kaggle has four Grandmaster tiers:
-
-- **Competition Grandmaster**: 5 gold medals, with at least one solo gold
-- **Notebooks Grandmaster**: 15 gold medals
-- **Datasets Grandmaster**: 5 gold medals
-- **Discussion Grandmaster**: 50 gold medals (more achievable but volume-dependent)
-
-No one has achieved all four simultaneously in a short timeframe. Most Grandmasters specialize. I am trying to do all four at once, which may be a mistake — we will find out.
-
-#### Week 1 Status
-
-**Notebooks (21 published, targeting Notebooks GM)**
-
-Active notebooks and their current status:
-
-```python
-notebook_status = {
-    'feature-engineering-cookbook': 'live, ~40 upvotes',
-    'attention-mechanisms-guide': 'live, ~30 upvotes',
-    'llm-finetuning-cookbook': 'live, ~25 upvotes',
-    'ensemble-stacking-guide': 'live, ~20 upvotes',
-    'rag-from-scratch': 'live, ~18 upvotes',
-    # ... 16 more
-}
-# Need gold (~20+ upvotes typically) on 15 notebooks for GM
-```
-
-Progress is okay. A few notebooks are close to gold threshold. The quality of engagement — comments, forks — matters as much as upvote count for reaching bronze/silver/gold.
-
-**Datasets (4 published, targeting Datasets GM)**
-
-Four datasets are live. Need one to reach gold (typically requires 20+ upvotes and active community use). Early signals are mixed — the fraud dataset is getting traction, the others less so.
-
-**Competitions (1 entered: Med-Gemma)**
-
-This is the hardest category and the one I am least confident about. The Med-Gemma challenge is small (58 teams) which helps medal probability. My current approach uses LoRA fine-tuning of a vision-language model. Will update with results.
-
-**Discussions (targeting 50 bronze via quality posts)**
-
-Planning 2-3 posts per week across forums. The strategy is quality over quantity — substantive posts with code examples tend to get more engagement than short questions.
-
-#### What I Have Learned in Week 1
-
-1. **Consistency beats bursts**: Three focused hours every day produces better work than 12 hours on the weekend.
-
-2. **The forums are underutilized**: Most Kagglers are lurkers. Quality discussion posts get outsized engagement because the bar is low.
-
-3. **Cross-pollination works**: When I post a discussion about feature engineering, my feature engineering notebook gets more views. When the notebook gets upvotes, people check my other notebooks.
-
-I will post Week 2 updates with numbers. If you are on a similar Grandmaster pursuit, I would like to hear how you are approaching it. What category are you targeting first?
-
----
-
-## Draft 47: What I Learned From Reading 50 Top Competition Solutions
-
-**Target forum:** Getting Started
-**Category:** Discussion
-**Expected medal:** Gold
-
-### What I Learned From Reading 50 Top Competition Solutions
-
-Hey Kagglers! I spent two months reading gold and silver solution writeups from 50 different Kaggle competitions. Here are the patterns I found across all of them — the techniques that appear in top solutions far more often than in median solutions.
-
-#### Pattern 1: Validation Strategy is Non-Negotiable
-
-In 47 of 50 solutions, the author explicitly described how they validated and verified that their local CV correlated with the public leaderboard. Not one gold solution just used `train_test_split` with `shuffle=True`.
-
-Common strategies: GroupKFold for user/patient data, TimeSeriesSplit for temporal data, adversarial validation to verify distribution shift.
-
-The lesson: if you do not have a trustworthy local CV score, you are flying blind.
-
-#### Pattern 2: Feature Engineering Over Model Complexity
-
-In tabular competitions, gold solutions spent significantly more time on feature engineering than on model selection. The typical ratio: 70% feature engineering, 30% model tuning.
-
-```python
-# What gold solutions do: many carefully crafted features
-features = [
-    'ratio_a_b',               # domain-specific ratio
-    'lag_7d_rolling_mean',     # temporal pattern
-    'group_rank_percentile',   # relative position
-    'target_encoded_city',     # statistical encoding
-    'interaction_age_income',  # explicit interaction
-]
-
-# What median solutions do: default features + AutoML
-```
-
-The implication: understanding the domain and thinking carefully about what features encode meaningful information beats parameter tuning.
-
-#### Pattern 3: Diversity in Ensembles
-
-Gold solutions almost always ensembled models that were genuinely different:
-
-- Different algorithms (GBM + NN + Linear)
-- Different feature sets (subsets of the full feature space)
-- Different training periods for time series
-- Different random seeds (minor, but real)
-
-The key metric is prediction correlation between ensemble members. Low correlation = high ensemble value. High correlation = marginal or negative value.
-
-#### Pattern 4: Careful Post-Processing
-
-Many gold solutions had a final post-processing step that improved the score 0.1-0.5%:
-
-```python
-# Rank blending (normalizes prediction distributions)
-from scipy.stats import rankdata
-def rank_blend(preds, weights=None):
-    ranked = [rankdata(p) / len(p) for p in preds]
-    if weights:
-        return sum(w * r for w, r in zip(weights, ranked))
-    return np.mean(ranked, axis=0)
-
-# Calibration (adjusts probability outputs to better match the metric)
-from sklearn.calibration import CalibratedClassifierCV
-# or Platt scaling, isotonic regression
-```
-
-#### Pattern 5: External Data When Allowed
-
-In competitions that permitted external data, the majority of gold solutions used it. Common sources: pretrained embeddings, additional tabular sources, related public datasets.
-
-The check: read the competition rules about external data on day 1, not week 3.
-
-#### Pattern 6: The Single Most Impactful Thing Varied by Competition Type
-
-| Competition Type | Most Common Gold-Level Differentiator |
-|-----------------|---------------------------------------|
-| Tabular | Feature engineering (domain-specific) |
-| NLP | Model selection + fine-tuning strategy |
-| CV (Images) | Augmentation strategy + TTA |
-| Time Series | Validation strategy + temporal features |
-| NLP+Tabular | Combining text embeddings with tabular features |
-
-Reading solution writeups is the highest-ROI learning activity on Kaggle. What patterns have you noticed in top solutions? Share your observations below.
-
----
-
 ## Draft 48: The Underrated Power of Kaggle Discussions
 
 **Target forum:** Getting Started
@@ -4621,7 +4335,7 @@ Reading solution writeups is the highest-ROI learning activity on Kaggle. What p
 
 ### The Underrated Power of Kaggle Discussions
 
-Hey Kagglers! Most people treat the Kaggle discussion forum as a place to ask for help. I think that is underusing it by a wide margin. Here is why discussions are one of the most valuable tools on the platform — for learning, for medals, and for building reputation.
+Most people treat the Kaggle discussion forum as a place to ask for help. I think that is underusing it by a wide margin. Here is why discussions are one of the most valuable tools on the platform — for learning, for medals, and for building reputation.
 
 #### Why Discussions Matter Beyond Medals
 
@@ -4689,7 +4403,7 @@ How often do you post in discussions vs. just lurking? What keeps you from posti
 
 ### Building ML Tools for Competition Automation
 
-Hey Kagglers! I want to share an idea I have been developing: automating the operational side of competition participation so I can focus more time on the actual modeling. Not automation of the ML itself — that is a path toward generic mediocre submissions — but automation of the logistics.
+I want to share an idea I have been developing: automating the operational side of competition participation so I can focus more time on the actual modeling. Not automation of the ML itself — that is a path toward generic mediocre submissions — but automation of the logistics.
 
 #### What I Mean by Operational Automation
 
@@ -4771,7 +4485,7 @@ Has anyone else built tools like this around their Kaggle workflow? I am curious
 
 ### How I Organize My Kaggle Workflow
 
-Hey Kagglers! Organization is not glamorous but poor organization has cost me more competition time than any technical mistake. Here is my full workflow setup — folder structure, versioning, model tracking, and the tools that actually stick.
+Organization is not glamorous but poor organization has cost me more competition time than any technical mistake. Here is my full workflow setup — folder structure, versioning, model tracking, and the tools that actually stick.
 
 #### Folder Structure
 
@@ -4892,8 +4606,8 @@ The difference between people who improve quickly on Kaggle and those who platea
 **Category:** Competition Update
 **Expected medal:** Bronze
 **Priority:** high
-**Deadline:** 2026-03-12
-**Status:** ready
+**Deadline:** 2026-03-12 (expired)
+**Status:** expired — do not post
 
 ### Titanic Feature Blocks That Actually Moved My Score
 
@@ -4926,8 +4640,8 @@ If anyone has seen reliably strong gains lately from a smaller feature set rathe
 **Category:** Competition Update
 **Expected medal:** Bronze
 **Priority:** high
-**Deadline:** 2026-03-13
-**Status:** ready
+**Deadline:** 2026-03-13 (expired)
+**Status:** expired — do not post
 
 ### Spaceship Titanic Features That Earned the Biggest Lift
 
@@ -4958,8 +4672,8 @@ Curious whether others are getting more from group-level consistency features or
 **Category:** Competition Update
 **Expected medal:** Bronze
 **Priority:** high
-**Deadline:** 2026-03-14
-**Status:** ready
+**Deadline:** 2026-03-14 (expired)
+**Status:** expired — do not post
 
 ### Disaster Tweets Baseline Takeaways After My First Full Submission
 
@@ -4986,8 +4700,8 @@ If you have found a blend setup that consistently beats a strong sparse baseline
 **Category:** Validation Strategy
 **Expected medal:** Bronze
 **Priority:** medium
-**Deadline:** 2026-03-16
-**Status:** ready
+**Deadline:** 2026-03-16 (expired)
+**Status:** expired — do not post
 
 ### Validation Setup That Mirrored the Leaderboard Best for Me
 
@@ -5003,7 +4717,7 @@ The feature blocks that felt the most trustworthy in that setup were:
 - oil as an exogenous signal
 
 I refreshed my notebook around that idea here:
-https://www.kaggle.com/code/lorenzoscaturchio/store-sales-forecasting-lightgbm
+https://www.kaggle.com/code/lorenzoscaturchio/store-sales-time-series-forecasting-with-lightgbm
 
 If anyone has a validation template they trust more than a straightforward forward split on this competition, I would be interested in seeing how you pressure-test it.
 
@@ -5015,8 +4729,8 @@ If anyone has a validation template they trust more than a straightforward forwa
 **Category:** Dataset Spotlight
 **Expected medal:** Bronze
 **Priority:** medium
-**Deadline:** 2026-03-18
-**Status:** ready
+**Deadline:** 2026-03-18 (expired)
+**Status:** expired — do not post
 
 ### A Small Music Dataset That Is Actually Useful for ML Demos
 
@@ -5050,7 +4764,7 @@ I put together an Akkadian baseline notebook and one thing that stood out immedi
 Token normalization, transliteration consistency, and sequence length handling all look like higher-leverage decisions than jumping straight into a bigger model.
 
 I am using a ByT5-style baseline as the starting point:
-https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-eda-byt5-seq2seq-baseline
+https://www.kaggle.com/code/lorenzoscaturchio/akkadian-translation-sentence-match-baseline
 
 Curious whether others are seeing more gains from preprocessing or from architecture changes first.
 
@@ -5062,8 +4776,8 @@ Curious whether others are seeing more gains from preprocessing or from architec
 **Category:** EDA Findings
 **Expected medal:** Bronze
 **Priority:** high
-**Deadline:** 2026-06-30
-**Status:** ready
+**Deadline:** 2026-06-30 (expired)
+**Status:** expired — do not post
 
 ### Stellar Classification (S6E6): Redshift Does Most of the Work
 
@@ -5127,8 +4841,8 @@ Has anyone found a feature that helps separate GALAXY from STAR specifically? Th
 **Category:** Technique Tutorial
 **Expected medal:** Bronze
 **Priority:** high
-**Deadline:** 2026-06-30
-**Status:** ready
+**Deadline:** 2026-06-30 (expired)
+**Status:** expired — do not post
 
 ### Color-Index Features for Tabular Astro Classification (a small, reliable lift)
 
@@ -5174,8 +4888,8 @@ If you have tried magnitude *ratios* or normalized colors instead of plain diffe
 **Category:** Validation Strategy
 **Expected medal:** Bronze
 **Priority:** medium
-**Deadline:** 2026-06-30
-**Status:** ready
+**Deadline:** 2026-06-30 (expired)
+**Status:** expired — do not post
 
 ### S6E6: Why I Report macro-F1 and Blend Two GBMs
 
@@ -5218,8 +4932,8 @@ Curious whether anyone has found a weighting other than 50/50 that consistently 
 **Category:** Technique Tutorial
 **Expected medal:** Bronze
 **Priority:** medium
-**Deadline:** 2026-06-30
-**Status:** ready
+**Deadline:** 2026-06-30 (expired)
+**Status:** expired — do not post
 
 ### Stop Trusting Black-Box Feature Importance - Use SHAP
 
@@ -5255,7 +4969,7 @@ This is what you show a stakeholder who asks "why did the model flag *this* tran
 1. **`TreeExplainer` is exact and fast for trees** - use it for XGBoost/LightGBM/CatBoost/HistGBM. Reach for `KernelExplainer` only for non-tree models, and expect it to be slow.
 2. **SHAP on a leaky feature looks "great".** If one feature dominates the summary plot with a clean separation, that is often a sign of target leakage, not a brilliant feature. SHAP is a useful leakage detector for free.
 
-I work through global plots, dependence plots, interaction values, and local explanations end-to-end here: https://www.kaggle.com/code/lorenzoscaturchio/shap-model-explainability-masterclass
+I work through global plots, dependence plots, interaction values, and local explanations end-to-end here: https://www.kaggle.com/code/lorenzoscaturchio/shap-explainability-xai-masterclass
 
 What is the most surprising thing SHAP has revealed in one of your models? Mine was a feature I was about to drop turning out to carry a strong interaction effect.
 
@@ -5267,8 +4981,8 @@ What is the most surprising thing SHAP has revealed in one of your models? Mine 
 **Category:** Technique Tutorial
 **Expected medal:** Bronze
 **Priority:** medium
-**Deadline:** 2026-06-30
-**Status:** ready
+**Deadline:** 2026-06-30 (expired)
+**Status:** expired — do not post
 
 ### A Practical Optuna Workflow for Kaggle (Beyond grid_search)
 
@@ -5320,8 +5034,8 @@ What is your trial budget per competition? I have found diminishing returns past
 **Category:** Dataset Spotlight
 **Expected medal:** Bronze
 **Priority:** medium
-**Deadline:** 2026-06-30
-**Status:** ready
+**Deadline:** 2026-06-30 (expired)
+**Status:** expired — do not post
 
 ### New Dataset: Credit Card Fraud (200K Transactions, Realistic Imbalance)
 
@@ -5354,27 +5068,6 @@ print(df['Class'].value_counts(normalize=True))
 There is a companion EDA + detection notebook here: https://www.kaggle.com/code/lorenzoscaturchio/credit-card-fraud-eda-detection
 
 If you build something with it or spot a column you wish it had, let me know and I will fold it into the next version.
-
-## Draft 63: 50K Spotify tracks with full audio features — for genre, mood & popularity ML
-
-**Target forum:** Datasets
-**Category:** Dataset Release
-**Expected medal:** Silver
-
-### 50K Spotify tracks with full audio features — for genre, mood & popularity ML
-
-I put together a 50,000-track dataset with the full set of Spotify-style audio features — danceability, energy, valence, acousticness, tempo, loudness, and more — spanning 2000–2024 across 20 genres.
-
-A few things that make it fun to model:
-- **Genre-aware feature correlations** — energy and acousticness separate genres surprisingly cleanly, so it's a strong multi-class playground.
-- A **Zipf-like popularity distribution**, which keeps popularity regression realistically hard.
-- Clean, no missing values, and notebook-sized.
-
-Good for genre classification, popularity prediction, mood/playlist clustering, and recommender prototyping. A starter EDA notebook is attached.
-
-Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k
-
-What feature would you reach for first to predict genre? Curious what works best on this one.
 
 ## Draft 64: Synthetic e-commerce customer behavior — sessions, carts & conversions
 
@@ -5439,27 +5132,6 @@ Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-perf
 
 Which factor do you think dominates — study hours, attendance, or prior performance? Curious before you peek at the SHAP plot.
 
-## Draft 67: 500+ ML/DS interview questions & answers (text dataset)
-
-**Target forum:** Datasets
-**Category:** Dataset Release
-**Expected medal:** Bronze
-
-### 500+ ML/DS interview questions & answers (text dataset)
-
-500+ machine-learning and data-science interview questions with answers and topic labels — equally useful for **studying** and for **NLP practice**.
-
-Ideas:
-- Build a **topic classifier** or a semantic search over questions.
-- Fine-tune or RAG a small "interview prep" assistant.
-- Cluster questions to map what actually gets asked.
-
-A compact, clean text dataset that's easy to prototype with. Starter notebook attached.
-
-Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa
-
-What's the one question you'd add that this set is missing? Happy to fold good ones into the next version.
-
 ## Draft 68: Mental health in tech — a 5K-response survey dataset
 
 **Target forum:** Datasets
@@ -5481,48 +5153,3 @@ Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech
 
 If you've worked survey data: do you one-hot the Likert scales or treat them as ordinal? Genuinely split on this.
 
-## Draft 69: Programming language benchmarks — runtime, memory & throughput
-
-**Target forum:** Datasets
-**Category:** Dataset Release
-**Expected medal:** Bronze
-
-### Programming language benchmarks — runtime, memory & throughput
-
-A benchmarking dataset comparing programming languages across tasks: runtime, memory footprint, and throughput, with task and language metadata.
-
-Things to try:
-- Model **runtime/memory trade-offs** across languages.
-- Rank languages per workload and visualize the Pareto front.
-- Simple, satisfying EDA with clear stories in the data.
-
-Great for performance analysis, visualization practice, and lightweight regression. Starter notebook attached.
-
-Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks
-
-Which language do you expect to win on memory efficiency? The benchmarks might surprise you.
-
-## Draft 70: 200K synthetic credit-card transactions for fraud detection
-
-**Target forum:** Datasets
-**Category:** Dataset Release
-**Expected medal:** Silver
-
-### 200K synthetic credit-card transactions for fraud detection
-
-200,000 synthetic credit-card transactions with a realistic, **heavily imbalanced** fraud label — built for practicing the hard part of fraud detection: the imbalance.
-
-What makes it useful:
-- A genuine **class-imbalance** challenge (great for SMOTE, class weights, threshold tuning, PR-AUC).
-- Transaction, amount, time, and merchant-style features for feature engineering.
-- Synthetic, so no privacy concerns — safe to share notebooks freely.
-
-Use it for anomaly detection, imbalanced-classification practice, and cost-sensitive learning. Starter EDA notebook included.
-
-Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud-detection-synthetic
-
-For imbalanced fraud — are you team resampling or team class-weights? Curious what wins on this one.
-
----
-
-*End of drafts. Drafts 63-70 are dataset spotlights: each links a published dataset (Spotify, e-commerce, GitHub metrics, student performance, ML interview QA, mental health, language benchmarks, credit-card fraud), so posting one earns a Discussion medal AND drives that dataset's votes toward Datasets Expert/Gold. The June additions (57-62) are anchored to real repo assets - the S6E6 stellar notebook, the SHAP and Optuna educational notebooks, and the credit-card-fraud dataset. Review each one before posting and adjust any competition-specific details based on the latest data releases.*
