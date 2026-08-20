@@ -294,8 +294,8 @@
     "deadline": null,
     "category": "Tips & Tricks",
     "expected_medal": "Silver",
-    "scheduled_after": "2026-09-04T14:00:00+00:00",
-    "status": "scheduled",
+    "scheduled_after": null,
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
@@ -309,7 +309,7 @@
     "deadline": null,
     "category": "Technique Discussion",
     "expected_medal": "Silver",
-    "scheduled_after": "2026-09-07T14:00:00+00:00",
+    "scheduled_after": "2026-09-04T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -324,7 +324,7 @@
     "deadline": null,
     "category": "Discussion",
     "expected_medal": "Gold",
-    "scheduled_after": "2026-09-09T14:00:00+00:00",
+    "scheduled_after": "2026-09-07T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -339,7 +339,7 @@
     "deadline": null,
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-09-11T14:00:00+00:00",
+    "scheduled_after": "2026-09-09T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -354,7 +354,7 @@
     "deadline": null,
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-09-14T14:00:00+00:00",
+    "scheduled_after": "2026-09-11T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -369,7 +369,7 @@
     "deadline": null,
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
-    "scheduled_after": "2026-09-16T14:00:00+00:00",
+    "scheduled_after": "2026-09-14T14:00:00+00:00",
     "status": "scheduled",
     "post_url": null,
     "posted_at": null
@@ -400,7 +400,7 @@
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
     "scheduled_after": null,
-    "status": "ready",
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
@@ -414,8 +414,8 @@
     "deadline": null,
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
-    "scheduled_after": null,
-    "status": "ready",
+    "scheduled_after": "2026-09-16T14:00:00+00:00",
+    "status": "scheduled",
     "post_url": null,
     "posted_at": null
   },
@@ -460,7 +460,7 @@
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
     "scheduled_after": null,
-    "status": "ready",
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
@@ -505,7 +505,7 @@
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
     "scheduled_after": null,
-    "status": "ready",
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
@@ -670,7 +670,7 @@
     "category": "Technique Tutorial",
     "expected_medal": "Bronze",
     "scheduled_after": null,
-    "status": "ready",
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
@@ -820,7 +820,7 @@
     "category": "Tips & Tricks",
     "expected_medal": "Gold",
     "scheduled_after": null,
-    "status": "ready",
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
