@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-07-15
+**Last Updated:** 2026-08-19
 
 ---
 
@@ -54,11 +54,11 @@
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 74 (on Kaggle) |
+| Total notebooks | 30+ | 77 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 3 |
-| Total votes | — | 75 |
+| Total votes | — | 80 |
 
 **Tracked notebook portfolio (curated live + pipeline subset):**
 | # | Notebook | Votes | Status |
@@ -105,7 +105,7 @@
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
 | Total votes | — | 55 |
-| Total downloads | — | 1920 |
+| Total downloads | — | 2198 |
 
 **Datasets on Kaggle:**
 | # | Dataset | Votes | Downloads | Usability |
