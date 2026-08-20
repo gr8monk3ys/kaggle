@@ -9,6 +9,7 @@ social-engagement scripts share one code path.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import random
@@ -22,8 +23,9 @@ from typing import Any, Generator
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STORAGE_STATE = REPO_ROOT / "pi-automation" / "data" / "kaggle_storage_state.json"
 DEFAULT_TIMEOUT_MS = 20_000
-# How long --manual-login waits for a human to finish signing in.
-MANUAL_LOGIN_TIMEOUT_S = 300
+# How long --manual-login waits for a human to finish signing in. Generous
+# because it covers finding the window, OAuth redirects, and 2FA.
+MANUAL_LOGIN_TIMEOUT_S = 900
 BROWSER_CHALLENGE_MESSAGE = (
     "Kaggle browser challenge detected. Clear the Cloudflare/reCAPTCHA check in a headed browser "
     "and retry with --manual-login."
@@ -121,6 +123,76 @@ def wait_for_challenge_to_clear(page, *, timeout_s: int = 180) -> bool:
         except Exception:
             return False
     return False
+
+
+def _client_token_is_authenticated(context) -> bool:
+    """True when Kaggle's CLIENT-TOKEN cookie carries a signed-in identity.
+
+    Kaggle sets CLIENT-TOKEN for anonymous visitors too, so presence alone means
+    nothing; the JWT payload only names a user once signed in.
+    """
+    try:
+        cookies = context.cookies()
+    except Exception:
+        return False
+    for cookie in cookies:
+        if cookie.get("name") != "CLIENT-TOKEN":
+            continue
+        value = str(cookie.get("value") or "")
+        parts = value.split(".")
+        if len(parts) < 2:
+            continue
+        payload = parts[1]
+        payload += "=" * (-len(payload) % 4)  # restore base64url padding
+        try:
+            claims = json.loads(base64.urlsafe_b64decode(payload).decode("utf-8", "replace"))
+        except Exception:
+            continue
+        if not isinstance(claims, dict):
+            continue
+        for key in ("displayName", "userName", "sub", "userId"):
+            candidate = claims.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return True
+            if isinstance(candidate, int) and candidate > 0:
+                return True
+    return False
+
+
+def session_is_signed_in(context) -> bool:
+    """Whether this browser context holds a signed-in Kaggle session.
+
+    Checks every open page, not just the one login started on: Google/Facebook
+    sign-in completes in a popup or second tab, so the original page can still
+    show the login form while the context is already authenticated.
+    """
+    if _client_token_is_authenticated(context):
+        return True
+    try:
+        pages = list(context.pages)
+    except Exception:
+        return False
+    for candidate in pages:
+        try:
+            if "/account/login" in str(candidate.url or "").lower():
+                continue
+            if _wait_and_check_auth(candidate, timeout_ms=1500):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def describe_context(context) -> str:
+    """Short human-readable state summary, printed while polling for login."""
+    try:
+        urls = [str(p.url or "") for p in context.pages]
+    except Exception:
+        return "browser state unavailable"
+    if not urls:
+        return "no open pages"
+    shown = ", ".join(u.split("?")[0][:60] for u in urls[:3])
+    return f"{len(urls)} page(s): {shown}"
 
 
 def _wait_and_check_auth(page, *, timeout_ms: int) -> bool:
@@ -233,19 +305,21 @@ def maybe_login(
         # with no TTY attached, where reading stdin raises EOFError immediately
         # and the capture fails before the user can even log in.
         deadline = time.time() + MANUAL_LOGIN_TIMEOUT_S
+        last_report = 0.0
         while time.time() < deadline:
             time.sleep(3)
-            try:
-                current_url = page.url
-            except Exception:
-                raise RuntimeError("Browser window closed before login completed.") from None
-            if "/account/login" in current_url:
-                continue
-            if _wait_and_check_auth(page, timeout_ms=3000):
+            if session_is_signed_in(page.context):
                 print("Login detected; capturing session.")
                 return
+            now = time.time()
+            if now - last_report >= 30:
+                last_report = now
+                remaining = int(deadline - now)
+                print(f"  still waiting ({remaining}s left) — {describe_context(page.context)}")
         raise RuntimeError(
-            f"Timed out after {MANUAL_LOGIN_TIMEOUT_S}s waiting for manual Kaggle login."
+            f"Timed out after {MANUAL_LOGIN_TIMEOUT_S}s waiting for manual Kaggle login. "
+            "Sign in inside the 'Chrome for Testing' window this script opened, not your "
+            "regular browser."
         )
 
     raise RuntimeError(
