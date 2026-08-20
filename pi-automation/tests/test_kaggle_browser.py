@@ -428,3 +428,36 @@ def test_session_is_signed_in_accepts_cookie_evidence_alone():
 
 def test_describe_context_reports_open_pages():
     assert "no open pages" in kb.describe_context(_FakeContext())
+
+
+class _FakeUrlPage:
+    def __init__(self, url):
+        self.url = url
+
+
+def _ctx(pages=(), cookies=()):
+    return _FakeContext(cookies=list(cookies), pages=[_FakeUrlPage(u) for u in pages])
+
+
+def test_describe_context_distinguishes_signed_in_from_anonymous():
+    signed_in = _ctx(
+        ["https://www.kaggle.com/"],
+        [{"name": "CLIENT-TOKEN", "value": _jwt({"displayName": "someone"}), "domain": ".kaggle.com"}],
+    )
+    assert "identifies a user" in kb.describe_context(signed_in)
+
+    anon = _ctx(
+        ["https://www.kaggle.com/account/login"],
+        [{"name": "CLIENT-TOKEN", "value": _jwt({"aud": "kaggle"}), "domain": ".kaggle.com"}],
+    )
+    assert "anonymous" in kb.describe_context(anon)
+
+
+def test_describe_context_never_prints_cookie_values():
+    """The diagnostic is printed to logs; cookie values are credentials."""
+    secret = _jwt({"displayName": "someone"})
+    out = kb.describe_context(
+        _ctx(["https://www.kaggle.com/"], [{"name": "CLIENT-TOKEN", "value": secret, "domain": ".kaggle.com"}])
+    )
+    assert secret not in out
+    assert "eyJ" not in out
