@@ -54,11 +54,26 @@
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 77 (on Kaggle) |
+| Total notebooks | 30+ | 77 via CLI — but only 38 are public |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 3 |
 | Total votes | — | 80 |
+
+**Public vs total:** `kaggle kernels list` reports 77 because it includes the
+owner's private notebooks (10 are unsaved `[Private Notebook]` drafts). The
+public profile is the number that matters, and it is 38. Do not plan a
+"privatize the dead notebooks" sweep off the CLI figure — most of the gap is
+already private.
+
+**Duplicate clusters were the real dilution, not volume** (consolidated
+2026-08-19): five credit-card-fraud notebooks all sat at 0 votes, plus three
+ai-data-jobs and two ai-research-trends explorers. Publishing an iteration as
+a *new* kernel (`-v1`/`-v3`/`-hub`) instead of versioning the existing one
+splits the audience, so no single copy accumulates votes. Five orphans with
+no local source were made private; the maintained versions stayed public.
+Note that a dataset's `explore.ipynb` and a `projects/educational/` deep-dive
+on the same topic are **not** duplicates — they serve different readers.
 
 **Tracked notebook portfolio (curated live + pipeline subset):**
 | # | Notebook | Votes | Status |
