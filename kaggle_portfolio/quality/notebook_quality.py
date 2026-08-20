@@ -144,7 +144,7 @@ def discover_notebooks(root: Path, scope: str) -> tuple[list[Path], list[str]]:
     warnings: list[str] = []
 
     for metadata_path in sorted(root.rglob("kernel-metadata.json")):
-        if ".git" in metadata_path.parts or ".venv" in metadata_path.parts:
+        if any(part in {".git", ".venv", ".claude"} for part in metadata_path.parts):
             continue
         rel_metadata = metadata_path.relative_to(root)
         if scope == "portfolio" and rel_metadata.parts and rel_metadata.parts[0] == "datasets":

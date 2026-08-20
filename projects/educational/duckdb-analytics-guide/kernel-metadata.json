@@ -1,0 +1,14 @@
+{
+  "id": "lorenzoscaturchio/duckdb-on-kaggle-sql-analytics-without-a-database",
+  "title": "DuckDB on Kaggle: SQL Analytics Without a Database",
+  "code_file": "duckdb_analytics_guide.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "keywords": ["duckdb", "sql", "data analytics", "tabular", "beginner"],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": []
+}

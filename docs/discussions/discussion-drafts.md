@@ -7,15 +7,15 @@
 
 ---
 
-## Draft 1: 5 Feature Engineering Tricks That Won Me Bronze
+## Draft 1: 5 Feature Engineering Tricks That Move Tabular Scores
 
 **Target forum:** Getting Started
 **Category:** Tips & Tricks
 **Expected medal:** Bronze
 
-### 5 Feature Engineering Tricks That Won Me Bronze
+### 5 Feature Engineering Tricks That Move Tabular Scores
 
-Hey Kagglers! After grinding through several competitions, I distilled the **five feature engineering techniques** that consistently moved my leaderboard position from bottom-half to bronze zone. Each one is dead simple to implement but surprisingly powerful.
+Hey Kagglers! After grinding through several tabular competitions, I distilled the **five feature engineering techniques** I reach for first — the ones that most reliably move my local CV and public score out of the bottom half. Each one is dead simple to implement but surprisingly powerful.
 
 #### 1. Target Encoding with Smoothing
 
