@@ -31,7 +31,9 @@ from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subpr
 ROOT = Path(__file__).resolve().parents[2]
 DATASETS_DIR = ROOT / "datasets"
 MEDALS = [(5, "bronze"), (20, "silver"), (50, "gold")]
-MIN_KEYWORDS = 8
+# Kaggle caps dataset keywords at 6 (see manage_commands.MAX_KEYWORDS), so aim
+# for exactly that — asking for more produced advice the upload would reject.
+MIN_KEYWORDS = 6
 LOW_CONVERSION_PCT = 3.0
 
 GREEN = "\033[0;32m"

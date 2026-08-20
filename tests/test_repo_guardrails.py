@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import subprocess
 import yaml
 
@@ -180,3 +181,24 @@ def test_telemetry_workflow_records_and_commits_snapshots():
     assert "medal_ops scorecard" in body   # scorecard is what actually writes the snapshot
     assert "--dry-run" not in body
     assert "medal_ops digest" in body
+
+
+def test_dataset_keywords_within_kaggle_limit():
+    """Kaggle rejects dataset uploads with more than MAX_KEYWORDS keywords.
+
+    Measured 2026-08-19 against the live API: 7 keywords fails with
+    "You have exceeded the max category limit", 6 succeeds. Exceeding it means
+    every push for that dataset silently stops working.
+    """
+    from kaggle_portfolio.manage_commands import MAX_KEYWORDS
+
+    offenders = []
+    for meta_path in sorted((ROOT / "datasets").glob("*/dataset-metadata.json")):
+        payload = json.loads(meta_path.read_text(encoding="utf-8"))
+        keywords = payload.get("keywords") or []
+        if len(keywords) > MAX_KEYWORDS:
+            offenders.append(f"{meta_path.parent.name}: {len(keywords)}")
+
+    assert not offenders, (
+        f"Datasets exceed Kaggle's {MAX_KEYWORDS}-keyword limit: {offenders}"
+    )

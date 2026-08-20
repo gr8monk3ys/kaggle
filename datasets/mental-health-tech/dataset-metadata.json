@@ -2,7 +2,7 @@
   "id": "lorenzoscaturchio/mental-health-in-tech-survey-5k",
   "title": "Mental Health in Tech Survey (5K Responses)",
   "subtitle": "5K tech worker responses on mental health workplace culture",
-  "description": "5,000 synthetic responses inspired by the Open Sourcing Mental Illness (OSMI) annual survey on mental health attitudes and culture in tech workplaces. Covers demographics, company characteristics, employer mental health benefits and policies, personal mental health history, and attitudes toward disclosure.\n\nBuilt for: treatment-seeking prediction (binary classification), employer mental health support scoring (regression), clustering workplace culture archetypes, HR analytics, and benchmarking mental health policy impact.\n\nNotable features: 'treatment' flag enables direct binary classification; 'work_interfere' captures day-to-day impact; employer benefit variables (care_options, wellness_program, seek_help, anonymity) enable policy analysis; age has realistic distribution peaking at 25\u201335. All responses are synthetic and generated for educational purposes.",
+  "description": "5,000 synthetic responses inspired by the Open Sourcing Mental Illness (OSMI) annual survey on mental health attitudes and culture in tech workplaces. Covers demographics, company characteristics, employer mental health benefits and policies, personal mental health history, and attitudes toward disclosure.\n\nBuilt for: treatment-seeking prediction (binary classification), employer mental health support scoring (regression), clustering workplace culture archetypes, HR analytics, and benchmarking mental health policy impact.\n\nNotable features: 'treatment' flag enables direct binary classification; 'work_interfere' captures day-to-day impact; employer benefit variables (care_options, wellness_program, seek_help, anonymity) enable policy analysis; age has realistic distribution peaking at 25–35. All responses are synthetic and generated for educational purposes.",
   "isPrivate": false,
   "licenses": [
     {
@@ -11,15 +11,11 @@
   ],
   "keywords": [
     "mental health",
-    "classification",
-    "regression",
-    "clustering",
-    "education",
     "health",
+    "classification",
     "tabular",
-    "data analytics",
     "exploratory data analysis",
-    "intermediate"
+    "clustering"
   ],
   "resources": [
     {
@@ -36,7 +32,7 @@
           {
             "name": "survey_year",
             "title": "Survey Year",
-            "description": "Year survey was taken (2019\u20132024)",
+            "description": "Year survey was taken (2019–2024)",
             "type": "integer"
           },
           {
@@ -72,7 +68,7 @@
           {
             "name": "treatment",
             "title": "Treatment",
-            "description": "Has sought treatment for mental health (Yes/No) \u2014 TARGET",
+            "description": "Has sought treatment for mental health (Yes/No) — TARGET",
             "type": "string"
           },
           {
