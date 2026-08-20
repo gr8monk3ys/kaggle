@@ -1,6 +1,12 @@
 # ROGII - Wellbore Geology Prediction (STARTER)
 
-Live Kaggle competition: <https://www.kaggle.com/competitions/rogii-wellbore-geology-prediction>
+> **Retrospective (closed 2026-08-05).** This competition has closed and no entry was
+> submitted. The package is kept as a reference for the validation design it
+> demonstrates (GroupKFold on well id, and merge_asof joins on TVD); it is not a publishable Kaggle
+> kernel, because the competition data was download-gated and is no longer
+> obtainable, so the code cannot be run end-to-end by a reader.
+
+Kaggle competition (closed): <https://www.kaggle.com/competitions/rogii-wellbore-geology-prediction>
 
 **Status: STARTER, not a trained baseline.** The competition data is
 download-gated (HTTP 403 from the Kaggle API until you accept the rules in the
