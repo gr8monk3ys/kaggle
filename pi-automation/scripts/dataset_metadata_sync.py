@@ -257,6 +257,27 @@ def is_authenticated(page) -> bool:
     return not is_login_prompt_visible(page)
 
 
+MANUAL_LOGIN_TIMEOUT_S = 300
+
+
+def wait_for_manual_login(page, *, timeout_s: int = MANUAL_LOGIN_TIMEOUT_S) -> None:
+    """Block until the browser session is signed in, by polling.
+
+    Polled rather than gated on input(): this runs from wrappers and shells with
+    no TTY, where reading stdin raises EOFError before the user can even log in.
+    """
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        time.sleep(3)
+        try:
+            if is_authenticated(page):
+                print("Login detected.")
+                return
+        except Exception:
+            raise RuntimeError("Browser window closed before login completed.") from None
+    raise RuntimeError(f"Timed out after {timeout_s}s waiting for manual Kaggle login.")
+
+
 def section_visible(page, title: str) -> bool:
     heading = page.get_by_role("heading", name=re.compile(rf"^{re.escape(title)}$", re.IGNORECASE)).first
     if locator_count(heading):
@@ -340,7 +361,8 @@ def maybe_login(
     if force_manual_login and manual_login and not (email and password):
         page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
         print("Manual login required: complete Kaggle login in the opened browser window.")
-        input("Press Enter after login completes...")
+        print("Waiting for login to complete (no keypress needed; polling for the signed-in state).")
+        wait_for_manual_login(page)
         page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
         page.wait_for_timeout(750)
         return
@@ -384,7 +406,8 @@ def maybe_login(
     if manual_login:
         page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
         print("Manual login required: complete Kaggle login in the opened browser window.")
-        input("Press Enter after login completes...")
+        print("Waiting for login to complete (no keypress needed; polling for the signed-in state).")
+        wait_for_manual_login(page)
         page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
         page.wait_for_timeout(500)
         if is_authenticated(page):
