@@ -20,11 +20,18 @@ from pathlib import Path
 # and the manage.sh CLI) loads cleanly in minimal environments where kaggle is
 # not installed. The probe degrades gracefully when the names are unavailable,
 # and tests monkeypatch `KaggleApi` directly.
+# Two separate guards: kaggle 1.x authenticates eagerly in its __init__ and
+# calls exit(1) — a SystemExit, not an Exception — when no credentials are
+# present, which is exactly the state CI collects tests in. kagglesdk's types
+# have no such side effect, so they stay importable and the tests can
+# monkeypatch `KaggleApi` alone.
 try:  # pragma: no cover - exercised via environments with/without kaggle installed
     from kaggle.api.kaggle_api_extended import KaggleApi
-    from kagglesdk.blobs.types.blob_api_service import ApiBlobType, ApiStartBlobUploadRequest
-except Exception:  # pragma: no cover - kaggle may be absent or raise at import (older versions authenticate eagerly)
+except (Exception, SystemExit):  # pragma: no cover
     KaggleApi = None  # type: ignore[assignment]
+try:  # pragma: no cover
+    from kagglesdk.blobs.types.blob_api_service import ApiBlobType, ApiStartBlobUploadRequest
+except Exception:  # pragma: no cover
     ApiBlobType = None  # type: ignore[assignment]
     ApiStartBlobUploadRequest = None  # type: ignore[assignment]
 
