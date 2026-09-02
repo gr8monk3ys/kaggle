@@ -87,7 +87,7 @@ jobs:
             exit 0
           fi
           python -m pip install --upgrade pip
-          python -m pip install kaggle
+          python -m pip install "kaggle<2"
 
       - name: Configure Kaggle credentials (live mode only)
         env:
