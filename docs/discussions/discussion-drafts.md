@@ -2051,7 +2051,7 @@ What's your teaming strategy — solo or team? Share your experience in the comm
 **Target forum:** Getting Started
 **Category:** Tips & Tricks
 **Expected medal:** Bronze
-**Status:** unverified — reports measured results the repo cannot back. Either produce the numbers for real and add an `**Evidence:**` line pointing at the script/notebook, or remove the results table before posting.
+**Status:** ready
 
 ### My Post-Competition Analysis Template
 
@@ -2067,8 +2067,8 @@ Memory degrades fast. Write up your final approach immediately while it is fresh
 ## Final Model
 - Architecture: LightGBM + XGBoost ensemble
 - CV strategy: StratifiedKFold, 5 folds
-- Best single model CV: 0.8731
-- Final ensemble CV: 0.8804
+- Best single model CV: [0.XXXX]
+- Final ensemble CV: [0.XXXX]
 
 ## Feature Engineering
 - Total features: 127 (from 43 raw)
@@ -2076,9 +2076,9 @@ Memory degrades fast. Write up your final approach immediately while it is fresh
 - Biggest mistake: computed rolling features before splitting (fixed in week 2)
 
 ## What Worked
-- Target encoding with smoothing: +0.008 CV
-- Log transform on skewed features: +0.004 CV
-- Model diversity (GBM + NN): +0.012 CV
+- Target encoding with smoothing: [+0.00X CV]
+- Log transform on skewed features: [+0.00X CV]
+- Model diversity (GBM + NN): [+0.0XX CV]
 
 ## What Did Not Work
 - MICE imputation: marginal improvement, huge compute cost

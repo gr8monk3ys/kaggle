@@ -1,0 +1,397 @@
+{
+  "seed": 42,
+  "n_splits": 5,
+  "injected_missing_rate": 0.2,
+  "datasets": [
+    {
+      "name": "mental-health-tech",
+      "rows": 5000,
+      "missingness": "native"
+    },
+    {
+      "name": "breast-cancer (sklearn)",
+      "rows": 569,
+      "missingness": "injected MCAR @ 20%"
+    },
+    {
+      "name": "credit-card-fraud (subsample)",
+      "rows": 3500,
+      "missingness": "injected MCAR @ 20%"
+    }
+  ],
+  "seconds_per_strategy": {
+    "drop_rows": [
+      2.01,
+      0.0,
+      0.01
+    ],
+    "median": [
+      1.77,
+      1.29,
+      1.81
+    ],
+    "constant_-999": [
+      1.81,
+      2.87,
+      1.82
+    ],
+    "knn": [
+      2.97,
+      2.67,
+      6.95
+    ],
+    "mice": [
+      2.44,
+      3.57,
+      5.99
+    ],
+    "missing_indicator": [
+      1.84,
+      1.21,
+      3.6
+    ],
+    "rf_impute": [
+      4.73,
+      22.04,
+      29.71
+    ]
+  },
+  "results": [
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "drop_rows",
+      "model": "tree",
+      "auc_mean": 0.7003,
+      "auc_std": 0.0129,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "drop_rows",
+      "model": "linear",
+      "auc_mean": 0.6471,
+      "auc_std": 0.0187,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "median",
+      "model": "tree",
+      "auc_mean": 0.722,
+      "auc_std": 0.024,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "median",
+      "model": "linear",
+      "auc_mean": 0.6526,
+      "auc_std": 0.0178,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "constant_-999",
+      "model": "tree",
+      "auc_mean": 0.7166,
+      "auc_std": 0.0173,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "constant_-999",
+      "model": "linear",
+      "auc_mean": 0.6537,
+      "auc_std": 0.018,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "knn",
+      "model": "tree",
+      "auc_mean": 0.7178,
+      "auc_std": 0.0179,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "knn",
+      "model": "linear",
+      "auc_mean": 0.6525,
+      "auc_std": 0.0178,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "mice",
+      "model": "tree",
+      "auc_mean": 0.7193,
+      "auc_std": 0.0207,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "mice",
+      "model": "linear",
+      "auc_mean": 0.6525,
+      "auc_std": 0.0178,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "missing_indicator",
+      "model": "tree",
+      "auc_mean": 0.718,
+      "auc_std": 0.0185,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "missing_indicator",
+      "model": "linear",
+      "auc_mean": 0.653,
+      "auc_std": 0.0182,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "rf_impute",
+      "model": "tree",
+      "auc_mean": 0.7171,
+      "auc_std": 0.0205,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "mental-health-tech",
+      "strategy": "rf_impute",
+      "model": "linear",
+      "auc_mean": 0.6526,
+      "auc_std": 0.0177,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "drop_rows",
+      "model": "tree",
+      "auc_mean": null,
+      "auc_std": null,
+      "folds_scored": 0
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "drop_rows",
+      "model": "linear",
+      "auc_mean": null,
+      "auc_std": null,
+      "folds_scored": 0
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "median",
+      "model": "tree",
+      "auc_mean": 0.9887,
+      "auc_std": 0.0111,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "median",
+      "model": "linear",
+      "auc_mean": 0.9921,
+      "auc_std": 0.0061,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "constant_-999",
+      "model": "tree",
+      "auc_mean": 0.987,
+      "auc_std": 0.0117,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "constant_-999",
+      "model": "linear",
+      "auc_mean": 0.691,
+      "auc_std": 0.0779,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "knn",
+      "model": "tree",
+      "auc_mean": 0.9915,
+      "auc_std": 0.0083,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "knn",
+      "model": "linear",
+      "auc_mean": 0.9942,
+      "auc_std": 0.0056,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "mice",
+      "model": "tree",
+      "auc_mean": 0.9919,
+      "auc_std": 0.0082,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "mice",
+      "model": "linear",
+      "auc_mean": 0.9937,
+      "auc_std": 0.005,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "missing_indicator",
+      "model": "tree",
+      "auc_mean": 0.9908,
+      "auc_std": 0.0089,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "missing_indicator",
+      "model": "linear",
+      "auc_mean": 0.9876,
+      "auc_std": 0.0081,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "rf_impute",
+      "model": "tree",
+      "auc_mean": 0.9922,
+      "auc_std": 0.0093,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "breast-cancer (sklearn)",
+      "strategy": "rf_impute",
+      "model": "linear",
+      "auc_mean": 0.9945,
+      "auc_std": 0.0058,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "drop_rows",
+      "model": "tree",
+      "auc_mean": null,
+      "auc_std": null,
+      "folds_scored": 0
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "drop_rows",
+      "model": "linear",
+      "auc_mean": null,
+      "auc_std": null,
+      "folds_scored": 0
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "median",
+      "model": "tree",
+      "auc_mean": 0.9998,
+      "auc_std": 0.0003,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "median",
+      "model": "linear",
+      "auc_mean": 0.9999,
+      "auc_std": 0.0001,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "constant_-999",
+      "model": "tree",
+      "auc_mean": 0.9999,
+      "auc_std": 0.0001,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "constant_-999",
+      "model": "linear",
+      "auc_mean": 0.5434,
+      "auc_std": 0.0212,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "knn",
+      "model": "tree",
+      "auc_mean": 1.0,
+      "auc_std": 0.0001,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "knn",
+      "model": "linear",
+      "auc_mean": 1.0,
+      "auc_std": 0.0,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "mice",
+      "model": "tree",
+      "auc_mean": 0.9999,
+      "auc_std": 0.0001,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "mice",
+      "model": "linear",
+      "auc_mean": 1.0,
+      "auc_std": 0.0,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "missing_indicator",
+      "model": "tree",
+      "auc_mean": 0.9998,
+      "auc_std": 0.0004,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "missing_indicator",
+      "model": "linear",
+      "auc_mean": 1.0,
+      "auc_std": 0.0,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "rf_impute",
+      "model": "tree",
+      "auc_mean": 0.9997,
+      "auc_std": 0.0005,
+      "folds_scored": 5
+    },
+    {
+      "dataset": "credit-card-fraud (subsample)",
+      "strategy": "rf_impute",
+      "model": "linear",
+      "auc_mean": 0.9997,
+      "auc_std": 0.0003,
+      "folds_scored": 5
+    }
+  ]
+}

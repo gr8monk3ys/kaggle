@@ -453,3 +453,38 @@ def test_measurement_claim_allows_auxiliaries_but_not_code():
     for benign in ("for i in range(10):", "for i in range(n_splits):",
                    "I like gradient boosting", "I am new to Kaggle"):
         assert not MEASUREMENT_CLAIM.search(benign), benign
+
+
+def test_evidence_lines_point_at_files_that_exist():
+    """An `**Evidence:**` pointer must name a real in-repo artifact.
+
+    The evidence line is the only way a draft can carry measured results past
+    asserts_unbacked_results(). If the path it names does not exist, the check
+    is defeated on the honour system and fabricated tables sail through again.
+    """
+    import re as _re
+
+    from kaggle_portfolio.ops.discussion_scheduler import DRAFTS_FILE, ROOT
+
+    sections = _re.findall(
+        r"## Draft (\d+):.*?\n(.*?)(?=\n## Draft |\Z)",
+        DRAFTS_FILE.read_text(encoding="utf-8"),
+        _re.S,
+    )
+    assert sections, "no draft sections parsed — the guard would be vacuous"
+
+    broken = []
+    for num, body in sections:
+        for line in _re.findall(r"^\*\*Evidence:\*\*(.*)$", body, _re.M):
+            paths = [
+                token.strip("`,;()")
+                for token in line.split()
+                if "/" in token and not token.startswith("http")
+            ]
+            if not paths:
+                broken.append(f"draft_{int(num):03d}: no in-repo path in evidence line")
+                continue
+            broken += [
+                f"draft_{int(num):03d}: missing {p}" for p in paths if not (ROOT / p).exists()
+            ]
+    assert not broken, f"Evidence pointers do not resolve: {broken}"
