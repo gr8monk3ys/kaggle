@@ -58,7 +58,7 @@ jobs:
           # Test runner + libraries the suite imports at collection time.
           # numpy/pandas/scikit-learn back the data-science modules and their tests;
           # kaggle backs kaggle_auth_doctor / leaderboard_tracker test modules.
-          python -m pip install pytest pytest-cov pytest-mock requests numpy pandas scikit-learn kaggle
+          python -m pip install pytest pytest-cov pytest-mock requests pyyaml numpy pandas scikit-learn "kaggle<2"
 
       - name: Prepare preflight fixtures
         run: |

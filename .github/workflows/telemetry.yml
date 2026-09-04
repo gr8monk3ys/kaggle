@@ -37,7 +37,7 @@ jobs:
             exit 0
           fi
           python -m pip install --upgrade pip
-          python -m pip install kaggle requests
+          python -m pip install "kaggle<2" requests
 
       - name: Configure Kaggle credentials (live mode only)
         if: env.SKIP != '1'
