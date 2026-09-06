@@ -97,3 +97,21 @@ Other conventions:
 ## CI / automation
 
 GitHub Actions in `.github/workflows/`: `ci.yml` (PR/push: `preflight --no-pytest` + full pytest coverage), `medal-ops-health.yml` (daily 09:10 UTC health checks, opens/updates an issue on failure), `live-smoke.yml` (manual, non-mutating live checks), and security scanning (`codeql.yml`, `semgrep.yml`, `security-baseline.yml`). `pi-automation/` is a separate Docker + Playwright + cron stack for scheduled UI engagement (see its `DEPLOY.md`).
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on `gr8monk3ys/kaggle`, driven through the `gh` CLI.
+See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, each label string equal to its name
+(`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`).
+See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root, both created
+lazily. See `docs/agents/domain.md`.

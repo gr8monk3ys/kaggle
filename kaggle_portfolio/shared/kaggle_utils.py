@@ -211,7 +211,10 @@ def retry(
     base_delay: float = 1.0,
     max_delay: float = 30.0,
     jitter: bool = True,
-    retryable: tuple[type[BaseException], ...] = (RuntimeError, subprocess.SubprocessError),
+    retryable: tuple[type[BaseException], ...] = (
+        RuntimeError,
+        subprocess.SubprocessError,
+    ),
 ) -> Any:
     """Decorator: retry a function with exponential back-off.
 
