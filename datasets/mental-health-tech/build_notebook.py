@@ -1,15 +1,29 @@
 """
 Build explore.ipynb for Mental Health in Tech Survey dataset.
 """
+
 import json
 from pathlib import Path
 
-def md(source): return {"cell_type": "markdown", "metadata": {}, "source": source}
-def code(source): return {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [], "source": source}
+
+def md(source):
+    return {"cell_type": "markdown", "metadata": {}, "source": source}
+
+
+def code(source):
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": source,
+    }
+
 
 cells = []
 
-cells.append(md("""# 🧠 Mental Health in Tech: EDA & Treatment Prediction
+cells.append(
+    md("""# 🧠 Mental Health in Tech: EDA & Treatment Prediction
 > **5,000 responses · 27 features · Binary classification** | [Dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k)
 
 ## TL;DR
@@ -27,20 +41,24 @@ A comprehensive analysis of mental health attitudes in tech workplaces, answerin
 6. [Correlation Analysis](#correlations)
 7. [Treatment Prediction (XGBoost)](#model)
 8. [Key Takeaways for HR](#takeaways)
-"""))
+""")
+)
 
-cells.append(md("""## Objective & Evaluation Strategy
+cells.append(
+    md("""## Objective & Evaluation Strategy
 
 **Objective:** identify the workplace and demographic factors most associated with treatment-seeking, then build a transparent support-risk model.
 
 **Evaluation:** track ROC-AUC and classification quality on a held-out split, then compare errors across company size, remote work, and family-history segments.
 
 **Hypothesis:** family history, work interference, and access to benefits should explain the strongest variation because they combine personal risk and employer support context.
-"""))
+""")
+)
 
 cells.append(md("## 1. Setup & Overview <a id='setup'></a>"))
 
-cells.append(code("""from pathlib import Path
+cells.append(
+    code("""from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -65,9 +83,11 @@ if csv_path is None:
 df = pd.read_csv(csv_path)
 print(f"Loaded from: {csv_path}")
 print(f"Shape: {df.shape}")
-df.head()"""))
+df.head()""")
+)
 
-cells.append(code("""print("Dataset Summary")
+cells.append(
+    code("""print("Dataset Summary")
 print(f"  Responses:        {len(df):,}")
 print(f"  Survey years:     {df['survey_year'].min()} – {df['survey_year'].max()}")
 print(f"  Countries:        {df['country'].nunique()}")
@@ -77,11 +97,13 @@ print(f"  Remote workers:   {(df['remote_work']=='Yes').mean():.1%}")
 print(f"  Self-employed:    {(df['self_employed']=='Yes').mean():.1%}")
 print()
 df['treatment_binary'] = (df['treatment'] == 'Yes').astype(int)
-df.describe(include='all').T.head(20)"""))
+df.describe(include='all').T.head(20)""")
+)
 
 cells.append(md("## 2. Demographics <a id='demographics'></a>"))
 
-cells.append(code("""fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+cells.append(
+    code("""fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
 # Age distribution
 axes[0, 0].hist(df['age'], bins=30, color='#4ECDC4', alpha=0.85, edgecolor='white')
@@ -116,11 +138,13 @@ axes[1, 1].set_ylabel('Responses')
 
 plt.suptitle('Respondent Demographics', fontsize=14, fontweight='bold', y=1.01)
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
 cells.append(md("## 3. Company Culture Analysis <a id='company'></a>"))
 
-cells.append(code("""# Benefits and support by company size
+cells.append(
+    code("""# Benefits and support by company size
 benefit_cols = ['benefits', 'care_options', 'wellness_program', 'seek_help', 'anonymity']
 size_order = ['1-5', '6-25', '26-100', '100-500', '500-1000', 'More than 1000']
 
@@ -152,9 +176,11 @@ ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.0%}'))
 
 plt.tight_layout()
 plt.show()
-print("Key insight: Larger companies provide significantly better mental health support")"""))
+print("Key insight: Larger companies provide significantly better mental health support")""")
+)
 
-cells.append(code("""# Remote work and tech company vs treatment rate
+cells.append(
+    code("""# Remote work and tech company vs treatment rate
 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
 for ax, col, title in zip(axes,
@@ -173,11 +199,13 @@ for ax, col, title in zip(axes,
                 ha='center', fontweight='bold', fontsize=11)
 
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
 cells.append(md("## 4. Treatment Rate by Segment <a id='segments'></a>"))
 
-cells.append(code("""fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+cells.append(
+    code("""fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
 # By work interference
 wi_order = ['Never', 'Rarely', 'Sometimes', 'Often']
@@ -214,11 +242,13 @@ axes[1, 1].yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.0%}'))
 
 plt.suptitle('Treatment Rate Across Demographic & Temporal Segments', fontsize=13, fontweight='bold', y=1.01)
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
 cells.append(md("## 5. Disclosure Willingness <a id='disclosure'></a>"))
 
-cells.append(code("""# Stacked bar chart: disclosure in different contexts
+cells.append(
+    code("""# Stacked bar chart: disclosure in different contexts
 disclosure_cols = ['coworkers', 'supervisor', 'mental_health_interview']
 options_map = {
     'coworkers': ['Yes', 'No', 'Some of them'],
@@ -256,11 +286,13 @@ plt.tight_layout()
 plt.show()
 
 print("Key insight: Most people are reluctant to disclose mental health in interviews,")
-print("but more willing with coworkers than supervisors")"""))
+print("but more willing with coworkers than supervisors")""")
+)
 
 cells.append(md("## 6. Correlation Analysis <a id='correlations'></a>"))
 
-cells.append(code("""# Encode ordinal columns for correlation
+cells.append(
+    code("""# Encode ordinal columns for correlation
 encode_map = {
     'treatment': {'Yes': 1, 'No': 0},
     'family_history': {'Yes': 1, 'No': 0},
@@ -298,11 +330,13 @@ ax.set_title('Feature Correlation Matrix (Treatment Seeking)', fontsize=13, font
 plt.tight_layout()
 plt.show()
 
-print("Treatment correlates most with: family history, work interference, mental health fear of consequences")"""))
+print("Treatment correlates most with: family history, work interference, mental health fear of consequences")""")
+)
 
 cells.append(md("## 7. Treatment Prediction (XGBoost) <a id='model'></a>"))
 
-cells.append(code("""# Feature encoding for ML
+cells.append(
+    code("""# Feature encoding for ML
 le_dict = {}
 cat_cols = ['gender', 'country', 'no_employees', 'benefits', 'care_options', 'wellness_program',
             'seek_help', 'anonymity', 'leave', 'mental_health_consequence', 'phys_health_consequence',
@@ -338,9 +372,11 @@ X = df_ml[FEATURE_COLS]
 y = df_ml['treatment_binary']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 print(f"Train: {X_train.shape}, Test: {X_test.shape}")
-print(f"Positive class rate: {y_train.mean():.1%}")"""))
+print(f"Positive class rate: {y_train.mean():.1%}")""")
+)
 
-cells.append(code("""try:
+cells.append(
+    code("""try:
     import xgboost as xgb
     clf = xgb.XGBClassifier(n_estimators=200, max_depth=5, learning_rate=0.05,
                              subsample=0.8, colsample_bytree=0.8, random_state=42,
@@ -359,9 +395,11 @@ y_prob = clf.predict_proba(X_test)[:, 1]
 auc = roc_auc_score(y_test, y_prob)
 print(f"ROC-AUC: {auc:.4f}")
 print()
-print(classification_report(y_test, y_pred, target_names=['No Treatment', 'Seeks Treatment']))"""))
+print(classification_report(y_test, y_pred, target_names=['No Treatment', 'Seeks Treatment']))""")
+)
 
-cells.append(code("""fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+cells.append(
+    code("""fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # ROC curve
 fpr, tpr, _ = roc_curve(y_test, y_prob)
@@ -381,14 +419,18 @@ if hasattr(clf, 'feature_importances_'):
     axes[1].set_xlabel('Importance Score')
 
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
-cells.append(md("""## 7.1 Segment Reliability Audit
+cells.append(
+    md("""## 7.1 Segment Reliability Audit
 
 High overall ROC-AUC is not enough on a workplace-support dataset. This audit checks whether performance is concentrated in one easy segment or whether it holds across company size, family-history status, and remote-work status.
-"""))
+""")
+)
 
-cells.append(code("""audit = pd.DataFrame({
+cells.append(
+    code("""audit = pd.DataFrame({
     'actual': y_test,
     'predicted': y_pred,
     'probability': y_prob,
@@ -423,9 +465,11 @@ axes[1].set_title('Misclassification Rate by Family History')
 axes[1].set_ylabel('Error Rate')
 
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
-cells.append(md("""## 8. Key Takeaways for HR <a id='takeaways'></a>
+cells.append(
+    md("""## 8. Key Takeaways for HR <a id='takeaways'></a>
 
 ### What Drives Treatment-Seeking?
 
@@ -453,25 +497,32 @@ cells.append(md("""## 8. Key Takeaways for HR <a id='takeaways'></a>
 3. **Normalize mental health days** — make them as acceptable as physical sick days
 4. **Anonymous pulse surveys** to track wellbeing without requiring disclosure
 5. **Benchmark against industry** — use datasets like this to compare your support scores
-"""))
+""")
+)
 
-cells.append(md("""## Interpretation, Trade-offs, and Limitations
+cells.append(
+    md("""## Interpretation, Trade-offs, and Limitations
 
 - **Observation:** supportive policies correlate with treatment-seeking, but they may also reflect companies that already have healthier disclosure norms.
 - **Interpretation:** higher treatment rates are not automatically negative because they can indicate better access, trust, and awareness.
 - **Trade-off:** predictive models can help triage support programs, yet they risk oversimplifying sensitive personal context if used without care.
 - **Limitation:** survey responses are self-reported, so any HR hypothesis should be validated alongside qualitative feedback and privacy safeguards.
-"""))
+""")
+)
 
 # Write notebook
 nb = {
     "nbformat": 4,
     "nbformat_minor": 4,
     "metadata": {
-        "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
-        "language_info": {"name": "python", "version": "3.10.0"}
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3",
+        },
+        "language_info": {"name": "python", "version": "3.10.0"},
     },
-    "cells": cells
+    "cells": cells,
 }
 
 out = Path(__file__).parent / "explore.ipynb"

@@ -13,6 +13,7 @@ import kaggle_browser as kb
 # Fake Playwright objects (mirrors existing FakeLocator pattern)
 # ---------------------------------------------------------------------------
 
+
 class _FakeLocator:
     def __init__(self, count: int = 0):
         self._count = count
@@ -83,6 +84,7 @@ class _FakePage:
 # locator_count tests
 # ---------------------------------------------------------------------------
 
+
 class TestLocatorCount:
     def test_returns_count(self):
         assert kb.locator_count(_FakeLocator(3)) == 3
@@ -91,12 +93,14 @@ class TestLocatorCount:
         class _Broken:
             def count(self):
                 raise RuntimeError("broken")
+
         assert kb.locator_count(_Broken()) == 0
 
 
 # ---------------------------------------------------------------------------
 # first_available tests
 # ---------------------------------------------------------------------------
+
 
 class TestFirstAvailable:
     def test_returns_first_with_count(self):
@@ -116,6 +120,7 @@ class TestFirstAvailable:
 # ---------------------------------------------------------------------------
 # is_authenticated tests
 # ---------------------------------------------------------------------------
+
 
 class TestIsAuthenticated:
     def test_authenticated_page(self):
@@ -137,7 +142,9 @@ class TestBrowserChallenge:
         assert kb.is_browser_challenge(page) is True
 
     def test_detects_challenge_from_body(self):
-        page = _FakePage(body_text="Checking your browser before accessing www.kaggle.com ...")
+        page = _FakePage(
+            body_text="Checking your browser before accessing www.kaggle.com ..."
+        )
         assert kb.is_browser_challenge(page) is True
 
     def test_non_challenge_page_returns_false(self):
@@ -148,6 +155,7 @@ class TestBrowserChallenge:
 # ---------------------------------------------------------------------------
 # TrackerFile tests
 # ---------------------------------------------------------------------------
+
 
 class TestTrackerFile:
     def test_empty_tracker(self, tmp_path):
@@ -188,9 +196,11 @@ class TestTrackerFile:
 # add_common_browser_args tests
 # ---------------------------------------------------------------------------
 
+
 class TestCommonBrowserArgs:
     def test_defaults(self):
         import argparse
+
         parser = argparse.ArgumentParser()
         kb.add_common_browser_args(parser)
         args = parser.parse_args([])
@@ -201,6 +211,7 @@ class TestCommonBrowserArgs:
 
     def test_flags(self):
         import argparse
+
         parser = argparse.ArgumentParser()
         kb.add_common_browser_args(parser)
         args = parser.parse_args(["--headed", "--dry-run", "--timeout-ms", "5000"])
@@ -213,9 +224,11 @@ class TestCommonBrowserArgs:
 # Cover image upload tests
 # ---------------------------------------------------------------------------
 
+
 class TestCoverImageDiscovery:
     def test_discovers_datasets_with_cover(self, tmp_path):
         import cover_image_upload as ciu
+
         ds = tmp_path / "datasets" / "test-ds"
         ds.mkdir(parents=True)
         (ds / "cover.png").write_bytes(b"fake png")
@@ -229,6 +242,7 @@ class TestCoverImageDiscovery:
 
     def test_skips_without_cover(self, tmp_path):
         import cover_image_upload as ciu
+
         ds = tmp_path / "datasets" / "no-cover"
         ds.mkdir(parents=True)
         (ds / "dataset-metadata.json").write_text(
@@ -239,6 +253,7 @@ class TestCoverImageDiscovery:
 
     def test_only_filter(self, tmp_path):
         import cover_image_upload as ciu
+
         for name in ("ds-a", "ds-b"):
             ds = tmp_path / "datasets" / name
             ds.mkdir(parents=True)
@@ -255,9 +270,11 @@ class TestCoverImageDiscovery:
 # Follow users tests
 # ---------------------------------------------------------------------------
 
+
 class TestFollowTargets:
     def test_load_targets(self, tmp_path):
         import follow_users as fu
+
         path = tmp_path / "targets.json"
         path.write_text(json.dumps({"users": ["alice", "bob", ""]}), encoding="utf-8")
         targets = fu.load_targets(path)
@@ -265,11 +282,13 @@ class TestFollowTargets:
 
     def test_load_missing_file(self, tmp_path):
         import follow_users as fu
+
         targets = fu.load_targets(tmp_path / "nope.json")
         assert targets == []
 
     def test_load_corrupted_file(self, tmp_path):
         import follow_users as fu
+
         path = tmp_path / "bad.json"
         path.write_text("not json!", encoding="utf-8")
         targets = fu.load_targets(path)
@@ -280,26 +299,41 @@ class TestFollowTargets:
 # Upvote content tests
 # ---------------------------------------------------------------------------
 
+
 class TestUpvoteUrlNormalization:
     def test_full_url_passthrough(self):
         import upvote_content as uc
+
         url = "https://www.kaggle.com/code/someone/notebook"
         assert uc.normalize_url(url) == url
 
     def test_notebook_slug(self):
         import upvote_content as uc
-        assert uc.normalize_url("owner/nb", "notebook") == "https://www.kaggle.com/code/owner/nb"
+
+        assert (
+            uc.normalize_url("owner/nb", "notebook")
+            == "https://www.kaggle.com/code/owner/nb"
+        )
 
     def test_dataset_slug(self):
         import upvote_content as uc
-        assert uc.normalize_url("owner/ds", "dataset") == "https://www.kaggle.com/datasets/owner/ds"
+
+        assert (
+            uc.normalize_url("owner/ds", "dataset")
+            == "https://www.kaggle.com/datasets/owner/ds"
+        )
 
     def test_discussion_slug(self):
         import upvote_content as uc
-        assert uc.normalize_url("12345", "discussion") == "https://www.kaggle.com/discussions/12345"
+
+        assert (
+            uc.normalize_url("12345", "discussion")
+            == "https://www.kaggle.com/discussions/12345"
+        )
 
     def test_tracker_key_strips_protocol(self):
         import upvote_content as uc
+
         key = uc.tracker_key("https://www.kaggle.com/code/owner/nb/")
         assert key == "www.kaggle.com/code/owner/nb"
 
@@ -307,18 +341,25 @@ class TestUpvoteUrlNormalization:
 class TestUpvoteQueue:
     def test_load_queue(self, tmp_path):
         import upvote_content as uc
+
         path = tmp_path / "queue.json"
-        path.write_text(json.dumps({
-            "items": [
-                {"url": "https://kaggle.com/code/a/b", "type": "notebook"},
-                {"type": "notebook"},  # missing url → filtered
-            ]
-        }), encoding="utf-8")
+        path.write_text(
+            json.dumps(
+                {
+                    "items": [
+                        {"url": "https://kaggle.com/code/a/b", "type": "notebook"},
+                        {"type": "notebook"},  # missing url → filtered
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
         items = uc.load_queue(path)
         assert len(items) == 1
 
     def test_load_missing_queue(self, tmp_path):
         import upvote_content as uc
+
         assert uc.load_queue(tmp_path / "nope.json") == []
 
 
@@ -326,38 +367,55 @@ class TestUpvoteQueue:
 # Comment thread tests
 # ---------------------------------------------------------------------------
 
+
 class TestCommentQueue:
     def test_load_queue(self, tmp_path):
         import comment_thread as ct
+
         path = tmp_path / "queue.json"
-        path.write_text(json.dumps({
-            "comments": [
-                {"url": "https://kaggle.com/discussions/123", "body": "Great work!", "id": "c1"},
-                {"url": "https://kaggle.com/discussions/456"},  # missing body → filtered
-            ]
-        }), encoding="utf-8")
+        path.write_text(
+            json.dumps(
+                {
+                    "comments": [
+                        {
+                            "url": "https://kaggle.com/discussions/123",
+                            "body": "Great work!",
+                            "id": "c1",
+                        },
+                        {
+                            "url": "https://kaggle.com/discussions/456"
+                        },  # missing body → filtered
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
         items = ct.load_comment_queue(path)
         assert len(items) == 1
 
     def test_comment_key_with_id(self):
         import comment_thread as ct
+
         key = ct.comment_key({"id": "c1", "url": "https://example.com", "body": "text"})
         assert key == "c1"
 
     def test_comment_key_fallback(self):
         import comment_thread as ct
+
         key = ct.comment_key({"url": "https://example.com", "body": "some text here"})
         assert "example.com" in key
         assert "some text" in key
 
     def test_load_missing_queue(self, tmp_path):
         import comment_thread as ct
+
         assert ct.load_comment_queue(tmp_path / "nope.json") == []
 
 
 # ---------------------------------------------------------------------------
 # human_delay sanity check
 # ---------------------------------------------------------------------------
+
 
 class TestHumanDelay:
     def test_runs_without_error(self):
@@ -368,6 +426,7 @@ class TestHumanDelay:
 # ---------------------------------------------------------------------------
 # Manual-login session detection
 # ---------------------------------------------------------------------------
+
 
 def _jwt(payload: dict) -> str:
     """Build a JWT-shaped token whose payload segment decodes to `payload`."""
@@ -395,7 +454,7 @@ class _FakeContext:
         ({"displayName": "lorenzoscaturchio"}, True),
         ({"userName": "someone"}, True),
         ({"userId": 12345}, True),
-        ({"sub": ""}, False),          # anonymous visitors also receive CLIENT-TOKEN
+        ({"sub": ""}, False),  # anonymous visitors also receive CLIENT-TOKEN
         ({"aud": "kaggle"}, False),
         ({"userId": 0}, False),
     ],
@@ -407,12 +466,18 @@ def test_client_token_identifies_signed_in_sessions(payload, expected):
 
 def test_client_token_ignores_malformed_and_absent_tokens():
     assert kb._client_token_is_authenticated(_FakeContext(cookies=[])) is False
-    assert kb._client_token_is_authenticated(
-        _FakeContext(cookies=[{"name": "GCLB", "value": "x"}])
-    ) is False
-    assert kb._client_token_is_authenticated(
-        _FakeContext(cookies=[{"name": "CLIENT-TOKEN", "value": "not-a-jwt"}])
-    ) is False
+    assert (
+        kb._client_token_is_authenticated(
+            _FakeContext(cookies=[{"name": "GCLB", "value": "x"}])
+        )
+        is False
+    )
+    assert (
+        kb._client_token_is_authenticated(
+            _FakeContext(cookies=[{"name": "CLIENT-TOKEN", "value": "not-a-jwt"}])
+        )
+        is False
+    )
 
 
 def test_session_is_signed_in_survives_a_closed_browser():
@@ -442,13 +507,25 @@ def _ctx(pages=(), cookies=()):
 def test_describe_context_distinguishes_signed_in_from_anonymous():
     signed_in = _ctx(
         ["https://www.kaggle.com/"],
-        [{"name": "CLIENT-TOKEN", "value": _jwt({"displayName": "someone"}), "domain": ".kaggle.com"}],
+        [
+            {
+                "name": "CLIENT-TOKEN",
+                "value": _jwt({"displayName": "someone"}),
+                "domain": ".kaggle.com",
+            }
+        ],
     )
     assert "identifies a user" in kb.describe_context(signed_in)
 
     anon = _ctx(
         ["https://www.kaggle.com/account/login"],
-        [{"name": "CLIENT-TOKEN", "value": _jwt({"aud": "kaggle"}), "domain": ".kaggle.com"}],
+        [
+            {
+                "name": "CLIENT-TOKEN",
+                "value": _jwt({"aud": "kaggle"}),
+                "domain": ".kaggle.com",
+            }
+        ],
     )
     assert "anonymous" in kb.describe_context(anon)
 
@@ -457,7 +534,10 @@ def test_describe_context_never_prints_cookie_values():
     """The diagnostic is printed to logs; cookie values are credentials."""
     secret = _jwt({"displayName": "someone"})
     out = kb.describe_context(
-        _ctx(["https://www.kaggle.com/"], [{"name": "CLIENT-TOKEN", "value": secret, "domain": ".kaggle.com"}])
+        _ctx(
+            ["https://www.kaggle.com/"],
+            [{"name": "CLIENT-TOKEN", "value": secret, "domain": ".kaggle.com"}],
+        )
     )
     assert secret not in out
     assert "eyJ" not in out

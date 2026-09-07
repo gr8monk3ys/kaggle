@@ -1,4 +1,5 @@
 """Read-only GrowthState: current votes/followers/medals from existing trackers."""
+
 from __future__ import annotations
 
 import json

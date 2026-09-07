@@ -1,2 +1,1 @@
 """Kaggle portfolio command package."""
-

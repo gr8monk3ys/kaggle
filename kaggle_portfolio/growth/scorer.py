@@ -1,4 +1,5 @@
 """Pure Reach-Score scoring. Imports only `config`; no side effects."""
+
 from __future__ import annotations
 
 from .config import CUTS, TIER_VALUE, FlywheelConfig
@@ -61,6 +62,8 @@ def expected_lift(
     if item_votes is None:
         proximity = cfg.w_discussion
     else:
-        proximity = max(cfg.w_votes * vote_progress(item_votes, cfg), MIN_ITEM_PROXIMITY)
+        proximity = max(
+            cfg.w_votes * vote_progress(item_votes, cfg), MIN_ITEM_PROXIMITY
+        )
     audience_factor = 1.0 + (audience / 1000.0)
     return weight * proximity * audience_factor

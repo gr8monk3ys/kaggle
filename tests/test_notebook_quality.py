@@ -3,7 +3,9 @@ import sys
 from kaggle_portfolio.quality import notebook_quality
 
 
-def test_discover_notebooks_scope_filter(tmp_path, md_cell, code_cell, write_kernel_bundle):
+def test_discover_notebooks_scope_filter(
+    tmp_path, md_cell, code_cell, write_kernel_bundle
+):
     write_kernel_bundle(
         tmp_path,
         "competition-a",
@@ -18,7 +20,9 @@ def test_discover_notebooks_scope_filter(tmp_path, md_cell, code_cell, write_ker
     )
 
     all_notebooks, warnings = notebook_quality.discover_notebooks(tmp_path, scope="all")
-    portfolio_notebooks, _ = notebook_quality.discover_notebooks(tmp_path, scope="portfolio")
+    portfolio_notebooks, _ = notebook_quality.discover_notebooks(
+        tmp_path, scope="portfolio"
+    )
 
     assert len(all_notebooks) == 2
     assert len(portfolio_notebooks) == 1
@@ -34,7 +38,9 @@ def test_score_notebook_high_quality(tmp_path, md_cell, code_cell, write_kernel_
         md_cell("## Method\nModel approach and training pipeline."),
         code_cell("import matplotlib.pyplot as plt\nplt.plot([1,2,3])"),
         md_cell("## Evaluation\nResults and validation metrics."),
-        md_cell("### Insight\nObservation: because we regularized, performance improved."),
+        md_cell(
+            "### Insight\nObservation: because we regularized, performance improved."
+        ),
         md_cell("## Conclusion\nSummary and next steps to improve leaderboard rank."),
     ]
     write_kernel_bundle(tmp_path, "portfolio-x", "guide.ipynb", cells)
@@ -62,7 +68,9 @@ def test_score_notebook_low_quality(tmp_path, code_cell, write_kernel_bundle):
     assert any("H1 title" in hint for hint in score.missing)
 
 
-def test_score_notebook_recognizes_r_visualizations(tmp_path, md_cell, code_cell, write_kernel_bundle):
+def test_score_notebook_recognizes_r_visualizations(
+    tmp_path, md_cell, code_cell, write_kernel_bundle
+):
     cells = [
         md_cell("# R Notebook"),
         md_cell("## Objective\nDefine the goal."),
@@ -115,7 +123,9 @@ def test_main_quality_gate_fails(tmp_path, monkeypatch, code_cell, write_kernel_
     assert (output_root / "reports" / "latest-notebook-quality-fixes.json").exists()
 
 
-def test_build_priority_actions_sorted_by_impact(tmp_path, code_cell, write_kernel_bundle):
+def test_build_priority_actions_sorted_by_impact(
+    tmp_path, code_cell, write_kernel_bundle
+):
     cells = [
         code_cell("print('minimal')"),
         code_cell("print('minimal')"),
@@ -133,7 +143,9 @@ def test_build_priority_actions_sorted_by_impact(tmp_path, code_cell, write_kern
     assert actions[1]["impact"] >= actions[2]["impact"]
 
 
-def test_generate_fixer_markdown_contains_checklist(tmp_path, code_cell, write_kernel_bundle):
+def test_generate_fixer_markdown_contains_checklist(
+    tmp_path, code_cell, write_kernel_bundle
+):
     low_cells = [code_cell("print('minimal')"), code_cell("print('minimal')")]
     write_kernel_bundle(tmp_path, "portfolio-low", "low.ipynb", low_cells)
     low_notebook = tmp_path / "portfolio-low" / "low.ipynb"

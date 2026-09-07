@@ -2,9 +2,9 @@
 
 > 3200+ AI/ML papers with metadata for trend analysis
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/ai-ml-research-papers-trends](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-ml-research-papers-trends)  
+**Kaggle:** [lorenzoscaturchio/ai-ml-research-papers-trends](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-ml-research-papers-trends)
 
 ## Description
 

@@ -43,7 +43,9 @@ def test_successful_capture_reports_storage_path(monkeypatch, capsys, tmp_path):
 def test_failed_login_returns_nonzero(monkeypatch, capsys):
     @contextmanager
     def _fake_browser(args):
-        raise RuntimeError("Kaggle login still appears unauthenticated after manual login.")
+        raise RuntimeError(
+            "Kaggle login still appears unauthenticated after manual login."
+        )
         yield  # pragma: no cover
 
     monkeypatch.setattr(login_capture.kb, "open_kaggle_browser", _fake_browser)

@@ -2,9 +2,9 @@
 
 > 5.5K repos with stars, forks, issues, CI/CD, and health signals
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/github-repo-metrics](https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics)  
+**Kaggle:** [lorenzoscaturchio/github-repo-metrics](https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics)
 
 ## Description
 

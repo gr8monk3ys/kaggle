@@ -1,15 +1,29 @@
 """
 Build explore.ipynb for Spotify Tracks Audio Features dataset.
 """
+
 import json
 from pathlib import Path
 
-def md(source): return {"cell_type": "markdown", "metadata": {}, "source": source}
-def code(source): return {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [], "source": source}
+
+def md(source):
+    return {"cell_type": "markdown", "metadata": {}, "source": source}
+
+
+def code(source):
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": source,
+    }
+
 
 cells = []
 
-cells.append(md("""# 🎵 Spotify Tracks: EDA & Popularity Prediction
+cells.append(
+    md("""# 🎵 Spotify Tracks: EDA & Popularity Prediction
 > **50,000 tracks · 20 genres · 21 audio features** | [Dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)
 
 **March 2026 refresh:** clearer first-screen summary, explicit dataset cross-links, and a faster path to the modeling sections.
@@ -31,29 +45,35 @@ This notebook walks through a complete ML pipeline on 50K Spotify-style tracks:
 6. [Popularity Prediction (LightGBM)](#popularity)
 7. [Mood Clustering (UMAP + K-Means)](#clustering)
 8. [Key Takeaways](#takeaways)
-"""))
+""")
+)
 
-cells.append(md("""## Objective & Evaluation Strategy
+cells.append(
+    md("""## Objective & Evaluation Strategy
 
 **Objective:** understand which audio features separate genres and estimate how far content-only features can go for popularity modeling.
 
 **Evaluation:** compare multi-class classification accuracy for genre prediction, regression error for popularity, and cluster coherence for mood discovery.
 
 **Hypothesis:** acousticness, energy, loudness, and tempo should explain most of the useful variation because they capture repeatable production patterns across genres.
-"""))
+""")
+)
 
-cells.append(md("""## Key Takeaways Before the Code
+cells.append(
+    md("""## Key Takeaways Before the Code
 
 - Genre separation is easier than popularity prediction because audio features encode production style more directly than listener behavior.
 - Popularity is still worth modeling because the errors reveal where metadata-free recommendation systems break down.
 - The most reusable outputs here are not just scores: the feature ranking, mood clusters, and cross-genre acoustic profiles all transfer well to downstream demos.
 
 **Dataset page:** [Spotify Tracks: Audio Features (50K Songs)](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)
-"""))
+""")
+)
 
 cells.append(md("## 1. Setup & Data Loading <a id='setup'></a>"))
 
-cells.append(code("""from pathlib import Path
+cells.append(
+    code("""from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -136,20 +156,24 @@ else:
     df = pd.read_csv(csv_path)
     print(f"Loaded from: {csv_path}")
 print(f"Shape: {df.shape}")
-df.head()"""))
+df.head()""")
+)
 
-cells.append(code("""print("Dataset Info:")
+cells.append(
+    code("""print("Dataset Info:")
 print(f"  Tracks: {len(df):,}")
 print(f"  Genres: {df['genre'].nunique()} → {sorted(df['genre'].unique())}")
 print(f"  Years:  {df['release_year'].min()} – {df['release_year'].max()}")
 print(f"  Artists: {df['artist_name'].nunique():,} unique")
 print()
 print("Missing values:", df.isnull().sum().sum())
-df.describe().round(3)"""))
+df.describe().round(3)""")
+)
 
 cells.append(md("## 2. Audio Feature Distributions <a id='distributions'></a>"))
 
-cells.append(code("""AUDIO_FEATURES = ['danceability', 'energy', 'loudness', 'speechiness',
+cells.append(
+    code("""AUDIO_FEATURES = ['danceability', 'energy', 'loudness', 'speechiness',
                   'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo']
 
 fig, axes = plt.subplots(3, 3, figsize=(15, 12))
@@ -167,9 +191,11 @@ for ax, feat in zip(axes, AUDIO_FEATURES):
 plt.suptitle('Distribution of Spotify Audio Features (50K Tracks)', fontsize=14, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.show()
-print("Note: Instrumentalness and speechiness are right-skewed — most tracks are vocal and non-instrumental")"""))
+print("Note: Instrumentalness and speechiness are right-skewed — most tracks are vocal and non-instrumental")""")
+)
 
-cells.append(code("""# Popularity distribution
+cells.append(
+    code("""# Popularity distribution
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
 ax1.hist(df['popularity'], bins=50, color='#FF6B6B', alpha=0.8, edgecolor='white')
@@ -190,11 +216,13 @@ for x, y in zip(decade_pop.index, decade_pop.values):
     ax2.text(x, y + 0.3, f'{y:.1f}', ha='center', fontsize=9)
 
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
 cells.append(md("## 3. Genre Deep Dive <a id='genres'></a>"))
 
-cells.append(code("""# Genre counts
+cells.append(
+    code("""# Genre counts
 genre_counts = df['genre'].value_counts()
 colors = plt.cm.tab20(np.linspace(0, 1, len(genre_counts)))
 
@@ -215,9 +243,11 @@ ax2.axvline(df['popularity'].mean(), color='red', linestyle='--', alpha=0.7, lab
 ax2.legend()
 
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
-cells.append(code("""# Genre radar chart — compare top 6 genres across audio features
+cells.append(
+    code("""# Genre radar chart — compare top 6 genres across audio features
 top_genres = ['pop', 'hip-hop', 'rock', 'electronic', 'classical', 'jazz']
 features_radar = ['danceability', 'energy', 'acousticness', 'valence', 'instrumentalness', 'speechiness']
 
@@ -243,11 +273,13 @@ for ax, genre, color in zip(axes, top_genres, colors_g):
 
 plt.suptitle('Audio Feature Profiles by Genre (Normalized)', fontsize=14, fontweight='bold', y=1.02)
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
 cells.append(md("## 4. Correlation Heatmap <a id='correlations'></a>"))
 
-cells.append(code("""numeric_cols = AUDIO_FEATURES + ['popularity', 'duration_ms', 'release_year']
+cells.append(
+    code("""numeric_cols = AUDIO_FEATURES + ['popularity', 'duration_ms', 'release_year']
 corr = df[numeric_cols].corr()
 
 fig, ax = plt.subplots(figsize=(12, 10))
@@ -265,11 +297,13 @@ print("Top correlates with Popularity:")
 for feat, val in pop_corr.items():
     direction = corr.loc[feat, 'popularity']
     arrow = '↑' if direction > 0 else '↓'
-    print(f"  {arrow} {feat:<25} |r| = {val:.3f}")"""))
+    print(f"  {arrow} {feat:<25} |r| = {val:.3f}")""")
+)
 
 cells.append(md("## 5. Genre Classification (XGBoost) <a id='classification'></a>"))
 
-cells.append(code("""from sklearn.ensemble import GradientBoostingClassifier
+cells.append(
+    code("""from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.preprocessing import LabelEncoder
 
 le = LabelEncoder()
@@ -297,9 +331,11 @@ X = df_ml[FEATURE_COLS]
 y = df_ml['genre_enc']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-print(f"Train: {X_train.shape}, Test: {X_test.shape}")"""))
+print(f"Train: {X_train.shape}, Test: {X_test.shape}")""")
+)
 
-cells.append(code("""try:
+cells.append(
+    code("""try:
     import xgboost as xgb
     clf = xgb.XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.1,
                              subsample=0.8, colsample_bytree=0.8, random_state=42,
@@ -324,9 +360,11 @@ cm = confusion_matrix(y_test, y_pred)
 per_class_acc = cm.diagonal() / cm.sum(axis=1)
 genre_acc = pd.Series(per_class_acc, index=le.classes_).sort_values(ascending=False)
 print("Best:", genre_acc.head(5).to_string())
-print("Worst:", genre_acc.tail(5).to_string())"""))
+print("Worst:", genre_acc.tail(5).to_string())""")
+)
 
-cells.append(code("""# Feature importance
+cells.append(
+    code("""# Feature importance
 if hasattr(clf, 'feature_importances_'):
     importances = pd.Series(clf.feature_importances_, index=FEATURE_COLS).sort_values(ascending=True)
 
@@ -338,11 +376,13 @@ if hasattr(clf, 'feature_importances_'):
     ax.axvline(importances.median(), color='navy', linestyle='--', alpha=0.5, label='Median')
     ax.legend()
     plt.tight_layout()
-    plt.show()"""))
+    plt.show()""")
+)
 
 cells.append(md("## 6. Popularity Prediction (LightGBM) <a id='popularity'></a>"))
 
-cells.append(code("""try:
+cells.append(
+    code("""try:
     import lightgbm as lgb
     reg = lgb.LGBMRegressor(n_estimators=300, num_leaves=63, learning_rate=0.05,
                              subsample=0.8, colsample_bytree=0.8, random_state=42,
@@ -367,9 +407,11 @@ reg.fit(X_tr, y_tr)
 y_hat = reg.predict(X_te)
 rmse = np.sqrt(mean_squared_error(y_te, y_hat))
 r2 = r2_score(y_te, y_hat)
-print(f"RMSE: {rmse:.2f}  |  R²: {r2:.3f}")"""))
+print(f"RMSE: {rmse:.2f}  |  R²: {r2:.3f}")""")
+)
 
-cells.append(code("""fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+cells.append(
+    code("""fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # Predicted vs Actual
 axes[0].scatter(y_te, y_hat, alpha=0.15, color='#1DB954', s=5)
@@ -389,11 +431,13 @@ axes[1].set_title(f'Residual Distribution (RMSE={rmse:.2f})', fontweight='bold')
 
 plt.tight_layout()
 plt.show()
-print(f"Popularity is hard to predict from audio features alone — social/algorithmic factors dominate")"""))
+print(f"Popularity is hard to predict from audio features alone — social/algorithmic factors dominate")""")
+)
 
 cells.append(md("## 7. Mood Clustering (UMAP + K-Means) <a id='clustering'></a>"))
 
-cells.append(code("""from sklearn.decomposition import PCA
+cells.append(
+    code("""from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
@@ -415,9 +459,11 @@ except ImportError:
     embedding = pca.fit_transform(X_scaled[:5000])
     embed_label = 'PCA'
 
-print(f"Using {embed_label} for 2D embedding of 5,000 tracks")"""))
+print(f"Using {embed_label} for 2D embedding of 5,000 tracks")""")
+)
 
-cells.append(code("""# K-Means clustering
+cells.append(
+    code("""# K-Means clustering
 k = 6
 km = KMeans(n_clusters=k, random_state=42, n_init=10)
 cluster_labels = km.fit_predict(X_scaled[:5000])
@@ -452,9 +498,11 @@ ax2.legend(fontsize=9)
 ax2.tick_params(axis='x', rotation=30)
 
 plt.tight_layout()
-plt.show()"""))
+plt.show()""")
+)
 
-cells.append(md("""## 8. Key Takeaways <a id='takeaways'></a>
+cells.append(
+    md("""## 8. Key Takeaways <a id='takeaways'></a>
 
 ### What We Learned
 
@@ -481,25 +529,32 @@ cells.append(md("""## 8. Key Takeaways <a id='takeaways'></a>
 - Add artist-level features (follower count, genre expertise)
 - Use collaborative filtering signals for popularity modeling
 - Try Contrastive Learning for audio embedding
-"""))
+""")
+)
 
-cells.append(md("""## Interpretation, Trade-offs, and Limitations
+cells.append(
+    md("""## Interpretation, Trade-offs, and Limitations
 
 - **Observation:** audio features are strong for genre structure, but they explain only part of commercial popularity.
 - **Interpretation:** recency and production style dominate several clusters because they proxy the way streaming catalogs are curated.
 - **Trade-off:** content-only models are easy to reproduce, yet they leave out social, playlist, and artist-network effects that often matter most.
 - **Limitation:** synthetic track metadata is ideal for experimentation, but real production decisions should validate the same hypotheses on live catalog data.
-"""))
+""")
+)
 
 # Write notebook
 nb = {
     "nbformat": 4,
     "nbformat_minor": 4,
     "metadata": {
-        "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
-        "language_info": {"name": "python", "version": "3.10.0"}
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3",
+        },
+        "language_info": {"name": "python", "version": "3.10.0"},
     },
-    "cells": cells
+    "cells": cells,
 }
 
 out = Path(__file__).parent / "explore.ipynb"

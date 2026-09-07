@@ -47,6 +47,7 @@ What this script provides
 The companion `inference_server.py` shows the exact gateway `predict()` wiring
 for the live submission notebook.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -65,8 +66,11 @@ TRADING_DAYS = 252
 MIN_ALLOC, MAX_ALLOC = 0.0, 2.0
 
 TARGET_CANDIDATES = [
-    "market_forward_excess_returns", "forward_returns",
-    "market_forward_returns", "target", "y",
+    "market_forward_excess_returns",
+    "forward_returns",
+    "market_forward_returns",
+    "target",
+    "y",
 ]
 # Columns that are outcomes / ids, never inputs.
 NON_FEATURE = {"date_id", "date", "id", "row_id", "is_scored", "weight"}
@@ -149,8 +153,12 @@ def time_series_cv(df: pd.DataFrame, target: str) -> float:
         if va.stop - va.start < 5:
             continue
         model = HistGradientBoostingRegressor(
-            random_state=SEED, max_iter=300, learning_rate=0.03,
-            max_leaf_nodes=31, l2_regularization=1.0, early_stopping=True,
+            random_state=SEED,
+            max_iter=300,
+            learning_rate=0.03,
+            max_leaf_nodes=31,
+            l2_regularization=1.0,
+            early_stopping=True,
         )
         model.fit(X[tr], y[tr])
         pred = model.predict(X[va])
@@ -165,12 +173,16 @@ def time_series_cv(df: pd.DataFrame, target: str) -> float:
         sharpe = _annualized_sharpe(strat[np.isfinite(strat)])
         rmses.append(rmse)
         sharpes.append(sharpe)
-        print(f"  fold {k}  train=[0:{tr_end}] val=[{tr_end}:{va_end}]  "
-              f"RMSE={rmse:.6f}  strat_Sharpe={sharpe:.3f}")
+        print(
+            f"  fold {k}  train=[0:{tr_end}] val=[{tr_end}:{va_end}]  "
+            f"RMSE={rmse:.6f}  strat_Sharpe={sharpe:.3f}"
+        )
     mean_rmse = float(np.mean(rmses))
     mean_sharpe = float(np.mean(sharpes))
-    print(f"CV RMSE={mean_rmse:.6f}   CV strategy Sharpe (proxy)={mean_sharpe:.3f}"
-          "   (expanding window, no shuffle)")
+    print(
+        f"CV RMSE={mean_rmse:.6f}   CV strategy Sharpe (proxy)={mean_sharpe:.3f}"
+        "   (expanding window, no shuffle)"
+    )
     return mean_sharpe
 
 
@@ -179,8 +191,11 @@ def fit_model(df: pd.DataFrame, target: str):
     X = df[feats].replace([np.inf, -np.inf], np.nan).to_numpy()
     y = df[target].to_numpy()
     model = HistGradientBoostingRegressor(
-        random_state=SEED, max_iter=500, learning_rate=0.03,
-        max_leaf_nodes=31, l2_regularization=1.0,
+        random_state=SEED,
+        max_iter=500,
+        learning_rate=0.03,
+        max_leaf_nodes=31,
+        l2_regularization=1.0,
     )
     model.fit(X, y)
     return model, feats, float(np.nanstd(y))
@@ -205,8 +220,10 @@ def run_smoke_test():
     with tempfile.TemporaryDirectory() as tmp:
         make_synthetic_train(os.path.join(tmp, "train.csv"))
         df, target = load_train(tmp)
-        print(f"rows={len(df)}  target='{target}'  "
-              f"features={len(feature_columns(df, target))}")
+        print(
+            f"rows={len(df)}  target='{target}'  "
+            f"features={len(feature_columns(df, target))}"
+        )
         sharpe = time_series_cv(df, target)
         model, feats, sigma = fit_model(df, target)
         # Verify the live link function on the last day.
@@ -219,35 +236,48 @@ def run_smoke_test():
         # gateway path calls allocation_from_pred then reads alloc[0]).
         scalar_alloc = allocation_from_pred(float(mu[0]), sigma)
         assert scalar_alloc.shape == (1,) and np.isfinite(scalar_alloc[0])
-        print(f"Last-day predicted edge={mu[0]:.5f} -> allocation={alloc[0]:.3f} "
-              f"(bounded in [{MIN_ALLOC},{MAX_ALLOC}])")
-        print(f"SMOKE TEST PASSED (synthetic strategy Sharpe proxy={sharpe:.3f}). "
-              "Offline pipeline + allocation link are sound.")
+        print(
+            f"Last-day predicted edge={mu[0]:.5f} -> allocation={alloc[0]:.3f} "
+            f"(bounded in [{MIN_ALLOC},{MAX_ALLOC}])"
+        )
+        print(
+            f"SMOKE TEST PASSED (synthetic strategy Sharpe proxy={sharpe:.3f}). "
+            "Offline pipeline + allocation link are sound."
+        )
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--data-dir", default=None,
-                    help="Dir containing train.csv (and optionally test.csv).")
+    ap.add_argument(
+        "--data-dir",
+        default=None,
+        help="Dir containing train.csv (and optionally test.csv).",
+    )
     ap.add_argument("--smoke-test", action="store_true")
     args = ap.parse_args()
 
     if args.smoke_test or args.data_dir is None:
         if args.data_dir is None and not args.smoke_test:
-            print("No --data-dir given; running --smoke-test.\n"
-                  "(Accept rules + download to train for real; live scoring is "
-                  "via the kaggle_evaluation gateway -- see inference_server.py.)")
+            print(
+                "No --data-dir given; running --smoke-test.\n"
+                "(Accept rules + download to train for real; live scoring is "
+                "via the kaggle_evaluation gateway -- see inference_server.py.)"
+            )
         run_smoke_test()
         return
 
     df, target = load_train(args.data_dir)
-    print(f"Loaded {len(df)} rows; target='{target}'; "
-          f"{len(feature_columns(df, target))} features.")
+    print(
+        f"Loaded {len(df)} rows; target='{target}'; "
+        f"{len(feature_columns(df, target))} features."
+    )
     time_series_cv(df, target)
     model, feats, sigma = fit_model(df, target)
     print(f"Refit on all rows. {len(feats)} features, return sigma={sigma:.5f}.")
-    print("For the LIVE submission, load this model inside inference_server.py "
-          "and serve allocations through the gateway.")
+    print(
+        "For the LIVE submission, load this model inside inference_server.py "
+        "and serve allocations through the gateway."
+    )
 
 
 if __name__ == "__main__":

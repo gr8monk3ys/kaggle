@@ -1,4 +1,5 @@
 """Queue management for scheduled Kaggle discussion posts."""
+
 from __future__ import annotations
 
 import json
@@ -85,7 +86,8 @@ def _rebalance_schedule_window(
     scheduled_items = [
         item
         for item in queue
-        if normalize_status(item.get("status")) == "scheduled" and _parse_scheduled(item.get("scheduled_after"))
+        if normalize_status(item.get("status")) == "scheduled"
+        and _parse_scheduled(item.get("scheduled_after"))
     ]
 
     if len(scheduled_items) >= target_slots:

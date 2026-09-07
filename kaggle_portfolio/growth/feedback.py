@@ -1,4 +1,5 @@
 """Closed feedback loop: attribute vote deltas to recent actions, reweight (EMA)."""
+
 from __future__ import annotations
 
 import json
@@ -38,7 +39,9 @@ def _notebook_votes(snapshot: dict | None) -> int:
     return int(notebooks.get("total_votes", 0) or 0)
 
 
-def attribute(history, prev_snapshot, cur_snapshot, weights, cfg: FlywheelConfig, now: datetime):
+def attribute(
+    history, prev_snapshot, cur_snapshot, weights, cfg: FlywheelConfig, now: datetime
+):
     """Time-correlate the vote delta to action kinds taken since the last snapshot,
     then nudge each acting kind's EMA weight toward its observed effectiveness.
 

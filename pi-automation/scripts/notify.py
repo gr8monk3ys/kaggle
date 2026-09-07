@@ -29,7 +29,9 @@ def send(message: str) -> None:
             timeout=10,
         )
     except requests.RequestException as exc:
-        print(f"Telegram API request failed: {_redact(str(exc), token)}", file=sys.stderr)
+        print(
+            f"Telegram API request failed: {_redact(str(exc), token)}", file=sys.stderr
+        )
         return
 
     if response.status_code != 200:
@@ -41,6 +43,7 @@ def send(message: str) -> None:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Send a Telegram notification")
     parser.add_argument("message", help="Message to send")
     args = parser.parse_args()

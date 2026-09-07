@@ -7,12 +7,16 @@ import pytest
 from kaggle_portfolio import manage_commands
 
 
-def test_resolve_target_returns_direct_path_when_present(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_resolve_target_returns_direct_path_when_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     direct = tmp_path / "feature-engineering"
     direct.mkdir()
 
     monkeypatch.setattr(manage_commands, "ROOT", tmp_path)
-    monkeypatch.setattr(manage_commands, "NOTEBOOK_DIRS", ["projects/tutorials/feature-engineering"])
+    monkeypatch.setattr(
+        manage_commands, "NOTEBOOK_DIRS", ["projects/tutorials/feature-engineering"]
+    )
     monkeypatch.setattr(manage_commands, "DATASET_DIRS", [])
 
     assert manage_commands.resolve_target("feature-engineering") == direct.resolve()
@@ -25,7 +29,9 @@ def test_resolve_target_falls_back_to_unique_basename_match(
     nested.mkdir(parents=True)
 
     monkeypatch.setattr(manage_commands, "ROOT", tmp_path)
-    monkeypatch.setattr(manage_commands, "NOTEBOOK_DIRS", ["projects/tutorials/feature-engineering"])
+    monkeypatch.setattr(
+        manage_commands, "NOTEBOOK_DIRS", ["projects/tutorials/feature-engineering"]
+    )
     monkeypatch.setattr(manage_commands, "DATASET_DIRS", [])
 
     assert manage_commands.resolve_target("feature-engineering") == nested.resolve()
@@ -43,7 +49,10 @@ def test_resolve_target_raises_for_ambiguous_basename(
     monkeypatch.setattr(
         manage_commands,
         "NOTEBOOK_DIRS",
-        ["projects/tutorials/feature-engineering", "projects/legacy/feature-engineering"],
+        [
+            "projects/tutorials/feature-engineering",
+            "projects/legacy/feature-engineering",
+        ],
     )
     monkeypatch.setattr(manage_commands, "DATASET_DIRS", [])
 
@@ -69,6 +78,10 @@ def test_digest_command_is_registered():
 
 def test_leaderboard_command_is_registered():
     from kaggle_portfolio import manage_commands
-    names = [c.name for c in manage_commands.COMMANDS] if hasattr(manage_commands, "COMMANDS") \
+
+    names = (
+        [c.name for c in manage_commands.COMMANDS]
+        if hasattr(manage_commands, "COMMANDS")
         else list(manage_commands.command_table().keys())
+    )
     assert "leaderboard" in names

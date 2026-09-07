@@ -41,6 +41,7 @@ builder is SCHEMA-ADAPTIVE: it discovers numeric log columns at runtime and
 treats anything matching the depth / target name patterns specially. Adjust the
 *_CANDIDATES constants below once you have seen the real headers.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -66,9 +67,25 @@ TVD_CANDIDATES = ["tvd", "TVD", "tvdss", "true_vertical_depth"]
 # The prediction target along the lateral.
 TARGET_CANDIDATES = ["tvt", "TVT", "target", "dz", "vertical_offset"]
 # Common petrophysical logs (used if present; missing ones are skipped).
-LOG_CANDIDATES = ["gr", "GR", "gamma", "gamma_ray", "res", "resistivity",
-                  "rhob", "density", "nphi", "porosity", "dt", "sonic", "pe",
-                  "incl", "inclination", "azimuth", "tvd"]
+LOG_CANDIDATES = [
+    "gr",
+    "GR",
+    "gamma",
+    "gamma_ray",
+    "res",
+    "resistivity",
+    "rhob",
+    "density",
+    "nphi",
+    "porosity",
+    "dt",
+    "sonic",
+    "pe",
+    "incl",
+    "inclination",
+    "azimuth",
+    "tvd",
+]
 
 
 def _first_present(cols, candidates):
@@ -142,9 +159,12 @@ def add_features(df: pd.DataFrame, md_col: str) -> pd.DataFrame:
     )
     df["md_step"] = df[md_col].diff().fillna(0.0)
 
-    log_cols = [c for c in df.columns
-                if (_first_present([c], LOG_CANDIDATES) or c.startswith("tw_"))
-                and pd.api.types.is_numeric_dtype(df[c])]
+    log_cols = [
+        c
+        for c in df.columns
+        if (_first_present([c], LOG_CANDIDATES) or c.startswith("tw_"))
+        and pd.api.types.is_numeric_dtype(df[c])
+    ]
     for c in log_cols:
         df[f"{c}_grad"] = df[c].diff().fillna(0.0)
         df[f"{c}_roll5"] = df[c].rolling(5, min_periods=1).mean()
@@ -153,7 +173,9 @@ def add_features(df: pd.DataFrame, md_col: str) -> pd.DataFrame:
 
 
 def assemble(split_dir: str) -> tuple[pd.DataFrame, list[str], str]:
-    well_ids = list_well_ids(split_dir)  # list once; the returned ids must match the frame
+    well_ids = list_well_ids(
+        split_dir
+    )  # list once; the returned ids must match the frame
     frames = []
     md_col = None
     for wid in well_ids:
@@ -172,8 +194,9 @@ def feature_matrix(df: pd.DataFrame, target_col: str | None):
     drop = {"well_id"}
     if target_col:
         drop.add(target_col)
-    feats = [c for c in df.columns
-             if c not in drop and pd.api.types.is_numeric_dtype(df[c])]
+    feats = [
+        c for c in df.columns if c not in drop and pd.api.types.is_numeric_dtype(df[c])
+    ]
     X = df[feats].replace([np.inf, -np.inf], np.nan)
     return X, feats
 
@@ -189,15 +212,21 @@ def cross_validate(train: pd.DataFrame, target_col: str) -> float:
     scores = []
     for fold, (tr, va) in enumerate(gkf.split(X, y, groups), 1):
         model = HistGradientBoostingRegressor(
-            random_state=SEED, max_iter=400, learning_rate=0.05,
-            max_leaf_nodes=63, l2_regularization=1.0, early_stopping=True,
+            random_state=SEED,
+            max_iter=400,
+            learning_rate=0.05,
+            max_leaf_nodes=63,
+            l2_regularization=1.0,
+            early_stopping=True,
         )
         model.fit(X.iloc[tr], y[tr])
         pred = model.predict(X.iloc[va])
         rmse = float(np.sqrt(mean_squared_error(y[va], pred)))
         scores.append(rmse)
-        print(f"  fold {fold}/{splits}  RMSE={rmse:.4f}  "
-              f"(val wells={len(np.unique(groups[va]))})")
+        print(
+            f"  fold {fold}/{splits}  RMSE={rmse:.4f}  "
+            f"(val wells={len(np.unique(groups[va]))})"
+        )
     mean, std = float(np.mean(scores)), float(np.std(scores))
     print(f"CV RMSE: {mean:.4f} +/- {std:.4f}  (GroupKFold by well)")
     return mean
@@ -207,8 +236,11 @@ def fit_full_and_predict(train, test, target_col, feats):
     X = train[feats].replace([np.inf, -np.inf], np.nan)
     y = train[target_col].to_numpy()
     model = HistGradientBoostingRegressor(
-        random_state=SEED, max_iter=600, learning_rate=0.05,
-        max_leaf_nodes=63, l2_regularization=1.0,
+        random_state=SEED,
+        max_iter=600,
+        learning_rate=0.05,
+        max_leaf_nodes=63,
+        l2_regularization=1.0,
     )
     model.fit(X, y)
     Xt = test[feats].replace([np.inf, -np.inf], np.nan)
@@ -231,29 +263,36 @@ def write_submission(test, preds, sample_path, out_path, target_col):
         keyed_unique = bool(key_cols) and not test[key_cols].duplicated().any()
         if keyed_unique and len(sub) == len(test):
             merged = sub.drop(columns=[pred_col], errors="ignore").merge(
-                test[key_cols + ["_pred"]], on=key_cols, how="left")
+                test[key_cols + ["_pred"]], on=key_cols, how="left"
+            )
             sub[pred_col] = merged["_pred"].to_numpy()
             missing = int(pd.isna(sub[pred_col]).sum())
             if missing:
                 fill = float(np.nanmean(preds))
-                print(f"WARNING: {missing}/{len(sub)} submission rows had no matching "
-                      f"prediction (id mismatch); filled with mean {fill:.4f}.",
-                      file=sys.stderr)
+                print(
+                    f"WARNING: {missing}/{len(sub)} submission rows had no matching "
+                    f"prediction (id mismatch); filled with mean {fill:.4f}.",
+                    file=sys.stderr,
+                )
                 sub[pred_col] = sub[pred_col].fillna(fill)
         elif len(sub) == len(preds):
-            print("WARNING: no shared unique id column between sample_submission and "
-                  "test; using POSITIONAL alignment -- verify the row order matches!",
-                  file=sys.stderr)
+            print(
+                "WARNING: no shared unique id column between sample_submission and "
+                "test; using POSITIONAL alignment -- verify the row order matches!",
+                file=sys.stderr,
+            )
             sub[pred_col] = preds
         else:
-            print(f"WARNING: sample rows ({len(sub)}) != preds ({len(preds)});"
-                  " writing best-effort frame.", file=sys.stderr)
+            print(
+                f"WARNING: sample rows ({len(sub)}) != preds ({len(preds)});"
+                " writing best-effort frame.",
+                file=sys.stderr,
+            )
             sub = pd.DataFrame({pred_col: preds})
     else:
         sub = pd.DataFrame({"well_id": test["well_id"], target_col: preds})
     sub.to_csv(out_path, index=False)
-    print(f"Wrote submission: {out_path}  ({len(sub)} rows, "
-          f"cols={list(sub.columns)})")
+    print(f"Wrote submission: {out_path}  ({len(sub)} rows, cols={list(sub.columns)})")
 
 
 # --- Synthetic smoke test (verifies the pipeline without the gated data) ------
@@ -271,15 +310,22 @@ def make_synthetic(root: str, n_wells: int, with_target: bool):
         hz = pd.DataFrame({"md": md, "tvd": tvd, "gr": gr, "resistivity": res})
         if with_target:
             # TVT as a smooth function of logs+depth so the model can learn it.
-            hz["tvt"] = (0.02 * (gr - 60) - 1.5 * np.log(res)
-                         + 0.01 * (tvd - 2000) + rng.normal(0, 0.3, size=n))
-        hz.to_csv(os.path.join(split, f"{wid}__horizontal_well.csv"),
-                  index=False)
+            hz["tvt"] = (
+                0.02 * (gr - 60)
+                - 1.5 * np.log(res)
+                + 0.01 * (tvd - 2000)
+                + rng.normal(0, 0.3, size=n)
+            )
+        hz.to_csv(os.path.join(split, f"{wid}__horizontal_well.csv"), index=False)
         m = rng.integers(80, 150)
         tvd_t = np.linspace(1950, 2100, m)
-        tw = pd.DataFrame({"tvd": tvd_t,
-                           "gr": 60 + 30 * np.sin(tvd_t / 40),
-                           "resistivity": np.exp(0.001 * tvd_t)})
+        tw = pd.DataFrame(
+            {
+                "tvd": tvd_t,
+                "gr": 60 + 30 * np.sin(tvd_t / 40),
+                "resistivity": np.exp(0.001 * tvd_t),
+            }
+        )
         tw.to_csv(os.path.join(split, f"{wid}__typewell.csv"), index=False)
 
 
@@ -292,8 +338,7 @@ def run_smoke_test():
         test, _, test_md = assemble(os.path.join(tmp, "test"))
         target_col = _first_present(train.columns, TARGET_CANDIDATES)
         assert target_col, "target not found in synthetic train"
-        print(f"train rows={len(train)}  test rows={len(test)}  "
-              f"target='{target_col}'")
+        print(f"train rows={len(train)}  test rows={len(test)}  target='{target_col}'")
         cv = cross_validate(train, target_col)
         X, feats = feature_matrix(train, target_col)
         preds = fit_full_and_predict(train, test, target_col, feats)
@@ -317,35 +362,48 @@ def run_smoke_test():
         check = written.merge(expect, on=["well_id", test_md])
         assert len(check) == len(test), "alignment merge lost/duplicated rows"
         assert np.allclose(check[target_col].to_numpy(), check["_p"].to_numpy()), (
-            "submission predictions are MISALIGNED to sample_submission rows")
-        print("Alignment check PASSED (predictions matched shuffled sample rows by id).")
+            "submission predictions are MISALIGNED to sample_submission rows"
+        )
+        print(
+            "Alignment check PASSED (predictions matched shuffled sample rows by id)."
+        )
 
-        print(f"SMOKE TEST PASSED (synthetic CV RMSE={cv:.4f}, "
-              f"{len(feats)} features). Pipeline logic is sound.")
+        print(
+            f"SMOKE TEST PASSED (synthetic CV RMSE={cv:.4f}, "
+            f"{len(feats)} features). Pipeline logic is sound."
+        )
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--data-dir", default=None,
-                    help="Dir containing train/ and test/ well CSVs.")
+    ap.add_argument(
+        "--data-dir", default=None, help="Dir containing train/ and test/ well CSVs."
+    )
     ap.add_argument("--out", default="/tmp/rogii_submission.csv")
-    ap.add_argument("--smoke-test", action="store_true",
-                    help="Run pipeline on synthetic data (no download needed).")
+    ap.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Run pipeline on synthetic data (no download needed).",
+    )
     args = ap.parse_args()
 
     if args.smoke_test or args.data_dir is None:
         if args.data_dir is None and not args.smoke_test:
-            print("No --data-dir given; running --smoke-test instead.\n"
-                  "(Accept the competition rules + download to train for real.)")
+            print(
+                "No --data-dir given; running --smoke-test instead.\n"
+                "(Accept the competition rules + download to train for real.)"
+            )
         run_smoke_test()
         return
 
     # Resolve train/test subdirs robustly.
     base = args.data_dir
-    train_dir = next((d for d in (os.path.join(base, "train"), base)
-                      if list_well_ids(d)), None)
-    test_dir = next((d for d in (os.path.join(base, "test"), base)
-                     if list_well_ids(d)), None)
+    train_dir = next(
+        (d for d in (os.path.join(base, "train"), base) if list_well_ids(d)), None
+    )
+    test_dir = next(
+        (d for d in (os.path.join(base, "test"), base) if list_well_ids(d)), None
+    )
     if not train_dir:
         sys.exit(f"No wells found under {base}/train or {base}.")
     sample_path = os.path.join(base, "sample_submission.csv")

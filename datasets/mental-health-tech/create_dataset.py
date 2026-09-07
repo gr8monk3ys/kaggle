@@ -42,7 +42,13 @@ YES_NO = ["Yes", "No"]
 YES_NO_SOMETIMES = ["Yes", "No", "Sometimes"]
 YES_NO_DONT_KNOW = ["Yes", "No", "Don't know"]
 WORK_INTERFERE = ["Never", "Rarely", "Sometimes", "Often"]
-LEAVE_EASE = ["Very easy", "Somewhat easy", "Don't know", "Somewhat difficult", "Very difficult"]
+LEAVE_EASE = [
+    "Very easy",
+    "Somewhat easy",
+    "Don't know",
+    "Somewhat difficult",
+    "Very difficult",
+]
 DISCUSS_OPTIONS = ["Yes", "No", "Some of them"]
 INTERVIEW_OPTIONS = ["Yes", "No", "Maybe"]
 MV_PHYSICAL_OPTIONS = ["Yes", "No", "Don't know"]
@@ -52,7 +58,14 @@ SURVEY_YEARS = [2019, 2020, 2021, 2022, 2023, 2024]
 YEAR_W = [0.12, 0.13, 0.15, 0.18, 0.22, 0.20]
 
 COMMENTS_POOL = [
-    "", "", "", "", "", "", "", "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
     "Better awareness programs needed.",
     "Management needs training on mental health.",
     "Glad to see more companies taking this seriously.",
@@ -105,16 +118,21 @@ for i in range(1, N + 1):
 
     # Larger companies tend to have better benefits
     big_company = company_size in ["100-500", "500-1000", "More than 1000"]
-    benefits = np.random.choice(YES_NO_DONT_KNOW,
-                                p=[0.55, 0.25, 0.20] if big_company else [0.25, 0.45, 0.30])
-    care_options = np.random.choice(YES_NO_DONT_KNOW,
-                                    p=[0.50, 0.20, 0.30] if big_company else [0.20, 0.50, 0.30])
-    wellness_program = np.random.choice(YES_NO_DONT_KNOW,
-                                        p=[0.48, 0.30, 0.22] if big_company else [0.18, 0.52, 0.30])
-    seek_help = np.random.choice(YES_NO_DONT_KNOW,
-                                 p=[0.52, 0.22, 0.26] if big_company else [0.22, 0.48, 0.30])
-    anonymity = np.random.choice(YES_NO_DONT_KNOW,
-                                 p=[0.45, 0.18, 0.37] if big_company else [0.20, 0.40, 0.40])
+    benefits = np.random.choice(
+        YES_NO_DONT_KNOW, p=[0.55, 0.25, 0.20] if big_company else [0.25, 0.45, 0.30]
+    )
+    care_options = np.random.choice(
+        YES_NO_DONT_KNOW, p=[0.50, 0.20, 0.30] if big_company else [0.20, 0.50, 0.30]
+    )
+    wellness_program = np.random.choice(
+        YES_NO_DONT_KNOW, p=[0.48, 0.30, 0.22] if big_company else [0.18, 0.52, 0.30]
+    )
+    seek_help = np.random.choice(
+        YES_NO_DONT_KNOW, p=[0.52, 0.22, 0.26] if big_company else [0.22, 0.48, 0.30]
+    )
+    anonymity = np.random.choice(
+        YES_NO_DONT_KNOW, p=[0.45, 0.18, 0.37] if big_company else [0.20, 0.40, 0.40]
+    )
     leave = np.random.choice(LEAVE_EASE, p=[0.12, 0.28, 0.30, 0.20, 0.10])
 
     # Consequence perceptions
@@ -133,38 +151,40 @@ for i in range(1, N + 1):
 
     comment = random.choice(COMMENTS_POOL)
 
-    rows.append({
-        "respondent_id": i,
-        "survey_year": year,
-        "age": age,
-        "gender": gender,
-        "country": country,
-        "self_employed": self_employed,
-        "family_history": family_history,
-        "treatment": treatment,
-        "work_interfere": wi,
-        "no_employees": company_size,
-        "remote_work": remote_work,
-        "tech_company": tech_company,
-        "benefits": benefits,
-        "care_options": care_options,
-        "wellness_program": wellness_program,
-        "seek_help": seek_help,
-        "anonymity": anonymity,
-        "leave": leave,
-        "mental_health_consequence": mh_consequence,
-        "phys_health_consequence": ph_consequence,
-        "coworkers": coworkers,
-        "supervisor": supervisor,
-        "mental_health_interview": mh_interview,
-        "phys_health_interview": ph_interview,
-        "mental_vs_physical": mental_vs_phys,
-        "obs_consequence": obs_consequence,
-        "comments": comment,
-    })
+    rows.append(
+        {
+            "respondent_id": i,
+            "survey_year": year,
+            "age": age,
+            "gender": gender,
+            "country": country,
+            "self_employed": self_employed,
+            "family_history": family_history,
+            "treatment": treatment,
+            "work_interfere": wi,
+            "no_employees": company_size,
+            "remote_work": remote_work,
+            "tech_company": tech_company,
+            "benefits": benefits,
+            "care_options": care_options,
+            "wellness_program": wellness_program,
+            "seek_help": seek_help,
+            "anonymity": anonymity,
+            "leave": leave,
+            "mental_health_consequence": mh_consequence,
+            "phys_health_consequence": ph_consequence,
+            "coworkers": coworkers,
+            "supervisor": supervisor,
+            "mental_health_interview": mh_interview,
+            "phys_health_interview": ph_interview,
+            "mental_vs_physical": mental_vs_phys,
+            "obs_consequence": obs_consequence,
+            "comments": comment,
+        }
+    )
 
 df = pd.DataFrame(rows)
 df.to_csv(OUTPUT, index=False)
 print(f"Saved {len(df):,} responses to {OUTPUT}")
-print(f"Treatment rate: {(df['treatment']=='Yes').mean():.1%}")
+print(f"Treatment rate: {(df['treatment'] == 'Yes').mean():.1%}")
 print(f"Gender split:\n{df['gender'].value_counts()}")

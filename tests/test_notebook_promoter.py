@@ -82,7 +82,9 @@ def test_filter_notebooks_matches_ref_slug_and_directory():
         {"id": "user/two", "_dir": "dir-two"},
     ]
 
-    filtered, missing = notebook_promoter.filter_notebooks(notebooks, {"user/two", "dir-one", "missing"})
+    filtered, missing = notebook_promoter.filter_notebooks(
+        notebooks, {"user/two", "dir-one", "missing"}
+    )
 
     assert [item["id"] for item in filtered] == ["user/one", "user/two"]
     assert missing == ["missing"]
@@ -97,9 +99,16 @@ def test_active_competitions_registered_and_matchable():
         "rogii-wellbore-geology-prediction",
     ]:
         assert slug in notebook_promoter.COMPETITION_TOPICS
-        assert notebook_promoter.COMPETITION_TOPICS[slug]["url"].endswith(f"{slug}/discussion")
+        assert notebook_promoter.COMPETITION_TOPICS[slug]["url"].endswith(
+            f"{slug}/discussion"
+        )
 
     # An entry notebook matches its own competition via competition_sources.
-    nb = {"id": "u/s6e6-entry", "title": "S6E6 Stellar",
-          "competition_sources": ["playground-series-s6e6"]}
-    assert "playground-series-s6e6" in notebook_promoter.match_notebook_to_competitions(nb)
+    nb = {
+        "id": "u/s6e6-entry",
+        "title": "S6E6 Stellar",
+        "competition_sources": ["playground-series-s6e6"],
+    }
+    assert "playground-series-s6e6" in notebook_promoter.match_notebook_to_competitions(
+        nb
+    )

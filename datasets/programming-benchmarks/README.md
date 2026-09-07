@@ -2,9 +2,9 @@
 
 > 2200+ benchmarks across 16 languages and 10 tasks
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/programming-language-benchmarks](https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks)  
+**Kaggle:** [lorenzoscaturchio/programming-language-benchmarks](https://www.kaggle.com/datasets/lorenzoscaturchio/programming-language-benchmarks)
 
 ## Description
 

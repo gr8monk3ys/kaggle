@@ -12,17 +12,18 @@ Usage
 
 Invoked by: ./manage.sh create-competition-entry <slug> [--gpu] [--push]
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 from kaggle_portfolio.shared.build_utils import code, md, write_notebook
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import Competition, KaggleClient, KaggleError
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPETITIONS_DIR = Path("projects") / "competitions"
@@ -35,17 +36,65 @@ BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
 MAX_SLUG_LEN = 34
-COMPETITION_LIST_CATEGORIES = (None, "featured", "research", "playground", "masters", "gettingStarted")
+COMPETITION_LIST_CATEGORIES = (
+    None,
+    "featured",
+    "research",
+    "playground",
+    "masters",
+    "gettingStarted",
+)
 
 # Category detection keywords
-NLP_KEYWORDS = {"nlp", "text", "language", "tweet", "sentiment", "bert", "llm",
-                "translation", "ner", "qa", "question", "answer", "disaster"}
-CV_KEYWORDS = {"image", "vision", "cnn", "segmentation", "detection", "x-ray",
-               "medical", "radiology", "photo", "pixel", "digit", "mnist"}
-TS_KEYWORDS = {"time series", "forecast", "sales", "stock", "temporal",
-               "demand", "energy", "weather"}
-TABULAR_KEYWORDS = {"tabular", "classification", "regression", "house",
-                    "price", "titanic", "spaceship", "fraud"}
+NLP_KEYWORDS = {
+    "nlp",
+    "text",
+    "language",
+    "tweet",
+    "sentiment",
+    "bert",
+    "llm",
+    "translation",
+    "ner",
+    "qa",
+    "question",
+    "answer",
+    "disaster",
+}
+CV_KEYWORDS = {
+    "image",
+    "vision",
+    "cnn",
+    "segmentation",
+    "detection",
+    "x-ray",
+    "medical",
+    "radiology",
+    "photo",
+    "pixel",
+    "digit",
+    "mnist",
+}
+TS_KEYWORDS = {
+    "time series",
+    "forecast",
+    "sales",
+    "stock",
+    "temporal",
+    "demand",
+    "energy",
+    "weather",
+}
+TABULAR_KEYWORDS = {
+    "tabular",
+    "classification",
+    "regression",
+    "house",
+    "price",
+    "titanic",
+    "spaceship",
+    "fraud",
+}
 
 
 def competition_entry_dir(slug: str) -> Path:
@@ -55,6 +104,7 @@ def competition_entry_dir(slug: str) -> Path:
 # ---------------------------------------------------------------------------
 # Slug generation
 # ---------------------------------------------------------------------------
+
 
 def make_slug(title: str) -> str:
     """Generate a Kaggle-compatible slug from a title (max MAX_SLUG_LEN chars).
@@ -92,33 +142,22 @@ def detect_category(title: str) -> str:
 # Competition metadata fetching
 # ---------------------------------------------------------------------------
 
-def fetch_competition_info(slug: str) -> dict | None:
+
+def fetch_competition_info(client: KaggleClient, slug: str) -> Competition | None:
     """Fetch competition info from Kaggle CLI.
 
     Returns a dict with keys: ref, title, deadline, teamCount, category, etc.
     Returns None on failure.
     """
-    import csv
-    import io
-
-    try:
-        cli = kaggle_command()
-        for category in COMPETITION_LIST_CATEGORIES:
-            cmd = [*cli, "competitions", "list", "--csv", "--sort-by", "latestDeadline"]
-            if category:
-                cmd += ["--category", category]
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            if result.returncode != 0:
-                continue
-
-            for row in csv.DictReader(io.StringIO(result.stdout)):
-                ref = str(row.get("ref", "")).strip().lower()
-                ref_slug = ref.rsplit("/", 1)[-1]
-                if ref == slug or ref_slug == slug:
-                    return row
-
-    except Exception:
-        pass
+    for category in COMPETITION_LIST_CATEGORIES:
+        try:
+            found = client.search_competitions(category=category or None)
+        except KaggleError:
+            continue
+        for comp in found:
+            ref = comp.ref.strip().lower()
+            if ref == slug or comp.slug.lower() == slug:
+                return comp
 
     return None
 
@@ -127,12 +166,14 @@ def fetch_competition_info(slug: str) -> dict | None:
 # Notebook cell generators
 # ---------------------------------------------------------------------------
 
+
 def _generate_cells(slug: str, title: str, category: str, gpu: bool) -> list[dict]:
     """Generate starter EDA notebook cells based on competition category."""
     cells: list[dict] = []
 
     # Title cell
-    cells.append(md(f"""# {title}
+    cells.append(
+        md(f"""# {title}
 > Competition entry — [kaggle.com/competitions/{slug}](https://www.kaggle.com/competitions/{slug})
 
 ## Table of Contents
@@ -142,13 +183,15 @@ def _generate_cells(slug: str, title: str, category: str, gpu: bool) -> list[dic
 4. [Feature Distributions](#distributions)
 5. [Correlation Analysis](#correlations)
 6. [Baseline Model](#baseline)
-7. [Submission](#submission)"""))
+7. [Submission](#submission)""")
+    )
 
     # Setup cell — varies by category
     cells.append(md("## 1. Setup & Data Loading <a id='setup'></a>"))
 
     if category == "nlp":
-        cells.append(code(f"""import numpy as np
+        cells.append(
+            code(f"""import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -167,14 +210,16 @@ if not os.path.exists(DATA_DIR):
 train = pd.read_csv(f'{{DATA_DIR}}/train.csv')
 test = pd.read_csv(f'{{DATA_DIR}}/test.csv')
 print(f"Train: {{train.shape}}, Test: {{test.shape}}")
-train.head()"""))
+train.head()""")
+        )
     elif category == "cv":
-        cells.append(code(f"""import numpy as np
+        cells.append(
+            code(f"""import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-{'import torch' if gpu else ''}
-{'import torch.nn as nn' if gpu else ''}
+{"import torch" if gpu else ""}
+{"import torch.nn as nn" if gpu else ""}
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import warnings
@@ -188,9 +233,11 @@ if not os.path.exists(DATA_DIR):
 # List available files
 for root, dirs, files in os.walk(DATA_DIR):
     for f in files[:20]:
-        print(os.path.join(root, f))"""))
+        print(os.path.join(root, f))""")
+        )
     elif category == "timeseries":
-        cells.append(code(f"""import numpy as np
+        cells.append(
+            code(f"""import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -207,9 +254,11 @@ if not os.path.exists(DATA_DIR):
 train = pd.read_csv(f'{{DATA_DIR}}/train.csv')
 test = pd.read_csv(f'{{DATA_DIR}}/test.csv')
 print(f"Train: {{train.shape}}, Test: {{test.shape}}")
-train.head()"""))
+train.head()""")
+        )
     else:  # tabular
-        cells.append(code(f"""import numpy as np
+        cells.append(
+            code(f"""import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -227,20 +276,24 @@ if not os.path.exists(DATA_DIR):
 train = pd.read_csv(f'{{DATA_DIR}}/train.csv')
 test = pd.read_csv(f'{{DATA_DIR}}/test.csv')
 print(f"Train: {{train.shape}}, Test: {{test.shape}}")
-train.head()"""))
+train.head()""")
+        )
 
     # Data overview
     cells.append(md("## 2. Data Overview <a id='overview'></a>"))
-    cells.append(code("""print("Column Types:")
+    cells.append(
+        code("""print("Column Types:")
 print(train.dtypes.value_counts().to_string())
 print(f"\\nDuplicate rows: {train.duplicated().sum():,}")
 print(f"Total missing: {train.isnull().sum().sum():,}")
 print()
-train.describe().round(2)"""))
+train.describe().round(2)""")
+    )
 
     # Missing data
     cells.append(md("## 3. Missing Data <a id='missing'></a>"))
-    cells.append(code("""missing = train.isnull().sum()
+    cells.append(
+        code("""missing = train.isnull().sum()
 missing_pct = (missing / len(train) * 100).round(1)
 missing_df = pd.DataFrame({'count': missing, 'percent': missing_pct})
 missing_df = missing_df[missing_df['count'] > 0].sort_values('percent', ascending=False)
@@ -255,11 +308,13 @@ if len(missing_df) > 0:
     plt.tight_layout()
     plt.show()
 else:
-    print("No missing values — dataset is complete!")"""))
+    print("No missing values — dataset is complete!")""")
+    )
 
     # Distributions
     cells.append(md("## 4. Feature Distributions <a id='distributions'></a>"))
-    cells.append(code("""numeric_cols = train.select_dtypes(include=['number']).columns.tolist()[:12]
+    cells.append(
+        code("""numeric_cols = train.select_dtypes(include=['number']).columns.tolist()[:12]
 n = len(numeric_cols)
 if n > 0:
     ncols = min(3, n)
@@ -280,11 +335,13 @@ if n > 0:
     plt.tight_layout()
     plt.show()
 else:
-    print("No numeric columns found")"""))
+    print("No numeric columns found")""")
+    )
 
     # Correlations
     cells.append(md("## 5. Correlation Analysis <a id='correlations'></a>"))
-    cells.append(code("""numeric_cols = train.select_dtypes(include=['number']).columns.tolist()
+    cells.append(
+        code("""numeric_cols = train.select_dtypes(include=['number']).columns.tolist()
 if len(numeric_cols) >= 2:
     corr = train[numeric_cols].corr()
     fig, ax = plt.subplots(figsize=(min(12, len(numeric_cols) + 2),
@@ -296,11 +353,13 @@ if len(numeric_cols) >= 2:
     plt.tight_layout()
     plt.show()
 else:
-    print("Not enough numeric columns for correlation analysis")"""))
+    print("Not enough numeric columns for correlation analysis")""")
+    )
 
     # Baseline model placeholder
     cells.append(md("## 6. Baseline Model <a id='baseline'></a>"))
-    cells.append(code("""# TODO: Implement baseline model
+    cells.append(
+        code("""# TODO: Implement baseline model
 # Steps:
 # 1. Identify target column
 # 2. Handle missing values
@@ -308,15 +367,18 @@ else:
 # 4. Train/val split
 # 5. Fit baseline model
 # 6. Evaluate
-print("Baseline model — implement based on competition requirements")"""))
+print("Baseline model — implement based on competition requirements")""")
+    )
 
     # Submission scaffold
     cells.append(md("## 7. Submission <a id='submission'></a>"))
-    cells.append(code(f"""# TODO: Generate predictions and create submission
+    cells.append(
+        code("""# TODO: Generate predictions and create submission
 # submission = pd.DataFrame({{'id': test['id'], 'target': predictions}})
 # submission.to_csv('submission.csv', index=False)
 # print(f"Submission shape: {{submission.shape}}")
-print("Submission scaffold — fill in after baseline model is complete")"""))
+print("Submission scaffold — fill in after baseline model is complete")""")
+    )
 
     return cells
 
@@ -324,6 +386,7 @@ print("Submission scaffold — fill in after baseline model is complete")"""))
 # ---------------------------------------------------------------------------
 # Directory + metadata creation
 # ---------------------------------------------------------------------------
+
 
 def make_kernel_metadata(slug: str, title: str, gpu: bool) -> dict:
     """Create kernel-metadata.json content for a competition entry."""
@@ -346,10 +409,12 @@ def make_kernel_metadata(slug: str, title: str, gpu: bool) -> dict:
     }
 
 
-def create_entry(slug: str, *, gpu: bool = False, push: bool = False) -> bool:
+def create_entry(
+    client: KaggleClient, slug: str, *, gpu: bool = False, push: bool = False
+) -> bool:
     """Create a complete competition entry directory."""
     # Try to fetch competition info
-    info = fetch_competition_info(slug)
+    info = fetch_competition_info(client, slug)
     if info:
         raw_title = info.get("title", slug)
         title = f"{raw_title}: EDA & Baseline"
@@ -365,7 +430,9 @@ def create_entry(slug: str, *, gpu: bool = False, push: bool = False) -> bool:
     # Create directory
     entry_dir = competition_entry_dir(slug)
     if entry_dir.exists():
-        print(f"  {YELLOW}Directory {entry_dir.relative_to(ROOT)}/ already exists — updating notebook{RESET}")
+        print(
+            f"  {YELLOW}Directory {entry_dir.relative_to(ROOT)}/ already exists — updating notebook{RESET}"
+        )
     else:
         entry_dir.mkdir(parents=True)
         print(f"  Created {entry_dir.relative_to(ROOT)}/")
@@ -388,41 +455,41 @@ def create_entry(slug: str, *, gpu: bool = False, push: bool = False) -> bool:
     print(f"  {GREEN}{code_file}{RESET} — {len(cells)} cells")
 
     if push:
-        cli = kaggle_command()
-        result = subprocess.run(
-            [*cli, "kernels", "push", "-p", str(entry_dir)],
-            capture_output=True, text=True,
-        )
-        if result.returncode == 0:
-            print(f"  {GREEN}PUSHED{RESET}")
+        outcome = client.push_kernel(entry_dir)
+        if outcome.ok:
+            print(
+                f"  {GREEN}{'SKIPPED (dry run)' if outcome.skipped else 'PUSHED'}{RESET}"
+            )
         else:
-            msg = summarize_subprocess_error(result.stdout, result.stderr)
-            print(f"  {RED}PUSH FAILED{RESET}: {msg}")
-            print(f"  You may need to accept competition rules at:")
+            print(f"  {RED}PUSH FAILED{RESET}: {outcome.detail}")
+            print("  You may need to accept competition rules at:")
             print(f"  https://www.kaggle.com/competitions/{slug}")
             return False
 
     return True
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Generate a competition entry scaffold."
     )
     parser.add_argument("slug", help="Competition slug (e.g., spaceship-titanic)")
-    parser.add_argument("--gpu", action="store_true",
-                        help="Enable GPU in kernel metadata.")
-    parser.add_argument("--push", action="store_true",
-                        help="Push to Kaggle after generating.")
+    parser.add_argument(
+        "--gpu", action="store_true", help="Enable GPU in kernel metadata."
+    )
+    parser.add_argument(
+        "--push", action="store_true", help="Push to Kaggle after generating."
+    )
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(effects=bool(getattr(args, "push", False)))
 
     print(f"{BLUE}=== Competition Entry Generator ==={RESET}\n")
-    ok = create_entry(args.slug, gpu=args.gpu, push=args.push)
+    ok = create_entry(deps.client, args.slug, gpu=args.gpu, push=args.push)
 
     if ok:
         print(f"\n{GREEN}Entry created!{RESET}")
         print(f"  Directory: {args.slug}/")
-        print(f"  Next: edit the notebook, then run:")
+        print("  Next: edit the notebook, then run:")
         print(f"  ./manage.sh push {args.slug}")
     return 0 if ok else 1
 

@@ -91,14 +91,26 @@ def upvote_page(page, url: str, *, timeout_ms: int) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Upvote Kaggle content to build goodwill.")
+    parser = argparse.ArgumentParser(
+        description="Upvote Kaggle content to build goodwill."
+    )
     kb.add_common_browser_args(parser)
     parser.add_argument("--url", nargs="*", default=[], help="URLs or slugs to upvote.")
-    parser.add_argument("--type", choices=["notebook", "dataset", "discussion"], default=None,
-                        help="Content type hint for slug resolution.")
-    parser.add_argument("--queue", type=Path, default=QUEUE_PATH, help="Upvote queue JSON path.")
-    parser.add_argument("--limit", type=int, default=5, help="Max upvotes per session (default 5).")
-    parser.add_argument("--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path.")
+    parser.add_argument(
+        "--type",
+        choices=["notebook", "dataset", "discussion"],
+        default=None,
+        help="Content type hint for slug resolution.",
+    )
+    parser.add_argument(
+        "--queue", type=Path, default=QUEUE_PATH, help="Upvote queue JSON path."
+    )
+    parser.add_argument(
+        "--limit", type=int, default=5, help="Max upvotes per session (default 5)."
+    )
+    parser.add_argument(
+        "--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path."
+    )
     return parser.parse_args()
 
 
@@ -123,7 +135,7 @@ def main() -> int:
 
     tracker = kb.TrackerFile(args.tracker)
     pending = [u for u in urls if not tracker.has(tracker_key(u))]
-    pending = pending[:args.limit]
+    pending = pending[: args.limit]
 
     if not pending:
         print(f"All {len(urls)} items already upvoted.")

@@ -1,7 +1,7 @@
 # Kaggle Discussion Posts - Ready to Post
 
-**Date:** March 10, 2026  
-**Status:** Current and ready for manual posting  
+**Date:** March 10, 2026
+**Status:** Current and ready for manual posting
 **Focus:** discussion visibility that supports live notebooks, datasets, and competition activity
 
 ## Posting Order
@@ -15,7 +15,7 @@
 
 ## Post 1
 
-**Forum:** <https://www.kaggle.com/competitions/titanic/discussion>  
+**Forum:** <https://www.kaggle.com/competitions/titanic/discussion>
 **Format:** comment on an existing feature-engineering or baseline thread
 
 ```text
@@ -29,7 +29,7 @@ https://www.kaggle.com/code/lorenzoscaturchio/titanic-ml-guide-zero-to-top-5-acc
 
 ## Post 2
 
-**Forum:** <https://www.kaggle.com/competitions/spaceship-titanic/discussion>  
+**Forum:** <https://www.kaggle.com/competitions/spaceship-titanic/discussion>
 **Format:** comment on a modeling, feature-engineering, or CatBoost thread
 
 ```text
@@ -43,7 +43,7 @@ https://www.kaggle.com/code/lorenzoscaturchio/spaceship-titanic-complete-ml-guid
 
 ## Post 3
 
-**Forum:** <https://www.kaggle.com/competitions/nlp-getting-started/discussion>  
+**Forum:** <https://www.kaggle.com/competitions/nlp-getting-started/discussion>
 **Format:** comment on a baseline, TF-IDF, or transformer thread
 
 ```text
@@ -57,7 +57,7 @@ https://www.kaggle.com/code/lorenzoscaturchio/nlp-disaster-tweets-bert-guide
 
 ## Post 4
 
-**Forum:** <https://www.kaggle.com/competitions/store-sales-time-series-forecasting/discussion>  
+**Forum:** <https://www.kaggle.com/competitions/store-sales-time-series-forecasting/discussion>
 **Format:** short topic or reply tied to validation strategy
 
 **Suggested title:** Validation setup that mirrored the leaderboard best for me
@@ -73,7 +73,7 @@ https://www.kaggle.com/code/lorenzoscaturchio/store-sales-forecasting-lightgbm
 
 ## Post 5
 
-**Forum:** <https://www.kaggle.com/discussions/general>  
+**Forum:** <https://www.kaggle.com/discussions/general>
 **Format:** short discussion post highlighting one useful dataset pattern
 
 **Suggested title:** A small music dataset that is actually useful for ML demos
@@ -92,7 +92,7 @@ https://www.kaggle.com/code/lorenzoscaturchio/spotify-tracks-eda-popularity-pred
 
 ## Post 6
 
-**Forum:** <https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion>  
+**Forum:** <https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion>
 **Format:** topic after you manually accept the competition rules
 
 **Suggested title:** Preprocessing seems higher leverage than model size so far

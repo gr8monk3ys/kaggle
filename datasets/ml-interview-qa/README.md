@@ -2,9 +2,9 @@
 
 > 119 individually written ML/DS interview Q&A across 10 categories
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/ml-interview-qa](https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa)  
+**Kaggle:** [lorenzoscaturchio/ml-interview-qa](https://www.kaggle.com/datasets/lorenzoscaturchio/ml-interview-qa)
 
 ## Description
 

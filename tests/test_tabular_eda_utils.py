@@ -48,4 +48,7 @@ def test_tabular_eda_utils_profiles_csv(tmp_path: Path):
 def test_student_performance_notebook_references_utility_script():
     meta = json.loads(STUDENT_META_PATH.read_text(encoding="utf-8"))
 
-    assert "lorenzoscaturchio/tabular-eda-utilities-for-kaggle-projects" in meta["kernel_sources"]
+    assert (
+        "lorenzoscaturchio/tabular-eda-utilities-for-kaggle-projects"
+        in meta["kernel_sources"]
+    )

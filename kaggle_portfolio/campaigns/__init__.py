@@ -1,2 +1,1 @@
 """Campaign-related command modules."""
-

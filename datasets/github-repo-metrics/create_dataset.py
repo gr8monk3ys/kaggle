@@ -31,68 +31,283 @@ OUTPUT_DIR = Path(__file__).parent
 # Language distribution (realistic based on GitHub trends)
 # ---------------------------------------------------------------------------
 LANGUAGES = {
-    "Python":       {"frac": 0.18, "star_mult": 1.2, "topic_affinity": ["machine-learning", "data-science", "automation", "web", "api"]},
-    "JavaScript":   {"frac": 0.16, "star_mult": 1.1, "topic_affinity": ["web", "frontend", "react", "nodejs", "typescript"]},
-    "TypeScript":   {"frac": 0.10, "star_mult": 1.15, "topic_affinity": ["web", "frontend", "react", "angular", "api"]},
-    "Java":         {"frac": 0.09, "star_mult": 0.9, "topic_affinity": ["enterprise", "android", "spring", "microservices", "backend"]},
-    "Go":           {"frac": 0.07, "star_mult": 1.1, "topic_affinity": ["cloud", "devops", "cli", "kubernetes", "microservices"]},
-    "Rust":         {"frac": 0.06, "star_mult": 1.3, "topic_affinity": ["systems", "cli", "performance", "wasm", "embedded"]},
-    "C++":          {"frac": 0.05, "star_mult": 0.8, "topic_affinity": ["systems", "performance", "game-engine", "embedded", "graphics"]},
-    "C#":           {"frac": 0.04, "star_mult": 0.85, "topic_affinity": ["dotnet", "game-engine", "enterprise", "unity", "desktop"]},
-    "Ruby":         {"frac": 0.03, "star_mult": 0.9, "topic_affinity": ["web", "rails", "devops", "automation", "api"]},
-    "PHP":          {"frac": 0.04, "star_mult": 0.7, "topic_affinity": ["web", "laravel", "wordpress", "cms", "backend"]},
-    "Swift":        {"frac": 0.03, "star_mult": 0.95, "topic_affinity": ["ios", "macos", "mobile", "swiftui", "apple"]},
-    "Kotlin":       {"frac": 0.03, "star_mult": 0.9, "topic_affinity": ["android", "mobile", "backend", "spring", "multiplatform"]},
-    "Scala":        {"frac": 0.02, "star_mult": 0.75, "topic_affinity": ["data-science", "big-data", "spark", "functional", "jvm"]},
-    "C":            {"frac": 0.03, "star_mult": 0.7, "topic_affinity": ["systems", "embedded", "linux", "networking", "performance"]},
-    "Shell":        {"frac": 0.02, "star_mult": 0.6, "topic_affinity": ["devops", "automation", "linux", "cli", "docker"]},
-    "Dart":         {"frac": 0.02, "star_mult": 0.95, "topic_affinity": ["flutter", "mobile", "cross-platform", "ui", "frontend"]},
-    "Julia":        {"frac": 0.01, "star_mult": 1.0, "topic_affinity": ["machine-learning", "data-science", "scientific-computing", "numerical", "optimization"]},
-    "Lua":          {"frac": 0.01, "star_mult": 0.7, "topic_affinity": ["game-engine", "embedded", "neovim", "scripting", "modding"]},
-    "R":            {"frac": 0.01, "star_mult": 0.6, "topic_affinity": ["data-science", "statistics", "visualization", "bioinformatics", "ggplot"]},
+    "Python": {
+        "frac": 0.18,
+        "star_mult": 1.2,
+        "topic_affinity": [
+            "machine-learning",
+            "data-science",
+            "automation",
+            "web",
+            "api",
+        ],
+    },
+    "JavaScript": {
+        "frac": 0.16,
+        "star_mult": 1.1,
+        "topic_affinity": ["web", "frontend", "react", "nodejs", "typescript"],
+    },
+    "TypeScript": {
+        "frac": 0.10,
+        "star_mult": 1.15,
+        "topic_affinity": ["web", "frontend", "react", "angular", "api"],
+    },
+    "Java": {
+        "frac": 0.09,
+        "star_mult": 0.9,
+        "topic_affinity": [
+            "enterprise",
+            "android",
+            "spring",
+            "microservices",
+            "backend",
+        ],
+    },
+    "Go": {
+        "frac": 0.07,
+        "star_mult": 1.1,
+        "topic_affinity": ["cloud", "devops", "cli", "kubernetes", "microservices"],
+    },
+    "Rust": {
+        "frac": 0.06,
+        "star_mult": 1.3,
+        "topic_affinity": ["systems", "cli", "performance", "wasm", "embedded"],
+    },
+    "C++": {
+        "frac": 0.05,
+        "star_mult": 0.8,
+        "topic_affinity": [
+            "systems",
+            "performance",
+            "game-engine",
+            "embedded",
+            "graphics",
+        ],
+    },
+    "C#": {
+        "frac": 0.04,
+        "star_mult": 0.85,
+        "topic_affinity": ["dotnet", "game-engine", "enterprise", "unity", "desktop"],
+    },
+    "Ruby": {
+        "frac": 0.03,
+        "star_mult": 0.9,
+        "topic_affinity": ["web", "rails", "devops", "automation", "api"],
+    },
+    "PHP": {
+        "frac": 0.04,
+        "star_mult": 0.7,
+        "topic_affinity": ["web", "laravel", "wordpress", "cms", "backend"],
+    },
+    "Swift": {
+        "frac": 0.03,
+        "star_mult": 0.95,
+        "topic_affinity": ["ios", "macos", "mobile", "swiftui", "apple"],
+    },
+    "Kotlin": {
+        "frac": 0.03,
+        "star_mult": 0.9,
+        "topic_affinity": ["android", "mobile", "backend", "spring", "multiplatform"],
+    },
+    "Scala": {
+        "frac": 0.02,
+        "star_mult": 0.75,
+        "topic_affinity": ["data-science", "big-data", "spark", "functional", "jvm"],
+    },
+    "C": {
+        "frac": 0.03,
+        "star_mult": 0.7,
+        "topic_affinity": ["systems", "embedded", "linux", "networking", "performance"],
+    },
+    "Shell": {
+        "frac": 0.02,
+        "star_mult": 0.6,
+        "topic_affinity": ["devops", "automation", "linux", "cli", "docker"],
+    },
+    "Dart": {
+        "frac": 0.02,
+        "star_mult": 0.95,
+        "topic_affinity": ["flutter", "mobile", "cross-platform", "ui", "frontend"],
+    },
+    "Julia": {
+        "frac": 0.01,
+        "star_mult": 1.0,
+        "topic_affinity": [
+            "machine-learning",
+            "data-science",
+            "scientific-computing",
+            "numerical",
+            "optimization",
+        ],
+    },
+    "Lua": {
+        "frac": 0.01,
+        "star_mult": 0.7,
+        "topic_affinity": ["game-engine", "embedded", "neovim", "scripting", "modding"],
+    },
+    "R": {
+        "frac": 0.01,
+        "star_mult": 0.6,
+        "topic_affinity": [
+            "data-science",
+            "statistics",
+            "visualization",
+            "bioinformatics",
+            "ggplot",
+        ],
+    },
 }
 
 LICENSES = {
-    "MIT":        0.35,
+    "MIT": 0.35,
     "Apache-2.0": 0.20,
-    "GPL-3.0":    0.10,
-    "BSD-3":      0.08,
-    "ISC":        0.05,
-    "MPL-2.0":    0.03,
-    "LGPL-3.0":   0.02,
-    "Unlicense":  0.02,
-    "AGPL-3.0":   0.02,
-    "None":       0.13,
+    "GPL-3.0": 0.10,
+    "BSD-3": 0.08,
+    "ISC": 0.05,
+    "MPL-2.0": 0.03,
+    "LGPL-3.0": 0.02,
+    "Unlicense": 0.02,
+    "AGPL-3.0": 0.02,
+    "None": 0.13,
 }
 
 ALL_TOPICS = [
-    "machine-learning", "data-science", "web", "api", "cli", "devops",
-    "cloud", "kubernetes", "docker", "frontend", "backend", "mobile",
-    "react", "nodejs", "typescript", "automation", "testing", "security",
-    "database", "microservices", "serverless", "graphql", "rest-api",
-    "deep-learning", "nlp", "computer-vision", "pytorch", "tensorflow",
-    "transformers", "llm", "rag", "fine-tuning", "mlops", "data-pipeline",
-    "etl", "streaming", "monitoring", "observability", "performance",
-    "systems", "embedded", "game-engine", "graphics", "wasm",
-    "cross-platform", "desktop", "ios", "android", "flutter",
-    "rust", "go", "python", "javascript",
-    "open-source", "education", "awesome-list", "hacktoberfest",
-    "documentation", "framework", "library", "tool",
+    "machine-learning",
+    "data-science",
+    "web",
+    "api",
+    "cli",
+    "devops",
+    "cloud",
+    "kubernetes",
+    "docker",
+    "frontend",
+    "backend",
+    "mobile",
+    "react",
+    "nodejs",
+    "typescript",
+    "automation",
+    "testing",
+    "security",
+    "database",
+    "microservices",
+    "serverless",
+    "graphql",
+    "rest-api",
+    "deep-learning",
+    "nlp",
+    "computer-vision",
+    "pytorch",
+    "tensorflow",
+    "transformers",
+    "llm",
+    "rag",
+    "fine-tuning",
+    "mlops",
+    "data-pipeline",
+    "etl",
+    "streaming",
+    "monitoring",
+    "observability",
+    "performance",
+    "systems",
+    "embedded",
+    "game-engine",
+    "graphics",
+    "wasm",
+    "cross-platform",
+    "desktop",
+    "ios",
+    "android",
+    "flutter",
+    "rust",
+    "go",
+    "python",
+    "javascript",
+    "open-source",
+    "education",
+    "awesome-list",
+    "hacktoberfest",
+    "documentation",
+    "framework",
+    "library",
+    "tool",
 ]
 
 # Repo name parts for generation
 NAME_PREFIXES = [
-    "awesome", "go", "py", "react", "fast", "super", "mini", "micro",
-    "turbo", "hyper", "nano", "ultra", "smart", "auto", "easy", "simple",
-    "open", "free", "pro", "next", "meta", "deep", "quick", "magic",
+    "awesome",
+    "go",
+    "py",
+    "react",
+    "fast",
+    "super",
+    "mini",
+    "micro",
+    "turbo",
+    "hyper",
+    "nano",
+    "ultra",
+    "smart",
+    "auto",
+    "easy",
+    "simple",
+    "open",
+    "free",
+    "pro",
+    "next",
+    "meta",
+    "deep",
+    "quick",
+    "magic",
 ]
 NAME_ROOTS = [
-    "flow", "hub", "lab", "kit", "forge", "lens", "sync", "dash",
-    "scan", "bot", "pipe", "stack", "craft", "form", "graph", "link",
-    "bench", "serve", "agent", "track", "guard", "pilot", "spark",
-    "wave", "core", "edge", "storm", "vault", "bridge", "light",
+    "flow",
+    "hub",
+    "lab",
+    "kit",
+    "forge",
+    "lens",
+    "sync",
+    "dash",
+    "scan",
+    "bot",
+    "pipe",
+    "stack",
+    "craft",
+    "form",
+    "graph",
+    "link",
+    "bench",
+    "serve",
+    "agent",
+    "track",
+    "guard",
+    "pilot",
+    "spark",
+    "wave",
+    "core",
+    "edge",
+    "storm",
+    "vault",
+    "bridge",
+    "light",
 ]
-NAME_SUFFIXES = ["", "-ai", "-ml", "-dev", "-io", "-js", "-rs", "-go", "-cli", "-app", "-api", "-ui"]
+NAME_SUFFIXES = [
+    "",
+    "-ai",
+    "-ml",
+    "-dev",
+    "-io",
+    "-js",
+    "-rs",
+    "-go",
+    "-cli",
+    "-app",
+    "-api",
+    "-ui",
+]
 
 # Description templates
 DESC_TEMPLATES = [
@@ -107,16 +322,48 @@ DESC_TEMPLATES = [
     "Scalable {noun} for {use_case}",
     "High-performance {noun} for {use_case}",
 ]
-DESC_ADJS = ["blazing-fast", "production-grade", "lightweight", "extensible", "modular",
-             "type-safe", "async", "distributed", "real-time", "cloud-native"]
-DESC_NOUNS = ["framework", "library", "toolkit", "platform", "engine", "tool",
-              "SDK", "CLI", "dashboard", "pipeline", "service", "server"]
+DESC_ADJS = [
+    "blazing-fast",
+    "production-grade",
+    "lightweight",
+    "extensible",
+    "modular",
+    "type-safe",
+    "async",
+    "distributed",
+    "real-time",
+    "cloud-native",
+]
+DESC_NOUNS = [
+    "framework",
+    "library",
+    "toolkit",
+    "platform",
+    "engine",
+    "tool",
+    "SDK",
+    "CLI",
+    "dashboard",
+    "pipeline",
+    "service",
+    "server",
+]
 DESC_USE_CASES = [
-    "web applications", "data processing", "ML model deployment",
-    "API development", "microservices", "data visualization",
-    "log analysis", "container orchestration", "CI/CD pipelines",
-    "real-time analytics", "message queuing", "file management",
-    "authentication", "database management", "task scheduling",
+    "web applications",
+    "data processing",
+    "ML model deployment",
+    "API development",
+    "microservices",
+    "data visualization",
+    "log analysis",
+    "container orchestration",
+    "CI/CD pipelines",
+    "real-time analytics",
+    "message queuing",
+    "file management",
+    "authentication",
+    "database management",
+    "task scheduling",
 ]
 
 
@@ -176,14 +423,22 @@ def generate_repos():
     forks = (stars * fork_ratio + rng.normal(0, 5, N_REPOS)).astype(int).clip(0, None)
 
     # --- Watchers (correlated with stars) ---
-    watchers = (stars * rng.uniform(0.01, 0.15, N_REPOS) + rng.normal(0, 3, N_REPOS)).astype(int).clip(0, None)
+    watchers = (
+        (stars * rng.uniform(0.01, 0.15, N_REPOS) + rng.normal(0, 3, N_REPOS))
+        .astype(int)
+        .clip(0, None)
+    )
 
     # --- Open issues (correlated with stars and age) ---
     issue_rate = rng.exponential(0.02, N_REPOS)
-    open_issues = (stars * issue_rate + rng.exponential(5, N_REPOS)).astype(int).clip(0, None)
+    open_issues = (
+        (stars * issue_rate + rng.exponential(5, N_REPOS)).astype(int).clip(0, None)
+    )
 
     # --- Closed issues (typically more than open) ---
-    closed_issues = (open_issues * rng.uniform(1.5, 8.0, N_REPOS) + rng.exponential(10, N_REPOS)).astype(int)
+    closed_issues = (
+        open_issues * rng.uniform(1.5, 8.0, N_REPOS) + rng.exponential(10, N_REPOS)
+    ).astype(int)
 
     # --- Pull requests ---
     pr_rate = rng.uniform(0.1, 0.5, N_REPOS)
@@ -195,10 +450,16 @@ def generate_repos():
     contributors = contrib_base.astype(int).clip(1, 5000)
 
     # --- Commits (correlated with contributors and age) ---
-    commits = (contributors * rng.uniform(10, 200, N_REPOS) * np.sqrt(ages_days / 365)).astype(int).clip(1, None)
+    commits = (
+        (contributors * rng.uniform(10, 200, N_REPOS) * np.sqrt(ages_days / 365))
+        .astype(int)
+        .clip(1, None)
+    )
 
     # --- Releases ---
-    releases = (ages_days / 365 * rng.uniform(0.5, 12, N_REPOS)).astype(int).clip(0, 200)
+    releases = (
+        (ages_days / 365 * rng.uniform(0.5, 12, N_REPOS)).astype(int).clip(0, 200)
+    )
 
     # --- Code metrics ---
     readme_length = rng.lognormal(7, 1.2, N_REPOS).astype(int).clip(100, 50000)
@@ -218,16 +479,26 @@ def generate_repos():
     test_coverage = np.round(test_coverage, 1)
 
     # Code of conduct
-    has_coc = (rng.random(N_REPOS) < (0.1 + 0.3 * np.minimum(stars / 500, 1))).astype(int)
+    has_coc = (rng.random(N_REPOS) < (0.1 + 0.3 * np.minimum(stars / 500, 1))).astype(
+        int
+    )
 
     # Contributing guide
-    has_contributing = (rng.random(N_REPOS) < (0.15 + 0.35 * np.minimum(stars / 500, 1))).astype(int)
+    has_contributing = (
+        rng.random(N_REPOS) < (0.15 + 0.35 * np.minimum(stars / 500, 1))
+    ).astype(int)
 
     # Last commit date (more active repos have more recent commits)
-    days_since_commit = rng.exponential(scale=60, size=N_REPOS).astype(int).clip(0, ages_days)
+    days_since_commit = (
+        rng.exponential(scale=60, size=N_REPOS).astype(int).clip(0, ages_days)
+    )
     # Popular repos are more active
-    days_since_commit = (days_since_commit / (1 + np.log1p(stars) / 10)).astype(int).clip(0, None)
-    last_commit_dates = pd.Timestamp("2025-01-01") - pd.to_timedelta(days_since_commit, unit="D")
+    days_since_commit = (
+        (days_since_commit / (1 + np.log1p(stars) / 10)).astype(int).clip(0, None)
+    )
+    last_commit_dates = pd.Timestamp("2025-01-01") - pd.to_timedelta(
+        days_since_commit, unit="D"
+    )
 
     # Is archived (more likely for old repos with no recent commits)
     archive_prob = np.where(days_since_commit > 365, 0.3, 0.02)
@@ -237,7 +508,11 @@ def generate_repos():
     is_fork = (rng.random(N_REPOS) < 0.15).astype(int)
 
     # Size (KB) - correlated with commits and language
-    size_kb = (commits * rng.uniform(0.5, 5, N_REPOS) + rng.lognormal(8, 2, N_REPOS)).astype(int).clip(10, None)
+    size_kb = (
+        (commits * rng.uniform(0.5, 5, N_REPOS) + rng.lognormal(8, 2, N_REPOS))
+        .astype(int)
+        .clip(10, None)
+    )
 
     # License
     license_names = list(LICENSES.keys())
@@ -255,7 +530,9 @@ def generate_repos():
         chosen = list(rng.choice(affinity, size=n_affinity, replace=False))
         remaining = [t for t in ALL_TOPICS if t not in chosen]
         if n_topics - n_affinity > 0:
-            chosen += list(rng.choice(remaining, size=n_topics - n_affinity, replace=False))
+            chosen += list(
+                rng.choice(remaining, size=n_topics - n_affinity, replace=False)
+            )
         topics_list.append("|".join(chosen))
 
     # Repo names and descriptions
@@ -277,39 +554,43 @@ def generate_repos():
     # Has wiki, has pages, has discussions
     has_wiki = (rng.random(N_REPOS) < 0.4).astype(int)
     has_pages = (rng.random(N_REPOS) < 0.15).astype(int)
-    has_discussions = (rng.random(N_REPOS) < (0.1 + 0.2 * np.minimum(stars / 1000, 1))).astype(int)
+    has_discussions = (
+        rng.random(N_REPOS) < (0.1 + 0.2 * np.minimum(stars / 1000, 1))
+    ).astype(int)
 
-    df = pd.DataFrame({
-        "repo_name": repo_names,
-        "language": languages,
-        "description": descriptions,
-        "stars": stars,
-        "forks": forks,
-        "watchers": watchers,
-        "open_issues": open_issues,
-        "closed_issues": closed_issues,
-        "open_pull_requests": open_prs,
-        "merged_pull_requests": merged_prs,
-        "contributors": contributors,
-        "commits": commits,
-        "releases": releases,
-        "license": licenses,
-        "topics": topics_list,
-        "created_date": created_dates.strftime("%Y-%m-%d"),
-        "last_commit_date": last_commit_dates.strftime("%Y-%m-%d"),
-        "readme_length": readme_length,
-        "has_ci": has_ci,
-        "test_coverage": test_coverage,
-        "has_code_of_conduct": has_coc,
-        "has_contributing_guide": has_contributing,
-        "has_wiki": has_wiki,
-        "has_pages": has_pages,
-        "has_discussions": has_discussions,
-        "default_branch": default_branch,
-        "is_archived": is_archived,
-        "is_fork": is_fork,
-        "size_kb": size_kb,
-    })
+    df = pd.DataFrame(
+        {
+            "repo_name": repo_names,
+            "language": languages,
+            "description": descriptions,
+            "stars": stars,
+            "forks": forks,
+            "watchers": watchers,
+            "open_issues": open_issues,
+            "closed_issues": closed_issues,
+            "open_pull_requests": open_prs,
+            "merged_pull_requests": merged_prs,
+            "contributors": contributors,
+            "commits": commits,
+            "releases": releases,
+            "license": licenses,
+            "topics": topics_list,
+            "created_date": created_dates.strftime("%Y-%m-%d"),
+            "last_commit_date": last_commit_dates.strftime("%Y-%m-%d"),
+            "readme_length": readme_length,
+            "has_ci": has_ci,
+            "test_coverage": test_coverage,
+            "has_code_of_conduct": has_coc,
+            "has_contributing_guide": has_contributing,
+            "has_wiki": has_wiki,
+            "has_pages": has_pages,
+            "has_discussions": has_discussions,
+            "default_branch": default_branch,
+            "is_archived": is_archived,
+            "is_fork": is_fork,
+            "size_kb": size_kb,
+        }
+    )
 
     return df
 

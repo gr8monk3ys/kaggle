@@ -11,6 +11,7 @@ def test_send_calls_telegram_api(monkeypatch):
     with patch("notify.requests.post") as mock_post:
         mock_post.return_value.status_code = 200
         import notify
+
         notify.send("Hello from test")
 
     mock_post.assert_called_once()
@@ -27,6 +28,7 @@ def test_send_raises_on_missing_token(monkeypatch):
 
     import importlib
     import notify
+
     importlib.reload(notify)
 
     with pytest.raises(EnvironmentError, match="TELEGRAM_BOT_TOKEN"):
@@ -43,6 +45,7 @@ def test_send_prints_stderr_on_api_failure(monkeypatch, capsys):
         mock_post.return_value.text = "Bad Request"
         import importlib
         import notify
+
         importlib.reload(notify)
         notify.send("This will fail")
 
@@ -55,9 +58,12 @@ def test_send_handles_request_exception(monkeypatch, capsys):
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "123456")
 
-    with patch("notify.requests.post", side_effect=requests.RequestException("timeout")):
+    with patch(
+        "notify.requests.post", side_effect=requests.RequestException("timeout")
+    ):
         import importlib
         import notify
+
         importlib.reload(notify)
         notify.send("Transient failure")
 
@@ -76,6 +82,7 @@ def test_send_redacts_token_in_request_exception(monkeypatch, capsys):
     with patch("notify.requests.post", side_effect=exc):
         import importlib
         import notify
+
         importlib.reload(notify)
         notify.send("leaky")
 

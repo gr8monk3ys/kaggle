@@ -2,9 +2,9 @@
 
 > 10K students, 25 features: study habits, demographics, and GPA outcomes
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/student-academic-performance-dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset)  
+**Kaggle:** [lorenzoscaturchio/student-academic-performance-dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset)
 
 ## Description
 

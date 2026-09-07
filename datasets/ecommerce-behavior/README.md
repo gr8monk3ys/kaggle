@@ -2,9 +2,9 @@
 
 > 10K customers, 120K transactions, 25K reviews for ML projects
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/ecommerce-behavior](https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior)  
+**Kaggle:** [lorenzoscaturchio/ecommerce-behavior](https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior)
 
 ## Description
 

@@ -40,14 +40,18 @@ def _raise_module_not_found(name):
 
 def test_kaggle_command_survives_missing_kaggle_package(monkeypatch):
     monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
-    monkeypatch.setattr(kaggle_utils.importlib.util, "find_spec", _raise_module_not_found)
+    monkeypatch.setattr(
+        kaggle_utils.importlib.util, "find_spec", _raise_module_not_found
+    )
 
     assert kaggle_utils.kaggle_command() == ["kaggle"]
 
 
 def test_has_kaggle_cli_survives_missing_kaggle_package(monkeypatch):
     monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
-    monkeypatch.setattr(kaggle_utils.importlib.util, "find_spec", _raise_module_not_found)
+    monkeypatch.setattr(
+        kaggle_utils.importlib.util, "find_spec", _raise_module_not_found
+    )
 
     assert kaggle_utils.has_kaggle_cli() is False
 

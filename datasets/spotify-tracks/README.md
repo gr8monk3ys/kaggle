@@ -2,9 +2,9 @@
 
 > 50K tracks with audio features, popularity, and genre labels
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)  
+**Kaggle:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)
 
 ## Description
 

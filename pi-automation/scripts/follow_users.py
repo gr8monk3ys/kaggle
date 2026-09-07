@@ -51,7 +51,9 @@ def follow_user(page, username: str, *, timeout_ms: int) -> str:
 
     # Check if already following
     following_btn = kb.first_available(
-        page.get_by_role("button", name=re.compile(r"^following$", re.IGNORECASE)).first,
+        page.get_by_role(
+            "button", name=re.compile(r"^following$", re.IGNORECASE)
+        ).first,
         page.get_by_role("button", name=re.compile(r"^unfollow$", re.IGNORECASE)).first,
     )
     if following_btn is not None:
@@ -70,12 +72,25 @@ def follow_user(page, username: str, *, timeout_ms: int) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Follow Kaggle users to build visibility.")
+    parser = argparse.ArgumentParser(
+        description="Follow Kaggle users to build visibility."
+    )
     kb.add_common_browser_args(parser)
-    parser.add_argument("--limit", type=int, default=10, help="Max follows per session (default 10).")
-    parser.add_argument("--users", nargs="*", default=[], help="Usernames to follow (in addition to targets file).")
-    parser.add_argument("--targets", type=Path, default=TARGETS_PATH, help="Follow targets JSON path.")
-    parser.add_argument("--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path.")
+    parser.add_argument(
+        "--limit", type=int, default=10, help="Max follows per session (default 10)."
+    )
+    parser.add_argument(
+        "--users",
+        nargs="*",
+        default=[],
+        help="Usernames to follow (in addition to targets file).",
+    )
+    parser.add_argument(
+        "--targets", type=Path, default=TARGETS_PATH, help="Follow targets JSON path."
+    )
+    parser.add_argument(
+        "--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path."
+    )
     return parser.parse_args()
 
 
@@ -97,7 +112,7 @@ def main() -> int:
 
     tracker = kb.TrackerFile(args.tracker)
     pending = [u for u in targets if not tracker.has(u)]
-    pending = pending[:args.limit]
+    pending = pending[: args.limit]
 
     if not pending:
         print(f"All {len(targets)} targets already followed.")

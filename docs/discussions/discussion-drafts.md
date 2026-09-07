@@ -5160,4 +5160,3 @@ Use it for attitude prediction, support-gap analysis, or thoughtful EDA. Starter
 Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k
 
 If you've worked survey data: do you one-hot the Likert scales or treat them as ordinal? Genuinely split on this.
-

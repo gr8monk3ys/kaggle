@@ -40,6 +40,7 @@ class Deps:
         today: str | None = None,
         effects: bool = True,
         client: KaggleClient | None = None,
+        timeout: int | None = None,
     ) -> "Deps":
         """Build production dependencies.
 
@@ -50,7 +51,9 @@ class Deps:
         return cls(
             layout=RepoLayout.resolve(root, output_root),
             clock=Clock.resolve(today),
-            client=client if client is not None else CliKaggleClient(effects=effects),
+            client=client
+            if client is not None
+            else CliKaggleClient(effects=effects, timeout=timeout),
             effects=effects,
         )
 

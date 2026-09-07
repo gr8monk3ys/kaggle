@@ -9,6 +9,7 @@ refit on all data and their test probabilities are averaged for the submission.
 Usage:
     python model.py --data-dir /kaggle/input/playground-series-s6e6 --out submission.csv
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,12 +28,24 @@ TARGET = "class"
 BASE_NUMERIC = ["alpha", "delta", "u", "g", "r", "i", "z", "redshift"]
 CATEGORICAL = ["spectral_type", "galaxy_population"]
 # Standard SDSS color separators (adjacent + a few broad colors).
-COLORS = [("u", "g"), ("g", "r"), ("r", "i"), ("i", "z"), ("u", "r"), ("g", "i"), ("r", "z")]
+COLORS = [
+    ("u", "g"),
+    ("g", "r"),
+    ("r", "i"),
+    ("i", "z"),
+    ("u", "r"),
+    ("g", "i"),
+    ("r", "z"),
+]
 
 
 def resolve_data_dir(explicit: str | None) -> Path:
-    for c in [Path(explicit) if explicit else None,
-              Path("/kaggle/input/playground-series-s6e6"), Path("/tmp/ps6e6"), Path(".")]:
+    for c in [
+        Path(explicit) if explicit else None,
+        Path("/kaggle/input/playground-series-s6e6"),
+        Path("/tmp/ps6e6"),
+        Path("."),
+    ]:
         if c and (c / "train.csv").exists():
             return c
     raise FileNotFoundError("train.csv not found; pass --data-dir")
@@ -58,16 +71,28 @@ def build_matrix(df: pd.DataFrame, encoder: OrdinalEncoder, fit: bool):
 
 def hist_model(cat_mask):
     return HistGradientBoostingClassifier(
-        max_iter=500, learning_rate=0.05, max_leaf_nodes=63,
-        l2_regularization=1.0, categorical_features=cat_mask, random_state=SEED,
+        max_iter=500,
+        learning_rate=0.05,
+        max_leaf_nodes=63,
+        l2_regularization=1.0,
+        categorical_features=cat_mask,
+        random_state=SEED,
     )
 
 
 def xgb_model(n_classes):
     return XGBClassifier(
-        n_estimators=600, learning_rate=0.05, max_depth=8, subsample=0.8,
-        colsample_bytree=0.8, tree_method="hist", objective="multi:softprob",
-        num_class=n_classes, n_jobs=-1, random_state=SEED, eval_metric="mlogloss",
+        n_estimators=600,
+        learning_rate=0.05,
+        max_depth=8,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        tree_method="hist",
+        objective="multi:softprob",
+        num_class=n_classes,
+        n_jobs=-1,
+        random_state=SEED,
+        eval_metric="mlogloss",
     )
 
 

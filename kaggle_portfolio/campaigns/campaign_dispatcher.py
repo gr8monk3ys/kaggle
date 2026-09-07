@@ -143,7 +143,9 @@ def render_runbook(actions: list[dict[str, Any]]) -> str:
 
     lines.extend(["", "## Copy Blocks", ""])
     for item in actions:
-        lines.append(f"### {item.get('id')} - {item.get('channel')} - {item.get('dataset_ref')}")
+        lines.append(
+            f"### {item.get('id')} - {item.get('channel')} - {item.get('dataset_ref')}"
+        )
         lines.append("")
         lines.append(str(item.get("copy", "")))
         lines.append("")
@@ -156,17 +158,53 @@ def write_text(path: Path, text: str) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Operate campaign queue (show/claim/complete).")
-    parser.add_argument("--queue-path", default=str(DEFAULT_QUEUE_PATH), help="Campaign queue JSON path.")
-    parser.add_argument("--limit", type=int, default=7, help="Max actions to select for show/claim.")
-    parser.add_argument("--channel", action="append", default=[], help="Optional channel filter (repeatable).")
-    parser.add_argument("--claim", action="store_true", help="Claim selected planned actions.")
-    parser.add_argument("--complete-id", action="append", default=[], help="Complete a specific action ID (repeatable).")
-    parser.add_argument("--note", default=None, help="Completion note (with --complete-id).")
-    parser.add_argument("--report-path", default=str(DEFAULT_REPORT_PATH), help="Runbook markdown output path.")
-    parser.add_argument("--no-report", action="store_true", help="Do not write runbook markdown.")
-    parser.add_argument("--print-copy", action="store_true", help="Print full copy for selected actions.")
-    parser.add_argument("--dry-run", action="store_true", help="Preview updates without writing queue file.")
+    parser = argparse.ArgumentParser(
+        description="Operate campaign queue (show/claim/complete)."
+    )
+    parser.add_argument(
+        "--queue-path",
+        default=str(DEFAULT_QUEUE_PATH),
+        help="Campaign queue JSON path.",
+    )
+    parser.add_argument(
+        "--limit", type=int, default=7, help="Max actions to select for show/claim."
+    )
+    parser.add_argument(
+        "--channel",
+        action="append",
+        default=[],
+        help="Optional channel filter (repeatable).",
+    )
+    parser.add_argument(
+        "--claim", action="store_true", help="Claim selected planned actions."
+    )
+    parser.add_argument(
+        "--complete-id",
+        action="append",
+        default=[],
+        help="Complete a specific action ID (repeatable).",
+    )
+    parser.add_argument(
+        "--note", default=None, help="Completion note (with --complete-id)."
+    )
+    parser.add_argument(
+        "--report-path",
+        default=str(DEFAULT_REPORT_PATH),
+        help="Runbook markdown output path.",
+    )
+    parser.add_argument(
+        "--no-report", action="store_true", help="Do not write runbook markdown."
+    )
+    parser.add_argument(
+        "--print-copy",
+        action="store_true",
+        help="Print full copy for selected actions.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview updates without writing queue file.",
+    )
     return parser.parse_args()
 
 

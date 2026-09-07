@@ -2,9 +2,9 @@
 
 > 5K tech worker responses on mental health workplace culture
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/mental-health-in-tech-survey-5k](https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k)  
+**Kaggle:** [lorenzoscaturchio/mental-health-in-tech-survey-5k](https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k)
 
 ## Description
 

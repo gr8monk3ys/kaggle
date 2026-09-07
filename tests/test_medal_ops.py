@@ -299,10 +299,14 @@ def test_fetch_metrics_from_csv_requires_vote_column(tmp_path):
     )
 
     with pytest.raises(SystemExit, match="missing a vote column"):
-        medal_ops.fetch_metrics_from_csv(kernels_csv, datasets_csv, competitions_csv=None)
+        medal_ops.fetch_metrics_from_csv(
+            kernels_csv, datasets_csv, competitions_csv=None
+        )
 
 
-def test_fetch_metrics_from_csv_requires_entered_column_when_competitions_present(tmp_path):
+def test_fetch_metrics_from_csv_requires_entered_column_when_competitions_present(
+    tmp_path,
+):
     kernels_csv = tmp_path / "kernels.csv"
     datasets_csv = tmp_path / "datasets.csv"
     competitions_csv = tmp_path / "competitions.csv"
@@ -321,7 +325,9 @@ def test_fetch_metrics_from_csv_requires_entered_column_when_competitions_presen
     )
 
     with pytest.raises(SystemExit, match="missing an entered column"):
-        medal_ops.fetch_metrics_from_csv(kernels_csv, datasets_csv, competitions_csv=competitions_csv)
+        medal_ops.fetch_metrics_from_csv(
+            kernels_csv, datasets_csv, competitions_csv=competitions_csv
+        )
 
 
 def test_run_kaggle_csv_paginated_without_page_size_uses_default(monkeypatch):
@@ -331,7 +337,10 @@ def test_run_kaggle_csv_paginated_without_page_size_uses_default(monkeypatch):
         seen_args.append(args)
         page = int(args[-1])
         if page == 1:
-            return ([{"voteCount": "1"}] * medal_ops.DEFAULT_KAGGLE_PAGE_SIZE, ["voteCount"])
+            return (
+                [{"voteCount": "1"}] * medal_ops.DEFAULT_KAGGLE_PAGE_SIZE,
+                ["voteCount"],
+            )
         return ([{"voteCount": "2"}], ["voteCount"])
 
     monkeypatch.setattr(medal_ops, "run_kaggle_csv", fake_run_kaggle_csv)
@@ -346,7 +355,9 @@ def test_run_kaggle_csv_paginated_without_page_size_uses_default(monkeypatch):
     ]
 
 
-def test_run_kaggle_csv_paginated_falls_back_when_page_size_flag_is_unsupported(monkeypatch):
+def test_run_kaggle_csv_paginated_falls_back_when_page_size_flag_is_unsupported(
+    monkeypatch,
+):
     seen_args: list[list[str]] = []
 
     def fake_run_kaggle_csv(args: list[str]) -> tuple[list[dict[str, str]], list[str]]:
@@ -358,7 +369,10 @@ def test_run_kaggle_csv_paginated_falls_back_when_page_size_flag_is_unsupported(
             )
         page = int(args[-1])
         if page == 1:
-            return ([{"userHasEntered": "true"}] * medal_ops.DEFAULT_KAGGLE_PAGE_SIZE, ["userHasEntered"])
+            return (
+                [{"userHasEntered": "true"}] * medal_ops.DEFAULT_KAGGLE_PAGE_SIZE,
+                ["userHasEntered"],
+            )
         return ([{"userHasEntered": "false"}], ["userHasEntered"])
 
     monkeypatch.setattr(medal_ops, "run_kaggle_csv", fake_run_kaggle_csv)
@@ -370,7 +384,16 @@ def test_run_kaggle_csv_paginated_falls_back_when_page_size_flag_is_unsupported(
     assert len(rows) == medal_ops.DEFAULT_KAGGLE_PAGE_SIZE + 1
     assert fieldnames == ["userHasEntered"]
     assert seen_args == [
-        ["competitions", "list", "--group", "entered", "--page-size", "100", "--page", "1"],
+        [
+            "competitions",
+            "list",
+            "--group",
+            "entered",
+            "--page-size",
+            "100",
+            "--page",
+            "1",
+        ],
         ["competitions", "list", "--group", "entered", "--page", "1"],
         ["competitions", "list", "--group", "entered", "--page", "2"],
     ]
@@ -387,15 +410,23 @@ def test_fetch_live_kaggle_metrics_uses_entered_group(monkeypatch):
             return ([{"totalVotes": "5"}, {"totalVotes": "25"}], ["totalVotes"])
         if args[:3] == ["datasets", "list", "-m"]:
             return (
-                [{"voteCount": "7", "downloadCount": "11"}, {"voteCount": "23", "downloadCount": "13"}],
+                [
+                    {"voteCount": "7", "downloadCount": "11"},
+                    {"voteCount": "23", "downloadCount": "13"},
+                ],
                 ["voteCount", "downloadCount"],
             )
         if args[:4] == ["competitions", "list", "--group", "entered"]:
-            return ([{"userHasEntered": "True"}, {"userHasEntered": "True"}], ["userHasEntered"])
+            return (
+                [{"userHasEntered": "True"}, {"userHasEntered": "True"}],
+                ["userHasEntered"],
+            )
         raise AssertionError(f"Unexpected args: {args}")
 
     monkeypatch.setattr(medal_ops, "has_kaggle_cli", lambda: True)
-    monkeypatch.setattr(medal_ops, "run_kaggle_csv_paginated", fake_run_kaggle_csv_paginated)
+    monkeypatch.setattr(
+        medal_ops, "run_kaggle_csv_paginated", fake_run_kaggle_csv_paginated
+    )
 
     live = medal_ops.fetch_live_kaggle_metrics()
 
@@ -471,7 +502,9 @@ def test_run_preflight_checks_validates_csv_bundle(tmp_path):
     tracker_path.write_text(SAMPLE_TRACKER, encoding="utf-8")
     kernels_csv.write_text("title,totalVotes\nA,10\n", encoding="utf-8")
     datasets_csv.write_text("title,voteCount\nD1,2\n", encoding="utf-8")
-    competitions_csv.write_text("competition,userHasEntered\nC1,true\n", encoding="utf-8")
+    competitions_csv.write_text(
+        "competition,userHasEntered\nC1,true\n", encoding="utf-8"
+    )
 
     checks = medal_ops.run_preflight_checks(
         tracker_path=tracker_path,
@@ -546,43 +579,92 @@ def test_run_preflight_checks_respects_max_stale_days(tmp_path):
 
 class TestDigest:
     @staticmethod
-    def _snap(generated_on, *, entered, nb_votes, ds_votes, posts, stale_days=0, comps=None):
+    def _snap(
+        generated_on, *, entered, nb_votes, ds_votes, posts, stale_days=0, comps=None
+    ):
         return {
             "generated_on": generated_on,
             "tracker_last_updated": generated_on,
             "tracker_stale_days": stale_days,
             "categories": {
-                "competitions": {"gold": 0, "silver": 0, "bronze": 0, "entered": entered,
-                                  "tier": "Novice", "gold_goal": 5, "gold_gap": 5,
-                                  "expert_bronze_goal": 1, "expert_bronze_gap": 1},
-                "notebooks": {"gold": 0, "silver": 0, "bronze": 0, "total_notebooks": 10,
-                              "total_votes": nb_votes, "tier": "Novice", "gold_goal": 15,
-                              "gold_gap": 15, "expert_bronze_goal": 1, "expert_bronze_gap": 1},
-                "datasets": {"gold": 0, "silver": 0, "bronze": 0, "total_datasets": 5,
-                             "total_votes": ds_votes, "tier": "Novice", "gold_goal": 5,
-                             "gold_gap": 5, "expert_bronze_goal": 1, "expert_bronze_gap": 1},
-                "discussion": {"gold": 0, "silver": 0, "bronze": 0, "total_posts": posts,
-                               "tier": "Novice", "gold_goal": 50, "gold_gap": 50,
-                               "total_goal": 500, "total_gap": 500,
-                               "expert_bronze_goal": 50, "expert_bronze_gap": 50},
+                "competitions": {
+                    "gold": 0,
+                    "silver": 0,
+                    "bronze": 0,
+                    "entered": entered,
+                    "tier": "Novice",
+                    "gold_goal": 5,
+                    "gold_gap": 5,
+                    "expert_bronze_goal": 1,
+                    "expert_bronze_gap": 1,
+                },
+                "notebooks": {
+                    "gold": 0,
+                    "silver": 0,
+                    "bronze": 0,
+                    "total_notebooks": 10,
+                    "total_votes": nb_votes,
+                    "tier": "Novice",
+                    "gold_goal": 15,
+                    "gold_gap": 15,
+                    "expert_bronze_goal": 1,
+                    "expert_bronze_gap": 1,
+                },
+                "datasets": {
+                    "gold": 0,
+                    "silver": 0,
+                    "bronze": 0,
+                    "total_datasets": 5,
+                    "total_votes": ds_votes,
+                    "tier": "Novice",
+                    "gold_goal": 5,
+                    "gold_gap": 5,
+                    "expert_bronze_goal": 1,
+                    "expert_bronze_gap": 1,
+                },
+                "discussion": {
+                    "gold": 0,
+                    "silver": 0,
+                    "bronze": 0,
+                    "total_posts": posts,
+                    "tier": "Novice",
+                    "gold_goal": 50,
+                    "gold_gap": 50,
+                    "total_goal": 500,
+                    "total_gap": 500,
+                    "expert_bronze_goal": 50,
+                    "expert_bronze_gap": 50,
+                },
             },
             "active_competitions": comps or [],
         }
 
     def test_digest_with_two_snapshots_shows_deltas_deadline_and_action(self):
         comps = [
-            {"competition": "Orbit Wars", "days_to_deadline": 12, "deadline_date": "2026-06-26"},
-            {"competition": "Hull Tactical", "days_to_deadline": 3, "deadline_date": "2026-06-17"},
+            {
+                "competition": "Orbit Wars",
+                "days_to_deadline": 12,
+                "deadline_date": "2026-06-26",
+            },
+            {
+                "competition": "Hull Tactical",
+                "days_to_deadline": 3,
+                "deadline_date": "2026-06-17",
+            },
         ]
         s1 = self._snap("2026-06-13", entered=10, nb_votes=60, ds_votes=54, posts=0)
-        s2 = self._snap("2026-06-14", entered=11, nb_votes=68, ds_votes=54, posts=2, comps=comps)
+        s2 = self._snap(
+            "2026-06-14", entered=11, nb_votes=68, ds_votes=54, posts=2, comps=comps
+        )
         health = {"ready_now": 2, "days_until_next_post": 4, "overdue_scheduled": 0}
 
         out = medal_ops.generate_digest([s1, s2], health)
 
         assert "2026-06-14" in out
-        assert "+8" in out                 # notebook votes 60 -> 68
-        assert "Hull Tactical" in out and "3" in out   # nearest deadline (not Orbit Wars at 12)
+        assert "+8" in out  # notebook votes 60 -> 68
+        assert (
+            "Hull Tactical" in out and "3" in out
+        )  # nearest deadline (not Orbit Wars at 12)
         assert "Orbit Wars" not in out
         assert "ready" in out.lower()
         assert "Top action" in out

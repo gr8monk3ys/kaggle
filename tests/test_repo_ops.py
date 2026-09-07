@@ -67,7 +67,9 @@ def test_build_preflight_steps_can_skip_pytest_and_pass_csv_args():
 
 def test_build_smoke_live_steps_include_expected_checks():
     parser = repo_ops.build_parser()
-    args = parser.parse_args(["smoke-live", "--owner", "lorenzoscaturchio", "--check-discussion-login"])
+    args = parser.parse_args(
+        ["smoke-live", "--owner", "lorenzoscaturchio", "--check-discussion-login"]
+    )
 
     steps = repo_ops.build_smoke_live_steps(args)
 
@@ -101,7 +103,9 @@ def test_run_steps_returns_failure_when_any_step_fails(monkeypatch):
         ]
     )
 
-    monkeypatch.setattr(repo_ops.subprocess, "run", lambda *args, **kwargs: next(results))
+    monkeypatch.setattr(
+        repo_ops.subprocess, "run", lambda *args, **kwargs: next(results)
+    )
 
     rc = repo_ops.run_steps(
         [

@@ -2,9 +2,9 @@
 
 > 15K synthetic job listings with salary ranges, skills, and rich NLP features
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/job-postings-nlp-salary-prediction](https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp-salary-prediction)  
+**Kaggle:** [lorenzoscaturchio/job-postings-nlp-salary-prediction](https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp-salary-prediction)
 
 ## Description
 

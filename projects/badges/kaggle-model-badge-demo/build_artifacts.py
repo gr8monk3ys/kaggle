@@ -21,7 +21,8 @@ def main() -> None:
 
     joblib.dump(model, out_dir / "iris_logreg.joblib")
     (out_dir / "label_names.json").write_text(
-        json.dumps({str(i): name for i, name in enumerate(iris.target_names)}, indent=2) + "\n"
+        json.dumps({str(i): name for i, name in enumerate(iris.target_names)}, indent=2)
+        + "\n"
     )
     (out_dir / "README.md").write_text(
         "# Iris Logistic Regression Artifact\n\n"

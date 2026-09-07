@@ -8,7 +8,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_kaggle_credentials_file_not_present():
-    assert not (ROOT / "kaggle.json").exists(), "kaggle.json must not exist in the repository root."
+    assert not (ROOT / "kaggle.json").exists(), (
+        "kaggle.json must not exist in the repository root."
+    )
 
 
 def test_no_hardcoded_user_paths_in_scripts():
@@ -19,7 +21,9 @@ def test_no_hardcoded_user_paths_in_scripts():
         content = path.read_text(encoding="utf-8")
         if "/Users/" in content:
             offenders.append(str(path.relative_to(ROOT)))
-    assert not offenders, f"Hardcoded /Users paths found: {', '.join(sorted(offenders))}"
+    assert not offenders, (
+        f"Hardcoded /Users paths found: {', '.join(sorted(offenders))}"
+    )
 
 
 def test_no_trust_remote_code_true_in_scripts():
@@ -30,7 +34,9 @@ def test_no_trust_remote_code_true_in_scripts():
         content = path.read_text(encoding="utf-8")
         if "trust_remote_code=True" in content:
             offenders.append(str(path.relative_to(ROOT)))
-    assert not offenders, f"trust_remote_code=True found in: {', '.join(sorted(offenders))}"
+    assert not offenders, (
+        f"trust_remote_code=True found in: {', '.join(sorted(offenders))}"
+    )
 
 
 def test_manage_help_available():
@@ -78,7 +84,7 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert workflow.exists(), "Expected medal ops health workflow to exist."
 
     content = workflow.read_text(encoding="utf-8")
-    assert 'name: Medal Ops Health' in content
+    assert "name: Medal Ops Health" in content
     assert "schedule:" in content
     assert 'cron: "10 9 * * 6"' in content
     assert "workflow_dispatch:" in content
@@ -98,12 +104,17 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     # pinning an exact flag order that breaks on benign edits.
     assert "doctor" in content and "--strict" in content
     assert "--output-root /tmp/medal_ops_health" in content
-    assert "sync --dry-run" in content or "sync --output-root /tmp/medal_ops_health --dry-run" in content
+    assert (
+        "sync --dry-run" in content
+        or "sync --output-root /tmp/medal_ops_health --dry-run" in content
+    )
     assert "python -m kaggle_portfolio.quality.notebook_quality" in content
     assert "python -m kaggle_portfolio.datasets.dataset_usability" in content
     assert "dataset-usability.log" in content
     assert "dataset-usability-tracker.log" in content
-    assert "python -m kaggle_portfolio.ops.discussion_scheduler --health-check" in content
+    assert (
+        "python -m kaggle_portfolio.ops.discussion_scheduler --health-check" in content
+    )
     assert "draft-ops.log" in content
     assert "Open or update incident issue" in content
 
@@ -167,18 +178,21 @@ def test_medal_ops_history_is_tracked_not_ignored():
 
 def test_telemetry_workflow_records_and_commits_snapshots():
     import yaml
+
     wf_path = ROOT / ".github" / "workflows" / "telemetry.yml"
     assert wf_path.exists(), "telemetry.yml must exist"
     wf = yaml.safe_load(wf_path.read_text(encoding="utf-8"))
 
-    on = wf.get(True, wf.get("on"))   # PyYAML may parse bare `on:` as boolean True
+    on = wf.get(True, wf.get("on"))  # PyYAML may parse bare `on:` as boolean True
     assert "schedule" in on
     assert "workflow_dispatch" in on
     assert wf.get("permissions", {}).get("contents") == "write"
 
     body = wf_path.read_text(encoding="utf-8")
     assert "medal_ops sync" in body
-    assert "medal_ops scorecard" in body   # scorecard is what actually writes the snapshot
+    assert (
+        "medal_ops scorecard" in body
+    )  # scorecard is what actually writes the snapshot
     assert "--dry-run" not in body
     assert "medal_ops digest" in body
 

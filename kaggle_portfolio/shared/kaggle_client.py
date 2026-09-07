@@ -488,6 +488,10 @@ class CliKaggleClient:
                 result = subprocess.run(
                     argv, capture_output=True, text=True, timeout=self._timeout
                 )
+            except subprocess.TimeoutExpired as exc:
+                # Never retried: a timeout is a deadline the caller chose, and
+                # retrying would silently multiply it by the attempt count.
+                raise KaggleError(f"{' '.join(argv)}: {exc}") from exc
             except subprocess.SubprocessError as exc:
                 last = exc
                 if attempt == self._retries:
@@ -624,38 +628,72 @@ class CliKaggleClient:
         return CredentialState(Credentials(cfg_user, cfg_key, f"file:{cfg}"), sources)
 
     def probe_upload_auth(self, timeout: int = 30) -> AuthProbe:
-        """Check upload authorisation through the Kaggle SDK.
+        """Check whether Kaggle's upload-start flow accepts the local credentials.
 
-        The import lives inside the method on purpose: kaggle 1.x can call
+        The imports live inside the method on purpose: kaggle 1.x can call
         ``exit(1)`` at import time when credentials are missing, and as a
         top-level import that was an interpreter-termination hazard for anything
         that merely imported the module holding it.
         """
+        import socket
+        import tempfile
+
         try:
             from kaggle.api.kaggle_api_extended import KaggleApi
             from kagglesdk.blobs.types.blob_api_service import (
                 ApiBlobType,
                 ApiStartBlobUploadRequest,
             )
-        except (Exception, SystemExit) as exc:  # noqa: BLE001 - the SDK may exit on import
-            return AuthProbe(False, f"Kaggle SDK unavailable: {exc}")
+        except (Exception, SystemExit):  # noqa: BLE001 - the SDK may exit on import
+            return AuthProbe(
+                False,
+                "kaggle package not installed; skipping official upload-start probe",
+            )
+
+        temp_path: str | None = None
+        previous_timeout = socket.getdefaulttimeout()
         try:
+            socket.setdefaulttimeout(timeout)
+            with tempfile.NamedTemporaryFile(
+                "wb", prefix="kaggle-auth-doctor-", suffix=".txt", delete=False
+            ) as handle:
+                handle.write(b"auth-doctor upload probe\n")
+                temp_path = handle.name
+
             api = KaggleApi()
             api.authenticate()
+
             request = ApiStartBlobUploadRequest()
             request.type = ApiBlobType.DATASET
-            request.name = "preflight-probe.csv"
-            request.content_length = 1
-            request.content_type = "text/csv"
-            with api.build_kaggle_client() as client:
-                response = client.blobs.blob_api_client.start_blob_upload(request)
-            if getattr(response, "create_url", None) and getattr(
-                response, "token", None
-            ):
-                return AuthProbe(True, "upload authorisation granted")
-            return AuthProbe(False, "upload probe returned no create_url/token")
+            request.name = Path(temp_path).name
+            request.content_length = os.path.getsize(temp_path)
+            request.last_modified_epoch_seconds = int(os.path.getmtime(temp_path))
+
+            with api.build_kaggle_client() as kaggle:
+                response = kaggle.blobs.blob_api_client.start_blob_upload(request)
+
+            create_url = str(getattr(response, "create_url", "") or "")
+            token = str(getattr(response, "token", "") or "")
+            if create_url and token:
+                return AuthProbe(True, "official upload-start probe succeeded")
+            return AuthProbe(
+                False, "official upload-start probe returned no create_url/token"
+            )
         except Exception as exc:  # noqa: BLE001 - a probe reports, it does not raise
-            return AuthProbe(False, summarize_output(str(exc)))
+            message = str(exc).strip() or exc.__class__.__name__
+            lowered = message.lower()
+            if any(
+                m in lowered for m in ("401", "403", "unauthenticated", "unauthorized")
+            ):
+                return AuthProbe(
+                    False,
+                    f"official upload-start probe rejected credentials ({message})",
+                )
+            return AuthProbe(False, f"official upload-start probe failed: {message}")
+        finally:
+            socket.setdefaulttimeout(previous_timeout)
+            if temp_path:
+                Path(temp_path).unlink(missing_ok=True)
 
     # -- kernels ------------------------------------------------------------
 

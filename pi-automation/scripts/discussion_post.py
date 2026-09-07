@@ -1,4 +1,5 @@
 """Post the next queued discussion to Kaggle using Playwright."""
+
 from __future__ import annotations
 
 import argparse
@@ -13,7 +14,12 @@ import notify
 import discussion_queue as dq
 
 REPO = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent)))
-QUEUE_PATH = Path(os.environ.get("QUEUE_PATH", str(Path(__file__).parent.parent / "data" / "discussion_queue.json")))
+QUEUE_PATH = Path(
+    os.environ.get(
+        "QUEUE_PATH",
+        str(Path(__file__).parent.parent / "data" / "discussion_queue.json"),
+    )
+)
 EMAIL = os.environ.get("KAGGLE_EMAIL", "")
 PASSWORD = os.environ.get("KAGGLE_PASSWORD", "")
 BROWSER_CHALLENGE_MESSAGE = (
@@ -111,7 +117,9 @@ def load_item_body(item: dict) -> str:
     required_keys = ("id", "title", "forum_url", "body_file", "body_section")
     missing_keys = [key for key in required_keys if not item.get(key)]
     if missing_keys:
-        raise ValueError(f"Queue item missing required key(s): {', '.join(missing_keys)}")
+        raise ValueError(
+            f"Queue item missing required key(s): {', '.join(missing_keys)}"
+        )
     body_file = str(item["body_file"])
     candidates = [REPO / body_file]
     # Queues written before the layout reorg store a bare filename, which
@@ -120,7 +128,9 @@ def load_item_body(item: dict) -> str:
         candidates.append(REPO / "docs" / "discussions" / body_file)
     drafts_path = next((p for p in candidates if p.is_file()), candidates[0])
     try:
-        return dq.extract_body(drafts_path.read_text(encoding="utf-8"), str(item["body_section"]))
+        return dq.extract_body(
+            drafts_path.read_text(encoding="utf-8"), str(item["body_section"])
+        )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"Cannot extract draft body: {exc}") from exc
 
@@ -168,8 +178,14 @@ def smoke_test(*, check_login: bool = False) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Post the next queued Kaggle discussion or run a smoke test.")
-    parser.add_argument("--smoke-test", action="store_true", help="Validate posting prerequisites without creating a post.")
+    parser = argparse.ArgumentParser(
+        description="Post the next queued Kaggle discussion or run a smoke test."
+    )
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Validate posting prerequisites without creating a post.",
+    )
     parser.add_argument(
         "--check-login",
         action="store_true",
@@ -187,7 +203,13 @@ def main(argv: list[str] | None = None) -> None:
     if args.smoke_test:
         try:
             raise SystemExit(smoke_test(check_login=args.check_login))
-        except (EnvironmentError, FileNotFoundError, ValueError, RuntimeError, Exception) as exc:
+        except (
+            EnvironmentError,
+            FileNotFoundError,
+            ValueError,
+            RuntimeError,
+            Exception,
+        ) as exc:
             print(str(exc), file=sys.stderr)
             notify_safe(f"❌ Discussion smoke test failed: {exc}")
             sys.exit(1)
@@ -241,12 +263,7 @@ def main(argv: list[str] | None = None) -> None:
         else "Queue empty."
     )
 
-    notify_safe(
-        f"✅ *Discussion posted*\n"
-        f"\"{item['title']}\"\n"
-        f"{post_url}\n\n"
-        f"{next_info}"
-    )
+    notify_safe(f'✅ *Discussion posted*\n"{item["title"]}"\n{post_url}\n\n{next_info}')
     print(f"Posted: {post_url}")
 
 

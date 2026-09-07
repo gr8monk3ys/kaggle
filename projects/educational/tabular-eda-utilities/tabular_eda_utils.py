@@ -34,7 +34,9 @@ def detect_numeric_columns(rows: list[dict[str, str]]) -> list[str]:
     return numeric
 
 
-def numeric_profile(rows: list[dict[str, str]], columns: list[str]) -> dict[str, dict[str, float]]:
+def numeric_profile(
+    rows: list[dict[str, str]], columns: list[str]
+) -> dict[str, dict[str, float]]:
     """Return count/min/max/mean for a selected list of numeric columns."""
     profile: dict[str, dict[str, float]] = {}
     for column in columns:
@@ -71,4 +73,6 @@ def csv_shape(csv_path: str) -> tuple[int, int]:
 
 
 if __name__ == "__main__":
-    print("Tabular EDA utility script ready. Mark this Kaggle script as a utility script in the UI.")
+    print(
+        "Tabular EDA utility script ready. Mark this Kaggle script as a utility script in the UI."
+    )

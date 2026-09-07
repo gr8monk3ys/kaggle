@@ -25,7 +25,9 @@ TRACKER_PATH = REPO_ROOT / "pi-automation" / "data" / "cover_upload_tracker.json
 
 
 def discover_cover_datasets(
-    datasets_root: Path, *, only: str | None = None,
+    datasets_root: Path,
+    *,
+    only: str | None = None,
 ) -> list[tuple[str, str, Path]]:
     """Return list of (dataset_dir_name, owner/slug, cover_path) for datasets with cover.png."""
     results: list[tuple[str, str, Path]] = []
@@ -52,6 +54,7 @@ def discover_cover_datasets(
 def _wait_for_settings_tab(page, dataset_ref: str, *, timeout_ms: int) -> None:
     """Navigate to dataset settings and ensure the Settings tab content is loaded."""
     import time
+
     settings_url = f"https://www.kaggle.com/datasets/{dataset_ref}/settings"
     page.goto(settings_url, wait_until="domcontentloaded", timeout=timeout_ms)
     page.wait_for_timeout(2000)
@@ -69,7 +72,9 @@ def _wait_for_settings_tab(page, dataset_ref: str, *, timeout_ms: int) -> None:
     attempt = 0
     while time.time() < deadline:
         attempt += 1
-        edit_btn = page.get_by_role("button", name=re.compile(r"edit image", re.IGNORECASE)).first
+        edit_btn = page.get_by_role(
+            "button", name=re.compile(r"edit image", re.IGNORECASE)
+        ).first
         if kb.locator_count(edit_btn):
             return
         # Try clicking the Settings tab in case we landed on Data Card
@@ -126,10 +131,16 @@ def upload_cover(page, dataset_ref: str, cover_path: Path, *, timeout_ms: int) -
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Upload cover images to Kaggle datasets.")
+    parser = argparse.ArgumentParser(
+        description="Upload cover images to Kaggle datasets."
+    )
     kb.add_common_browser_args(parser)
-    parser.add_argument("--dataset", default=None, help="Only upload for this dataset directory name.")
-    parser.add_argument("--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path.")
+    parser.add_argument(
+        "--dataset", default=None, help="Only upload for this dataset directory name."
+    )
+    parser.add_argument(
+        "--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path."
+    )
     return parser.parse_args()
 
 
@@ -141,7 +152,9 @@ def main() -> int:
         return 0
 
     tracker = kb.TrackerFile(args.tracker)
-    pending = [(name, ref, path) for name, ref, path in datasets if not tracker.has(ref)]
+    pending = [
+        (name, ref, path) for name, ref, path in datasets if not tracker.has(ref)
+    ]
     if not pending:
         print(f"All {len(datasets)} cover images already uploaded.")
         return 0

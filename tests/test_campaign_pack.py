@@ -8,9 +8,24 @@ from kaggle_portfolio.campaigns import campaign_pack
 
 def test_prioritize_datasets_orders_by_live_status_and_rating():
     rows = [
-        {"dataset_ref": "u/strong", "path": "datasets/strong", "title": "Strong", "kaggle_usability_rating": 0.86},
-        {"dataset_ref": "u/watch", "path": "datasets/watch", "title": "Watch", "kaggle_usability_rating": 0.74},
-        {"dataset_ref": "u/critical", "path": "datasets/critical", "title": "Critical", "kaggle_usability_rating": 0.66},
+        {
+            "dataset_ref": "u/strong",
+            "path": "datasets/strong",
+            "title": "Strong",
+            "kaggle_usability_rating": 0.86,
+        },
+        {
+            "dataset_ref": "u/watch",
+            "path": "datasets/watch",
+            "title": "Watch",
+            "kaggle_usability_rating": 0.74,
+        },
+        {
+            "dataset_ref": "u/critical",
+            "path": "datasets/critical",
+            "title": "Critical",
+            "kaggle_usability_rating": 0.66,
+        },
     ]
 
     ranked = campaign_pack.prioritize_datasets(
@@ -20,7 +35,11 @@ def test_prioritize_datasets_orders_by_live_status_and_rating():
         max_datasets=10,
     )
 
-    assert [item["dataset_ref"] for item in ranked] == ["u/critical", "u/watch", "u/strong"]
+    assert [item["dataset_ref"] for item in ranked] == [
+        "u/critical",
+        "u/watch",
+        "u/strong",
+    ]
     assert ranked[0]["status"] == "critical"
     assert ranked[1]["status"] == "watch"
     assert ranked[2]["status"] == "strong"
@@ -143,9 +162,15 @@ def test_main_filters_to_requested_refs(tmp_path, monkeypatch):
     rc = campaign_pack.main()
 
     assert rc == 0
-    payload = json.loads((out_root / "reports" / "latest-promotion-campaign.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (out_root / "reports" / "latest-promotion-campaign.json").read_text(
+            encoding="utf-8"
+        )
+    )
     assert payload["ref_filter"] == ["u/strong"]
-    assert [item["dataset_ref"] for item in payload["prioritized_datasets"]] == ["u/strong"]
+    assert [item["dataset_ref"] for item in payload["prioritized_datasets"]] == [
+        "u/strong"
+    ]
 
 
 def test_build_channel_copy_uses_distinct_discussion_and_changelog_language():

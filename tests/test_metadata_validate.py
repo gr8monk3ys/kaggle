@@ -3,6 +3,7 @@
 These tests verify both the structure of existing metadata files and
 the validation logic that manage.sh validate relies on.
 """
+
 import json
 import os
 import subprocess
@@ -22,7 +23,8 @@ def _repo_metas(name: str) -> list[Path]:
     """All <name> paths in the repo, skipping hidden dirs (.claude/worktrees
     holds agent worktree copies of the whole repo)."""
     return [
-        p for p in ROOT.rglob(name)
+        p
+        for p in ROOT.rglob(name)
         if not any(part.startswith(".") for part in p.relative_to(ROOT).parts)
     ]
 
@@ -60,9 +62,23 @@ def _patched_manage_script(tmp_path: Path) -> Path:
 
 
 def _init_git_repo(repo: Path) -> None:
-    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True, text=True)
-    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, check=True, capture_output=True, text=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "init"], cwd=repo, check=True, capture_output=True, text=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test User"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def _write_kernel_fixture(root: Path, *, ident: str) -> None:
@@ -149,8 +165,12 @@ def test_kernel_metadata_id_format(meta_path):
     """id must follow the owner/slug format and contain no spaces."""
     meta = _load(meta_path)
     id_val = meta.get("id", "")
-    assert "/" in id_val, f"{meta_path.relative_to(ROOT)}: id '{id_val}' missing owner/ prefix"
-    assert " " not in id_val, f"{meta_path.relative_to(ROOT)}: id '{id_val}' contains spaces"
+    assert "/" in id_val, (
+        f"{meta_path.relative_to(ROOT)}: id '{id_val}' missing owner/ prefix"
+    )
+    assert " " not in id_val, (
+        f"{meta_path.relative_to(ROOT)}: id '{id_val}' contains spaces"
+    )
 
 
 @pytest.mark.parametrize("meta_path", _find_kernel_metas())
@@ -187,8 +207,12 @@ def test_dataset_metadata_id_format(meta_path):
     """Dataset ids must follow owner/slug format and contain no spaces."""
     meta = _load(meta_path)
     id_val = meta.get("id", "")
-    assert "/" in id_val, f"{meta_path.relative_to(ROOT)}: id '{id_val}' missing owner/ prefix"
-    assert " " not in id_val, f"{meta_path.relative_to(ROOT)}: id '{id_val}' contains spaces"
+    assert "/" in id_val, (
+        f"{meta_path.relative_to(ROOT)}: id '{id_val}' missing owner/ prefix"
+    )
+    assert " " not in id_val, (
+        f"{meta_path.relative_to(ROOT)}: id '{id_val}' contains spaces"
+    )
 
 
 @pytest.mark.parametrize("meta_path", _find_dataset_metas())
@@ -383,13 +407,24 @@ def test_manage_validate_passes_when_tracked_kernel_id_matches_head(tmp_path):
     _init_git_repo(tmp_path)
     _write_kernel_fixture(tmp_path, ident="owner/example-notebook")
     subprocess.run(
-        ["git", "add", "example-notebook/kernel-metadata.json", "example-notebook/notebook.ipynb"],
+        [
+            "git",
+            "add",
+            "example-notebook/kernel-metadata.json",
+            "example-notebook/notebook.ipynb",
+        ],
         cwd=tmp_path,
         check=True,
         capture_output=True,
         text=True,
     )
-    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
     patched_manage = _patched_manage_script(tmp_path)
 
     result = subprocess.run(
@@ -409,13 +444,24 @@ def test_manage_validate_fails_when_tracked_kernel_id_drifted_from_head(tmp_path
     _init_git_repo(tmp_path)
     _write_kernel_fixture(tmp_path, ident="owner/example-notebook")
     subprocess.run(
-        ["git", "add", "example-notebook/kernel-metadata.json", "example-notebook/notebook.ipynb"],
+        [
+            "git",
+            "add",
+            "example-notebook/kernel-metadata.json",
+            "example-notebook/notebook.ipynb",
+        ],
         cwd=tmp_path,
         check=True,
         capture_output=True,
         text=True,
     )
-    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
     _write_kernel_fixture(tmp_path, ident="owner/example-notebook-renamed")
     patched_manage = _patched_manage_script(tmp_path)
 
@@ -429,7 +475,10 @@ def test_manage_validate_fails_when_tracked_kernel_id_drifted_from_head(tmp_path
     )
 
     assert result.returncode != 0
-    assert "id changed from 'owner/example-notebook' to 'owner/example-notebook-renamed'" in result.stdout
+    assert (
+        "id changed from 'owner/example-notebook' to 'owner/example-notebook-renamed'"
+        in result.stdout
+    )
     assert "MANAGE_ALLOW_ID_CHANGE=1" in result.stdout
 
 
@@ -437,13 +486,24 @@ def test_manage_validate_allows_tracked_kernel_id_override(tmp_path):
     _init_git_repo(tmp_path)
     _write_kernel_fixture(tmp_path, ident="owner/example-notebook")
     subprocess.run(
-        ["git", "add", "example-notebook/kernel-metadata.json", "example-notebook/notebook.ipynb"],
+        [
+            "git",
+            "add",
+            "example-notebook/kernel-metadata.json",
+            "example-notebook/notebook.ipynb",
+        ],
         cwd=tmp_path,
         check=True,
         capture_output=True,
         text=True,
     )
-    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
     _write_kernel_fixture(tmp_path, ident="owner/example-notebook-renamed")
     patched_manage = _patched_manage_script(tmp_path)
 
@@ -470,6 +530,7 @@ def test_validate_python_logic_invalid_json(tmp_path):
     bad.write_text("{not valid json", encoding="utf-8")
 
     import subprocess as sp
+
     result = sp.run(
         ["python3", "-c", f"import json; json.load(open('{bad}'))"],
         capture_output=True,
@@ -494,11 +555,23 @@ def test_validate_python_logic_title_too_long():
 # ── Three new dataset kernel-metadata.json files ─────────────────────────────
 
 
-@pytest.mark.parametrize("ds_dir,expected_id", [
-    ("datasets/credit-card-fraud", "lorenzoscaturchio/credit-card-fraud-eda-detection"),
-    ("datasets/job-postings",      "lorenzoscaturchio/job-postings-nlp-salary-prediction-eda"),
-    ("datasets/student-performance", "lorenzoscaturchio/student-performance-academic-eda"),
-])
+@pytest.mark.parametrize(
+    "ds_dir,expected_id",
+    [
+        (
+            "datasets/credit-card-fraud",
+            "lorenzoscaturchio/credit-card-fraud-eda-detection",
+        ),
+        (
+            "datasets/job-postings",
+            "lorenzoscaturchio/job-postings-nlp-salary-prediction-eda",
+        ),
+        (
+            "datasets/student-performance",
+            "lorenzoscaturchio/student-performance-academic-eda",
+        ),
+    ],
+)
 def test_dataset_explorer_kernel_metadata_exists(ds_dir, expected_id):
     """Dataset explorer notebooks must have kernel-metadata.json with the correct id."""
     meta_path = ROOT / ds_dir / "kernel-metadata.json"
@@ -509,11 +582,14 @@ def test_dataset_explorer_kernel_metadata_exists(ds_dir, expected_id):
     )
 
 
-@pytest.mark.parametrize("ds_dir", [
-    "datasets/credit-card-fraud",
-    "datasets/job-postings",
-    "datasets/student-performance",
-])
+@pytest.mark.parametrize(
+    "ds_dir",
+    [
+        "datasets/credit-card-fraud",
+        "datasets/job-postings",
+        "datasets/student-performance",
+    ],
+)
 def test_dataset_explorer_kernel_metadata_has_dataset_sources(ds_dir):
     """Dataset explorer notebooks must declare their parent dataset as a source."""
     meta_path = ROOT / ds_dir / "kernel-metadata.json"
@@ -555,7 +631,8 @@ def test_manage_auto_discovery_finds_all_notebooks():
     # Can't easily source manage.sh directly due to set -euo pipefail,
     # so we count kernel-metadata.json files not under datasets/
     count = sum(
-        1 for p in ROOT.rglob("kernel-metadata.json")
-        if "datasets" not in p.parts[len(ROOT.parts):]
+        1
+        for p in ROOT.rglob("kernel-metadata.json")
+        if "datasets" not in p.parts[len(ROOT.parts) :]
     )
     assert count >= 24, f"Expected >= 24 notebook dirs, found {count}"
