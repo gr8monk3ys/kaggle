@@ -13,11 +13,12 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.manage_commands import is_skipped
+
 from kaggle_portfolio.shared.clock import resolve_today
 from kaggle_portfolio.shared.errors import CommandError
 from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.layout import RepoLayout
 
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
@@ -144,11 +145,14 @@ def source_to_text(source: Any) -> str:
 
 
 def discover_notebooks(root: Path, scope: str) -> tuple[list[Path], list[str]]:
+    # The skip rule belongs to the layout; this used to import a forwarder from
+    # manage_commands, which reached that module's process-wide deps.
+    layout = RepoLayout.resolve(root)
     notebooks: list[Path] = []
     warnings: list[str] = []
 
     for metadata_path in sorted(root.rglob("kernel-metadata.json")):
-        if is_skipped(metadata_path, root):
+        if layout.is_skipped(metadata_path):
             continue
         rel_metadata = metadata_path.relative_to(root)
         if (

@@ -17,7 +17,6 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
-from kaggle_portfolio.shared.layout import RepoLayout
 
 from kaggle_portfolio.notebooks.competition_lab.runner import (  # noqa: F401
     LabResult,
@@ -31,8 +30,6 @@ from kaggle_portfolio.notebooks.competition_lab.runner import (  # noqa: F401
     _submit,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
-LAB_ROOT = RepoLayout.resolve().lab_root
 RANDOM_STATE = 42
 GREEN = "\033[0;32m"
 YELLOW = "\033[0;33m"

@@ -168,8 +168,13 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
 def build_smoke_live_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
     """Live, non-mutating smoke checks.
 
-    The discussion step stays a subprocess: it drives Playwright, which must not
-    become reachable from a kaggle_portfolio import.
+    The discussion step stays a subprocess because it drives Playwright.
+
+    Note the rule is not currently airtight: campaign_execute imports
+    kaggle_browser from pi-automation/scripts at module level, so an in-process
+    campaign step already puts that module on the import path. Playwright itself
+    is imported lazily inside it, so nothing breaks today — but the boundary is a
+    convention here, not something the code enforces.
     """
     from kaggle_portfolio.campaigns import campaign_execute
     from kaggle_portfolio.datasets import dataset_publish_pipeline

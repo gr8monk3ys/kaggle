@@ -33,3 +33,28 @@ down, so what a command can touch is visible in its signature.
   than by a conditional each command remembers to write. Two known bugs disappear
   by construction: a dry-run sync that still wrote two reports, and a flywheel
   tick that ignored its kill switch.
+
+## Amendment: the CLI edge holds one constructed `Deps`
+
+The rejected-options list above rules out "default-argument injection with a
+module-level factory" — and `manage_commands` nonetheless holds
+`_DEPS` + `deps()` + `set_deps()`. That is a real tension, recorded here rather
+than left for a reader to trip over.
+
+The distinction the original text failed to draw: the objection is to *command
+modules* defaulting to a hidden global, because that makes what a command touches
+invisible in its signature and lets a test forget to inject. `manage_commands` is
+not a command module — it is the edge, which is exactly where this ADR says the
+one `Deps` should be constructed. Holding it in a module variable there, with
+`set_deps()` for tests, is that construction, not a bypass of it.
+
+The line that matters is containment, and it was breached: `notebook_quality`
+imported `is_skipped` from `manage_commands`, and that helper called `deps()` —
+so a command module *was* reaching the global, one import removed. That forwarder
+is deleted; the skip rule belongs to `RepoLayout`, which `notebook_quality` now
+resolves itself.
+
+The rule, stated so it can be checked: **nothing outside `manage_commands` may
+call `deps()`, directly or through a helper imported from it.** Every command
+module takes `deps` as a parameter and constructs its own default when handed
+none.

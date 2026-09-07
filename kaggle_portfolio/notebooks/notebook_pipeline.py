@@ -96,18 +96,17 @@ def push_notebook(client: KaggleClient, nb_dir: Path) -> tuple[bool, str]:
     return outcome.ok, outcome.detail
 
 
-def run_validate() -> bool:
-    """Run manage.sh validate and return True if clean."""
-    result = subprocess.run(
-        ["bash", str(ROOT / "manage.sh"), "validate"],
-        capture_output=True,
-        text=True,
-        cwd=str(ROOT),
-    )
-    print(result.stdout)
-    if result.stderr.strip():
-        print(result.stderr)
-    return result.returncode == 0
+def run_validate(deps: Deps | None = None) -> bool:
+    """Validate metadata, in-process.
+
+    This used to shell out to `bash manage.sh validate` — the same re-entrancy
+    preflight was carrying: a command spawning bash to re-enter the module that
+    dispatched it. Reached through the in-process `build-all` command, that meant
+    a third interpreter for work already importable.
+    """
+    from kaggle_portfolio.manage_commands import cmd_validate
+
+    return cmd_validate([], deps_override=deps) == 0
 
 
 GREEN = "\033[0;32m"
@@ -149,7 +148,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     if args.validate_only:
         print("Running metadata validation only...")
-        ok = run_validate()
+        ok = run_validate(deps)
         return 0 if ok else 1
 
     scripts = discover_build_scripts(ROOT)

@@ -104,8 +104,10 @@ _Avoid_: experiment, run, model
 
 **Competition Lab**:
 The set of Benchmarks and the harness that fetches their data and optionally
-submits their output.
-_Avoid_: lab, playground
+submits their output. Shortened to `lab` inside its own package
+(`competition_lab/`, `lab_root`, `LabResult`), where the context is unambiguous;
+spell it out everywhere else.
+_Avoid_: playground
 
 **Flywheel**:
 The loop that picks one automation action per tick and records that it happened,

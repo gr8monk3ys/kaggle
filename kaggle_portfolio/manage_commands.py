@@ -10,9 +10,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleError
-from kaggle_portfolio.shared.layout import METADATA_NAMES, RepoLayout
+from kaggle_portfolio.shared.layout import METADATA_NAMES
 from kaggle_portfolio.shared.errors import CommandError
 
 _DEPS: Deps | None = None
@@ -46,12 +47,6 @@ MAX_KEYWORDS = 6
 SUSPICIOUS_PATTERN = re.compile(
     r"(password|secret|api_key|kgat_|kaggle_token)", re.IGNORECASE
 )
-
-
-def is_skipped(path: Path, root: Path | None = None) -> bool:
-    """True when path lies inside a skipped directory, judged relative to root."""
-    layout = deps().layout if root is None else RepoLayout.resolve(root)
-    return layout.is_skipped(path)
 
 
 TRUTHY = {"1", "true", "yes", "on"}
@@ -212,7 +207,7 @@ def iter_metadata_files(scope: Path | None) -> list[Path]:
     for path in deps().layout.root.rglob("*-metadata.json"):
         if path.name not in METADATA_NAMES:
             continue
-        if is_skipped(path):
+        if deps().layout.is_skipped(path):
             continue
         if in_scope(path, scope):
             files.append(path)
@@ -387,13 +382,20 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
     return errors
 
 
-def cmd_validate(args: list[str], *, enforce_id_baseline: bool = False) -> int:
+def cmd_validate(
+    args: list[str],
+    *,
+    enforce_id_baseline: bool = False,
+    deps_override: Deps | None = None,
+) -> int:
     """Validate metadata files.
 
     ``--enforce-id-baseline`` pins a tracked kernel's ``id`` to its committed
     value. It used to be reachable only by exporting VALIDATE_ENFORCE_ID_BASELINE,
     which made it an undocumented side channel; it is a flag now.
     """
+    if deps_override is not None:
+        set_deps(deps_override)
     if "--enforce-id-baseline" in args:
         args = [a for a in args if a != "--enforce-id-baseline"]
         enforce_id_baseline = True
@@ -762,7 +764,9 @@ def cmd_usability_tracker(args: list[str]) -> int:
     """
     from kaggle_portfolio.datasets import dataset_usability
 
-    ratings_csv = str(deps().layout.reports_dir / "latest-live-ratings.csv")
+    ratings_csv = str(
+        deps().layout.reports_dir / reports.latest_name(reports.LIVE_RATINGS, "csv")
+    )
     return dataset_usability.main(
         [
             "--live",
