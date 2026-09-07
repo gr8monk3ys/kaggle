@@ -21,15 +21,27 @@ Each `projects/*` and `datasets/*` subfolder holds one `.ipynb` plus a
 
 Dispatch chain: `manage.sh` → `kaggle_portfolio/cli.py` → `manage_commands.main()`.
 
-- **Command registry**: `kaggle_portfolio/manage_commands.py` defines a `COMMANDS` list of `Command(name, description, handler, args, requires_kaggle)` dataclasses, indexed into `COMMAND_INDEX`. `main()` looks up argv[0] and calls the handler. Two handler styles:
-  - **Local handlers** (`cmd_push`, `cmd_status`, `cmd_validate`, `cmd_votes`, …) — push/validate/status logic that lives directly in `manage_commands.py`.
-  - **Module delegation** — `lambda a: run_module("kaggle_portfolio.<sub>.<mod>", [...a])`, which runs the submodule as `python -m` with subcommand-style args. Every delegated module has its own `main()` / argparse.
+- **Command registry**: `manage_commands.py` holds a `COMMANDS` list. Each entry
+  names a `handler` (a function here), a `module` (a dotted path whose
+  `main(argv, deps=...)` is called **in-process**), or a `script` (a subprocess —
+  reserved for `pi-automation`, whose Playwright dependency must not become
+  reachable from a `kaggle_portfolio` import). Modules are imported at dispatch,
+  not when the table is built, so `help` does not pay for sklearn.
+- **Failure**: commands raise `CommandError`, which the dispatcher turns into an
+  exit code. `SystemExit` from inside a command would kill the interpreter they
+  now share, so it belongs only in `__main__` guards.
+- **Effects**: `--dry-run` is read once, at the dispatcher, and sets
+  `deps.effects`. Mutating Kaggle calls and report writes are gated there rather
+  than by a conditional each command remembers.
 - **Subpackages**: `ops/` `quality/` `datasets/` `notebooks/` `campaigns/` `shared/` —
   `ls kaggle_portfolio/*` for the modules. **Reuse `shared/` rather than
-  re-implementing**: it owns the Kaggle seam, the repo layout, the clock, and the
-  Jupyter cell factories. Read it before writing anything that talks to Kaggle,
-  derives a path, or reads the date.
-- **Medal-ops data flow**: `docs/reports/grandmaster-tracker.md` is the hand-maintained baseline → `ops/medal_ops.py` reads it, syncs live Kaggle CLI counts, and writes reports into `medal_ops/reports/` (gitignored). `--dry-run` previews without writing state (convention across `sync`, `campaign-execute`, `post-discussion`).
+  re-implementing**: `kaggle_client` (the only thing that talks to Kaggle),
+  `layout` (the only thing that derives a repo path), `clock`, `reports` (report
+  names and emission), `deps`, `errors`, `build_utils`. `discussions/draft_queue`
+  is the single Draft Queue model, shared with the `pi-automation` poster.
+  `notebooks/competition_lab/` is one module per competition behind an unchanged
+  `BENCHMARKS` registry.
+- **Medal-ops data flow**: `docs/reports/grandmaster-tracker.md` is the hand-maintained baseline → `ops/medal_ops.py` reads it, syncs live Kaggle CLI counts, and writes reports into `medal_ops/reports/` (gitignored) via `shared/reports.py`. `--dry-run` previews without writing state (convention across `sync`, `campaign-execute`, `post-discussion`).
 
 ## Common commands
 
