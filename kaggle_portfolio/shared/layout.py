@@ -18,17 +18,6 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-#: Directories never scanned when discovering publishable artifacts.
-SKIP_DIRS = {
-    ".claude",
-    ".git",
-    ".venv",
-    ".pytest_cache",
-    ".playwright-cli",
-    ".playwright-mcp",
-    "__pycache__",
-}
-
 METADATA_NAMES = {"kernel-metadata.json", "dataset-metadata.json"}
 
 
@@ -152,23 +141,43 @@ class RepoLayout:
             rel = path.relative_to(self.root)
         except ValueError:
             return True
-        return any(part in SKIP_DIRS for part in rel.parts)
+        # Any dot-directory, plus __pycache__. A superset of the two rules this
+        # replaces: an explicit skip list here, and "any part starts with a dot"
+        # in metadata_tracker. Scratch dirs like .competition_lab are covered
+        # without having to be enumerated.
+        return any(part.startswith(".") or part == "__pycache__" for part in rel.parts)
+
+    def kernel_metadata_dirs(
+        self, *, include_dataset_notebooks: bool = False
+    ) -> list[str]:
+        """Repo-relative directories holding a ``kernel-metadata.json``.
+
+        Eleven ``datasets/*`` folders carry one too, for their explore notebooks.
+        They are excluded by default because *pushing* those directories is a
+        dataset operation, not a kernel one — but anything measuring notebooks
+        (votes, metadata drift) wants them, hence the flag.
+        """
+        items: list[str] = []
+        for meta in sorted(self.root.rglob("kernel-metadata.json")):
+            if self.is_skipped(meta):
+                continue
+            try:
+                rel = meta.parent.relative_to(self.root)
+            except ValueError:
+                continue
+            if (
+                not include_dataset_notebooks
+                and rel.parts
+                and rel.parts[0] == "datasets"
+            ):
+                continue
+            items.append(str(rel))
+        return items
 
     def notebook_dirs(self) -> list[str]:
-        """Repo-relative directories holding a ``kernel-metadata.json``."""
+        """Repo-relative directories a ``push`` treats as notebooks."""
         if self._notebook_dirs is None:
-            items: list[str] = []
-            for meta in sorted(self.root.rglob("kernel-metadata.json")):
-                if self.is_skipped(meta):
-                    continue
-                try:
-                    rel = meta.parent.relative_to(self.root)
-                except ValueError:
-                    continue
-                if rel.parts and rel.parts[0] == "datasets":
-                    continue
-                items.append(str(rel))
-            self._notebook_dirs = items
+            self._notebook_dirs = self.kernel_metadata_dirs()
         return list(self._notebook_dirs)
 
     def dataset_dirs(self) -> list[str]:

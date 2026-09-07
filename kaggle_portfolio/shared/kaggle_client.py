@@ -908,10 +908,17 @@ class FakeKaggleClient:
         self._submissions = dict(submissions or {})
         self._metadata = dict(metadata or {})
         self._files = dict(files or {})
-        self._credentials = credentials_state or CredentialState(
-            Credentials("tester", "key", "fake"), ["fake"]
+        # `or` would discard a deliberately-empty state: CredentialState is
+        # falsy when it holds no credentials, which is exactly the case a test
+        # seeding "no credentials" wants to express.
+        self._credentials = (
+            credentials_state
+            if credentials_state is not None
+            else CredentialState(Credentials("tester", "key", "fake"), ["fake"])
         )
-        self._auth_probe = auth_probe or AuthProbe(True, "fake")
+        self._auth_probe = (
+            auth_probe if auth_probe is not None else AuthProbe(True, "fake")
+        )
         self._available = available
         self._effects = effects
         self._fail_with = fail_with
@@ -1012,7 +1019,10 @@ class FakeKaggleClient:
         self._maybe_fail()
         if category is None:
             return list(self._competitions)
-        return [c for c in self._competitions if c.category == category]
+        # Kaggle matches its category filter case-insensitively: asking for
+        # "featured" returns rows whose category reads "Featured".
+        wanted = category.strip().lower()
+        return [c for c in self._competitions if c.category.strip().lower() == wanted]
 
     def leaderboard(self, slug: str) -> list[LeaderboardEntry]:
         self._maybe_fail()
