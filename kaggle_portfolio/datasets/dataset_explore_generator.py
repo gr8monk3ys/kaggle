@@ -38,8 +38,33 @@ RED = "\033[0;31m"
 BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
-# Datasets with custom build_notebook.py — skip these.
-SKIP_DIRS = {"spotify-tracks", "mental-health-tech"}
+# A hand-authored explore notebook must never be clobbered by regeneration.
+# This used to be a hardcoded name list, which silently went stale: it protected
+# spotify-tracks and mental-health-tech while student-performance and
+# ecommerce-behavior — both hand-authored — were left exposed. Detect the two
+# signals of hand-authorship instead, so a new one is protected on arrival.
+HAND_AUTHORED_MARKER = "hand_authored"
+
+
+def is_hand_authored(ds_dir: Path) -> bool:
+    """True when this dataset's explore notebook is maintained by hand.
+
+    Two signals, either of which is sufficient:
+      * a ``build_notebook.py`` beside it (the established convention), or
+      * ``metadata.hand_authored`` set in the notebook itself, for a notebook
+        written directly with no generator script.
+    """
+    if (ds_dir / "build_notebook.py").exists():
+        return True
+    nb_path = ds_dir / "explore.ipynb"
+    if not nb_path.exists():
+        return False
+    try:
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False  # unreadable: let the caller regenerate rather than wedge
+    return bool(nb.get("metadata", {}).get(HAND_AUTHORED_MARKER))
+
 
 # Common target column names to detect automatically.
 TARGET_CANDIDATES = [
@@ -832,7 +857,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         dirs = [target]
     else:
         dirs = sorted(
-            d for d in DATASETS_DIR.iterdir() if d.is_dir() and d.name not in SKIP_DIRS
+            d for d in DATASETS_DIR.iterdir() if d.is_dir() and not is_hand_authored(d)
         )
 
     success = 0
@@ -840,8 +865,10 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     skipped = 0
 
     for ds_dir in dirs:
-        if ds_dir.name in SKIP_DIRS:
-            print(f"  {YELLOW}SKIP{RESET} {ds_dir.name} (has custom build_notebook.py)")
+        if is_hand_authored(ds_dir):
+            print(
+                f"  {YELLOW}SKIP{RESET} {ds_dir.name} (hand-authored; not regenerated)"
+            )
             skipped += 1
             continue
         if build_explore(deps.client, ds_dir, push=args.push):
