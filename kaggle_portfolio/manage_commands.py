@@ -1066,7 +1066,7 @@ COMMANDS = [
     Command(
         "competition-lab",
         "Benchmark local competition models and optionally submit from the CLI",
-        module="kaggle_portfolio.notebooks.local_competition_lab",
+        module="kaggle_portfolio.notebooks.competition_lab",
         args="<slug> [--write-submission] [--submit] [--force-download]",
     ),
     Command(
