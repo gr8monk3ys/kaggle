@@ -37,6 +37,12 @@ from kaggle_portfolio.campaigns.campaign_queue import (
     save_payload,
 )
 from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared._browser_session import (  # noqa: F401
+    is_authenticated,
+    locator_count,
+    maybe_login,
+    require_playwright,
+)
 
 
 DEFAULT_STORAGE_STATE = Path("pi-automation") / "data" / "kaggle_storage_state.json"
@@ -156,25 +162,6 @@ def extract_submission_error(page) -> str | None:
     return None
 
 
-def require_playwright():
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError as exc:
-        raise CommandError(
-            "playwright is not installed. Run:\n"
-            "  pip install -r pi-automation/scripts/requirements.txt\n"
-            "  python -m playwright install chromium"
-        ) from exc
-    return sync_playwright
-
-
-def locator_count(locator) -> int:
-    try:
-        return locator.count()
-    except Exception:
-        return 0
-
-
 def discussion_editor_controls(page):
     title_box = page.get_by_role(
         "textbox", name=re.compile(r"topic\s+title", re.IGNORECASE)
@@ -186,75 +173,6 @@ def discussion_editor_controls(page):
         "button", name=re.compile(r"publish\s+topic|post", re.IGNORECASE)
     ).first
     return title_box, content_box, publish
-
-
-def is_authenticated(page) -> bool:
-    if "/account/login" in str(getattr(page, "url", "")).lower():
-        return False
-    sign_in = page.get_by_role(
-        "button", name=re.compile(r"^sign in$", re.IGNORECASE)
-    ).first
-    sign_in_link = page.get_by_role(
-        "link", name=re.compile(r"^sign in$", re.IGNORECASE)
-    ).first
-    return not (locator_count(sign_in) or locator_count(sign_in_link))
-
-
-def maybe_login(
-    page, *, timeout_ms: int, manual_login: bool, email: str, password: str
-) -> None:
-    page.goto(
-        "https://www.kaggle.com/datasets",
-        wait_until="domcontentloaded",
-        timeout=timeout_ms,
-    )
-    page.wait_for_timeout(400)
-    if is_authenticated(page):
-        return
-
-    page.goto(
-        "https://www.kaggle.com/account/login",
-        wait_until="domcontentloaded",
-        timeout=timeout_ms,
-    )
-    page.wait_for_timeout(400)
-    if is_authenticated(page):
-        return
-
-    email = email.strip()
-    password = password.strip()
-    email_input = page.locator('input[name="email"]').first
-    password_input = page.locator('input[name="password"]').first
-    if (
-        email
-        and password
-        and locator_count(email_input)
-        and locator_count(password_input)
-    ):
-        email_input.fill(email, timeout=timeout_ms)
-        password_input.fill(password, timeout=timeout_ms)
-        submit = page.locator('button[type="submit"]').first
-        if locator_count(submit):
-            submit.click(timeout=timeout_ms)
-            page.wait_for_timeout(1500)
-            if is_authenticated(page):
-                return
-
-    if manual_login:
-        print("Manual Kaggle login required in browser window.")
-        input("Press Enter after completing login...")
-        page.goto(
-            "https://www.kaggle.com/datasets",
-            wait_until="domcontentloaded",
-            timeout=timeout_ms,
-        )
-        page.wait_for_timeout(500)
-        if is_authenticated(page):
-            return
-
-    raise RuntimeError(
-        "Kaggle authentication required. Provide credentials or use --manual-login."
-    )
 
 
 def post_dataset_discussion_topic(
