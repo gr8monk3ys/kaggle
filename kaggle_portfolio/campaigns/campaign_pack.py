@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
+from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.shared.deps import Deps
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 DEFAULT_DATASET_REPORT = (
@@ -60,17 +62,17 @@ def resolve_start_date(today: date, start_override: str | None) -> date:
         return today
     parsed = parse_iso_date(start_override)
     if not parsed:
-        raise SystemExit(f"Invalid --start-date value: {start_override}")
+        raise CommandError(f"Invalid --start-date value: {start_override}")
     return parsed
 
 
 def load_dataset_report(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
-        raise SystemExit(f"Dataset report not found: {path}")
+        raise CommandError(f"Dataset report not found: {path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
     rows = payload.get("datasets")
     if not isinstance(rows, list):
-        raise SystemExit(f"Dataset report missing 'datasets' array: {path}")
+        raise CommandError(f"Dataset report missing 'datasets' array: {path}")
     return [row for row in rows if isinstance(row, dict)]
 
 
@@ -340,7 +342,7 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate dataset promotion campaign pack + queue."
     )
@@ -399,23 +401,24 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional comma-separated dataset refs to include exactly (owner/slug).",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.days < 1:
-        raise SystemExit("--days must be >= 1")
+        raise CommandError("--days must be >= 1")
     if args.posts_per_day < 1:
-        raise SystemExit("--posts-per-day must be >= 1")
+        raise CommandError("--posts-per-day must be >= 1")
     if args.max_datasets < 1:
-        raise SystemExit("--max-datasets must be >= 1")
+        raise CommandError("--max-datasets must be >= 1")
     if args.alert_under < 0.0 or args.alert_under > 1.0:
-        raise SystemExit("--alert-under must be between 0.0 and 1.0")
+        raise CommandError("--alert-under must be between 0.0 and 1.0")
     if args.target_rating < 0.0 or args.target_rating > 1.0:
-        raise SystemExit("--target-rating must be between 0.0 and 1.0")
+        raise CommandError("--target-rating must be between 0.0 and 1.0")
     if args.alert_under > args.target_rating:
-        raise SystemExit("--alert-under cannot be greater than --target-rating")
+        raise CommandError("--alert-under cannot be greater than --target-rating")
 
     today = resolve_today(args.today)
     start_date = resolve_start_date(today, args.start_date)

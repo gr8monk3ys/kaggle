@@ -12,6 +12,7 @@ from kaggle_portfolio.shared.kaggle_client import (
     Credentials,
     FakeKaggleClient,
 )
+from kaggle_portfolio.shared.errors import CommandError
 
 
 @pytest.fixture(autouse=True)
@@ -53,7 +54,7 @@ class TestResolveTarget:
         _notebook(tmp_path, "projects/tutorials/feature-engineering")
         _notebook(tmp_path, "projects/legacy/feature-engineering")
         _use(tmp_path)
-        with pytest.raises(SystemExit):
+        with pytest.raises(CommandError):
             manage_commands.resolve_target("feature-engineering")
 
 

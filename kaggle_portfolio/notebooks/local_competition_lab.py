@@ -63,6 +63,7 @@ from sklearn.preprocessing import (
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleError
 from kaggle_portfolio.shared.layout import RepoLayout
+from kaggle_portfolio.shared.errors import CommandError
 
 ROOT = Path(__file__).resolve().parents[2]
 # Derived from the layout so KAGGLE_DIR is honoured here too. The ~60 private
@@ -98,7 +99,7 @@ def _ensure_data(deps: Deps, slug: str, force_download: bool = False) -> Path:
     try:
         deps.client.download_competition(slug, data_dir)
     except KaggleError as exc:
-        raise SystemExit(f"Failed to download {slug}: {exc}") from exc
+        raise CommandError(f"Failed to download {slug}: {exc}") from exc
 
     zip_files = list(data_dir.glob("*.zip"))
     for archive in zip_files:
@@ -160,7 +161,7 @@ def _print_benchmarks(result: LabResult) -> None:
 def _submit(deps: Deps, slug: str, submission_path: Path, message: str) -> None:
     outcome = deps.client.submit(slug, submission_path, message)
     if not outcome.ok:
-        raise SystemExit(f"Submission failed: {outcome.detail}")
+        raise CommandError(f"Submission failed: {outcome.detail}")
     print(outcome.detail.strip() or "Submission accepted.")
 
 
@@ -2522,7 +2523,7 @@ def benchmark_playground_telco(
         trained_predictions["blend"] = blend_pred
 
     if not benchmarks:
-        raise SystemExit("No Playground Series S6E3 models are available locally.")
+        raise CommandError("No Playground Series S6E3 models are available locally.")
 
     best = max(benchmarks, key=lambda row: row["score"])
     submission_path = None
@@ -4324,7 +4325,7 @@ def benchmark_march_mania(
     features = _march_team_features(regular_season, seeds, massey)
     train_df = _march_matchups(tournament, features, include_target=True)
     if train_df.empty:
-        raise SystemExit(
+        raise CommandError(
             "Failed to build March Mania training rows from downloaded competition files."
         )
 
@@ -4396,7 +4397,7 @@ def benchmark_march_mania(
             )
 
     if not benchmarks:
-        raise SystemExit("March Mania benchmark did not produce any holdout scores.")
+        raise CommandError("March Mania benchmark did not produce any holdout scores.")
 
     best = min(benchmarks, key=lambda row: row["score"])
     submission_path = None
@@ -4412,7 +4413,7 @@ def benchmark_march_mania(
             submission_pairs, features, include_target=False
         )
         if submission_features.empty:
-            raise SystemExit("Failed to build March Mania submission rows.")
+            raise CommandError("Failed to build March Mania submission rows.")
 
         train_x = train_df[feature_cols]
         train_y = train_df["target"].astype(int)
@@ -4503,7 +4504,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     if args.submit:
         if result.submission_path is None:
-            raise SystemExit("No submission file was generated.")
+            raise CommandError("No submission file was generated.")
         message = f"Local {result.best_model} baseline via competition-lab ({result.metric_name}={result.best_score:.5f})"
         _submit(deps, args.slug, result.submission_path, message)
 

@@ -14,6 +14,7 @@ from kaggle_portfolio.datasets import dataset_usability
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError
 from kaggle_portfolio.shared.proc import summarize_output
+from kaggle_portfolio.shared.errors import CommandError
 
 
 BLUE = "\033[0;34m"
@@ -310,13 +311,13 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
     deps = deps or Deps.resolve(effects=bool(getattr(args, "apply", False)))
     if args.min_score < 0 or args.min_score > 100:
-        raise SystemExit("--min-score must be between 0 and 100")
+        raise CommandError("--min-score must be between 0 and 100")
     if args.max_items < 0:
-        raise SystemExit("--max-items must be >= 0")
+        raise CommandError("--max-items must be >= 0")
     if args.ui_sync_timeout_ms < 1:
-        raise SystemExit("--ui-sync-timeout-ms must be >= 1")
+        raise CommandError("--ui-sync-timeout-ms must be >= 1")
     if args.sync_ui_metadata and not args.apply:
-        raise SystemExit("--sync-ui-metadata requires --apply")
+        raise CommandError("--sync-ui-metadata requires --apply")
 
     root = Path(args.root).resolve()
     print(f"{BLUE}=== Dataset Publish Pipeline ==={RESET}")
@@ -324,7 +325,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     # First pass to infer owner if not supplied.
     seed_candidates = build_candidates(root, min_score=args.min_score, live_refs=None)
     if not seed_candidates:
-        raise SystemExit("No dataset directories found under datasets/")
+        raise CommandError("No dataset directories found under datasets/")
 
     owner = (args.owner or infer_owner(seed_candidates) or "").strip().lower()
     draft_only = not args.all

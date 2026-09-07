@@ -8,6 +8,10 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
+
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.errors import CommandError
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,28 +24,50 @@ RESET = "\033[0m"
 
 @dataclass(frozen=True)
 class Step:
+    """One preflight/smoke step.
+
+    ``run`` is an in-process callable returning an exit code; ``cmd`` is an argv
+    vector for the few steps that genuinely need their own process (pytest, and
+    the Playwright scripts). Exactly one is set.
+    """
+
     name: str
-    cmd: list[str]
+    cmd: list[str] | None = None
+    run: Callable[[], int] | None = None
 
 
 def echo_step_header(name: str) -> None:
     print(f"{BLUE}=== {name} ==={RESET}")
 
 
+def run_step(step: Step, *, cwd: Path) -> int:
+    """Run one step and return its exit code.
+
+    In-process steps are isolated here: a step that raises CommandError fails
+    that step, not the whole run. Before this, a step could terminate preflight
+    by raising SystemExit from inside its own main().
+    """
+    if step.run is not None:
+        try:
+            return int(step.run() or 0)
+        except CommandError as exc:
+            print(f"{RED}{exc}{RESET}", file=sys.stderr)
+            return exc.exit_code
+    # Output is inherited, not captured: a long preflight should stream rather
+    # than look hung. Capture was an artifact of the subprocess mechanism.
+    return subprocess.run(step.cmd or [], cwd=str(cwd)).returncode
+
+
 def run_steps(steps: list[Step], *, cwd: Path = ROOT) -> int:
     failures: list[tuple[str, int]] = []
     for step in steps:
         echo_step_header(step.name)
-        result = subprocess.run(step.cmd, cwd=str(cwd), capture_output=True, text=True)
-        if result.stdout.strip():
-            print(result.stdout.strip())
-        if result.stderr.strip():
-            print(result.stderr.strip(), file=sys.stderr)
-        if result.returncode == 0:
+        code = run_step(step, cwd=cwd)
+        if code == 0:
             print(f"{GREEN}[ok]{RESET} {step.name}")
         else:
-            print(f"{RED}[fail]{RESET} {step.name} (exit {result.returncode})")
-            failures.append((step.name, result.returncode))
+            print(f"{RED}[fail]{RESET} {step.name} (exit {code})")
+            failures.append((step.name, code))
         print("")
 
     if failures:
@@ -53,115 +79,144 @@ def run_steps(steps: list[Step], *, cwd: Path = ROOT) -> int:
     return 0
 
 
-def module_cmd(module: str, *args: str) -> list[str]:
-    return [sys.executable, "-m", module, *args]
+def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
+    """Assemble preflight as a list of callables.
 
+    Each step used to be an argv vector launched as its own interpreter, and the
+    first of them shelled back into `bash manage.sh validate` — a third-level
+    process re-entering the very module that spawned it. They are ordinary calls
+    now, so a failing step reports as a failing step rather than as an exit code
+    recovered from a grandchild.
+    """
+    from kaggle_portfolio import manage_commands
+    from kaggle_portfolio.datasets import dataset_usability
+    from kaggle_portfolio.ops import discussion_scheduler, medal_ops
+    from kaggle_portfolio.quality import notebook_quality
 
-def build_preflight_steps(args: argparse.Namespace) -> list[Step]:
-    output_root = str(Path(args.output_root))
+    step_deps = deps.with_output_root(args.output_root)
+    # --output-root is still forwarded explicitly: each module resolves it from its
+    # own argparse, so handing them step_deps alone would silently write reports
+    # into the repo instead of the scratch dir.
+    out = ["--output-root", str(args.output_root)]
+    today = ["--today", args.today] if args.today else []
 
-    doctor_cmd = module_cmd(
-        "kaggle_portfolio.ops.medal_ops", "--output-root", output_root
-    )
-    if args.today:
-        doctor_cmd.extend(["--today", args.today])
-    doctor_cmd.extend(["doctor", "--max-stale-days", str(args.max_stale_days)])
+    doctor_argv = [
+        *out,
+        *today,
+        "doctor",
+        "--max-stale-days",
+        str(args.max_stale_days),
+    ]
     if args.strict_doctor:
-        doctor_cmd.append("--strict")
+        doctor_argv.append("--strict")
     if args.require_kaggle:
-        doctor_cmd.append("--require-kaggle")
-    if args.kernels_csv:
-        doctor_cmd.extend(["--kernels-csv", args.kernels_csv])
-    if args.datasets_csv:
-        doctor_cmd.extend(["--datasets-csv", args.datasets_csv])
-    if args.competitions_csv:
-        doctor_cmd.extend(["--competitions-csv", args.competitions_csv])
+        doctor_argv.append("--require-kaggle")
+    for flag, value in (
+        ("--kernels-csv", args.kernels_csv),
+        ("--datasets-csv", args.datasets_csv),
+        ("--competitions-csv", args.competitions_csv),
+    ):
+        if value:
+            doctor_argv.extend([flag, value])
 
-    quality_cmd = module_cmd(
-        "kaggle_portfolio.quality.notebook_quality", "--output-root", output_root
-    )
-    if args.today:
-        quality_cmd.extend(["--today", args.today])
-    quality_cmd.extend(
-        [
-            "--scope",
-            "all",
-            "--min-score",
-            str(args.min_quality_score),
-            "--fail-under-threshold",
-        ]
-    )
-
-    dataset_cmd = module_cmd(
-        "kaggle_portfolio.datasets.dataset_usability", "--output-root", output_root
-    )
-    if args.today:
-        dataset_cmd.extend(["--today", args.today])
-    dataset_cmd.extend(
-        ["--strict", "--fail-under", str(args.min_dataset_usability_score)]
-    )
-
-    draft_cmd = module_cmd(
-        "kaggle_portfolio.ops.discussion_scheduler",
+    quality_argv = [
+        *out,
+        *today,
+        "--scope",
+        "all",
+        "--min-score",
+        str(args.min_quality_score),
+        "--fail-under-threshold",
+    ]
+    dataset_argv = [
+        *out,
+        *today,
+        "--strict",
+        "--fail-under",
+        str(args.min_dataset_usability_score),
+    ]
+    draft_argv = [
         "--health-check",
         "--max-overdue-scheduled",
         str(args.max_overdue_scheduled),
         "--max-days-until-next-post",
         str(args.max_days_until_next_post),
-    )
-    if args.today:
-        draft_cmd.extend(["--today", args.today])
+        *today,
+    ]
 
     steps = [
-        Step("metadata-validate", ["bash", str(ROOT / "manage.sh"), "validate"]),
-        Step("doctor", doctor_cmd),
-        Step("notebook-quality", quality_cmd),
-        Step("dataset-usability", dataset_cmd),
-        Step("draft-ops", draft_cmd),
+        Step("metadata-validate", run=lambda: manage_commands.cmd_validate([])),
+        Step("doctor", run=lambda: medal_ops.main(doctor_argv, deps=step_deps)),
+        Step(
+            "notebook-quality",
+            run=lambda: notebook_quality.main(quality_argv, deps=step_deps),
+        ),
+        Step(
+            "dataset-usability",
+            run=lambda: dataset_usability.main(dataset_argv, deps=step_deps),
+        ),
+        Step(
+            "draft-ops",
+            run=lambda: discussion_scheduler.main(draft_argv, deps=step_deps),
+        ),
     ]
     if not args.no_pytest:
         steps.append(Step("pytest", [sys.executable, "-m", "pytest", "-q"]))
     return steps
 
 
-def build_smoke_live_steps(args: argparse.Namespace) -> list[Step]:
-    auth_cmd = module_cmd("kaggle_portfolio.ops.kaggle_auth_doctor", "--strict")
-    if args.owner:
-        auth_cmd.extend(["--expected-owner", args.owner])
+def build_smoke_live_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
+    """Live, non-mutating smoke checks.
 
-    publish_cmd = module_cmd(
-        "kaggle_portfolio.datasets.dataset_publish_pipeline",
+    The discussion step stays a subprocess: it drives Playwright, which must not
+    become reachable from a kaggle_portfolio import.
+    """
+    from kaggle_portfolio.campaigns import campaign_execute
+    from kaggle_portfolio.datasets import dataset_publish_pipeline
+    from kaggle_portfolio.ops import kaggle_auth_doctor
+
+    auth_argv = ["--strict"]
+    if args.owner:
+        auth_argv.extend(["--expected-owner", args.owner])
+
+    publish_argv = [
         "--max-items",
         str(args.limit),
         "--report-json",
         args.report_json,
-    )
+    ]
     if args.owner:
-        publish_cmd.extend(["--owner", args.owner])
+        publish_argv.extend(["--owner", args.owner])
     if args.include_live_datasets:
-        publish_cmd.append("--all")
+        publish_argv.append("--all")
 
-    campaign_cmd = module_cmd(
-        "kaggle_portfolio.campaigns.campaign_execute",
-        "--dry-run",
-        "--limit",
-        str(args.limit),
-        "--no-respect-schedule",
-    )
+    campaign_argv = ["--dry-run", "--limit", str(args.limit), "--no-respect-schedule"]
 
     discussion_cmd = [
         sys.executable,
-        str(ROOT / "pi-automation" / "scripts" / "discussion_post.py"),
+        str(deps.layout.pi_scripts / "discussion_post.py"),
         "--smoke-test",
     ]
     if args.check_discussion_login:
         discussion_cmd.append("--check-login")
 
-    steps = [Step("auth-doctor", auth_cmd)]
+    steps = [
+        Step("auth-doctor", run=lambda: kaggle_auth_doctor.main(auth_argv, deps=deps))
+    ]
     if not args.no_publish:
-        steps.append(Step("publish-datasets-dry-run", publish_cmd))
+        steps.append(
+            Step(
+                "publish-datasets-dry-run",
+                run=lambda: dataset_publish_pipeline.main(publish_argv, deps=deps),
+            )
+        )
     if not args.no_campaign:
-        steps.append(Step("campaign-execute-dry-run", campaign_cmd))
+        steps.append(
+            Step(
+                "campaign-execute-dry-run",
+                run=lambda: campaign_execute.main(campaign_argv, deps=deps),
+            )
+        )
     if not args.no_discussion:
         steps.append(Step("discussion-post-smoke", discussion_cmd))
     return steps
@@ -178,8 +233,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     preflight.add_argument(
         "--output-root",
-        default="/tmp/kaggle-preflight",
-        help="Output root for generated reports.",
+        default=None,
+        help="Output root for generated reports (default: a scratch dir outside the repo).",
     )
     preflight.add_argument(
         "--today",
@@ -247,7 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     smoke.add_argument(
         "--report-json",
-        default="/tmp/kaggle-live-smoke-dataset-publish.json",
+        default=None,
         help="Output path for dataset publish dry-run report.",
     )
     smoke.add_argument(
@@ -274,14 +329,24 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
+
+    # Defaults that depend on the machine, not on argparse: the old literals were
+    # POSIX-only paths baked into the parser.
+    if getattr(args, "output_root", None) is None:
+        args.output_root = str(deps.layout.scratch_dir("kaggle-preflight"))
+    if getattr(args, "report_json", None) is None:
+        args.report_json = str(
+            deps.layout.scratch_dir("kaggle-live-smoke") / "dataset-publish.json"
+        )
 
     if args.command == "preflight":
-        return run_steps(build_preflight_steps(args))
+        return run_steps(build_preflight_steps(args, deps))
     if args.command == "smoke-live":
-        return run_steps(build_smoke_live_steps(args))
+        return run_steps(build_smoke_live_steps(args, deps))
     parser.error(f"Unsupported command: {args.command}")
     return 2
 

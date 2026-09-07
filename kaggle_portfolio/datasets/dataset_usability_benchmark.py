@@ -17,6 +17,7 @@ from typing import Any
 from kaggle_portfolio.shared.clock import resolve_today
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleClient
+from kaggle_portfolio.shared.errors import CommandError
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 
@@ -444,11 +445,11 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
     deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.sample_pages < 1:
-        raise SystemExit("--sample-pages must be >= 1")
+        raise CommandError("--sample-pages must be >= 1")
     if args.max_exemplars < 1:
-        raise SystemExit("--max-exemplars must be >= 1")
+        raise CommandError("--max-exemplars must be >= 1")
     if args.target_rating < 0.0 or args.target_rating > 1.0:
-        raise SystemExit("--target-rating must be between 0.0 and 1.0")
+        raise CommandError("--target-rating must be between 0.0 and 1.0")
 
     root = Path(args.root).resolve()
     output_root = Path(args.output_root)

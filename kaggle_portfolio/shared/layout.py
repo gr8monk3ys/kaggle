@@ -15,6 +15,7 @@ delegation forced the working directory; anchoring them removes that dependency.
 from __future__ import annotations
 
 import os
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -127,6 +128,14 @@ class RepoLayout:
     @property
     def manage_script(self) -> Path:
         return self.root / "manage.sh"
+
+    def scratch_dir(self, name: str) -> Path:
+        """A throwaway directory outside the repo, for generated output.
+
+        Preflight writes reports it does not want in the working tree. This used
+        to be a hardcoded ``/tmp/...`` default, which is not a path on Windows.
+        """
+        return Path(tempfile.gettempdir()) / name
 
     # -- discovery ----------------------------------------------------------
 

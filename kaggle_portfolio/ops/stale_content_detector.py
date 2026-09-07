@@ -32,6 +32,7 @@ from typing import Any
 
 from kaggle_portfolio.shared.clock import resolve_today
 from kaggle_portfolio.shared.proc import configure_logging
+from kaggle_portfolio.shared.deps import Deps
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORTS_DIR = ROOT / "medal_ops" / "reports"
@@ -399,7 +400,7 @@ BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Detect stale notebooks, datasets, and outdated library versions."
     )
@@ -434,6 +435,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Root directory to scan (default: repo root)",
     )
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
 
     today = resolve_today(args.today)
     root = Path(args.root) if args.root else ROOT

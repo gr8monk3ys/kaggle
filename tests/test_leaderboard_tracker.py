@@ -189,5 +189,7 @@ class TestMain:
         assert lb.main(["report", "--json"], deps=deps) == 0
 
     def test_main_requires_a_subcommand(self, tmp_path):
+        # argparse exits by design when a required subcommand is missing; that is
+        # not a CommandError, and the dispatcher deliberately does not catch it.
         with pytest.raises(SystemExit):
             lb.main([], deps=_deps(tmp_path, _client()))

@@ -26,6 +26,8 @@ sys.path.insert(
     0, str(Path(__file__).resolve().parents[2] / "pi-automation" / "scripts")
 )
 import kaggle_browser as kb
+from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.shared.deps import Deps
 
 
 DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
@@ -61,13 +63,13 @@ def parse_iso_utc(value: str | None) -> datetime | None:
 
 def load_payload(path: Path) -> dict[str, Any]:
     if not path.exists():
-        raise SystemExit(f"Campaign queue not found: {path}")
+        raise CommandError(f"Campaign queue not found: {path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise SystemExit(f"Invalid queue payload: {path}")
+        raise CommandError(f"Invalid queue payload: {path}")
     queue = payload.get("queue")
     if not isinstance(queue, list):
-        raise SystemExit(f"Queue payload missing list: {path}")
+        raise CommandError(f"Queue payload missing list: {path}")
     return payload
 
 
@@ -188,7 +190,7 @@ def require_playwright():
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
-        raise SystemExit(
+        raise CommandError(
             "playwright is not installed. Run:\n"
             "  pip install -r pi-automation/scripts/requirements.txt\n"
             "  python -m playwright install chromium"
@@ -392,7 +394,7 @@ def parse_channels(raw_channels: list[str]) -> set[str] | None:
     return values or None
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Execute due Kaggle campaign actions from queue."
     )
@@ -472,15 +474,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dry-run", action="store_true", help="Show selected actions without posting."
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.limit < 1:
-        raise SystemExit("--limit must be >= 1")
+        raise CommandError("--limit must be >= 1")
     if args.sleep_between_actions_s < 0 or args.sleep_jitter_s < 0:
-        raise SystemExit("sleep values cannot be negative")
+        raise CommandError("sleep values cannot be negative")
 
     payload = load_payload(args.queue_path)
     queue = payload["queue"]

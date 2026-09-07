@@ -16,6 +16,7 @@ from typing import Any
 from kaggle_portfolio.shared.clock import resolve_today
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError, parse_csv
+from kaggle_portfolio.shared.errors import CommandError
 
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
@@ -79,7 +80,7 @@ def parse_live_ratings_csv(raw_csv: str) -> dict[str, float]:
 
 def load_live_ratings_csv(path: Path) -> dict[str, float]:
     if not path.exists():
-        raise SystemExit(f"Live ratings CSV not found: {path}")
+        raise CommandError(f"Live ratings CSV not found: {path}")
     return parse_live_ratings_csv(path.read_text(encoding="utf-8"))
 
 
@@ -753,13 +754,13 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
     deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.fail_under < 0 or args.fail_under > 100:
-        raise SystemExit("--fail-under must be between 0 and 100")
+        raise CommandError("--fail-under must be between 0 and 100")
     if args.alert_under < 0.0 or args.alert_under > 1.0:
-        raise SystemExit("--alert-under must be between 0.0 and 1.0")
+        raise CommandError("--alert-under must be between 0.0 and 1.0")
     if args.target_rating < 0.0 or args.target_rating > 1.0:
-        raise SystemExit("--target-rating must be between 0.0 and 1.0")
+        raise CommandError("--target-rating must be between 0.0 and 1.0")
     if args.alert_under > args.target_rating:
-        raise SystemExit("--alert-under cannot be greater than --target-rating")
+        raise CommandError("--alert-under cannot be greater than --target-rating")
 
     root = Path(args.root).resolve()
     output_root = Path(args.output_root)
@@ -767,7 +768,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     dataset_dirs = discover_dataset_dirs(root)
     if not dataset_dirs:
-        raise SystemExit("No datasets/ directories found to score.")
+        raise CommandError("No datasets/ directories found to score.")
 
     scores = [score_dataset(ds_dir, root=root) for ds_dir in dataset_dirs]
     live_loaded = False

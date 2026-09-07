@@ -12,6 +12,7 @@ from kaggle_portfolio.shared.kaggle_client import (
     KaggleError,
     parse_csv,
 )
+from kaggle_portfolio.shared.errors import CommandError
 
 
 def _candidate(
@@ -92,7 +93,7 @@ def test_main_rejects_sync_ui_without_apply(monkeypatch):
     monkeypatch.setattr(
         sys, "argv", ["dataset_publish_pipeline.py", "--sync-ui-metadata"]
     )
-    with pytest.raises(SystemExit, match="requires --apply"):
+    with pytest.raises(CommandError, match="requires --apply"):
         pipeline.main()
 
 

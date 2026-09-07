@@ -12,6 +12,7 @@ from . import actions, feedback, safety, scorer
 from .config import FlywheelConfig, load_config
 from .state import GROWTH_DIR as _STATE_GROWTH_DIR
 from .state import build as _build_state
+from kaggle_portfolio.shared.deps import Deps
 
 GROWTH_DIR = _STATE_GROWTH_DIR
 HISTORY_NAME = "flywheel_history.jsonl"
@@ -237,7 +238,7 @@ def status(*, gs=None, cfg=None) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = argparse.ArgumentParser(prog="flywheel", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     tick_p = sub.add_parser(
@@ -248,6 +249,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub.add_parser("status", help="Print the Reach-Score dashboard.")
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.command == "tick":
         n = tick(dry_run=args.dry_run)
         if not args.dry_run:
