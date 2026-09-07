@@ -10,12 +10,10 @@
   "keywords": [
     "nlp",
     "machine translation",
-    "ancient languages",
     "akkadian",
+    "ancient languages",
     "retrieval",
-    "sentence alignment",
-    "competition",
-    "old assyrian"
+    "sentence alignment"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

@@ -11,17 +11,13 @@
     "ensemble",
     "stacking",
     "blending",
-    "model averaging",
-    "kaggle",
-    "competitions",
     "xgboost",
     "lightgbm",
-    "catboost",
-    "machine learning",
-    "tutorial",
-    "education"
+    "catboost"
   ],
-  "dataset_sources": [],
+  "dataset_sources": [
+    "lorenzoscaturchio/spotify-tracks-audio-features-50k"
+  ],
   "kernel_sources": [],
   "competition_sources": []
 }

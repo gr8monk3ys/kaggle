@@ -9,17 +9,11 @@
   "enable_internet": false,
   "keywords": [
     "house prices",
+    "ames housing",
     "regression",
     "feature engineering",
-    "eda",
     "xgboost",
-    "lightgbm",
-    "kaggle",
-    "tutorial",
-    "ames housing",
-    "stacking",
-    "blending",
-    "scikit-learn"
+    "lightgbm"
   ],
   "dataset_sources": ["competitions/house-prices-advanced-regression-techniques"],
   "kernel_sources": [],

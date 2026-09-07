@@ -8,17 +8,12 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "kaggle",
     "competitions",
-    "machine learning",
     "pipeline",
-    "eda",
     "feature engineering",
     "model selection",
     "cross validation",
-    "template",
-    "tutorial",
-    "education"
+    "eda"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

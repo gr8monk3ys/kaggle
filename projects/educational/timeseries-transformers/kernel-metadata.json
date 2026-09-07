@@ -9,15 +9,11 @@
   "enable_internet": true,
   "keywords": [
     "time series",
-    "transformers",
     "forecasting",
-    "deep learning",
+    "transformers",
     "temporal fusion transformer",
     "informer",
-    "autoformer",
-    "attention",
-    "tutorial",
-    "education"
+    "autoformer"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

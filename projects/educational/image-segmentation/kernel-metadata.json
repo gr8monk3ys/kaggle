@@ -8,16 +8,12 @@
   "enable_gpu": true,
   "enable_internet": true,
   "keywords": [
-    "computer vision",
     "image segmentation",
     "u-net",
     "segformer",
     "semantic segmentation",
-    "deep learning",
     "pytorch",
-    "tutorial",
-    "education",
-    "medical imaging"
+    "computer vision"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

@@ -8,17 +8,12 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "machine learning",
     "eda",
     "regression",
     "feature engineering",
     "house prices",
-    "pipeline",
     "scikit-learn",
-    "xgboost",
-    "tutorial",
-    "beginner",
-    "education"
+    "xgboost"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

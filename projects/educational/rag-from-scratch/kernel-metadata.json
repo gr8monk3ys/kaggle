@@ -13,12 +13,7 @@
     "llm",
     "langchain",
     "vector database",
-    "embeddings",
-    "nlp",
-    "chatgpt",
-    "tutorial",
-    "from scratch",
-    "education"
+    "embeddings"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

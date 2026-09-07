@@ -8,16 +8,12 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "deep learning",
     "attention",
-    "transformers",
-    "nlp",
     "self-attention",
     "multi-head attention",
-    "neural networks",
-    "tutorial",
-    "education",
-    "from scratch"
+    "transformers",
+    "nlp",
+    "deep learning"
   ],
   "dataset_sources": [],
   "kernel_sources": [],
