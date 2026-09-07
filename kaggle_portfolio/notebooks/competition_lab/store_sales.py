@@ -5,11 +5,13 @@ Split out of local_competition_lab; the BENCHMARKS interface is unchanged.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any, Callable
+
 #!/usr/bin/env python3
 
 
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -486,9 +488,29 @@ def _store_sales_lightgbm_future_result(
     )
 
 
+@dataclass(frozen=True)
+class StoreSalesModels:
+    """The forecasting step ``benchmark_store_sales`` chooses between.
+
+    Same reasoning as PlaygroundModels: the benchmark selects between a recursive
+    forecast and a LightGBM future forecast, so testing that selection means
+    controlling what each scores rather than training either for real.
+    """
+
+    lightgbm_future_result: Callable[..., Any] = _store_sales_lightgbm_future_result
+    recursive_predictions: Callable[..., Any] = _store_sales_recursive_predictions
+
+
+DEFAULT_STORE_SALES_MODELS = StoreSalesModels()
+
+
 def benchmark_store_sales(
-    data_dir: Path, _folds: int, write_submission: bool
+    data_dir: Path,
+    _folds: int,
+    write_submission: bool,
+    models: StoreSalesModels | None = None,
 ) -> LabResult:
+    models = models or DEFAULT_STORE_SALES_MODELS
     train = pd.read_csv(data_dir / "train.csv", parse_dates=["date"])
     test = pd.read_csv(data_dir / "test.csv", parse_dates=["date"])
     valid_dates = sorted(train["date"].drop_duplicates())[-16:]
@@ -535,7 +557,7 @@ def benchmark_store_sales(
             oil_df = pd.read_csv(oil_path, parse_dates=["date"])
             holidays_df = pd.read_csv(holidays_path, parse_dates=["date"])
             future_score, _validation_pred, submission_pred = (
-                _store_sales_lightgbm_future_result(
+                models.lightgbm_future_result(
                     history,
                     validation,
                     test,
