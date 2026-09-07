@@ -206,16 +206,86 @@ def apply_metadata_defaults(meta: dict) -> tuple[dict, bool]:
 
 # ── CSV Analysis ──────────────────────────────────────────────────────────────
 
+# Whole-file figures (row count, null %, distinct count) are published in each
+# dataset README and on Kaggle, so they are computed over every row. Only the
+# illustrative parts of the profile — the dtype guess and the sample values —
+# look at a bounded prefix of the file, and neither is reported as a total.
+SAMPLE_SCAN_ROWS = 1000
 
-def analyze_csv(path: Path, max_rows: int = 5000) -> dict:
-    """Read up to max_rows of a CSV and return column stats."""
-    columns: list[dict] = []
-    rows_read = 0
-    col_values: dict[str, list] = {}
+# Upper bound on the distinct values held in memory per column, so a
+# pathologically wide/large file cannot exhaust memory. A column that hits it
+# reports "N+" rather than a number that pretends to be exact. No file in this
+# repository comes close: the widest (200k rows x 36 near-unique columns) peaks
+# around 800 MB and every column lands well under the cap.
+DEFAULT_DISTINCT_CAP = 1_000_000
+
+_BOOL_LITERALS = {"true", "false", "0", "1", "yes", "no"}
+
+
+class _DtypeScan:
+    """Narrow a column's dtype across every value it is shown.
+
+    Mirrors `_guess_dtype`'s precedence (integer, then float, then boolean,
+    then string) but streams, and stops doing any work once the column can
+    only be a string.
+    """
+
+    __slots__ = ("could_int", "could_float", "could_bool", "seen")
+
+    def __init__(self) -> None:
+        self.could_int = True
+        self.could_float = True
+        self.could_bool = True
+        self.seen = False
+
+    def observe(self, value: str) -> None:
+        self.seen = True
+        if not (self.could_int or self.could_float or self.could_bool):
+            return
+        if self.could_int:
+            try:
+                int(value)
+            except ValueError:
+                self.could_int = False
+        if self.could_float:
+            try:
+                float(value)
+            except ValueError:
+                self.could_float = False
+        if self.could_bool and value.lower() not in _BOOL_LITERALS:
+            self.could_bool = False
+
+    def result(self) -> str:
+        if not self.seen:
+            return "unknown"
+        if self.could_int:
+            return "integer"
+        if self.could_float:
+            return "float"
+        if self.could_bool:
+            return "boolean"
+        return "string"
+
+
+def analyze_csv(path: Path, distinct_cap: int = DEFAULT_DISTINCT_CAP) -> dict:
+    """Stream a whole CSV and return column stats.
+
+    The file is read once, start to finish, and never held in memory: row
+    count, null percentage and distinct-value count describe the complete
+    file. Reporting a sampled prefix as a total is what put "5,000 rows" in
+    the README of a 50,000-row dataset.
+    """
     size_kb = round(path.stat().st_size / 1024, 1)
 
+    rows = 0
+    null_counts: dict[str, int] = {}
+    distinct: dict[str, set[str]] = {}
+    distinct_capped: dict[str, bool] = {}
+    dtype_scans: dict[str, _DtypeScan] = {}
+    prefix_values: dict[str, list[str]] = {}
+
     try:
-        with path.open(encoding="utf-8", errors="replace") as f:
+        with path.open(encoding="utf-8", errors="replace", newline="") as f:
             reader = csv.DictReader(f)
             if reader.fieldnames is None:
                 return {
@@ -225,14 +295,30 @@ def analyze_csv(path: Path, max_rows: int = 5000) -> dict:
                     "rows": 0,
                     "size_kb": size_kb,
                 }
-            for fn in reader.fieldnames:
-                col_values[fn] = []
+            fieldnames = list(reader.fieldnames)
+            for fn in fieldnames:
+                null_counts[fn] = 0
+                distinct[fn] = set()
+                distinct_capped[fn] = False
+                dtype_scans[fn] = _DtypeScan()
+                prefix_values[fn] = []
             for row in reader:
-                if rows_read >= max_rows:
-                    break
-                for fn in reader.fieldnames:
-                    col_values[fn].append(row.get(fn, ""))
-                rows_read += 1
+                rows += 1
+                for fn in fieldnames:
+                    raw = row.get(fn)
+                    value = raw if isinstance(raw, str) else ""
+                    if not value.strip():
+                        null_counts[fn] += 1
+                        continue
+                    seen = distinct[fn]
+                    if len(seen) < distinct_cap:
+                        seen.add(value)
+                    elif value not in seen:
+                        distinct_capped[fn] = True
+                    dtype_scans[fn].observe(value)
+                    bucket = prefix_values[fn]
+                    if len(bucket) < SAMPLE_SCAN_ROWS:
+                        bucket.append(value)
     except Exception as e:
         return {
             "file": path.name,
@@ -242,40 +328,32 @@ def analyze_csv(path: Path, max_rows: int = 5000) -> dict:
             "size_kb": size_kb,
         }
 
-    for col, values in col_values.items():
-        non_null = [v for v in values if v.strip() != ""]
-        null_count = len(values) - len(non_null)
-        null_pct = round(100 * null_count / len(values), 1) if values else 0.0
-        unique_vals = set(non_null)
-        n_unique = len(unique_vals)
-
-        # Guess dtype
-        dtype = _guess_dtype(non_null[:100])
-
-        # Sample values (up to 3 unique, short)
-        sample = _pick_samples(non_null, n_unique)
-
+    columns: list[dict] = []
+    for fn in fieldnames:
+        null_pct = round(100 * null_counts[fn] / rows, 1) if rows else 0.0
+        n_unique = len(distinct[fn])
         columns.append(
             {
-                "name": col,
-                "dtype": dtype,
+                "name": fn,
+                "dtype": dtype_scans[fn].result(),
                 "null_pct": null_pct,
                 "n_unique": n_unique,
-                "samples": sample,
-                "total": len(values),
+                "n_unique_capped": distinct_capped[fn],
+                "samples": _pick_samples(prefix_values[fn], n_unique),
+                "total": rows,
             }
         )
 
     return {
         "columns": columns,
-        "rows": rows_read,
+        "rows": rows,
         "file": path.name,
         "size_kb": size_kb,
     }
 
 
-def analyze_parquet(path: Path, max_rows: int = 5000) -> dict:
-    """Read up to max_rows of a Parquet file and return column stats."""
+def analyze_parquet(path: Path) -> dict:
+    """Read a Parquet file and return column stats over every row."""
     size_kb = round(path.stat().st_size / 1024, 1)
     try:
         import pandas as pd
@@ -299,9 +377,6 @@ def analyze_parquet(path: Path, max_rows: int = 5000) -> dict:
             "size_kb": size_kb,
         }
 
-    if len(df) > max_rows:
-        df = df.head(max_rows)
-
     columns: list[dict] = []
     for col in df.columns:
         series = df[col]
@@ -309,17 +384,15 @@ def analyze_parquet(path: Path, max_rows: int = 5000) -> dict:
         non_null = [v for v in values if v.strip() != ""]
         null_count = len(series) - len(non_null)
         null_pct = round(100 * null_count / len(series), 1) if len(series) else 0.0
-        unique_vals = set(non_null)
-        n_unique = len(unique_vals)
-        dtype = _guess_dtype(non_null[:100])
-        sample = _pick_samples(non_null, n_unique)
+        n_unique = len(set(non_null))
         columns.append(
             {
                 "name": str(col),
-                "dtype": dtype,
+                "dtype": _guess_dtype(non_null[:100]),
                 "null_pct": null_pct,
                 "n_unique": n_unique,
-                "samples": sample,
+                "n_unique_capped": False,
+                "samples": _pick_samples(non_null[:SAMPLE_SCAN_ROWS], n_unique),
                 "total": int(len(series)),
             }
         )
@@ -479,9 +552,12 @@ def generate_readme(ds_dir: Path, meta: dict, file_analyses: list[dict]) -> str:
         for col in analysis["columns"]:
             sample_str = ", ".join(f"`{s}`" for s in col["samples"][:3]) or "—"
             null_str = f"{col['null_pct']:.1f}%"
+            unique_str = f"{col['n_unique']:,}"
+            if col.get("n_unique_capped"):
+                unique_str += "+"
             lines.append(
                 f"| `{col['name']}` | {col['dtype']} | {null_str} | "
-                f"{col['n_unique']:,} | {sample_str} |"
+                f"{unique_str} | {sample_str} |"
             )
         lines.append("")
 

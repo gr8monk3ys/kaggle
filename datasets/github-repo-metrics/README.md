@@ -2,13 +2,13 @@
 
 > 5.5K repos with stars, forks, issues, CI/CD, and health signals
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/github-repo-metrics](https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics)  
+**Kaggle:** [lorenzoscaturchio/github-repo-metrics](https://www.kaggle.com/datasets/lorenzoscaturchio/github-repo-metrics)
 
 ## Description
 
-5,500 synthetic GitHub repositories across 12 programming languages with 29 features covering popularity, activity, and project-health signals. The table combines stars, forks, watchers, issues, pull requests, contributors, releases, CI/CD presence, test coverage, repository governance, and topic metadata in a single CSV.
+5,500 synthetic GitHub repositories across 19 programming languages with 29 features covering popularity, activity, and project-health signals. The table combines stars, forks, watchers, issues, pull requests, contributors, releases, CI/CD presence, test coverage, repository governance, and topic metadata in a single CSV.
 
 Built for star prediction, repository-health scoring, dormant-vs-active classification, language ecosystem analysis, and software engineering research. It is large enough for meaningful tabular modeling while staying compact enough for fast Kaggle notebook iteration.
 
@@ -16,7 +16,7 @@ Notable properties: realistic correlations between popularity and maintenance si
 
 ## Tags
 
-`software`, `programming`, `regression`, `classification`, `beginner`
+`software`, `programming`, `internet`, `regression`, `tabular`, `classification`
 
 ## Authors
 
@@ -40,30 +40,30 @@ Notable properties: realistic correlations between popularity and maintenance si
 
 ## github_repos.csv
 
-**Rows:** 5,000  |  **Columns:** 29  |  **Size:** 969.5 KB
+**Rows:** 5,500  |  **Columns:** 29  |  **Size:** 969.5 KB
 
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
-| `repo_name` | string | 0.0% | 5,000 | `serve-ml`, `easy-link`, `go-graph-agent` |
+| `repo_name` | string | 0.0% | 5,500 | `serve-ml`, `easy-link`, `go-graph-agent` |
 | `language` | string | 0.0% | 19 | `Ruby`, `TypeScript`, `Python` |
-| `description` | string | 0.0% | 2,232 | `server framework for building authentication`, `Scalable pipeline for database management`, `lightweight dashboard built with Kotlin` |
-| `stars` | integer | 0.0% | 297 | `13`, `32`, `2` |
-| `forks` | integer | 0.0% | 128 | `0`, `3`, `4` |
-| `watchers` | integer | 0.0% | 85 | `0`, `2`, `3` |
-| `open_issues` | integer | 0.0% | 54 | `0`, `2`, `4` |
-| `closed_issues` | integer | 0.0% | 187 | `99`, `19`, `10` |
-| `open_pull_requests` | integer | 0.0% | 25 | `0`, `1`, `2` |
-| `merged_pull_requests` | integer | 0.0% | 127 | `10`, `36`, `4` |
+| `description` | string | 0.0% | 2,339 | `server framework for building authentication`, `Scalable pipeline for database management`, `lightweight dashboard built with Kotlin` |
+| `stars` | integer | 0.0% | 307 | `13`, `32`, `2` |
+| `forks` | integer | 0.0% | 129 | `0`, `3`, `4` |
+| `watchers` | integer | 0.0% | 86 | `0`, `2`, `3` |
+| `open_issues` | integer | 0.0% | 55 | `0`, `2`, `4` |
+| `closed_issues` | integer | 0.0% | 190 | `99`, `19`, `10` |
+| `open_pull_requests` | integer | 0.0% | 26 | `0`, `1`, `2` |
+| `merged_pull_requests` | integer | 0.0% | 128 | `10`, `36`, `4` |
 | `contributors` | integer | 0.0% | 24 | `1`, `6`, `5` |
-| `commits` | integer | 0.0% | 1,472 | `200`, `1167`, `10` |
+| `commits` | integer | 0.0% | 1,545 | `200`, `1167`, `10` |
 | `releases` | integer | 0.0% | 106 | `0`, `2`, `1` |
 | `license` | string | 0.0% | 10 | `MIT`, `None`, `GPL-3.0` |
-| `topics` | string | 0.0% | 4,260 | `api|automation|devops|rails|deep-learning`, `angular|react|web|api`, `mobile|desktop` |
-| `created_date` | string | 0.0% | 1,859 | `2024-09-14`, `2022-12-18`, `2024-12-13` |
-| `last_commit_date` | string | 0.0% | 247 | `2024-12-27`, `2024-12-19`, `2024-12-26` |
-| `readme_length` | integer | 0.0% | 2,928 | `1282`, `1902`, `1251` |
+| `topics` | string | 0.0% | 4,638 | `api|automation|devops|rails|deep-learning`, `angular|react|web|api`, `mobile|desktop` |
+| `created_date` | string | 0.0% | 1,944 | `2024-09-14`, `2022-12-18`, `2024-12-13` |
+| `last_commit_date` | string | 0.0% | 251 | `2024-12-27`, `2024-12-19`, `2024-12-26` |
+| `readme_length` | integer | 0.0% | 3,109 | `1282`, `1902`, `1251` |
 | `has_ci` | integer | 0.0% | 2 | `0`, `1` |
-| `test_coverage` | float | 68.9% | 674 | `73.5`, `44.0`, `90.8` |
+| `test_coverage` | float | 69.1% | 696 | `73.5`, `44.0`, `90.8` |
 | `has_code_of_conduct` | integer | 0.0% | 2 | `0`, `1` |
 | `has_contributing_guide` | integer | 0.0% | 2 | `0`, `1` |
 | `has_wiki` | integer | 0.0% | 2 | `0`, `1` |
@@ -72,7 +72,7 @@ Notable properties: realistic correlations between popularity and maintenance si
 | `default_branch` | string | 0.0% | 3 | `main`, `develop`, `master` |
 | `is_archived` | integer | 0.0% | 2 | `0`, `1` |
 | `is_fork` | integer | 0.0% | 2 | `0`, `1` |
-| `size_kb` | integer | 0.0% | 4,242 | `497`, `4622`, `2148` |
+| `size_kb` | integer | 0.0% | 4,607 | `497`, `4622`, `2148` |
 
 ## Suggested Use Cases
 
