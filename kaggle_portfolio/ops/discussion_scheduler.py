@@ -27,6 +27,19 @@ from math import ceil
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from kaggle_portfolio.discussions.draft_queue import (
+    DEFAULT_SCHEDULE_WEEKS,
+    POST_DAYS,
+    POSTABLE_STATUSES,
+    POSTS_PER_WEEK,
+    PRIORITY_RANK,
+    TERMINAL_STATUSES,
+    extract_post_body,
+    normalize_priority,
+    normalize_status,
+    parse_scheduled_datetime,
+    select_next_post,
+)
 from kaggle_portfolio.shared.clock import parse_iso_date
 from kaggle_portfolio.shared.errors import CommandError
 from kaggle_portfolio.shared.deps import Deps
@@ -64,30 +77,6 @@ RED = "\033[0;31m"
 BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
-VALID_STATUSES = {
-    "idea",
-    "ready",
-    "scheduled",
-    "posted",
-    "won-medal",
-    "pending",
-    "skipped",
-    "expired",
-    # Asserts a measured result the repo cannot back. Non-postable until the
-    # number is either produced for real or removed from the draft.
-    "unverified",
-}
-POSTABLE_STATUSES = {"ready", "scheduled", "pending"}
-# Statuses the scheduler must carry through untouched instead of assigning a
-# slot to. Derived from the postable set so a newly added status is excluded by
-# default — hardcoding this list previously let "expired" drafts be rescheduled
-# as postable.
-TERMINAL_STATUSES = VALID_STATUSES - POSTABLE_STATUSES
-PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
-POST_DAYS = {0, 2, 4}  # Mon, Wed, Fri
-POSTS_PER_WEEK = len(POST_DAYS)
-DEFAULT_SCHEDULE_WEEKS = 4
-
 
 # A draft that reports a measured result must say where the number came from.
 # Fabricated benchmark tables read exactly like real ones, so the rule is
@@ -124,40 +113,6 @@ def asserts_unbacked_results(body: str) -> bool:
     if RESULT_TABLE.search(body):
         return True
     return bool(MEASUREMENT_CLAIM.search(body) and METRIC_NUMBER.search(body))
-
-
-def normalize_status(value: str | None) -> str:
-    if not value:
-        return "ready"
-    normalized = value.strip().lower()
-    # Drafts annotate a status with a reason ("expired - do not post"); keep the
-    # status word so the annotation does not fall through to the default.
-    normalized = re.split(r"\s+[-–—]\s+", normalized, maxsplit=1)[0].strip()
-    if normalized == "pending":
-        return "scheduled"
-    if normalized == "skipped":
-        return "skipped"
-    if normalized in VALID_STATUSES:
-        return normalized
-    return "ready"
-
-
-def normalize_priority(value: str | None) -> str:
-    if not value:
-        return "medium"
-    normalized = value.strip().lower()
-    if normalized in PRIORITY_RANK:
-        return normalized
-    return "medium"
-
-
-def parse_scheduled_datetime(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError:
-        return None
 
 
 def canonical_draft_id(value: str) -> str:
@@ -720,49 +675,6 @@ def do_post(queue: list[dict], schedule_weeks: int = DEFAULT_SCHEDULE_WEEKS) -> 
         cwd=str(ROOT),
     )
     return result.returncode
-
-
-def select_next_post(queue: list[dict], now: datetime | None = None) -> dict | None:
-    """Pick the next postable draft: due items first (most overdue), then soonest upcoming; priority breaks ties."""
-    now = now or datetime.now(tz=timezone.utc)
-    postable = [
-        item
-        for item in queue
-        if normalize_status(item.get("status")) in POSTABLE_STATUSES
-    ]
-    if not postable:
-        return None
-
-    def sort_key(item: dict) -> tuple:
-        sched = parse_scheduled_datetime(item.get("scheduled_after"))
-        is_due = 0 if (sched is None or sched <= now) else 1
-        sched_ord = sched.timestamp() if sched is not None else 0.0
-        prio = PRIORITY_RANK.get(normalize_priority(item.get("priority")), 1)
-        return (is_due, sched_ord, prio, str(item.get("id", "")))
-
-    return sorted(postable, key=sort_key)[0]
-
-
-def extract_post_body(drafts_path: Path, body_section: str) -> str:
-    """Return a draft's post content (ops `**Field:**` metadata lines stripped) from the drafts markdown."""
-    if not body_section:
-        return ""
-    try:
-        content = Path(drafts_path).read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    pattern = re.compile(
-        rf"## {re.escape(body_section)}:.*?\n(.*?)(?=\n## Draft |\Z)", re.DOTALL
-    )
-    match = pattern.search(content)
-    if not match:
-        return ""
-    body_lines = [
-        line
-        for line in match.group(1).splitlines()
-        if not re.match(r"\s*\*\*[A-Za-z /]+:\*\*", line)
-    ]
-    return "\n".join(body_lines).strip()
 
 
 def format_next_post(draft: dict, body: str) -> str:

@@ -1,4 +1,5 @@
 """Alert via Telegram when a competition deadline is within the threshold."""
+
 from __future__ import annotations
 
 import os
@@ -8,13 +9,18 @@ from pathlib import Path
 
 # Resolve paths for both container and local test environments
 sys.path.insert(0, str(Path(__file__).parent))
-_repo = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent)))
+# Default to /repo, not a __file__-relative walk: in the container this file is
+# /scripts/deadline_alert.py, so parents[2] is "/" and the import below fails.
+_repo = Path(os.environ.get("REPO_PATH", "/repo"))
 sys.path.insert(0, str(_repo))
 
-import notify
-from kaggle_portfolio.ops.medal_ops import ParsedDeadline, parse_active_competitions
+import notify  # noqa: E402
+from kaggle_portfolio.ops.medal_ops import (  # noqa: E402
+    ParsedDeadline,
+    parse_active_competitions,
+)
 
-REPO = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent)))
+REPO = _repo
 TRACKER_PATH = REPO / "docs" / "reports" / "grandmaster-tracker.md"
 ALERT_HOURS = 72
 
@@ -23,10 +29,13 @@ def parse_deadlines(content: str, today: date) -> list[ParsedDeadline]:
     return parse_active_competitions(content, today)
 
 
-def filter_urgent(deadlines: list[ParsedDeadline], hours: int = 72) -> list[ParsedDeadline]:
+def filter_urgent(
+    deadlines: list[ParsedDeadline], hours: int = 72
+) -> list[ParsedDeadline]:
     threshold_days = hours / 24
     return [
-        d for d in deadlines
+        d
+        for d in deadlines
         if d.days_to_deadline is not None and 0 <= d.days_to_deadline <= threshold_days
     ]
 

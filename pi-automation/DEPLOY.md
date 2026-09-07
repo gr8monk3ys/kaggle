@@ -38,7 +38,7 @@ docker exec kaggle-autobot python3 /scripts/notify.py "hello from Pi"
 docker exec kaggle-autobot python3 /scripts/deadline_alert.py
 
 # Force a discussion post (ignore schedule)
-docker exec -e FORCE_POST=1 kaggle-autobot python3 /scripts/discussion_post.py
+docker exec -e DISCUSSION_POSTING_ENABLED=1 kaggle-autobot python3 /scripts/discussion_post.py
 ```
 
 ## Updating
