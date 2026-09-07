@@ -83,6 +83,15 @@ class Deps:
     def today(self):
         return self.clock.today
 
+    def with_output_root(self, output_root) -> "Deps":
+        """Same dependencies, writing reports elsewhere. Used by preflight."""
+        return Deps(
+            layout=self.layout.with_output_root(output_root),
+            clock=self.clock,
+            client=self.client,
+            effects=self.effects,
+        )
+
     def with_effects(self, effects: bool) -> "Deps":
         """Return a copy with effects toggled, rebuilding the client to match."""
         if effects == self.effects:

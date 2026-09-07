@@ -15,6 +15,8 @@ from typing import Any
 
 from kaggle_portfolio.manage_commands import is_skipped
 from kaggle_portfolio.shared.clock import resolve_today
+from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.shared.deps import Deps
 
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
@@ -642,7 +644,7 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Score Kaggle notebooks against a quality rubric."
     )
@@ -685,19 +687,20 @@ def parse_args() -> argparse.Namespace:
         default=12,
         help="Maximum notebooks included in fixer checklist.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.min_score < 0 or args.min_score > 100:
-        raise SystemExit("--min-score must be between 0 and 100")
+        raise CommandError("--min-score must be between 0 and 100")
     if args.fix_target_score < 0 or args.fix_target_score > 100:
-        raise SystemExit("--fix-target-score must be between 0 and 100")
+        raise CommandError("--fix-target-score must be between 0 and 100")
     if args.fix_top_actions <= 0:
-        raise SystemExit("--fix-top-actions must be >= 1")
+        raise CommandError("--fix-top-actions must be >= 1")
     if args.fix_max_notebooks <= 0:
-        raise SystemExit("--fix-max-notebooks must be >= 1")
+        raise CommandError("--fix-max-notebooks must be >= 1")
 
     today = resolve_today(args.today)
     root = Path(args.root).resolve()
@@ -705,7 +708,7 @@ def main() -> int:
 
     notebooks, warnings = discover_notebooks(root, scope=args.scope)
     if not notebooks:
-        raise SystemExit("No notebooks discovered from kernel-metadata.json files.")
+        raise CommandError("No notebooks discovered from kernel-metadata.json files.")
 
     scores = [
         score_notebook(path=notebook, root=root, min_score=args.min_score)

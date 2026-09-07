@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import importlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -12,6 +13,7 @@ from typing import Callable
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleError
 from kaggle_portfolio.shared.layout import METADATA_NAMES, RepoLayout
+from kaggle_portfolio.shared.errors import CommandError
 
 _DEPS: Deps | None = None
 
@@ -87,7 +89,7 @@ def has_kaggle_cli() -> bool:
 
 def require_kaggle_cli() -> None:
     if not has_kaggle_cli():
-        raise SystemExit(
+        raise CommandError(
             "Error: kaggle CLI not found. Install it with: pip install kaggle"
         )
 
@@ -102,7 +104,7 @@ def require_kaggle_credentials() -> None:
     ok, _sources = has_kaggle_credentials()
     if ok:
         return
-    raise SystemExit(
+    raise CommandError(
         "Error: Kaggle credentials not found.\n"
         f"Create {DEFAULT_CREDENTIALS} (recommended) and run:\n"
         f"  chmod 600 {DEFAULT_CREDENTIALS}"
@@ -117,13 +119,6 @@ def ensure_kaggle_ready() -> None:
 def run_script(path: Path, args: list[str]) -> int:
     result = subprocess.run(
         [sys.executable, str(path), *args], cwd=PACKAGE_ROOT, check=False
-    )
-    return result.returncode
-
-
-def run_module(module: str, args: list[str]) -> int:
-    result = subprocess.run(
-        [sys.executable, "-m", module, *args], cwd=PACKAGE_ROOT, check=False
     )
     return result.returncode
 
@@ -155,10 +150,8 @@ def env_truthy(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in TRUTHY
 
 
-def head_payload(path: Path) -> dict | None:
-    if not env_truthy("VALIDATE_ENFORCE_ID_BASELINE") or env_truthy(
-        "MANAGE_ALLOW_ID_CHANGE"
-    ):
+def head_payload(path: Path, *, enforce_id_baseline: bool = False) -> dict | None:
+    if not enforce_id_baseline or env_truthy("MANAGE_ALLOW_ID_CHANGE"):
         return None
     if not git_head_available():
         return None
@@ -197,7 +190,7 @@ def resolve_target(target: str) -> Path:
         joined = ", ".join(
             str(match.relative_to(deps().layout.root)) for match in matches[:10]
         )
-        raise SystemExit(f"Ambiguous target '{target}'. Matches: {joined}")
+        raise CommandError(f"Ambiguous target '{target}'. Matches: {joined}")
     return direct
 
 
@@ -226,7 +219,9 @@ def iter_metadata_files(scope: Path | None) -> list[Path]:
     return sorted(files)
 
 
-def validate_kernel(path: Path, payload: dict, raw_text: str) -> list[str]:
+def validate_kernel(
+    path: Path, payload: dict, raw_text: str, *, enforce_id_baseline: bool = False
+) -> list[str]:
     errors: list[str] = []
     required = ("id", "title", "code_file", "language", "kernel_type", "is_private")
     for field in required:
@@ -242,7 +237,7 @@ def validate_kernel(path: Path, payload: dict, raw_text: str) -> list[str]:
     elif ident and ("/" not in ident or " " in ident):
         errors.append(f"id '{ident}' must use owner/slug format with no spaces")
     else:
-        baseline = head_payload(path)
+        baseline = head_payload(path, enforce_id_baseline=enforce_id_baseline)
         baseline_id = str(baseline.get("id", "")).strip() if baseline else ""
         if baseline_id and ident and baseline_id != ident:
             errors.append(
@@ -392,7 +387,16 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
     return errors
 
 
-def cmd_validate(args: list[str]) -> int:
+def cmd_validate(args: list[str], *, enforce_id_baseline: bool = False) -> int:
+    """Validate metadata files.
+
+    ``--enforce-id-baseline`` pins a tracked kernel's ``id`` to its committed
+    value. It used to be reachable only by exporting VALIDATE_ENFORCE_ID_BASELINE,
+    which made it an undocumented side channel; it is a flag now.
+    """
+    if "--enforce-id-baseline" in args:
+        args = [a for a in args if a != "--enforce-id-baseline"]
+        enforce_id_baseline = True
     scope = None
     if args:
         scope = resolve_target(args[0])
@@ -438,7 +442,7 @@ def cmd_validate(args: list[str]) -> int:
             continue
 
         file_errors = (
-            validate_kernel(meta, payload, raw)
+            validate_kernel(meta, payload, raw, enforce_id_baseline=enforce_id_baseline)
             if meta.name == "kernel-metadata.json"
             else validate_dataset(meta, payload, raw)
         )
@@ -461,17 +465,14 @@ def cmd_validate(args: list[str]) -> int:
 
 
 def validate_for_push(args: list[str], *, enforce_id_baseline: bool) -> int:
-    previous = os.environ.get("VALIDATE_ENFORCE_ID_BASELINE")
-    if enforce_id_baseline:
-        os.environ["VALIDATE_ENFORCE_ID_BASELINE"] = "1"
-    try:
-        return cmd_validate(args)
-    finally:
-        if enforce_id_baseline:
-            if previous is None:
-                os.environ.pop("VALIDATE_ENFORCE_ID_BASELINE", None)
-            else:
-                os.environ["VALIDATE_ENFORCE_ID_BASELINE"] = previous
+    """Validate before a push, optionally pinning the kernel id to its HEAD baseline.
+
+    This was signalled by setting an environment variable and restoring it in a
+    `finally`. Correct only as long as that `finally` always ran — and in a
+    long-lived interpreter shared by several commands, a leak would silently
+    change how the next command validates. It is a parameter now.
+    """
+    return cmd_validate(args, enforce_id_baseline=enforce_id_baseline)
 
 
 def cmd_status(_: list[str]) -> int:
@@ -503,7 +504,7 @@ def push_dataset(path: Path) -> int:
 
 def cmd_push(args: list[str]) -> int:
     if not args:
-        raise SystemExit("Usage: ./manage.sh push <directory>")
+        raise CommandError("Usage: ./manage.sh push <directory>")
     target = args[0]
     path = resolve_target(target)
     if not path.exists():
@@ -520,7 +521,7 @@ def cmd_push(args: list[str]) -> int:
     if (path / "kernel-metadata.json").exists():
         print(f"Pushing notebook: {target}")
         return 0 if deps().client.push_kernel(path).ok else 1
-    raise SystemExit(f"Error: No metadata found in {path}")
+    raise CommandError(f"Error: No metadata found in {path}")
 
 
 def cmd_push_nb(_: list[str]) -> int:
@@ -666,14 +667,14 @@ def cmd_votes(_: list[str]) -> int:
 
 def cmd_link_competition(args: list[str]) -> int:
     if len(args) < 2:
-        raise SystemExit(
+        raise CommandError(
             "Usage: ./manage.sh link-competition <notebook-dir> <competition-slug>"
         )
     directory, slug = args[0], args[1]
     path = deps().layout.root / directory
     meta = path / "kernel-metadata.json"
     if not meta.exists():
-        raise SystemExit(f"Error: kernel-metadata.json not found in {directory}")
+        raise CommandError(f"Error: kernel-metadata.json not found in {directory}")
     print(f"Linking {directory} -> competition '{slug}' ...")
     payload = json.loads(meta.read_text(encoding="utf-8"))
     sources = payload.get("competition_sources", [])
@@ -731,31 +732,95 @@ def cmd_post_comment(args: list[str]) -> int:
     return run_script(PI_SCRIPTS / "comment_thread.py", args)
 
 
-def cmd_draft_ops(args: list[str]) -> int:
-    return run_module(
-        "kaggle_portfolio.ops.discussion_scheduler", ["--ops-report", *args]
-    )
+def _scheduler_main(argv: list[str]) -> int:
+    from kaggle_portfolio.ops import discussion_scheduler
+
+    return discussion_scheduler.main(argv, deps=deps())
 
 
 def cmd_draft_set(args: list[str]) -> int:
+    """Set fields on one draft.
+
+    Takes the draft id positionally and re-emits it as ``--set-id``, which is why
+    this cannot be a plain declarative delegation.
+    """
     if not args:
-        raise SystemExit(
+        raise CommandError(
             "Usage: ./manage.sh draft-set <draft_id> [--status ...] [--priority ...] "
             "[--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]"
         )
-    return run_module(
-        "kaggle_portfolio.ops.discussion_scheduler", ["--set-id", args[0], *args[1:]]
+    return _scheduler_main(["--set-id", args[0], *args[1:]])
+
+
+def cmd_usability_tracker(args: list[str]) -> int:
+    """The daily live usability tracker.
+
+    The thresholds and the ratings-CSV path are policy, not user input, so they
+    live here rather than in a lambda inside the command table. User arguments
+    come last and win, which is why the CSV path is passed once per flag rather
+    than relying on argparse seeing it twice.
+    """
+    from kaggle_portfolio.datasets import dataset_usability
+
+    ratings_csv = str(deps().layout.reports_dir / "latest-live-ratings.csv")
+    return dataset_usability.main(
+        [
+            "--live",
+            "--daily-tracker",
+            "--alert-under",
+            "0.8",
+            "--target-rating",
+            "1.0",
+            "--fail-on-live-alert",
+            "--write-live-ratings-csv",
+            ratings_csv,
+            "--fallback-live-ratings-csv",
+            ratings_csv,
+            *args,
+        ],
+        deps=deps(),
     )
 
 
 @dataclass(frozen=True)
 class Command:
+    """One CLI command, dispatched in-process wherever that is possible.
+
+    Exactly one of ``handler``, ``module`` or ``script`` says how to run it:
+
+    - ``handler`` — a function in this file.
+    - ``module`` — a dotted path whose ``main(argv, deps=...)`` is called directly.
+      The module is imported at DISPATCH time, not at registry construction: some
+      command modules pull in pandas and sklearn, and one pulls in Playwright, so
+      importing the table must not import the world.
+    - ``script`` — a path run as a subprocess. Reserved for pi-automation, whose
+      Playwright dependency must not become reachable from a kaggle_portfolio import.
+
+    ``fixed_args`` are prepended to the user's argv, for modules whose CLI takes a
+    subcommand (``medal_ops scorecard``) or a mode flag.
+    """
+
     name: str
     description: str
-    handler: Callable[[list[str]], int]
+    handler: Callable[[list[str]], int] | None = None
     args: str = ""
     requires_kaggle: bool = False
     hidden: bool = False
+    module: str | None = None
+    fixed_args: tuple[str, ...] = ()
+    script: Path | None = None
+
+    def run(self, argv: list[str], deps: Deps) -> int:
+        if self.handler is not None:
+            return self.handler(argv)
+        if self.script is not None:
+            return run_script(self.script, argv)
+        if self.module is None:
+            raise CommandError(
+                f"Command {self.name!r} has no handler, module or script"
+            )
+        module = importlib.import_module(self.module)
+        return module.main([*self.fixed_args, *argv], deps=deps)
 
 
 COMMANDS = [
@@ -799,157 +864,141 @@ COMMANDS = [
         "Add competition_sources to a notebook and re-push",
         cmd_link_competition,
         "<dir> <slug>",
-        True,
+        requires_kaggle=True,
     ),
     Command(
         "scorecard",
         "Generate medal operations scorecard report",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["scorecard", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("scorecard",),
     ),
     Command(
         "badge-plan",
         "Generate ordered Kaggle badge roadmap report",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["badge-plan", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("badge-plan",),
     ),
     Command(
         "weekly-plan",
         "Generate weekly execution plan report",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["weekly-plan", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("weekly-plan",),
     ),
     Command(
         "pace",
         "Generate medal progress pace analysis report",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["pace", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("pace",),
     ),
     Command(
         "digest",
         "Print a one-message daily Grandmaster digest",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["digest", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("digest",),
     ),
     Command(
         "sync",
         "Sync tracker metrics from live Kaggle CLI data",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["sync", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("sync",),
     ),
     Command(
         "sync-template",
         "Generate CSV templates + export helper for offline sync",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["sync-template", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("sync-template",),
     ),
     Command(
         "doctor",
         "Run preflight checks (tracker, sync inputs, environment)",
-        lambda a: run_module("kaggle_portfolio.ops.medal_ops", ["doctor", *a]),
+        module="kaggle_portfolio.ops.medal_ops",
+        fixed_args=("doctor",),
     ),
     Command(
         "preflight",
         "Run the core repo gates: validate, doctor, quality, usability, draft SLA, tests",
-        lambda a: run_module("kaggle_portfolio.ops.repo_ops", ["preflight", *a]),
+        module="kaggle_portfolio.ops.repo_ops",
+        fixed_args=("preflight",),
     ),
     Command(
         "quality",
         "Score notebook quality against rubric",
-        lambda a: run_module("kaggle_portfolio.quality.notebook_quality", a),
+        module="kaggle_portfolio.quality.notebook_quality",
     ),
     Command(
         "dataset-usability",
         "Score dataset usability and generate reports",
-        lambda a: run_module("kaggle_portfolio.datasets.dataset_usability", a),
+        module="kaggle_portfolio.datasets.dataset_usability",
     ),
     Command(
         "usability-tracker",
         "Daily live tracker with threshold alerts and ranked action queue",
-        lambda a: run_module(
-            "kaggle_portfolio.datasets.dataset_usability",
-            [
-                "--live",
-                "--daily-tracker",
-                "--alert-under",
-                "0.8",
-                "--target-rating",
-                "1.0",
-                "--fail-on-live-alert",
-                "--write-live-ratings-csv",
-                str(
-                    deps().layout.root
-                    / "medal_ops"
-                    / "reports"
-                    / "latest-live-ratings.csv"
-                ),
-                "--fallback-live-ratings-csv",
-                str(
-                    deps().layout.root
-                    / "medal_ops"
-                    / "reports"
-                    / "latest-live-ratings.csv"
-                ),
-                *a,
-            ],
-        ),
+        cmd_usability_tracker,
     ),
     Command(
         "campaign-pack",
         "Generate multi-channel promotion campaign pack + queue",
-        lambda a: run_module("kaggle_portfolio.campaigns.campaign_pack", a),
+        module="kaggle_portfolio.campaigns.campaign_pack",
     ),
     Command(
         "campaign-run",
         "Execute campaign queue (show/claim/complete + runbook export)",
-        lambda a: run_module("kaggle_portfolio.campaigns.campaign_dispatcher", a),
+        module="kaggle_portfolio.campaigns.campaign_dispatcher",
     ),
     Command(
         "campaign-execute",
         "Execute due campaign queue actions by posting discussion topics",
-        lambda a: run_module("kaggle_portfolio.campaigns.campaign_execute", a),
-        "[--limit N] [--dry-run] [--headed] [--channel NAME]",
+        module="kaggle_portfolio.campaigns.campaign_execute",
+        args="[--limit N] [--dry-run] [--headed] [--channel NAME]",
     ),
     Command(
         "usability-benchmark",
         "Benchmark local datasets against public high-usability exemplars",
-        lambda a: run_module(
-            "kaggle_portfolio.datasets.dataset_usability_benchmark", a
-        ),
+        module="kaggle_portfolio.datasets.dataset_usability_benchmark",
         requires_kaggle=True,
     ),
     Command(
         "publish-datasets",
         "Publish datasets through draft/live + quality gates",
-        lambda a: run_module("kaggle_portfolio.datasets.dataset_publish_pipeline", a),
-        "[--apply] [--all] [--min-score N] [--owner OWNER] [--max-items N]",
-        True,
+        module="kaggle_portfolio.datasets.dataset_publish_pipeline",
+        args="[--apply] [--all] [--min-score N] [--owner OWNER] [--max-items N]",
+        requires_kaggle=True,
     ),
     Command(
         "auth-doctor",
         "Validate Kaggle credentials, owner alignment, and upload auth",
-        lambda a: run_module("kaggle_portfolio.ops.kaggle_auth_doctor", a),
+        module="kaggle_portfolio.ops.kaggle_auth_doctor",
     ),
     Command(
         "build-all",
         "Build all notebooks with build_notebook.py scripts",
-        lambda a: run_module("kaggle_portfolio.notebooks.notebook_pipeline", a),
-        "[--stale-only] [--push] [--validate-only] [--min-score N]",
+        module="kaggle_portfolio.notebooks.notebook_pipeline",
+        args="[--stale-only] [--push] [--validate-only] [--min-score N]",
     ),
     Command(
         "optimize-datasets",
         "Generate README.md + improve dataset descriptions",
-        lambda a: run_module("kaggle_portfolio.datasets.dataset_optimizer", a),
-        "[--push]",
+        module="kaggle_portfolio.datasets.dataset_optimizer",
+        args="[--push]",
     ),
     Command(
         "vote-plan",
         "Rank datasets by distance-to-medal + discoverability gaps",
-        lambda a: run_module("kaggle_portfolio.datasets.dataset_vote_planner", a),
-        "[--owner OWNER] [--json]",
+        module="kaggle_portfolio.datasets.dataset_vote_planner",
+        args="[--owner OWNER] [--json]",
         requires_kaggle=True,
     ),
     Command(
         "post-discussion",
         "Post next queued discussion draft or rebuild queue window",
-        lambda a: run_module("kaggle_portfolio.ops.discussion_scheduler", a),
-        "[--dry-run|--init|--schedule-weeks N]",
+        module="kaggle_portfolio.ops.discussion_scheduler",
+        args="[--dry-run|--init|--schedule-weeks N]",
     ),
     Command(
-        "draft-ops", "Show draft backlog stage counts + priority queue", cmd_draft_ops
+        "draft-ops",
+        "Show draft backlog stage counts + priority queue",
+        module="kaggle_portfolio.ops.discussion_scheduler",
+        fixed_args=("--ops-report",),
     ),
     Command(
         "draft-set",
@@ -960,9 +1009,8 @@ COMMANDS = [
     Command(
         "next-post",
         "Show the next ready discussion draft to post manually (safe assist)",
-        lambda a: run_module(
-            "kaggle_portfolio.ops.discussion_scheduler", ["--next-post", *a]
-        ),
+        module="kaggle_portfolio.ops.discussion_scheduler",
+        fixed_args=("--next-post",),
     ),
     Command(
         "dataset-ui-sync",
@@ -973,71 +1021,73 @@ COMMANDS = [
     Command(
         "promote-notebooks",
         "Generate notebook promotion plan for competition forums",
-        lambda a: run_module("kaggle_portfolio.notebooks.notebook_promoter", a),
-        "[--auto]",
+        module="kaggle_portfolio.notebooks.notebook_promoter",
+        args="[--auto]",
     ),
     Command(
         "scout",
         "Scout active competitions ranked by medal opportunity",
-        lambda a: run_module("kaggle_portfolio.notebooks.competition_scout", a),
-        "[--update]",
+        module="kaggle_portfolio.notebooks.competition_scout",
+        args="[--update]",
     ),
     Command(
         "flywheel-status",
         "Print the growth-flywheel Reach-Score dashboard",
-        lambda a: run_module("kaggle_portfolio.growth.flywheel", ["status", *a]),
+        module="kaggle_portfolio.growth.flywheel",
+        fixed_args=("status",),
     ),
     Command(
         "flywheel-tick",
         "Run one growth-flywheel tick: score, gate, dispatch top safe actions",
-        lambda a: run_module("kaggle_portfolio.growth.flywheel", ["tick", *a]),
-        "[--dry-run]",
-        True,
+        module="kaggle_portfolio.growth.flywheel",
+        fixed_args=("tick",),
+        args="[--dry-run]",
+        requires_kaggle=True,
     ),
     Command(
         "stale-content",
         "Detect stale notebooks, datasets, and outdated library versions",
-        lambda a: run_module("kaggle_portfolio.ops.stale_content_detector", a),
-        "[--max-nb-age N] [--max-ds-age N]",
+        module="kaggle_portfolio.ops.stale_content_detector",
+        args="[--max-nb-age N] [--max-ds-age N]",
     ),
     Command(
         "build-explore-notebooks",
         "Generate rich EDA explore notebooks for all datasets",
-        lambda a: run_module(
-            "kaggle_portfolio.datasets.dataset_explore_generator", ["--all", *a]
-        ),
-        "[--push]",
+        module="kaggle_portfolio.datasets.dataset_explore_generator",
+        fixed_args=("--all",),
+        args="[--push]",
     ),
     Command(
         "create-competition-entry",
         "Scaffold a new competition entry from a competition slug",
-        lambda a: run_module("kaggle_portfolio.notebooks.competition_entry", a),
-        "<slug> [--gpu] [--push]",
+        module="kaggle_portfolio.notebooks.competition_entry",
+        args="<slug> [--gpu] [--push]",
     ),
     Command(
         "competition-lab",
         "Benchmark local competition models and optionally submit from the CLI",
-        lambda a: run_module("kaggle_portfolio.notebooks.local_competition_lab", a),
-        "<slug> [--write-submission] [--submit] [--force-download]",
+        module="kaggle_portfolio.notebooks.local_competition_lab",
+        args="<slug> [--write-submission] [--submit] [--force-download]",
     ),
     Command(
         "metadata-tracker",
         "Track metadata changes vs vote deltas over time",
-        lambda a: run_module("kaggle_portfolio.ops.metadata_tracker", a),
-        "<snapshot|annotate|report> [args...]",
+        module="kaggle_portfolio.ops.metadata_tracker",
+        args="<snapshot|annotate|report> [args...]",
     ),
     Command(
         "leaderboard",
         "Record/report competition leaderboard rank history",
-        lambda a: run_module("kaggle_portfolio.ops.leaderboard_tracker", a),
-        "<record|report> [--dry-run] [--json]",
+        module="kaggle_portfolio.ops.leaderboard_tracker",
+        args="<record|report> [--dry-run] [--json]",
         requires_kaggle=True,
     ),
     Command(
         "smoke-live",
         "Safely exercise live Kaggle publish/post prerequisites without mutating Kaggle state",
-        lambda a: run_module("kaggle_portfolio.ops.repo_ops", ["smoke-live", *a]),
-        "[--owner OWNER] [--check-discussion-login]",
+        module="kaggle_portfolio.ops.repo_ops",
+        fixed_args=("smoke-live",),
+        args="[--owner OWNER] [--check-discussion-login]",
     ),
     Command(
         "upload-covers",
@@ -1060,8 +1110,10 @@ COMMANDS = [
 COMMAND_INDEX = {command.name: command for command in COMMANDS}
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps_override: Deps | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if deps_override is not None:
+        set_deps(deps_override)
     if not argv:
         command_name = "status"
     else:
@@ -1074,6 +1126,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Unknown command: {command_name}")
         print_usage()
         return 1
-    if command.requires_kaggle:
-        ensure_kaggle_ready()
-    return command.handler(argv)
+    try:
+        if command.requires_kaggle:
+            ensure_kaggle_ready()
+        return command.run(argv, deps())
+    except CommandError as exc:
+        # Commands signal user-facing failure by raising, so that a failure deep
+        # inside one does not terminate the interpreter the others share.
+        print(f"{RED}{exc}{RESET}", file=sys.stderr)
+        return exc.exit_code

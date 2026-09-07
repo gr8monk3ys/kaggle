@@ -15,6 +15,7 @@ from typing import Any
 from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleClient
+from kaggle_portfolio.shared.errors import CommandError
 
 
 DEFAULT_TRACKER_PATH = Path("docs/reports/grandmaster-tracker.md")
@@ -253,7 +254,7 @@ def update_progress_current_cell(
 
 def load_csv_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
     if not path.exists():
-        raise SystemExit(f"CSV file not found: {path}")
+        raise CommandError(f"CSV file not found: {path}")
     with path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         rows = [dict(row) for row in reader]
@@ -292,7 +293,7 @@ def parse_vote_total(
         vote_key = find_key(keys, ["vote"])
     if not vote_key:
         if strict:
-            raise SystemExit(
+            raise CommandError(
                 f"{source_label} is missing a vote column. "
                 f"Expected one containing totalVotes, voteCount, or votes. "
                 f"Found columns: {format_columns(keys)}"
@@ -318,7 +319,7 @@ def parse_integer_total(
     metric_key = find_key(keys, predicates)
     if not metric_key:
         if strict:
-            raise SystemExit(
+            raise CommandError(
                 f"{source_label} is missing a {metric_name} column. "
                 f"Found columns: {format_columns(keys)}"
             )
@@ -359,7 +360,7 @@ def parse_entered_total(
     entered_key = find_key(keys, ["userhasentered", "hasentered", "entered"])
     if not entered_key:
         if strict:
-            raise SystemExit(
+            raise CommandError(
                 f"{source_label} is missing an entered column. "
                 f"Expected one containing userHasEntered, hasEntered, or entered. "
                 f"Found columns: {format_columns(keys)}"
@@ -371,7 +372,7 @@ def parse_entered_total(
 
 def fetch_live_kaggle_metrics(client: KaggleClient) -> dict[str, Any]:
     if not client.available():
-        raise SystemExit(
+        raise CommandError(
             "kaggle CLI not found. Install/authenticate it, or run sync with exported CSV files "
             "(--kernels-csv, --datasets-csv, --competitions-csv)."
         )
@@ -1850,7 +1851,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     if args.command == "doctor":
         if int(args.max_stale_days) < 0:
-            raise SystemExit("--max-stale-days must be >= 0")
+            raise CommandError("--max-stale-days must be >= 0")
         checks = run_preflight_checks(
             client=deps.client,
             tracker_path=tracker_path,
@@ -1898,7 +1899,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         return 0
 
     if not tracker_path.exists():
-        raise SystemExit(f"Tracker file not found: {tracker_path}")
+        raise CommandError(f"Tracker file not found: {tracker_path}")
 
     content = tracker_path.read_text(encoding="utf-8")
     snapshot = build_snapshot(content, today)
@@ -1960,7 +1961,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     if args.command == "sync":
         if args.kernels_csv or args.datasets_csv or args.competitions_csv:
             if not args.kernels_csv or not args.datasets_csv:
-                raise SystemExit(
+                raise CommandError(
                     "CSV sync requires both --kernels-csv and --datasets-csv."
                 )
             live = fetch_metrics_from_csv(
@@ -1996,7 +1997,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         print(f"Latest sync report: {latest_report_path}")
         return 0
 
-    raise SystemExit(f"Unsupported command: {args.command}")
+    raise CommandError(f"Unsupported command: {args.command}")
 
 
 if __name__ == "__main__":

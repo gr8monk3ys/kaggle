@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
+from kaggle_portfolio.shared.errors import CommandError
 
 
 def parse_iso_date(text: str | None) -> date | None:
@@ -29,16 +30,14 @@ class InvalidDateOverride(ValueError):
 def resolve_today(today_override: str | None) -> date:
     """Return *today_override* as a date, or today's date when ``None``.
 
-    Kept for modules that do not yet take a :class:`Deps`; it raises
-    ``SystemExit`` as it always has, rather than :class:`InvalidDateOverride`,
-    so their exit codes are unchanged. Callers that take a ``Deps`` should read
-    ``deps.clock.today`` instead.
+    Kept for modules that read a date without taking a :class:`Deps`. Callers
+    that have one should read ``deps.clock.today`` instead.
     """
     if not today_override:
         return date.today()
     parsed = parse_iso_date(today_override)
     if not parsed:
-        raise SystemExit(f"Invalid --today value: {today_override}")
+        raise CommandError(f"Invalid --today value: {today_override}")
     return parsed
 
 

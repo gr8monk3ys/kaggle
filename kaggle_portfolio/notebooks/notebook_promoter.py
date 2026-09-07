@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from kaggle_portfolio.shared.deps import Deps
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -182,7 +183,6 @@ def match_notebook_to_competitions(nb: dict) -> list[str]:
 
 def generate_promo_comment(nb: dict, comp_slug: str) -> str:
     """Generate a 2-sentence promotion comment."""
-    title = nb.get("title", nb.get("_dir", "my notebook"))
     nb_id = nb.get("id", "")
     user = nb_id.split("/")[0] if "/" in nb_id else "lorenzoscaturchio"
     nb_slug = nb_id.split("/")[1] if "/" in nb_id else nb_id
@@ -248,7 +248,7 @@ def filter_notebooks(
     return filtered, missing
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -268,6 +268,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional comma-separated notebook refs/slugs/directories to include exactly.",
     )
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
 
     print(f"{BLUE}=== Notebook Promotion Planner ==={RESET}\n")
 
@@ -332,7 +333,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"   Forum: {comp_info['url']}")
         for entry in entries:
             print(f"\n   Notebook: {entry['notebook']}")
-            print(f"   Draft comment:")
+            print("   Draft comment:")
             for line in entry["comment"].splitlines():
                 print(f"     {line}")
         print()

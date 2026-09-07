@@ -28,6 +28,8 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from kaggle_portfolio.shared.clock import parse_iso_date
+from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.shared.deps import Deps
 
 ROOT = Path(__file__).resolve().parents[2]
 DRAFTS_FILE = ROOT / "docs" / "discussions" / "discussion-drafts.md"
@@ -385,7 +387,7 @@ def update_draft(
     now: datetime | None = None,
 ) -> tuple[list[dict], dict]:
     if deadline and clear_deadline:
-        raise SystemExit("--deadline and --clear-deadline are mutually exclusive.")
+        raise CommandError("--deadline and --clear-deadline are mutually exclusive.")
     now = now or datetime.now(tz=timezone.utc)
     target_id = canonical_draft_id(draft_id)
 
@@ -395,7 +397,7 @@ def update_draft(
             match_item = item
             break
     if not match_item:
-        raise SystemExit(f"Draft not found: {draft_id}")
+        raise CommandError(f"Draft not found: {draft_id}")
 
     old_status = normalize_status(match_item.get("status"))
 
@@ -407,7 +409,7 @@ def update_draft(
     elif deadline is not None:
         parsed_deadline = parse_iso_date(deadline)
         if parsed_deadline is None:
-            raise SystemExit(
+            raise CommandError(
                 f"Invalid --deadline value: {deadline} (expected YYYY-MM-DD)"
             )
         match_item["deadline"] = parsed_deadline.isoformat()
@@ -913,7 +915,7 @@ def initialize_queue_if_needed(args: argparse.Namespace) -> bool:
 def run_selected_mode(args: argparse.Namespace, queue: list[dict]) -> int:
     if args.set_id:
         if not any([args.status, args.priority, args.deadline, args.clear_deadline]):
-            raise SystemExit(
+            raise CommandError(
                 "--set-id requires at least one of --status/--priority/--deadline/--clear-deadline."
             )
         updated_queue, updated = update_draft(
@@ -961,9 +963,10 @@ def run_selected_mode(args: argparse.Namespace, queue: list[dict]) -> int:
     return do_post(queue, schedule_weeks=args.schedule_weeks)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
 
     if args.schedule_weeks < 1:
         parser.error("--schedule-weeks must be >= 1")

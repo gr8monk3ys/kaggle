@@ -428,9 +428,15 @@ def test_manage_validate_passes_when_tracked_kernel_id_matches_head(tmp_path):
     patched_manage = _patched_manage_script(tmp_path)
 
     result = subprocess.run(
-        ["bash", str(patched_manage), "validate", "example-notebook"],
+        [
+            "bash",
+            str(patched_manage),
+            "validate",
+            "example-notebook",
+            "--enforce-id-baseline",
+        ],
         cwd=tmp_path,
-        env={**os.environ, "VALIDATE_ENFORCE_ID_BASELINE": "1"},
+        env={**os.environ},
         capture_output=True,
         text=True,
         check=False,
@@ -466,9 +472,15 @@ def test_manage_validate_fails_when_tracked_kernel_id_drifted_from_head(tmp_path
     patched_manage = _patched_manage_script(tmp_path)
 
     result = subprocess.run(
-        ["bash", str(patched_manage), "validate", "example-notebook"],
+        [
+            "bash",
+            str(patched_manage),
+            "validate",
+            "example-notebook",
+            "--enforce-id-baseline",
+        ],
         cwd=tmp_path,
-        env={**os.environ, "VALIDATE_ENFORCE_ID_BASELINE": "1"},
+        env={**os.environ},
         capture_output=True,
         text=True,
         check=False,
@@ -508,13 +520,15 @@ def test_manage_validate_allows_tracked_kernel_id_override(tmp_path):
     patched_manage = _patched_manage_script(tmp_path)
 
     result = subprocess.run(
-        ["bash", str(patched_manage), "validate", "example-notebook"],
+        [
+            "bash",
+            str(patched_manage),
+            "validate",
+            "example-notebook",
+            "--enforce-id-baseline",
+        ],
         cwd=tmp_path,
-        env={
-            **os.environ,
-            "VALIDATE_ENFORCE_ID_BASELINE": "1",
-            "MANAGE_ALLOW_ID_CHANGE": "1",
-        },
+        env={**os.environ, "MANAGE_ALLOW_ID_CHANGE": "1"},
         capture_output=True,
         text=True,
         check=False,
@@ -620,16 +634,9 @@ def test_manage_help_includes_new_commands():
 
 def test_manage_auto_discovery_finds_all_notebooks():
     """Auto-discovery must find at least as many notebooks as the old hardcoded list."""
-    # The hardcoded list had 24 entries; auto-discovery should find >= 24
-    result = subprocess.run(
-        ["bash", "-c", f"source {MANAGE}; echo ${{#NOTEBOOK_DIRS[@]}}"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    # Can't easily source manage.sh directly due to set -euo pipefail,
-    # so we count kernel-metadata.json files not under datasets/
+    # The hardcoded list had 24 entries; auto-discovery should find >= 24.
+    # manage.sh cannot be sourced directly (set -euo pipefail), so count the
+    # kernel-metadata.json files not under datasets/ instead.
     count = sum(
         1
         for p in ROOT.rglob("kernel-metadata.json")

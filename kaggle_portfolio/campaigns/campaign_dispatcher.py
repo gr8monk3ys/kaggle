@@ -16,6 +16,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.shared.deps import Deps
 
 DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
 DEFAULT_REPORT_PATH = Path("medal_ops") / "reports" / "latest-campaign-runbook.md"
@@ -33,13 +35,13 @@ def now_iso() -> str:
 
 def load_payload(path: Path) -> dict[str, Any]:
     if not path.exists():
-        raise SystemExit(f"Campaign queue not found: {path}")
+        raise CommandError(f"Campaign queue not found: {path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise SystemExit(f"Invalid campaign queue payload: {path}")
+        raise CommandError(f"Invalid campaign queue payload: {path}")
     queue = payload.get("queue")
     if not isinstance(queue, list):
-        raise SystemExit(f"Campaign queue missing 'queue' list: {path}")
+        raise CommandError(f"Campaign queue missing 'queue' list: {path}")
     return payload
 
 
@@ -157,7 +159,7 @@ def write_text(path: Path, text: str) -> None:
     path.write_text(text.rstrip() + "\n", encoding="utf-8")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Operate campaign queue (show/claim/complete)."
     )
@@ -205,13 +207,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Preview updates without writing queue file.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.limit < 1:
-        raise SystemExit("--limit must be >= 1")
+        raise CommandError("--limit must be >= 1")
 
     queue_path = Path(args.queue_path)
     report_path = Path(args.report_path)

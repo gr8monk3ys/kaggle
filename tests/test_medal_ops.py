@@ -10,6 +10,7 @@ from kaggle_portfolio.shared.kaggle_client import (
     Kernel,
 )
 import pytest
+from kaggle_portfolio.shared.errors import CommandError
 
 
 SAMPLE_TRACKER = """
@@ -305,7 +306,7 @@ def test_fetch_metrics_from_csv_requires_vote_column(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(SystemExit, match="missing a vote column"):
+    with pytest.raises(CommandError, match="missing a vote column"):
         medal_ops.fetch_metrics_from_csv(
             kernels_csv, datasets_csv, competitions_csv=None
         )
@@ -331,7 +332,7 @@ def test_fetch_metrics_from_csv_requires_entered_column_when_competitions_presen
         encoding="utf-8",
     )
 
-    with pytest.raises(SystemExit, match="missing an entered column"):
+    with pytest.raises(CommandError, match="missing an entered column"):
         medal_ops.fetch_metrics_from_csv(
             kernels_csv, datasets_csv, competitions_csv=competitions_csv
         )
@@ -370,7 +371,7 @@ def test_fetch_live_kaggle_metrics_counts_votes_medals_and_entries():
 
 
 def test_fetch_live_kaggle_metrics_requires_a_kaggle_cli():
-    with pytest.raises(SystemExit, match="kaggle CLI not found"):
+    with pytest.raises(CommandError, match="kaggle CLI not found"):
         medal_ops.fetch_live_kaggle_metrics(FakeKaggleClient(available=False))
 
 
