@@ -443,65 +443,39 @@ def test_benchmark_playground_prefers_advanced_model_when_available(
     train.to_csv(tmp_path / "train.csv", index=False)
     test.to_csv(tmp_path / "test.csv", index=False)
 
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_original_path",
-        lambda _data_dir: tmp_path / "orig.csv",
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_model_result",
-        lambda _model, _train_x, _test_x, _y, _cv: (
+    pd.DataFrame({"dummy": [1]}).to_csv(tmp_path / "orig.csv", index=False)
+    models = playground_telco.PlaygroundModels(
+        original_path=lambda _data_dir: tmp_path / "orig.csv",
+        model_result=lambda _model, _train_x, _test_x, _y, _cv: (
             0.91001,
             np.array([0.1] * 6),
             np.array([0.4, 0.6]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_lightgbm_result",
-        lambda _train, _test, _orig, _folds: (
+        lightgbm_result=lambda _train, _test, _orig, _folds: (
             0.9188,
             np.array([0.18] * 6),
             np.array([0.3, 0.7]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_xgboost_result",
-        lambda _train, _test, _orig, _folds: (
+        xgboost_result=lambda _train, _test, _orig, _folds: (
             0.91999,
             np.array([0.2] * 6),
             np.array([0.25, 0.75]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_xgboost_pseudo_result",
-        lambda _train, _test, _orig, _folds: (
+        pseudo_result=lambda _train, _test, _orig, _folds: (
             0.9192,
             np.array([0.19] * 6),
             np.array([0.2, 0.8]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_catboost_result",
-        lambda _train, _test, _orig, _folds: (
+        catboost_result=lambda _train, _test, _orig, _folds: (
             0.9185,
             np.array([0.15] * 6),
             np.array([0.35, 0.65]),
         ),
+        best_blend=lambda _predictions, _y, step=0.05: None,
     )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_best_blend",
-        lambda _predictions, _y, step=0.05: None,
-    )
-    pd.DataFrame({"dummy": [1]}).to_csv(tmp_path / "orig.csv", index=False)
 
     result = playground_telco.benchmark_playground_telco(
-        tmp_path, folds=3, write_submission=True
+        tmp_path, folds=3, write_submission=True, models=models
     )
 
     assert result.best_model == "xgboost_te"
@@ -546,40 +520,28 @@ def test_benchmark_playground_prefers_blend_when_it_wins(tmp_path, monkeypatch):
     train.to_csv(tmp_path / "train.csv", index=False)
     test.to_csv(tmp_path / "test.csv", index=False)
 
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_model_result",
-        lambda _model, _train_x, _test_x, _y, _cv: (
+    models = playground_telco.PlaygroundModels(
+        model_result=lambda _model, _train_x, _test_x, _y, _cv: (
             0.915,
             np.array([0.1] * 6),
             np.array([0.4, 0.6]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco, "_playground_original_path", lambda _data_dir: None
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_best_blend",
-        lambda _predictions, _y, step=0.05: (
+        original_path=lambda _data_dir: None,
+        catboost_result=lambda _train, _test, _orig, _folds: (
+            0.917,
+            np.array([0.18] * 6),
+            np.array([0.45, 0.55]),
+        ),
+        best_blend=lambda _predictions, _y, step=0.05: (
             "rank",
             {"lightgbm": 0.35, "xgboost": 0.45, "catboost_te": 0.2},
             0.92001,
             np.array([0.3, 0.7]),
         ),
     )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_catboost_result",
-        lambda _train, _test, _orig, _folds: (
-            0.917,
-            np.array([0.18] * 6),
-            np.array([0.45, 0.55]),
-        ),
-    )
 
     result = playground_telco.benchmark_playground_telco(
-        tmp_path, folds=3, write_submission=True
+        tmp_path, folds=3, write_submission=True, models=models
     )
 
     assert result.best_model == "blend"
@@ -627,65 +589,39 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
     train.to_csv(tmp_path / "train.csv", index=False)
     test.to_csv(tmp_path / "test.csv", index=False)
 
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_original_path",
-        lambda _data_dir: tmp_path / "orig.csv",
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_model_result",
-        lambda _model, _train_x, _test_x, _y, _cv: (
+    pd.DataFrame({"dummy": [1]}).to_csv(tmp_path / "orig.csv", index=False)
+    models = playground_telco.PlaygroundModels(
+        original_path=lambda _data_dir: tmp_path / "orig.csv",
+        model_result=lambda _model, _train_x, _test_x, _y, _cv: (
             0.91001,
             np.array([0.1] * 6),
             np.array([0.4, 0.6]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_lightgbm_result",
-        lambda _train, _test, _orig, _folds: (
+        lightgbm_result=lambda _train, _test, _orig, _folds: (
             0.9188,
             np.array([0.18] * 6),
             np.array([0.3, 0.7]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_xgboost_result",
-        lambda _train, _test, _orig, _folds: (
+        xgboost_result=lambda _train, _test, _orig, _folds: (
             0.91999,
             np.array([0.2] * 6),
             np.array([0.25, 0.75]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_xgboost_pseudo_result",
-        lambda _train, _test, _orig, _folds: (
+        pseudo_result=lambda _train, _test, _orig, _folds: (
             0.92055,
             np.array([0.22] * 6),
             np.array([0.15, 0.85]),
         ),
-    )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_advanced_catboost_result",
-        lambda _train, _test, _orig, _folds: (
+        catboost_result=lambda _train, _test, _orig, _folds: (
             0.9185,
             np.array([0.15] * 6),
             np.array([0.35, 0.65]),
         ),
+        best_blend=lambda _predictions, _y, step=0.05: None,
     )
-    monkeypatch.setattr(
-        playground_telco,
-        "_playground_best_blend",
-        lambda _predictions, _y, step=0.05: None,
-    )
-    pd.DataFrame({"dummy": [1]}).to_csv(tmp_path / "orig.csv", index=False)
 
     result = playground_telco.benchmark_playground_telco(
-        tmp_path, folds=3, write_submission=True
+        tmp_path, folds=3, write_submission=True, models=models
     )
 
     assert result.best_model == "xgboost_te_pseudo"
@@ -1393,12 +1329,12 @@ def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(
         assert len(future_test) == 2
         return 0.12345, np.full(len(validation), 17.0), np.array([42.0, 43.0])
 
-    monkeypatch.setattr(
-        store_sales, "_store_sales_lightgbm_future_result", fake_lightgbm_result
+    models = store_sales.StoreSalesModels(
+        lightgbm_future_result=fake_lightgbm_result,
     )
 
     result = store_sales.benchmark_store_sales(
-        tmp_path, _folds=0, write_submission=True
+        tmp_path, _folds=0, write_submission=True, models=models
     )
 
     assert result.best_model == "lightgbm_future"

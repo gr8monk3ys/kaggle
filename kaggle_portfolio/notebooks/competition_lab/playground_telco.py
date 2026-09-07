@@ -5,6 +5,9 @@ Split out of local_competition_lab; the BENCHMARKS interface is unchanged.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Callable
+
 #!/usr/bin/env python3
 
 
@@ -1544,9 +1547,49 @@ def _playground_best_blend(
     return best_kind, best_weights, best_score, best_pred
 
 
+@dataclass(frozen=True)
+class PlaygroundModels:
+    """The fitting steps ``benchmark_playground_telco`` chooses between.
+
+    An explicit collaborator rather than five module globals. The benchmark's job
+    is *selecting* the best of several models, so a test of that selection has to
+    control what each model scores — otherwise it would train real XGBoost,
+    LightGBM and CatBoost ensembles, which is neither fast nor deterministic.
+
+    That control previously came from ``monkeypatch.setattr`` on private names, so
+    the tests broke whenever a helper was renamed and could not be read as a
+    contract. Passing a bundle makes the seam explicit and the default obvious.
+    """
+
+    model_result: Callable[..., tuple[float, np.ndarray, np.ndarray]] = (
+        _playground_model_result
+    )
+    xgboost_result: Callable[..., tuple[float, np.ndarray, np.ndarray]] = (
+        _playground_advanced_xgboost_result
+    )
+    lightgbm_result: Callable[..., tuple[float, np.ndarray, np.ndarray]] = (
+        _playground_advanced_lightgbm_result
+    )
+    catboost_result: Callable[..., tuple[float, np.ndarray, np.ndarray]] = (
+        _playground_advanced_catboost_result
+    )
+    pseudo_result: Callable[..., tuple[float, np.ndarray, np.ndarray]] = (
+        _playground_advanced_xgboost_pseudo_result
+    )
+    original_path: Callable[[Path], "Path | None"] = _playground_original_path
+    best_blend: Callable[..., Any] = _playground_best_blend
+
+
+DEFAULT_PLAYGROUND_MODELS = PlaygroundModels()
+
+
 def benchmark_playground_telco(
-    data_dir: Path, folds: int, write_submission: bool
+    data_dir: Path,
+    folds: int,
+    write_submission: bool,
+    models: PlaygroundModels | None = None,
 ) -> LabResult:
+    models = models or DEFAULT_PLAYGROUND_MODELS
     train = pd.read_csv(data_dir / "train.csv")
     test = pd.read_csv(data_dir / "test.csv")
     y = (
@@ -1581,7 +1624,7 @@ def benchmark_playground_telco(
             n_jobs=-1,
             verbose=-1,
         )
-        lgb_score, lgb_oof, lgb_pred = _playground_model_result(
+        lgb_score, lgb_oof, lgb_pred = models.model_result(
             lgb_model, train_x, test_x, y, skf
         )
         benchmarks.append({"model": "lightgbm", "score": round(float(lgb_score), 5)})
@@ -1606,7 +1649,7 @@ def benchmark_playground_telco(
             n_jobs=-1,
             verbosity=0,
         )
-        xgb_score, xgb_oof, xgb_pred = _playground_model_result(
+        xgb_score, xgb_oof, xgb_pred = models.model_result(
             xgb_model, train_x, test_x, y, skf
         )
         benchmarks.append({"model": "xgboost", "score": round(float(xgb_score), 5)})
@@ -1615,10 +1658,10 @@ def benchmark_playground_telco(
     except ImportError:
         pass
 
-    original_path = _playground_original_path(data_dir)
+    original_path = models.original_path(data_dir)
     if original_path is not None:
         try:
-            lgb_score, lgb_oof, lgb_pred = _playground_advanced_lightgbm_result(
+            lgb_score, lgb_oof, lgb_pred = models.lightgbm_result(
                 train,
                 test,
                 pd.read_csv(original_path),
@@ -1632,13 +1675,11 @@ def benchmark_playground_telco(
         except (RuntimeError, ValueError):
             pass
         try:
-            advanced_score, advanced_oof, advanced_pred = (
-                _playground_advanced_xgboost_result(
-                    train,
-                    test,
-                    pd.read_csv(original_path),
-                    folds,
-                )
+            advanced_score, advanced_oof, advanced_pred = models.xgboost_result(
+                train,
+                test,
+                pd.read_csv(original_path),
+                folds,
             )
             benchmarks.append(
                 {"model": "xgboost_te", "score": round(float(advanced_score), 5)}
@@ -1648,13 +1689,11 @@ def benchmark_playground_telco(
         except (RuntimeError, ValueError):
             pass
         try:
-            pseudo_score, pseudo_oof, pseudo_pred = (
-                _playground_advanced_xgboost_pseudo_result(
-                    train,
-                    test,
-                    pd.read_csv(original_path),
-                    folds,
-                )
+            pseudo_score, pseudo_oof, pseudo_pred = models.pseudo_result(
+                train,
+                test,
+                pd.read_csv(original_path),
+                folds,
             )
             benchmarks.append(
                 {"model": "xgboost_te_pseudo", "score": round(float(pseudo_score), 5)}
@@ -1664,7 +1703,7 @@ def benchmark_playground_telco(
         except (RuntimeError, ValueError):
             pass
         try:
-            cat_score, cat_oof, cat_pred = _playground_advanced_catboost_result(
+            cat_score, cat_oof, cat_pred = models.catboost_result(
                 train,
                 test,
                 pd.read_csv(original_path),
@@ -1678,7 +1717,7 @@ def benchmark_playground_telco(
         except (RuntimeError, ValueError):
             pass
 
-    blend_result = _playground_best_blend(blend_inputs, y)
+    blend_result = models.best_blend(blend_inputs, y)
     if blend_result is not None:
         blend_kind, blend_weights, blend_score, blend_pred = blend_result
         benchmarks.append(
