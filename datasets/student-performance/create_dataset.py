@@ -9,7 +9,10 @@ Includes realistic correlations:
   - study_hours is the strongest predictor of scores
   - attendance_rate has a strong positive effect
   - sleep_hours has a quadratic optimum at ~7.5 hours
-  - tutoring_sessions shows diminishing returns
+  - tutoring_sessions was INTENDED to show diminishing returns, but the
+    generated data actually produces an inverted U: the fitted peak is at
+    ~9.3 sessions and 16-20 sessions is statistically indistinguishable from
+    zero (+0.018 GPA, 95% CI [-0.039, +0.074]). Measured, not assumed.
   - stress_level negatively impacts performance
   - motivation_score positively impacts performance
   - parental_education and family_income have modest positive effects

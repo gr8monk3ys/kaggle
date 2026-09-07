@@ -1,18 +1,25 @@
-# Student Academic Performance (10K Students)
+# Student Performance: Study Habits & GPA (10K Students)
 
-> 10K students, 25 features: study habits, demographics, and GPA outcomes
+> 10K students, 25 features, with a built-in sleep optimum and tutoring curve
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/student-academic-performance-dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset)  
+**Kaggle:** [lorenzoscaturchio/student-academic-performance-dataset](https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset)
 
 ## Description
 
-10,000 synthetic student records across 25 features covering demographics, study habits, family background, school resources, and academic outcomes. Includes math, reading, writing, and science scores along with GPA and a binary pass/fail label. Realistic correlations between study hours, attendance, tutoring, parental involvement, and performance.
+10,000 student records across 25 columns: study habits, demographics, family background, school resources, four subject scores (math, reading, writing, science), an overall GPA, and a binary pass/fail label.
 
-Built for: GPA regression, pass/fail classification, fairness analysis across demographic groups, feature importance analysis (which factors most affect performance), educational data mining, and intervention targeting. The multi-subject scores enable both single-target and multi-output ML.
+What makes this table worth more than five minutes is that the structure in it is deliberately non-linear, so a correlation heatmap will not find it. The companion notebook measures every claim below.
 
-Notable features: sleep_hours has a realistic quadratic relationship with performance (optimal 7-8 hours); stress_level and motivation_score capture psychological factors; parental_education and family_income enable socioeconomic analysis; tutoring_sessions has diminishing returns built in. All data is synthetic.
+- sleep_hours vs GPA is an inverted U. A degree-2 fit peaks at 7.44 hours: mean GPA is 3.27 at the peak, 2.67 in the 4-5.5 h band, and 2.93 in the 9-10 h band, so under-sleeping costs about 1.75x what over-sleeping costs. Pearson's r is only +0.18, which is the point - adding one squared term takes R2 from 0.031 to 0.124.
+- tutoring_sessions rises and then reverses. The fitted curve peaks near 9-10 sessions (the 6-10 band averages 3.19 GPA against a 3.03 zero-session baseline), then falls back until the 16-20 band is statistically indistinguishable from zero sessions (+0.018 GPA, 95% CI [-0.039, +0.074]). That is a reversal, not a plateau. Earlier versions of this description called it "diminishing returns", which was the wrong label.
+- The socioeconomic gradient is monotonic. Mean GPA rises at every step from parental_education "none" (2.93) to "phd" (3.37), and from low income (2.93) to high (3.30). Behind the income gap is an access gap - home internet 66% to 98%, laptop 55% to 95% - so the table supports mediation analysis, not just group means.
+- gender, ethnicity, school_region, sports_participation and extracurricular_activities carry no engineered effect: each moves mean GPA by under 0.05 points end to end. They are clean negative controls for fairness tooling, which also means this dataset cannot demonstrate real demographic bias, because none was written into it.
+
+Built for: GPA regression, pass/fail classification (note the 96% pass rate - use balanced accuracy or PR-AUC, not plain accuracy), non-linear feature engineering, mediation analysis, feature-importance teaching, and calibrating a fairness-audit pipeline against a known-null answer.
+
+All data is synthetic, produced by the seeded create_dataset.py that ships with the dataset. Everything above is a measured property of that generator's output, not a finding about real students. Subject scores are clipped at 100 and GPA at 4.0, so 11-16% of subject scores and 4.5% of GPAs sit exactly at the cap and every effect quoted here is a lower bound.
 
 ## Tags
 
@@ -30,7 +37,7 @@ Notable features: sleep_hours has a realistic quadratic relationship with perfor
 ## DOI and Citations
 
 - DOI: Not assigned
-- Scaturchio, Lorenzo (2026). Student Academic Performance (10K Students). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset
+- Scaturchio, Lorenzo (2026). Student Performance: Study Habits & GPA (10K Students). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset
 
 ## Provenance
 
@@ -40,11 +47,11 @@ Notable features: sleep_hours has a realistic quadratic relationship with perfor
 
 ## students.csv
 
-**Rows:** 5,000  |  **Columns:** 25  |  **Size:** 1,143.8 KB
+**Rows:** 10,000  |  **Columns:** 25  |  **Size:** 1,143.8 KB
 
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
-| `student_id` | string | 0.0% | 5,000 | `STU00000`, `STU00001`, `STU00002` |
+| `student_id` | string | 0.0% | 10,000 | `STU00000`, `STU00001`, `STU00002` |
 | `age` | integer | 0.0% | 11 | `19`, `23`, `22` |
 | `gender` | string | 0.0% | 3 | `F`, `M`, `Non-binary` |
 | `ethnicity` | string | 0.0% | 5 | `C`, `D`, `B` |
@@ -72,10 +79,11 @@ Notable features: sleep_hours has a realistic quadratic relationship with perfor
 
 ## Suggested Use Cases
 
-- Text classification (TF-IDF, BERT embeddings)
-- Named entity recognition or topic modeling
-- Academic performance prediction (regression/classification)
-- Feature importance analysis of student success factors
+- GPA regression (drop all four subject scores first - `overall_gpa` is derived from them)
+- Pass/fail classification with balanced metrics (the label is 96% positive)
+- Non-linear feature engineering: recovering the sleep optimum and the tutoring reversal
+- Mediation analysis: family_income -> internet/laptop access -> GPA
+- Calibrating a fairness-audit pipeline against columns with a known-null answer
 
 ---
 *Generated by `dataset_optimizer.py` — dataset_optimizer.py*
