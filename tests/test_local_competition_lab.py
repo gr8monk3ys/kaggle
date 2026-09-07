@@ -57,7 +57,9 @@ def test_deep_past_split_translation_handles_missing_line_end():
         ]
     )
 
-    predictions = lab._deep_past_split_translation_by_rows("alpha beta gamma delta", test)
+    predictions = lab._deep_past_split_translation_by_rows(
+        "alpha beta gamma delta", test
+    )
 
     assert predictions == ["alpha beta gamma", "delta"]
 
@@ -65,11 +67,24 @@ def test_deep_past_split_translation_handles_missing_line_end():
 def test_deep_past_sentence_rows_match_stripped_display_name():
     sentences = pd.DataFrame(
         [
-            {"display_name": "Kt 92/k 221 (AKT 5 1)", "line_number": 7, "translation": "Line 7"},
-            {"display_name": "Kt 92/k 221 (AKT 5 1)", "line_number": 1, "translation": "Line 1"},
+            {
+                "display_name": "Kt 92/k 221 (AKT 5 1)",
+                "line_number": 7,
+                "translation": "Line 7",
+            },
+            {
+                "display_name": "Kt 92/k 221 (AKT 5 1)",
+                "line_number": 1,
+                "translation": "Line 1",
+            },
         ]
     )
-    row = pd.Series({"label": "Cuneiform Tablet Kt 92/k 221 (AKT 5 1)", "aliases": "Kt 92/k 221 | AKT 5 1"})
+    row = pd.Series(
+        {
+            "label": "Cuneiform Tablet Kt 92/k 221 (AKT 5 1)",
+            "aliases": "Kt 92/k 221 | AKT 5 1",
+        }
+    )
 
     matched = lab._deep_past_sentence_rows(sentences, row)
 
@@ -124,11 +139,41 @@ def test_march_submission_pairs_parses_stage_ids():
 def test_march_massey_features_uses_latest_window_and_trend():
     massey = pd.DataFrame(
         [
-            {"Season": 2025, "RankingDayNum": 125, "SystemName": "SYS1", "TeamID": 1101, "OrdinalRank": 10},
-            {"Season": 2025, "RankingDayNum": 125, "SystemName": "SYS2", "TeamID": 1101, "OrdinalRank": 12},
-            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1101, "OrdinalRank": 8},
-            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS2", "TeamID": 1101, "OrdinalRank": 9},
-            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1102, "OrdinalRank": 25},
+            {
+                "Season": 2025,
+                "RankingDayNum": 125,
+                "SystemName": "SYS1",
+                "TeamID": 1101,
+                "OrdinalRank": 10,
+            },
+            {
+                "Season": 2025,
+                "RankingDayNum": 125,
+                "SystemName": "SYS2",
+                "TeamID": 1101,
+                "OrdinalRank": 12,
+            },
+            {
+                "Season": 2025,
+                "RankingDayNum": 133,
+                "SystemName": "SYS1",
+                "TeamID": 1101,
+                "OrdinalRank": 8,
+            },
+            {
+                "Season": 2025,
+                "RankingDayNum": 133,
+                "SystemName": "SYS2",
+                "TeamID": 1101,
+                "OrdinalRank": 9,
+            },
+            {
+                "Season": 2025,
+                "RankingDayNum": 133,
+                "SystemName": "SYS1",
+                "TeamID": 1102,
+                "OrdinalRank": 25,
+            },
         ]
     )
 
@@ -226,8 +271,20 @@ def test_march_team_features_adds_schedule_and_massey_columns():
     )
     massey = pd.DataFrame(
         [
-            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1101, "OrdinalRank": 8},
-            {"Season": 2025, "RankingDayNum": 133, "SystemName": "SYS1", "TeamID": 1102, "OrdinalRank": 20},
+            {
+                "Season": 2025,
+                "RankingDayNum": 133,
+                "SystemName": "SYS1",
+                "TeamID": 1101,
+                "OrdinalRank": 8,
+            },
+            {
+                "Season": 2025,
+                "RankingDayNum": 133,
+                "SystemName": "SYS1",
+                "TeamID": 1102,
+                "OrdinalRank": 20,
+            },
         ]
     )
 
@@ -343,7 +400,9 @@ def test_playground_prepare_features_adds_telco_derivatives():
     assert test_x.loc[0, "HasStreaming"] == 1
 
 
-def test_benchmark_playground_prefers_advanced_model_when_available(tmp_path, monkeypatch):
+def test_benchmark_playground_prefers_advanced_model_when_available(
+    tmp_path, monkeypatch
+):
     train = pd.DataFrame(
         [
             {
@@ -376,31 +435,53 @@ def test_benchmark_playground_prefers_advanced_model_when_available(tmp_path, mo
     train.to_csv(tmp_path / "train.csv", index=False)
     test.to_csv(tmp_path / "test.csv", index=False)
 
-    monkeypatch.setattr(lab, "_playground_original_path", lambda _data_dir: tmp_path / "orig.csv")
+    monkeypatch.setattr(
+        lab, "_playground_original_path", lambda _data_dir: tmp_path / "orig.csv"
+    )
     monkeypatch.setattr(
         lab,
         "_playground_model_result",
-        lambda _model, _train_x, _test_x, _y, _cv: (0.91001, np.array([0.1] * 6), np.array([0.4, 0.6])),
+        lambda _model, _train_x, _test_x, _y, _cv: (
+            0.91001,
+            np.array([0.1] * 6),
+            np.array([0.4, 0.6]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_lightgbm_result",
-        lambda _train, _test, _orig, _folds: (0.9188, np.array([0.18] * 6), np.array([0.3, 0.7])),
+        lambda _train, _test, _orig, _folds: (
+            0.9188,
+            np.array([0.18] * 6),
+            np.array([0.3, 0.7]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_xgboost_result",
-        lambda _train, _test, _orig, _folds: (0.91999, np.array([0.2] * 6), np.array([0.25, 0.75])),
+        lambda _train, _test, _orig, _folds: (
+            0.91999,
+            np.array([0.2] * 6),
+            np.array([0.25, 0.75]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_xgboost_pseudo_result",
-        lambda _train, _test, _orig, _folds: (0.9192, np.array([0.19] * 6), np.array([0.2, 0.8])),
+        lambda _train, _test, _orig, _folds: (
+            0.9192,
+            np.array([0.19] * 6),
+            np.array([0.2, 0.8]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_catboost_result",
-        lambda _train, _test, _orig, _folds: (0.9185, np.array([0.15] * 6), np.array([0.35, 0.65])),
+        lambda _train, _test, _orig, _folds: (
+            0.9185,
+            np.array([0.15] * 6),
+            np.array([0.35, 0.65]),
+        ),
     )
     monkeypatch.setattr(
         lab,
@@ -412,7 +493,10 @@ def test_benchmark_playground_prefers_advanced_model_when_available(tmp_path, mo
     result = lab.benchmark_playground_telco(tmp_path, folds=3, write_submission=True)
 
     assert result.best_model == "xgboost_te"
-    assert any(row["model"] == "xgboost_te" and row["score"] == 0.91999 for row in result.benchmark_rows)
+    assert any(
+        row["model"] == "xgboost_te" and row["score"] == 0.91999
+        for row in result.benchmark_rows
+    )
     submission = pd.read_csv(result.submission_path)
     assert submission["Churn"].tolist() == [0.25, 0.75]
 
@@ -453,7 +537,11 @@ def test_benchmark_playground_prefers_blend_when_it_wins(tmp_path, monkeypatch):
     monkeypatch.setattr(
         lab,
         "_playground_model_result",
-        lambda _model, _train_x, _test_x, _y, _cv: (0.915, np.array([0.1] * 6), np.array([0.4, 0.6])),
+        lambda _model, _train_x, _test_x, _y, _cv: (
+            0.915,
+            np.array([0.1] * 6),
+            np.array([0.4, 0.6]),
+        ),
     )
     monkeypatch.setattr(lab, "_playground_original_path", lambda _data_dir: None)
     monkeypatch.setattr(
@@ -469,7 +557,11 @@ def test_benchmark_playground_prefers_blend_when_it_wins(tmp_path, monkeypatch):
     monkeypatch.setattr(
         lab,
         "_playground_advanced_catboost_result",
-        lambda _train, _test, _orig, _folds: (0.917, np.array([0.18] * 6), np.array([0.45, 0.55])),
+        lambda _train, _test, _orig, _folds: (
+            0.917,
+            np.array([0.18] * 6),
+            np.array([0.45, 0.55]),
+        ),
     )
 
     result = lab.benchmark_playground_telco(tmp_path, folds=3, write_submission=True)
@@ -519,31 +611,53 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
     train.to_csv(tmp_path / "train.csv", index=False)
     test.to_csv(tmp_path / "test.csv", index=False)
 
-    monkeypatch.setattr(lab, "_playground_original_path", lambda _data_dir: tmp_path / "orig.csv")
+    monkeypatch.setattr(
+        lab, "_playground_original_path", lambda _data_dir: tmp_path / "orig.csv"
+    )
     monkeypatch.setattr(
         lab,
         "_playground_model_result",
-        lambda _model, _train_x, _test_x, _y, _cv: (0.91001, np.array([0.1] * 6), np.array([0.4, 0.6])),
+        lambda _model, _train_x, _test_x, _y, _cv: (
+            0.91001,
+            np.array([0.1] * 6),
+            np.array([0.4, 0.6]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_lightgbm_result",
-        lambda _train, _test, _orig, _folds: (0.9188, np.array([0.18] * 6), np.array([0.3, 0.7])),
+        lambda _train, _test, _orig, _folds: (
+            0.9188,
+            np.array([0.18] * 6),
+            np.array([0.3, 0.7]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_xgboost_result",
-        lambda _train, _test, _orig, _folds: (0.91999, np.array([0.2] * 6), np.array([0.25, 0.75])),
+        lambda _train, _test, _orig, _folds: (
+            0.91999,
+            np.array([0.2] * 6),
+            np.array([0.25, 0.75]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_xgboost_pseudo_result",
-        lambda _train, _test, _orig, _folds: (0.92055, np.array([0.22] * 6), np.array([0.15, 0.85])),
+        lambda _train, _test, _orig, _folds: (
+            0.92055,
+            np.array([0.22] * 6),
+            np.array([0.15, 0.85]),
+        ),
     )
     monkeypatch.setattr(
         lab,
         "_playground_advanced_catboost_result",
-        lambda _train, _test, _orig, _folds: (0.9185, np.array([0.15] * 6), np.array([0.35, 0.65])),
+        lambda _train, _test, _orig, _folds: (
+            0.9185,
+            np.array([0.15] * 6),
+            np.array([0.35, 0.65]),
+        ),
     )
     monkeypatch.setattr(
         lab,
@@ -555,7 +669,10 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
     result = lab.benchmark_playground_telco(tmp_path, folds=3, write_submission=True)
 
     assert result.best_model == "xgboost_te_pseudo"
-    assert any(row["model"] == "xgboost_te_pseudo" and row["score"] == 0.92055 for row in result.benchmark_rows)
+    assert any(
+        row["model"] == "xgboost_te_pseudo" and row["score"] == 0.92055
+        for row in result.benchmark_rows
+    )
     submission = pd.read_csv(result.submission_path)
     assert submission["Churn"].tolist() == [0.15, 0.85]
 
@@ -740,10 +857,12 @@ def test_playground_advanced_feature_frames_add_ngram_and_distribution_columns()
     test = train.drop(columns=["Churn"]).head(1).copy()
     orig = train.copy()
 
-    train_frame, test_frame, feature_cols, te_cols, drop_raw_cols = lab._playground_advanced_feature_frames(
-        train,
-        test,
-        orig,
+    train_frame, test_frame, feature_cols, te_cols, drop_raw_cols = (
+        lab._playground_advanced_feature_frames(
+            train,
+            test,
+            orig,
+        )
     )
 
     for col in [
@@ -773,7 +892,13 @@ def test_playground_advanced_xgboost_result_averages_across_seed_ensemble(monkey
     monkeypatch.setattr(
         lab,
         "_playground_advanced_feature_frames",
-        lambda _train, _test, _orig: (train_frame.copy(), test_frame.copy(), ["num"], [], []),
+        lambda _train, _test, _orig: (
+            train_frame.copy(),
+            test_frame.copy(),
+            ["num"],
+            [],
+            [],
+        ),
     )
 
     class FakeXGBClassifier:
@@ -792,7 +917,9 @@ def test_playground_advanced_xgboost_result_averages_across_seed_ensemble(monkey
             positive = np.full(len(frame), seed_score, dtype=float)
             return np.column_stack([1.0 - positive, positive])
 
-    monkeypatch.setitem(sys.modules, "xgboost", types.SimpleNamespace(XGBClassifier=FakeXGBClassifier))
+    monkeypatch.setitem(
+        sys.modules, "xgboost", types.SimpleNamespace(XGBClassifier=FakeXGBClassifier)
+    )
 
     score, oof, test_pred = lab._playground_advanced_xgboost_result(
         pd.DataFrame(),
@@ -986,10 +1113,34 @@ def test_house_best_blend_prefers_stronger_weighted_mix():
 def test_store_sales_prediction_frame_produces_complete_predictions():
     history = pd.DataFrame(
         [
-            {"date": "2024-01-01", "store_nbr": 1, "family": "A", "onpromotion": 0, "sales": 10.0},
-            {"date": "2024-01-08", "store_nbr": 1, "family": "A", "onpromotion": 0, "sales": 12.0},
-            {"date": "2024-01-15", "store_nbr": 1, "family": "A", "onpromotion": 1, "sales": 15.0},
-            {"date": "2024-01-22", "store_nbr": 1, "family": "A", "onpromotion": 1, "sales": 16.0},
+            {
+                "date": "2024-01-01",
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+                "sales": 10.0,
+            },
+            {
+                "date": "2024-01-08",
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+                "sales": 12.0,
+            },
+            {
+                "date": "2024-01-15",
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+                "sales": 15.0,
+            },
+            {
+                "date": "2024-01-22",
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+                "sales": 16.0,
+            },
         ]
     )
     target = pd.DataFrame(
@@ -1009,10 +1160,34 @@ def test_store_sales_prediction_frame_produces_complete_predictions():
 def test_store_sales_build_future_frame_uses_direct_lag_when_available():
     history = pd.DataFrame(
         [
-            {"date": pd.Timestamp("2024-01-01"), "store_nbr": 1, "family": "A", "onpromotion": 0, "sales": 10.0},
-            {"date": pd.Timestamp("2024-01-02"), "store_nbr": 1, "family": "A", "onpromotion": 0, "sales": 11.0},
-            {"date": pd.Timestamp("2024-01-08"), "store_nbr": 1, "family": "A", "onpromotion": 1, "sales": 12.0},
-            {"date": pd.Timestamp("2024-01-09"), "store_nbr": 1, "family": "A", "onpromotion": 1, "sales": 13.0},
+            {
+                "date": pd.Timestamp("2024-01-01"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+                "sales": 10.0,
+            },
+            {
+                "date": pd.Timestamp("2024-01-02"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+                "sales": 11.0,
+            },
+            {
+                "date": pd.Timestamp("2024-01-08"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+                "sales": 12.0,
+            },
+            {
+                "date": pd.Timestamp("2024-01-09"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+                "sales": 13.0,
+            },
         ]
     )
     stores = pd.DataFrame([{"store_nbr": 1, "type": "D", "cluster": 3}])
@@ -1022,17 +1197,32 @@ def test_store_sales_build_future_frame_uses_direct_lag_when_available():
             {"date": pd.Timestamp("2024-01-15"), "dcoilwtico": 51.0},
         ]
     )
-    holidays = pd.DataFrame([{"date": pd.Timestamp("2024-01-15"), "locale": "National"}])
+    holidays = pd.DataFrame(
+        [{"date": pd.Timestamp("2024-01-15"), "locale": "National"}]
+    )
 
     history_features = lab._store_sales_make_features(history, oil, stores, holidays)
     category_maps = {
-        col: {value: idx for idx, value in enumerate(sorted(pd.Index(history_features[col].astype(str)).drop_duplicates()))}
+        col: {
+            value: idx
+            for idx, value in enumerate(
+                sorted(pd.Index(history_features[col].astype(str)).drop_duplicates())
+            )
+        }
         for col in ("family", "type")
     }
-    lag_lookup, history_summary, family_dow_history, store_dow_history = lab._store_sales_history_artifacts(history)
+    lag_lookup, history_summary, family_dow_history, store_dow_history = (
+        lab._store_sales_history_artifacts(history)
+    )
     target = pd.DataFrame(
         [
-            {"id": 1, "date": pd.Timestamp("2024-01-15"), "store_nbr": 1, "family": "A", "onpromotion": 1},
+            {
+                "id": 1,
+                "date": pd.Timestamp("2024-01-15"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+            },
         ]
     )
 
@@ -1059,22 +1249,47 @@ def test_store_sales_recursive_predictions_feed_prior_outputs_into_history(monke
 
     history = pd.DataFrame(
         [
-            {"date": pd.Timestamp("2024-01-01"), "store_nbr": 1, "family": "A", "onpromotion": 0, "sales": 5.0},
+            {
+                "date": pd.Timestamp("2024-01-01"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+                "sales": 5.0,
+            },
         ]
     )
     target = pd.DataFrame(
         [
-            {"id": 1, "date": pd.Timestamp("2024-01-02"), "store_nbr": 1, "family": "A", "onpromotion": 0},
-            {"id": 2, "date": pd.Timestamp("2024-01-03"), "store_nbr": 1, "family": "A", "onpromotion": 0},
+            {
+                "id": 1,
+                "date": pd.Timestamp("2024-01-02"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+            },
+            {
+                "id": 2,
+                "date": pd.Timestamp("2024-01-03"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+            },
         ]
     )
 
     def fake_history_artifacts(current_history):
-        return current_history[["sales"]].copy(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        return (
+            current_history[["sales"]].copy(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+        )
 
     def fake_future_frame(day_rows, *_args, **_kwargs):
         lag_lookup = _args[3]
-        return pd.DataFrame({"signal": np.repeat(float(lag_lookup["sales"].iloc[-1]), len(day_rows))})
+        return pd.DataFrame(
+            {"signal": np.repeat(float(lag_lookup["sales"].iloc[-1]), len(day_rows))}
+        )
 
     monkeypatch.setattr(lab, "_store_sales_history_artifacts", fake_history_artifacts)
     monkeypatch.setattr(lab, "_store_sales_build_future_frame", fake_future_frame)
@@ -1093,7 +1308,9 @@ def test_store_sales_recursive_predictions_feed_prior_outputs_into_history(monke
     assert np.allclose(preds, [6.0, 7.0])
 
 
-def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(tmp_path, monkeypatch):
+def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(
+    tmp_path, monkeypatch
+):
     dates = pd.date_range("2024-01-01", periods=20, freq="D")
     train = pd.DataFrame(
         {
@@ -1107,8 +1324,20 @@ def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(tmp_path, mo
     )
     test = pd.DataFrame(
         [
-            {"id": 101, "date": pd.Timestamp("2024-01-21"), "store_nbr": 1, "family": "A", "onpromotion": 0},
-            {"id": 102, "date": pd.Timestamp("2024-01-22"), "store_nbr": 1, "family": "A", "onpromotion": 1},
+            {
+                "id": 101,
+                "date": pd.Timestamp("2024-01-21"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+            },
+            {
+                "id": 102,
+                "date": pd.Timestamp("2024-01-22"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+            },
         ]
     )
     stores = pd.DataFrame([{"store_nbr": 1, "type": "D", "cluster": 3}])
@@ -1118,7 +1347,9 @@ def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(tmp_path, mo
             {"date": pd.Timestamp("2024-01-22"), "dcoilwtico": 52.0},
         ]
     )
-    holidays = pd.DataFrame([{"date": pd.Timestamp("2024-01-21"), "locale": "National"}])
+    holidays = pd.DataFrame(
+        [{"date": pd.Timestamp("2024-01-21"), "locale": "National"}]
+    )
 
     train.to_csv(tmp_path / "train.csv", index=False)
     test.to_csv(tmp_path / "test.csv", index=False)
@@ -1126,18 +1357,25 @@ def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(tmp_path, mo
     oil.to_csv(tmp_path / "oil.csv", index=False)
     holidays.to_csv(tmp_path / "holidays_events.csv", index=False)
 
-    def fake_lightgbm_result(history, validation, future_test, stores_df, oil_df, holidays_df):
+    def fake_lightgbm_result(
+        history, validation, future_test, stores_df, oil_df, holidays_df
+    ):
         assert not history.empty
         assert not validation.empty
         assert len(future_test) == 2
         return 0.12345, np.full(len(validation), 17.0), np.array([42.0, 43.0])
 
-    monkeypatch.setattr(lab, "_store_sales_lightgbm_future_result", fake_lightgbm_result)
+    monkeypatch.setattr(
+        lab, "_store_sales_lightgbm_future_result", fake_lightgbm_result
+    )
 
     result = lab.benchmark_store_sales(tmp_path, _folds=0, write_submission=True)
 
     assert result.best_model == "lightgbm_future"
-    assert any(row["model"] == "lightgbm_future" and row["score"] == 0.12345 for row in result.benchmark_rows)
+    assert any(
+        row["model"] == "lightgbm_future" and row["score"] == 0.12345
+        for row in result.benchmark_rows
+    )
 
     submission = pd.read_csv(result.submission_path)
     assert submission["sales"].tolist() == [42.0, 43.0]

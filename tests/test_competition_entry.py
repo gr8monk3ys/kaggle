@@ -1,16 +1,20 @@
 """Tests for competition_entry.py."""
+
 import json
-from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from kaggle_portfolio.notebooks import competition_entry as entry
+from kaggle_portfolio.shared.kaggle_client import (
+    Competition,
+    FakeKaggleClient,
+    parse_csv,
+)
 
 
 # ---------------------------------------------------------------------------
 # Slug generation
 # ---------------------------------------------------------------------------
+
 
 class TestMakeSlug:
     def test_simple_title(self):
@@ -44,6 +48,7 @@ class TestMakeSlug:
 # Category detection
 # ---------------------------------------------------------------------------
 
+
 class TestDetectCategory:
     def test_nlp_detection(self):
         assert entry.detect_category("NLP Getting Started: Disaster Tweets") == "nlp"
@@ -65,59 +70,51 @@ class TestDetectCategory:
 # Competition metadata fetching
 # ---------------------------------------------------------------------------
 
+
 class TestFetchCompetitionInfo:
-    def test_matches_slug_exactly_not_by_prefix(self, monkeypatch):
-        csv_payload = (
-            "ref,title\n"
-            "playground-series-s4e10,Episode 10\n"
-            "playground-series-s4e1,Episode 1\n"
+    def test_matches_slug_exactly_not_by_prefix(self):
+        client = FakeKaggleClient(
+            competitions=[
+                Competition.from_row(row)
+                for row in parse_csv(
+                    "ref,title\n"
+                    "playground-series-s4e10,Episode 10\n"
+                    "playground-series-s4e1,Episode 1\n"
+                )
+            ]
+        )
+        info = entry.fetch_competition_info(client, "playground-series-s4e1")
+        assert info is not None
+        assert info.slug == "playground-series-s4e1"
+        assert info.title == "Episode 1"
+
+    def test_matches_a_full_url_ref(self):
+        client = FakeKaggleClient(
+            competitions=[
+                Competition.from_row(
+                    {
+                        "ref": "https://www.kaggle.com/competitions/march-machine-learning-mania-2026",
+                        "title": "March Mania",
+                    }
+                )
+            ]
+        )
+        info = entry.fetch_competition_info(client, "march-machine-learning-mania-2026")
+        assert info is not None
+        assert info.title == "March Mania"
+
+    def test_returns_none_when_absent(self):
+        assert (
+            entry.fetch_competition_info(FakeKaggleClient(competitions=[]), "nope")
+            is None
         )
 
-        def fake_run(*args, **kwargs):
-            class Result:
-                returncode = 0
-                stdout = csv_payload
-
-            return Result()
-
-        monkeypatch.setattr(entry.subprocess, "run", fake_run)
-        monkeypatch.setattr(entry, "kaggle_command", lambda: ["kaggle"])
-
-        info = entry.fetch_competition_info("playground-series-s4e1")
-
-        assert info is not None
-        assert info["ref"] == "playground-series-s4e1"
-        assert info["title"] == "Episode 1"
-
-    def test_matches_full_url_and_checks_featured_lists(self, monkeypatch):
-        calls: list[list[str]] = []
-
-        def fake_run(cmd, *args, **kwargs):
-            calls.append(cmd)
-
-            class Result:
-                returncode = 0
-                stdout = "ref,title\nhttps://www.kaggle.com/competitions/march-machine-learning-mania-2026,March Mania\n" if "--category" in cmd and "featured" in cmd else "ref,title\n"
-
-            return Result()
-
-        monkeypatch.setattr(entry.subprocess, "run", fake_run)
-        monkeypatch.setattr(entry, "kaggle_command", lambda: ["kaggle"])
-
-        info = entry.fetch_competition_info("march-machine-learning-mania-2026")
-
-        assert info is not None
-        assert info["title"] == "March Mania"
-        assert any("--category" in call and "featured" in call for call in calls)
-
-
-# ---------------------------------------------------------------------------
-# Kernel metadata generation
-# ---------------------------------------------------------------------------
 
 class TestMakeKernelMetadata:
     def test_required_fields_present(self):
-        meta = entry.make_kernel_metadata("spaceship-titanic", "Spaceship Titanic: EDA", False)
+        meta = entry.make_kernel_metadata(
+            "spaceship-titanic", "Spaceship Titanic: EDA", False
+        )
         assert "id" in meta
         assert "title" in meta
         assert "code_file" in meta
@@ -131,7 +128,9 @@ class TestMakeKernelMetadata:
         assert meta_cpu["enable_gpu"] is False
 
     def test_slug_in_id(self):
-        meta = entry.make_kernel_metadata("test-comp", "Test Competition: EDA & Baseline", False)
+        meta = entry.make_kernel_metadata(
+            "test-comp", "Test Competition: EDA & Baseline", False
+        )
         assert meta["id"].startswith("lorenzoscaturchio/")
         slug_part = meta["id"].split("/")[1]
         assert len(slug_part) <= entry.MAX_SLUG_LEN
@@ -140,6 +139,7 @@ class TestMakeKernelMetadata:
 # ---------------------------------------------------------------------------
 # Cell generation
 # ---------------------------------------------------------------------------
+
 
 class TestGenerateCells:
     def test_generates_15_plus_cells(self):
@@ -181,13 +181,16 @@ class TestGenerateCells:
 # End-to-end directory creation
 # ---------------------------------------------------------------------------
 
+
 class TestCreateEntry:
     @patch("kaggle_portfolio.notebooks.competition_entry.fetch_competition_info")
     def test_creates_directory(self, mock_fetch, tmp_path):
         mock_fetch.return_value = None
 
         with patch.object(entry, "ROOT", tmp_path):
-            ok = entry.create_entry("test-competition", gpu=False, push=False)
+            ok = entry.create_entry(
+                FakeKaggleClient(), "test-competition", gpu=False, push=False
+            )
 
         assert ok
         entry_dir = tmp_path / "projects" / "competitions" / "test-competition"
@@ -225,7 +228,9 @@ class TestCreateEntry:
         )
 
         with patch.object(entry, "ROOT", tmp_path):
-            ok = entry.create_entry("existing-comp", gpu=False, push=False)
+            ok = entry.create_entry(
+                FakeKaggleClient(), "existing-comp", gpu=False, push=False
+            )
 
         assert ok
         # Should not overwrite existing kernel-metadata.json
@@ -237,13 +242,24 @@ class TestCreateEntry:
 
     @patch("kaggle_portfolio.notebooks.competition_entry.fetch_competition_info")
     def test_fetched_title_used(self, mock_fetch, tmp_path):
-        mock_fetch.return_value = {"title": "Amazing Competition", "ref": "amazing-comp"}
+        mock_fetch.return_value = {
+            "title": "Amazing Competition",
+            "ref": "amazing-comp",
+        }
 
         with patch.object(entry, "ROOT", tmp_path):
-            ok = entry.create_entry("amazing-comp", gpu=False, push=False)
+            ok = entry.create_entry(
+                FakeKaggleClient(), "amazing-comp", gpu=False, push=False
+            )
 
         assert ok
         meta = json.loads(
-            (tmp_path / "projects" / "competitions" / "amazing-comp" / "kernel-metadata.json").read_text()
+            (
+                tmp_path
+                / "projects"
+                / "competitions"
+                / "amazing-comp"
+                / "kernel-metadata.json"
+            ).read_text()
         )
         assert "Amazing Competition" in meta["title"]

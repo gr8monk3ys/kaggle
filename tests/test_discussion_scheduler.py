@@ -145,7 +145,9 @@ def test_generate_queue_preserves_skipped_status_outside_schedule():
         },
     ]
 
-    queue = discussion_scheduler.generate_queue(drafts, start_date=datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc))
+    queue = discussion_scheduler.generate_queue(
+        drafts, start_date=datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
+    )
     by_id = {item["id"]: item for item in queue}
 
     assert by_id["draft_001"]["status"] == "skipped"
@@ -156,8 +158,16 @@ def test_generate_queue_preserves_skipped_status_outside_schedule():
 def test_build_ops_summary_reports_flow_health_metrics():
     now = datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
     queue = [
-        {"id": "draft_001", "status": "scheduled", "scheduled_after": (now - timedelta(days=1)).isoformat()},
-        {"id": "draft_002", "status": "scheduled", "scheduled_after": (now + timedelta(days=2)).isoformat()},
+        {
+            "id": "draft_001",
+            "status": "scheduled",
+            "scheduled_after": (now - timedelta(days=1)).isoformat(),
+        },
+        {
+            "id": "draft_002",
+            "status": "scheduled",
+            "scheduled_after": (now + timedelta(days=2)).isoformat(),
+        },
         {"id": "draft_003", "status": "ready", "scheduled_after": None},
         {"id": "draft_004", "status": "idea", "scheduled_after": None},
         {"id": "draft_005", "status": "posted", "scheduled_after": None},
@@ -182,7 +192,11 @@ def test_build_ops_summary_ignores_skipped_items_in_backlog_counts():
     now = datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
     queue = [
         {"id": "draft_001", "status": "skipped", "scheduled_after": None},
-        {"id": "draft_002", "status": "scheduled", "scheduled_after": (now + timedelta(days=2)).isoformat()},
+        {
+            "id": "draft_002",
+            "status": "scheduled",
+            "scheduled_after": (now + timedelta(days=2)).isoformat(),
+        },
     ]
 
     summary = discussion_scheduler.build_ops_summary(queue, now=now)
@@ -212,7 +226,9 @@ def test_generate_queue_limits_scheduled_window_and_leaves_rest_ready():
         )
 
     start = datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
-    queue = discussion_scheduler.generate_queue(drafts, start_date=start, schedule_weeks=2)
+    queue = discussion_scheduler.generate_queue(
+        drafts, start_date=start, schedule_weeks=2
+    )
 
     scheduled = [item for item in queue if item["status"] == "scheduled"]
     ready = [item for item in queue if item["status"] == "ready"]
@@ -226,8 +242,16 @@ def test_generate_queue_limits_scheduled_window_and_leaves_rest_ready():
 def test_run_health_check_fails_when_overdue_exceeds_threshold():
     now = datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
     queue = [
-        {"id": "draft_001", "status": "scheduled", "scheduled_after": (now - timedelta(days=1)).isoformat()},
-        {"id": "draft_002", "status": "scheduled", "scheduled_after": (now + timedelta(days=2)).isoformat()},
+        {
+            "id": "draft_001",
+            "status": "scheduled",
+            "scheduled_after": (now - timedelta(days=1)).isoformat(),
+        },
+        {
+            "id": "draft_002",
+            "status": "scheduled",
+            "scheduled_after": (now + timedelta(days=2)).isoformat(),
+        },
     ]
 
     rc = discussion_scheduler.run_health_check(
@@ -243,7 +267,11 @@ def test_run_health_check_fails_when_overdue_exceeds_threshold():
 def test_run_health_check_fails_when_next_post_gap_too_large():
     now = datetime(2026, 2, 24, 10, 0, tzinfo=timezone.utc)
     queue = [
-        {"id": "draft_001", "status": "scheduled", "scheduled_after": (now + timedelta(days=10)).isoformat()},
+        {
+            "id": "draft_001",
+            "status": "scheduled",
+            "scheduled_after": (now + timedelta(days=10)).isoformat(),
+        },
     ]
 
     rc = discussion_scheduler.run_health_check(
@@ -293,17 +321,25 @@ def test_update_draft_rebalances_schedule_with_canonical_id():
     assert updated["deadline"] == "2026-02-25"
     assert sum(1 for item in updated_queue if item["status"] == "scheduled") == 3
     assert by_id["draft_005"]["status"] == "scheduled"
-    assert by_id["draft_005"]["scheduled_after"] <= by_id["draft_001"]["scheduled_after"]
+    assert (
+        by_id["draft_005"]["scheduled_after"] <= by_id["draft_001"]["scheduled_after"]
+    )
 
 
 def test_resolve_forum_prefers_longest_matching_key():
     resolve = discussion_scheduler.resolve_forum
-    assert resolve("nlp getting started") == \
-        "https://www.kaggle.com/competitions/nlp-getting-started/discussion"
-    assert resolve("getting started") == \
-        "https://www.kaggle.com/discussions/getting-started"
-    assert resolve("deep past akkadian") == \
-        "https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion"
+    assert (
+        resolve("nlp getting started")
+        == "https://www.kaggle.com/competitions/nlp-getting-started/discussion"
+    )
+    assert (
+        resolve("getting started")
+        == "https://www.kaggle.com/discussions/getting-started"
+    )
+    assert (
+        resolve("deep past akkadian")
+        == "https://www.kaggle.com/competitions/deep-past-initiative-machine-translation/discussion"
+    )
     assert resolve("something unmapped") == discussion_scheduler.DEFAULT_FORUM
 
 
@@ -326,45 +362,71 @@ def test_parse_drafts_routes_nlp_getting_started_to_competition(tmp_path):
 
     drafts = discussion_scheduler.parse_drafts(drafts_path)
 
-    assert drafts[0]["forum_url"] == \
-        "https://www.kaggle.com/competitions/nlp-getting-started/discussion"
+    assert (
+        drafts[0]["forum_url"]
+        == "https://www.kaggle.com/competitions/nlp-getting-started/discussion"
+    )
     assert drafts[0]["priority"] == "high"
 
 
 def test_select_next_post_prefers_most_overdue_due_item():
     from datetime import datetime, timezone
+
     now = datetime(2026, 6, 14, 12, 0, tzinfo=timezone.utc)
     queue = [
-        {"id": "draft_010", "status": "scheduled", "priority": "high",
-         "scheduled_after": "2026-06-20T10:00:00+00:00"},   # future
-        {"id": "draft_011", "status": "ready", "priority": "low",
-         "scheduled_after": "2026-06-10T10:00:00+00:00"},   # due, most overdue
-        {"id": "draft_012", "status": "ready", "priority": "high",
-         "scheduled_after": "2026-06-13T10:00:00+00:00"},   # due, newer
-        {"id": "draft_013", "status": "posted", "priority": "high",
-         "scheduled_after": "2026-06-09T10:00:00+00:00"},   # not postable
+        {
+            "id": "draft_010",
+            "status": "scheduled",
+            "priority": "high",
+            "scheduled_after": "2026-06-20T10:00:00+00:00",
+        },  # future
+        {
+            "id": "draft_011",
+            "status": "ready",
+            "priority": "low",
+            "scheduled_after": "2026-06-10T10:00:00+00:00",
+        },  # due, most overdue
+        {
+            "id": "draft_012",
+            "status": "ready",
+            "priority": "high",
+            "scheduled_after": "2026-06-13T10:00:00+00:00",
+        },  # due, newer
+        {
+            "id": "draft_013",
+            "status": "posted",
+            "priority": "high",
+            "scheduled_after": "2026-06-09T10:00:00+00:00",
+        },  # not postable
     ]
     assert discussion_scheduler.select_next_post(queue, now=now)["id"] == "draft_011"
 
 
 def test_select_next_post_none_when_no_postable():
-    assert discussion_scheduler.select_next_post([{"id": "d", "status": "posted"}]) is None
+    assert (
+        discussion_scheduler.select_next_post([{"id": "d", "status": "posted"}]) is None
+    )
 
 
 def test_extract_post_body_strips_ops_metadata(tmp_path):
     md = tmp_path / "drafts.md"
-    md.write_text("\n".join([
-        "## Draft 7: Sample",
-        "**Target forum:** General",
-        "**Category:** Strategy",
-        "**Status:** ready",
-        "",
-        "### Sample Post Title",
-        "",
-        "This is the real post body.",
-        "Second line.",
-        "",
-    ]), encoding="utf-8")
+    md.write_text(
+        "\n".join(
+            [
+                "## Draft 7: Sample",
+                "**Target forum:** General",
+                "**Category:** Strategy",
+                "**Status:** ready",
+                "",
+                "### Sample Post Title",
+                "",
+                "This is the real post body.",
+                "Second line.",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
     body = discussion_scheduler.extract_post_body(md, "Draft 7")
     assert "**Target forum:**" not in body
     assert "### Sample Post Title" in body
@@ -373,10 +435,21 @@ def test_extract_post_body_strips_ops_metadata(tmp_path):
 
 def test_cmd_next_post_outputs_copy_block(tmp_path, capsys):
     md = tmp_path / "drafts.md"
-    md.write_text("## Draft 7: Sample\n**Target forum:** General\n\n### Title\n\nBody text.\n", encoding="utf-8")
-    queue = [{"id": "draft_007", "status": "ready", "priority": "high", "title": "Sample",
-              "forum_url": "https://www.kaggle.com/discussions/general",
-              "body_section": "Draft 7", "scheduled_after": "2026-06-01T10:00:00+00:00"}]
+    md.write_text(
+        "## Draft 7: Sample\n**Target forum:** General\n\n### Title\n\nBody text.\n",
+        encoding="utf-8",
+    )
+    queue = [
+        {
+            "id": "draft_007",
+            "status": "ready",
+            "priority": "high",
+            "title": "Sample",
+            "forum_url": "https://www.kaggle.com/discussions/general",
+            "body_section": "Draft 7",
+            "scheduled_after": "2026-06-01T10:00:00+00:00",
+        }
+    ]
     rc = discussion_scheduler.cmd_next_post(queue=queue, drafts_path=md)
     out = capsys.readouterr().out
     assert rc == 0
@@ -392,6 +465,7 @@ def test_cmd_next_post_no_postable(capsys):
 
 # ── fabricated-results guard ─────────────────────────────────────────────────
 
+
 def test_asserts_unbacked_results_flags_measurement_claims():
     from kaggle_portfolio.ops.discussion_scheduler import asserts_unbacked_results
 
@@ -403,7 +477,9 @@ def test_asserts_unbacked_results_flags_measurement_claims():
         "| Model | AUC |\n|---|---|\n| GBM | 0.968 |"
     )
     # Hyperparameters in code are numbers, not claimed measurements.
-    assert not asserts_unbacked_results("Set learning_rate=0.05 and subsample to 0.800.")
+    assert not asserts_unbacked_results(
+        "Set learning_rate=0.05 and subsample to 0.800."
+    )
     assert not asserts_unbacked_results("I tested this approach and liked it.")
 
 
@@ -443,13 +519,22 @@ def test_no_postable_draft_reports_unbacked_results():
 
 
 def test_measurement_claim_allows_auxiliaries_but_not_code():
-    """"I have compared" asserts a measurement; `for i in range(...)` does not."""
+    """ "I have compared" asserts a measurement; `for i in range(...)` does not."""
     from kaggle_portfolio.ops.discussion_scheduler import MEASUREMENT_CLAIM
 
-    for claim in ("I benchmarked 7 strategies", "I have compared five methods",
-                  "I've tested this", "I recently measured", "I then ran a check"):
+    for claim in (
+        "I benchmarked 7 strategies",
+        "I have compared five methods",
+        "I've tested this",
+        "I recently measured",
+        "I then ran a check",
+    ):
         assert MEASUREMENT_CLAIM.search(claim), claim
     # "ran\\w*" previously matched "range", flagging every for-loop in a code sample.
-    for benign in ("for i in range(10):", "for i in range(n_splits):",
-                   "I like gradient boosting", "I am new to Kaggle"):
+    for benign in (
+        "for i in range(10):",
+        "for i in range(n_splits):",
+        "I like gradient boosting",
+        "I am new to Kaggle",
+    ):
         assert not MEASUREMENT_CLAIM.search(benign), benign

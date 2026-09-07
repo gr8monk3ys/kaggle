@@ -1,4 +1,5 @@
 """The Conductor: orchestrate state->enumerate->score->gate->dispatch->log->attribute."""
+
 from __future__ import annotations
 
 import argparse
@@ -17,7 +18,12 @@ HISTORY_NAME = "flywheel_history.jsonl"
 WEIGHTS_NAME = "flywheel_weights.json"
 CONFIG_NAME = "flywheel_config.json"
 LAST_SNAPSHOT_NAME = "flywheel_last_snapshot.json"
-_QUEUE_PATH = Path(__file__).resolve().parents[2] / "pi-automation" / "data" / "discussion_queue.json"
+_QUEUE_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "pi-automation"
+    / "data"
+    / "discussion_queue.json"
+)
 
 
 @dataclass(frozen=True)
@@ -43,7 +49,7 @@ def load_history(path: Path) -> list[dict]:
             rows.append(json.loads(line))
         except json.JSONDecodeError:
             continue  # skip a corrupted line; never drop the whole history
-                       # (losing it would break dedupe -> risk double-posting)
+            # (losing it would break dedupe -> risk double-posting)
     return rows
 
 
@@ -69,7 +75,9 @@ def _save_last_snapshot(snapshot: dict) -> None:
     path.write_text(json.dumps(snapshot), encoding="utf-8")
 
 
-def _default_executor(action: actions.Action) -> DispatchResult:  # pragma: no cover - live only
+def _default_executor(
+    action: actions.Action,
+) -> DispatchResult:  # pragma: no cover - live only
     """Live dispatch seam (only reached when the kill switch is OFF).
 
     `discussion_post` delegates to the existing, production discussion poster
@@ -82,6 +90,7 @@ def _default_executor(action: actions.Action) -> DispatchResult:  # pragma: no c
     """
     if action.kind == "discussion_post":
         from kaggle_portfolio.ops import discussion_scheduler as ds
+
         rc = ds.do_post(ds.load_queue())
         return DispatchResult(
             ok=(rc == 0),
@@ -90,8 +99,10 @@ def _default_executor(action: actions.Action) -> DispatchResult:  # pragma: no c
         )
     return DispatchResult(
         ok=False,
-        error=(f"live dispatch for {action.kind!r} is not yet available "
-               "(notebook_promoter --auto is upstream-pending); use --dry-run"),
+        error=(
+            f"live dispatch for {action.kind!r} is not yet available "
+            "(notebook_promoter --auto is upstream-pending); use --dry-run"
+        ),
     )
 
 
@@ -103,7 +114,7 @@ def _coerce_int(value) -> int:
 
 def _audience_by_comp(gs) -> dict[str, int]:
     out = {}
-    for comp in (gs.snapshot.get("active_competitions") or []):
+    for comp in gs.snapshot.get("active_competitions") or []:
         name = str(comp.get("competition", "")).strip().lower().replace(" ", "-")
         teams = _coerce_int(comp.get("teams"))
         if name and teams:
@@ -113,18 +124,31 @@ def _audience_by_comp(gs) -> dict[str, int]:
 
 def _ranked(gs, cfg: FlywheelConfig, weights: dict[str, float]):
     candidates = actions.enumerate_actions(
-        gs, discussion_queue_path=_QUEUE_PATH, audience_by_comp=_audience_by_comp(gs),
+        gs,
+        discussion_queue_path=_QUEUE_PATH,
+        audience_by_comp=_audience_by_comp(gs),
     )
     scored = [
-        (a, scorer.expected_lift(a.kind, a.audience, a.item_votes, cfg, weights.get(a.kind, 1.0)))
+        (
+            a,
+            scorer.expected_lift(
+                a.kind, a.audience, a.item_votes, cfg, weights.get(a.kind, 1.0)
+            ),
+        )
         for a in candidates
     ]
     scored.sort(key=lambda pair: pair[1], reverse=True)
     return scored
 
 
-def tick(*, now: datetime | None = None, dry_run: bool = False,
-         executor=None, gs=None, cfg=None) -> int:
+def tick(
+    *,
+    now: datetime | None = None,
+    dry_run: bool = False,
+    executor=None,
+    gs=None,
+    cfg=None,
+) -> int:
     now = now or datetime.now(timezone.utc)
     executor = executor or _default_executor
     cfg = cfg or load_config(GROWTH_DIR / CONFIG_NAME)
@@ -154,16 +178,19 @@ def tick(*, now: datetime | None = None, dry_run: bool = False,
             result = executor(action)
         except Exception as exc:  # wrap every executor call (account-health guard)
             result = DispatchResult(ok=False, error=str(exc))
-        append_history(history_path, {
-            "tick_ts": now.isoformat(),
-            "kind": action.kind,
-            "target_id": action.target_id,
-            "competition": action.payload.get("competition"),
-            "score": round(score, 3),
-            "status": "done" if result.ok else "failed",
-            "post_url": result.post_url,
-            "error": result.error,
-        })
+        append_history(
+            history_path,
+            {
+                "tick_ts": now.isoformat(),
+                "kind": action.kind,
+                "target_id": action.target_id,
+                "competition": action.payload.get("competition"),
+                "score": round(score, 3),
+                "status": "done" if result.ok else "failed",
+                "post_url": result.post_url,
+                "error": result.error,
+            },
+        )
         if result.ok:
             dispatched += 1
         else:
@@ -174,7 +201,12 @@ def tick(*, now: datetime | None = None, dry_run: bool = False,
     # the next real dispatch of its vote delta.
     if dispatched > 0:
         new_weights = feedback.attribute(
-            load_history(history_path), prev_snapshot, gs.snapshot, weights, cfg, now,
+            load_history(history_path),
+            prev_snapshot,
+            gs.snapshot,
+            weights,
+            cfg,
+            now,
         )
         feedback.save_weights(GROWTH_DIR / WEIGHTS_NAME, new_weights)
         _save_last_snapshot(gs.snapshot)
@@ -184,23 +216,36 @@ def tick(*, now: datetime | None = None, dry_run: bool = False,
 def status(*, gs=None, cfg=None) -> int:
     cfg = cfg or load_config(GROWTH_DIR / CONFIG_NAME)
     gs = gs or _load_state(date.today())
-    score = scorer.reach_score(gs.followers, [i.votes for i in gs.items],
-                               gs.discussion_medals, cfg)
-    near = [i for i in gs.items
-            if (c := scorer.next_cut(i.votes)) is not None and 0 < (c - i.votes) <= cfg.near_window]
+    score = scorer.reach_score(
+        gs.followers, [i.votes for i in gs.items], gs.discussion_medals, cfg
+    )
+    near = [
+        i
+        for i in gs.items
+        if (c := scorer.next_cut(i.votes)) is not None
+        and 0 < (c - i.votes) <= cfg.near_window
+    ]
     print(f"Reach Score: {score:.2f}")
-    print(f"Followers: {gs.followers}  |  Notebooks tracked: {len(gs.items)}  |  "
-          f"Discussion medals: {gs.discussion_medals}")
-    print(f"Near-threshold items ({len(near)}): "
-          + ", ".join(f"{i.slug}={i.votes}" for i in near[:10]))
+    print(
+        f"Followers: {gs.followers}  |  Notebooks tracked: {len(gs.items)}  |  "
+        f"Discussion medals: {gs.discussion_medals}"
+    )
+    print(
+        f"Near-threshold items ({len(near)}): "
+        + ", ".join(f"{i.slug}={i.votes}" for i in near[:10])
+    )
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="flywheel", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    tick_p = sub.add_parser("tick", help="Score, gate, and dispatch the top safe actions.")
-    tick_p.add_argument("--dry-run", action="store_true", help="Show would-dispatch; post nothing.")
+    tick_p = sub.add_parser(
+        "tick", help="Score, gate, and dispatch the top safe actions."
+    )
+    tick_p.add_argument(
+        "--dry-run", action="store_true", help="Show would-dispatch; post nothing."
+    )
     sub.add_parser("status", help="Print the Reach-Score dashboard.")
     args = parser.parse_args(argv)
     if args.command == "tick":

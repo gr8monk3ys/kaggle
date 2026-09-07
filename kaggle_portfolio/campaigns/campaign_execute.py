@@ -22,7 +22,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "pi-automation" / "scripts"))
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[2] / "pi-automation" / "scripts")
+)
 import kaggle_browser as kb
 
 
@@ -153,7 +155,9 @@ def mark_error(action: dict[str, Any], error_text: str) -> None:
 
 
 def topic_title_for_action(action: dict[str, Any]) -> str:
-    title = str(action.get("dataset_title") or action.get("dataset_ref") or "Dataset").strip()
+    title = str(
+        action.get("dataset_title") or action.get("dataset_ref") or "Dataset"
+    ).strip()
     channel = normalized_channel(action)
     if channel == "kaggle-changelog":
         return f"Refresh Plan: {title}"
@@ -200,27 +204,47 @@ def locator_count(locator) -> int:
 
 
 def discussion_editor_controls(page):
-    title_box = page.get_by_role("textbox", name=re.compile(r"topic\s+title", re.IGNORECASE)).first
-    content_box = page.get_by_role("textbox", name=re.compile(r"content", re.IGNORECASE)).first
-    publish = page.get_by_role("button", name=re.compile(r"publish\s+topic|post", re.IGNORECASE)).first
+    title_box = page.get_by_role(
+        "textbox", name=re.compile(r"topic\s+title", re.IGNORECASE)
+    ).first
+    content_box = page.get_by_role(
+        "textbox", name=re.compile(r"content", re.IGNORECASE)
+    ).first
+    publish = page.get_by_role(
+        "button", name=re.compile(r"publish\s+topic|post", re.IGNORECASE)
+    ).first
     return title_box, content_box, publish
 
 
 def is_authenticated(page) -> bool:
     if "/account/login" in str(getattr(page, "url", "")).lower():
         return False
-    sign_in = page.get_by_role("button", name=re.compile(r"^sign in$", re.IGNORECASE)).first
-    sign_in_link = page.get_by_role("link", name=re.compile(r"^sign in$", re.IGNORECASE)).first
+    sign_in = page.get_by_role(
+        "button", name=re.compile(r"^sign in$", re.IGNORECASE)
+    ).first
+    sign_in_link = page.get_by_role(
+        "link", name=re.compile(r"^sign in$", re.IGNORECASE)
+    ).first
     return not (locator_count(sign_in) or locator_count(sign_in_link))
 
 
-def maybe_login(page, *, timeout_ms: int, manual_login: bool, email: str, password: str) -> None:
-    page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
+def maybe_login(
+    page, *, timeout_ms: int, manual_login: bool, email: str, password: str
+) -> None:
+    page.goto(
+        "https://www.kaggle.com/datasets",
+        wait_until="domcontentloaded",
+        timeout=timeout_ms,
+    )
     page.wait_for_timeout(400)
     if is_authenticated(page):
         return
 
-    page.goto("https://www.kaggle.com/account/login", wait_until="domcontentloaded", timeout=timeout_ms)
+    page.goto(
+        "https://www.kaggle.com/account/login",
+        wait_until="domcontentloaded",
+        timeout=timeout_ms,
+    )
     page.wait_for_timeout(400)
     if is_authenticated(page):
         return
@@ -229,7 +253,12 @@ def maybe_login(page, *, timeout_ms: int, manual_login: bool, email: str, passwo
     password = password.strip()
     email_input = page.locator('input[name="email"]').first
     password_input = page.locator('input[name="password"]').first
-    if email and password and locator_count(email_input) and locator_count(password_input):
+    if (
+        email
+        and password
+        and locator_count(email_input)
+        and locator_count(password_input)
+    ):
         email_input.fill(email, timeout=timeout_ms)
         password_input.fill(password, timeout=timeout_ms)
         submit = page.locator('button[type="submit"]').first
@@ -242,12 +271,18 @@ def maybe_login(page, *, timeout_ms: int, manual_login: bool, email: str, passwo
     if manual_login:
         print("Manual Kaggle login required in browser window.")
         input("Press Enter after completing login...")
-        page.goto("https://www.kaggle.com/datasets", wait_until="domcontentloaded", timeout=timeout_ms)
+        page.goto(
+            "https://www.kaggle.com/datasets",
+            wait_until="domcontentloaded",
+            timeout=timeout_ms,
+        )
         page.wait_for_timeout(500)
         if is_authenticated(page):
             return
 
-    raise RuntimeError("Kaggle authentication required. Provide credentials or use --manual-login.")
+    raise RuntimeError(
+        "Kaggle authentication required. Provide credentials or use --manual-login."
+    )
 
 
 def post_dataset_discussion_topic(
@@ -301,15 +336,23 @@ def post_dataset_discussion_topic(
             page.wait_for_timeout(250)
 
         new_topic = kb.first_available(
-            page.get_by_role("button", name=re.compile(r"new\s+topic", re.IGNORECASE)).first,
-            page.locator("button").filter(has_text=re.compile(r"new\s+topic", re.IGNORECASE)).first,
-            page.locator('[role="button"]').filter(has_text=re.compile(r"new\s+topic", re.IGNORECASE)).first,
+            page.get_by_role(
+                "button", name=re.compile(r"new\s+topic", re.IGNORECASE)
+            ).first,
+            page.locator("button")
+            .filter(has_text=re.compile(r"new\s+topic", re.IGNORECASE))
+            .first,
+            page.locator('[role="button"]')
+            .filter(has_text=re.compile(r"new\s+topic", re.IGNORECASE))
+            .first,
             page.get_by_text(re.compile(r"new\s+topic", re.IGNORECASE)).first,
         )
         if not locator_count(new_topic):
             raise RuntimeError("New Topic button not found")
         if getattr(new_topic, "is_disabled", None) and new_topic.is_disabled():
-            raise RuntimeError("New Topic button is disabled (insufficient permissions or auth state)")
+            raise RuntimeError(
+                "New Topic button is disabled (insufficient permissions or auth state)"
+            )
         new_topic.click(timeout=timeout_ms)
         page.wait_for_timeout(400)
 
@@ -318,7 +361,11 @@ def post_dataset_discussion_topic(
             raise RuntimeError("Discussion editor controls not found")
 
     title_box, content_box, publish = controls
-    if not locator_count(title_box) or not locator_count(content_box) or not locator_count(publish):
+    if (
+        not locator_count(title_box)
+        or not locator_count(content_box)
+        or not locator_count(publish)
+    ):
         raise RuntimeError("Discussion editor controls not found")
 
     title_box.fill(topic_title, timeout=timeout_ms)
@@ -346,17 +393,60 @@ def parse_channels(raw_channels: list[str]) -> set[str] | None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Execute due Kaggle campaign actions from queue.")
-    parser.add_argument("--queue-path", type=Path, default=DEFAULT_QUEUE_PATH, help="Campaign queue JSON path.")
-    parser.add_argument("--storage-state", type=Path, default=DEFAULT_STORAGE_STATE, help="Playwright storage state.")
-    parser.add_argument("--limit", type=int, default=1, help="Max due actions to execute this run.")
-    parser.add_argument("--channel", action="append", default=[], help="Optional channel filter (repeatable).")
-    parser.add_argument("--no-include-planned", action="store_true", help="Do not auto-claim planned actions.")
-    parser.add_argument("--no-include-in-progress", action="store_true", help="Do not execute in_progress actions.")
-    parser.add_argument("--no-respect-schedule", action="store_true", help="Allow execution regardless of scheduled_for.")
-    parser.add_argument("--sleep-between-actions-s", type=float, default=45.0, help="Cooldown between actions.")
-    parser.add_argument("--sleep-jitter-s", type=float, default=15.0, help="Random jitter added to cooldown.")
-    parser.add_argument("--timeout-ms", type=int, default=15000, help="Playwright timeout in ms.")
+    parser = argparse.ArgumentParser(
+        description="Execute due Kaggle campaign actions from queue."
+    )
+    parser.add_argument(
+        "--queue-path",
+        type=Path,
+        default=DEFAULT_QUEUE_PATH,
+        help="Campaign queue JSON path.",
+    )
+    parser.add_argument(
+        "--storage-state",
+        type=Path,
+        default=DEFAULT_STORAGE_STATE,
+        help="Playwright storage state.",
+    )
+    parser.add_argument(
+        "--limit", type=int, default=1, help="Max due actions to execute this run."
+    )
+    parser.add_argument(
+        "--channel",
+        action="append",
+        default=[],
+        help="Optional channel filter (repeatable).",
+    )
+    parser.add_argument(
+        "--no-include-planned",
+        action="store_true",
+        help="Do not auto-claim planned actions.",
+    )
+    parser.add_argument(
+        "--no-include-in-progress",
+        action="store_true",
+        help="Do not execute in_progress actions.",
+    )
+    parser.add_argument(
+        "--no-respect-schedule",
+        action="store_true",
+        help="Allow execution regardless of scheduled_for.",
+    )
+    parser.add_argument(
+        "--sleep-between-actions-s",
+        type=float,
+        default=45.0,
+        help="Cooldown between actions.",
+    )
+    parser.add_argument(
+        "--sleep-jitter-s",
+        type=float,
+        default=15.0,
+        help="Random jitter added to cooldown.",
+    )
+    parser.add_argument(
+        "--timeout-ms", type=int, default=15000, help="Playwright timeout in ms."
+    )
     parser.add_argument("--headed", action="store_true", help="Run browser headed.")
     parser.add_argument(
         "--skip-login-check",
@@ -369,9 +459,19 @@ def parse_args() -> argparse.Namespace:
         default=False,
         help="Allow interactive login if session is unauthenticated.",
     )
-    parser.add_argument("--email", default=os.environ.get("KAGGLE_EMAIL", ""), help="Kaggle login email.")
-    parser.add_argument("--password", default=os.environ.get("KAGGLE_PASSWORD", ""), help="Kaggle login password.")
-    parser.add_argument("--dry-run", action="store_true", help="Show selected actions without posting.")
+    parser.add_argument(
+        "--email",
+        default=os.environ.get("KAGGLE_EMAIL", ""),
+        help="Kaggle login email.",
+    )
+    parser.add_argument(
+        "--password",
+        default=os.environ.get("KAGGLE_PASSWORD", ""),
+        help="Kaggle login password.",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show selected actions without posting."
+    )
     return parser.parse_args()
 
 
@@ -460,8 +560,12 @@ def main() -> int:
                     failures += 1
                     print(f"[failed] {action_id}: {exc}")
 
-                if idx < len(selected) - 1 and (args.sleep_between_actions_s > 0 or args.sleep_jitter_s > 0):
-                    delay = args.sleep_between_actions_s + random.uniform(0.0, args.sleep_jitter_s)
+                if idx < len(selected) - 1 and (
+                    args.sleep_between_actions_s > 0 or args.sleep_jitter_s > 0
+                ):
+                    delay = args.sleep_between_actions_s + random.uniform(
+                        0.0, args.sleep_jitter_s
+                    )
                     print(f"[pause] sleeping {delay:.1f}s before next action")
                     time.sleep(delay)
         finally:

@@ -5,23 +5,16 @@ from __future__ import annotations
 
 import argparse
 import csv
-import io
 import json
-import os
 import re
-import subprocess
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.shared.kaggle_utils import (
-    has_kaggle_cli,
-    kaggle_command,
-    parse_iso_date,
-    resolve_today,
-    summarize_subprocess_error,
-)
+from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient
 
 
 DEFAULT_TRACKER_PATH = Path("docs/reports/grandmaster-tracker.md")
@@ -51,8 +44,6 @@ def extract_first_int(value: str) -> int | None:
 
 def extract_all_ints(value: str) -> list[int]:
     return [int(m.replace(",", "")) for m in re.findall(r"-?\d[\d,]*", value)]
-
-
 
 
 def parse_deadline_date(text: str) -> date | None:
@@ -260,63 +251,6 @@ def update_progress_current_cell(
     return updated, True
 
 
-def run_checked_command(cmd: list[str]) -> str:
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    except FileNotFoundError as exc:
-        raise SystemExit(f"Command failed: {' '.join(cmd)}\n{exc}") from exc
-    if result.returncode != 0:
-        stderr = summarize_subprocess_error(result.stdout, result.stderr)
-        raise SystemExit(f"Command failed: {' '.join(cmd)}\n{stderr}")
-    return result.stdout
-
-
-def run_kaggle_csv(args: list[str]) -> tuple[list[dict[str, str]], list[str]]:
-    output = run_checked_command([*kaggle_command(), *args, "--csv"])
-    reader = csv.DictReader(io.StringIO(output))
-    rows = [dict(row) for row in reader]
-    fieldnames = [name for name in (reader.fieldnames or []) if name]
-    return rows, fieldnames
-
-
-def is_page_size_unsupported(exc: SystemExit) -> bool:
-    message = str(exc).lower()
-    return "--page-size" in message and "unrecognized arguments" in message
-
-
-def run_kaggle_csv_paginated(
-    args: list[str], *, page_size: int | None = None
-) -> tuple[list[dict[str, str]], list[str]]:
-    rows_all: list[dict[str, str]] = []
-    fieldnames: list[str] = []
-    page = 1
-    expected_page_size = page_size or DEFAULT_KAGGLE_PAGE_SIZE
-    include_page_size = page_size is not None
-
-    while True:
-        paged_args = [*args]
-        if include_page_size and page_size is not None:
-            paged_args.extend(["--page-size", str(page_size)])
-        paged_args.extend(["--page", str(page)])
-        try:
-            rows, fields = run_kaggle_csv(paged_args)
-        except SystemExit as exc:
-            if not include_page_size or not is_page_size_unsupported(exc):
-                raise
-            include_page_size = False
-            expected_page_size = DEFAULT_KAGGLE_PAGE_SIZE
-            paged_args = [*args, "--page", str(page)]
-            rows, fields = run_kaggle_csv(paged_args)
-        if rows and not fieldnames:
-            fieldnames = fields
-        rows_all.extend(rows)
-        if len(rows) < expected_page_size:
-            break
-        page += 1
-
-    return rows_all, fieldnames
-
-
 def load_csv_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
     if not path.exists():
         raise SystemExit(f"CSV file not found: {path}")
@@ -435,20 +369,25 @@ def parse_entered_total(
     return total, entered_key
 
 
-def fetch_live_kaggle_metrics() -> dict[str, Any]:
-    if not has_kaggle_cli():
+def fetch_live_kaggle_metrics(client: KaggleClient) -> dict[str, Any]:
+    if not client.available():
         raise SystemExit(
             "kaggle CLI not found. Install/authenticate it, or run sync with exported CSV files "
             "(--kernels-csv, --datasets-csv, --competitions-csv)."
         )
 
-    kernels_rows, kernels_columns = run_kaggle_csv_paginated(
-        ["kernels", "list", "--mine"], page_size=100
-    )
-    datasets_rows, datasets_columns = run_kaggle_csv_paginated(["datasets", "list", "-m"])
-    entered_rows, _ = run_kaggle_csv_paginated(
-        ["competitions", "list", "--group", "entered"], page_size=100
-    )
+    # The client paginates and strips Kaggle's banner lines; the raw rows are
+    # kept so the metric parsers below stay identical for the live and the
+    # exported-CSV paths.
+    kernels = client.my_kernels()
+    datasets = client.my_datasets()
+    entered = client.entered_competitions()
+
+    kernels_rows = [k.raw for k in kernels]
+    datasets_rows = [d.raw for d in datasets]
+    entered_rows = [c.raw for c in entered]
+    kernels_columns = list(kernels_rows[0]) if kernels_rows else []
+    datasets_columns = list(datasets_rows[0]) if datasets_rows else []
 
     notebooks_votes, notebooks_vote_key = parse_vote_total(
         kernels_rows, kernels_columns, "kaggle kernels list output", strict=True
@@ -612,7 +551,9 @@ python3 -m kaggle_portfolio.ops.medal_ops sync --dry-run \\
             datasets_path, "title,voteCount\nsample-dataset,0\n", force
         ),
         str(competitions_path): write_template_asset(
-            competitions_path, "competition,userHasEntered\nsample-competition,false\n", force
+            competitions_path,
+            "competition,userHasEntered\nsample-competition,false\n",
+            force,
         ),
         str(script_path): write_template_asset(script_path, script_content, force),
         str(readme_path): write_template_asset(readme_path, readme_content, force),
@@ -622,7 +563,9 @@ python3 -m kaggle_portfolio.ops.medal_ops sync --dry-run \\
     return statuses
 
 
-def apply_tracker_sync(content: str, today: date, live: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+def apply_tracker_sync(
+    content: str, today: date, live: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
     before = {
         "competitions": parse_progress_metrics(content, "Competitions"),
         "notebooks": parse_progress_metrics(content, "Notebooks"),
@@ -636,7 +579,10 @@ def apply_tracker_sync(content: str, today: date, live: dict[str, Any]) -> tuple
         changed_fields.append("Last Updated")
 
     updated, changed = update_progress_current_cell(
-        updated, "Notebooks", "Total notebooks", f"{live['notebooks_count']} (on Kaggle)"
+        updated,
+        "Notebooks",
+        "Total notebooks",
+        f"{live['notebooks_count']} (on Kaggle)",
     )
     if changed:
         changed_fields.append("Notebooks.Total notebooks")
@@ -656,14 +602,20 @@ def apply_tracker_sync(content: str, today: date, live: dict[str, Any]) -> tuple
 
     if isinstance(live.get("notebooks_silver"), int):
         updated, changed = update_progress_current_cell(
-            updated, "Notebooks", "Silver medals (20+ votes)", str(live["notebooks_silver"])
+            updated,
+            "Notebooks",
+            "Silver medals (20+ votes)",
+            str(live["notebooks_silver"]),
         )
         if changed:
             changed_fields.append("Notebooks.Silver medals")
 
     if isinstance(live.get("notebooks_bronze"), int):
         updated, changed = update_progress_current_cell(
-            updated, "Notebooks", "Bronze medals (5+ votes)", str(live["notebooks_bronze"])
+            updated,
+            "Notebooks",
+            "Bronze medals (5+ votes)",
+            str(live["notebooks_bronze"]),
         )
         if changed:
             changed_fields.append("Notebooks.Bronze medals")
@@ -682,7 +634,10 @@ def apply_tracker_sync(content: str, today: date, live: dict[str, Any]) -> tuple
 
     if isinstance(live.get("datasets_total_downloads"), int):
         updated, changed = update_progress_current_cell(
-            updated, "Datasets", "Total downloads", str(live["datasets_total_downloads"])
+            updated,
+            "Datasets",
+            "Total downloads",
+            str(live["datasets_total_downloads"]),
         )
         if changed:
             changed_fields.append("Datasets.Total downloads")
@@ -696,14 +651,20 @@ def apply_tracker_sync(content: str, today: date, live: dict[str, Any]) -> tuple
 
     if isinstance(live.get("datasets_silver"), int):
         updated, changed = update_progress_current_cell(
-            updated, "Datasets", "Silver medals (20+ votes)", str(live["datasets_silver"])
+            updated,
+            "Datasets",
+            "Silver medals (20+ votes)",
+            str(live["datasets_silver"]),
         )
         if changed:
             changed_fields.append("Datasets.Silver medals")
 
     if isinstance(live.get("datasets_bronze"), int):
         updated, changed = update_progress_current_cell(
-            updated, "Datasets", "Bronze medals (5+ votes)", str(live["datasets_bronze"])
+            updated,
+            "Datasets",
+            "Bronze medals (5+ votes)",
+            str(live["datasets_bronze"]),
         )
         if changed:
             changed_fields.append("Datasets.Bronze medals")
@@ -735,7 +696,9 @@ def build_snapshot(content: str, today: date) -> dict[str, Any]:
     discussion = parse_progress_metrics(content, "Discussion")
     active_competitions = parse_active_competitions(content, today)
 
-    def gap(current: dict[str, Any], req: dict[str, int], key: str, req_key: str) -> int | None:
+    def gap(
+        current: dict[str, Any], req: dict[str, int], key: str, req_key: str
+    ) -> int | None:
         if key not in current or req_key not in req:
             return None
         return max(0, req[req_key] - int(current[key]))
@@ -744,32 +707,71 @@ def build_snapshot(content: str, today: date) -> dict[str, Any]:
         "competitions": {
             **competitions,
             "gold_goal": requirements.get("competitions", {}).get("grandmaster_gold"),
-            "gold_gap": gap(competitions, requirements.get("competitions", {}), "gold", "grandmaster_gold"),
-            "expert_bronze_goal": requirements.get("competitions", {}).get("expert_bronze"),
-            "expert_bronze_gap": gap(competitions, requirements.get("competitions", {}), "bronze", "expert_bronze"),
+            "gold_gap": gap(
+                competitions,
+                requirements.get("competitions", {}),
+                "gold",
+                "grandmaster_gold",
+            ),
+            "expert_bronze_goal": requirements.get("competitions", {}).get(
+                "expert_bronze"
+            ),
+            "expert_bronze_gap": gap(
+                competitions,
+                requirements.get("competitions", {}),
+                "bronze",
+                "expert_bronze",
+            ),
         },
         "notebooks": {
             **notebooks,
             "gold_goal": requirements.get("notebooks", {}).get("grandmaster_gold"),
-            "gold_gap": gap(notebooks, requirements.get("notebooks", {}), "gold", "grandmaster_gold"),
-            "expert_bronze_goal": requirements.get("notebooks", {}).get("expert_bronze"),
-            "expert_bronze_gap": gap(notebooks, requirements.get("notebooks", {}), "bronze", "expert_bronze"),
+            "gold_gap": gap(
+                notebooks, requirements.get("notebooks", {}), "gold", "grandmaster_gold"
+            ),
+            "expert_bronze_goal": requirements.get("notebooks", {}).get(
+                "expert_bronze"
+            ),
+            "expert_bronze_gap": gap(
+                notebooks, requirements.get("notebooks", {}), "bronze", "expert_bronze"
+            ),
         },
         "datasets": {
             **datasets,
             "gold_goal": requirements.get("datasets", {}).get("grandmaster_gold"),
-            "gold_gap": gap(datasets, requirements.get("datasets", {}), "gold", "grandmaster_gold"),
+            "gold_gap": gap(
+                datasets, requirements.get("datasets", {}), "gold", "grandmaster_gold"
+            ),
             "expert_bronze_goal": requirements.get("datasets", {}).get("expert_bronze"),
-            "expert_bronze_gap": gap(datasets, requirements.get("datasets", {}), "bronze", "expert_bronze"),
+            "expert_bronze_gap": gap(
+                datasets, requirements.get("datasets", {}), "bronze", "expert_bronze"
+            ),
         },
         "discussion": {
             **discussion,
             "gold_goal": requirements.get("discussion", {}).get("grandmaster_gold"),
-            "gold_gap": gap(discussion, requirements.get("discussion", {}), "gold", "grandmaster_gold"),
+            "gold_gap": gap(
+                discussion,
+                requirements.get("discussion", {}),
+                "gold",
+                "grandmaster_gold",
+            ),
             "total_goal": requirements.get("discussion", {}).get("grandmaster_total"),
-            "total_gap": gap(discussion, requirements.get("discussion", {}), "total_posts", "grandmaster_total"),
-            "expert_bronze_goal": requirements.get("discussion", {}).get("expert_bronze"),
-            "expert_bronze_gap": gap(discussion, requirements.get("discussion", {}), "bronze", "expert_bronze"),
+            "total_gap": gap(
+                discussion,
+                requirements.get("discussion", {}),
+                "total_posts",
+                "grandmaster_total",
+            ),
+            "expert_bronze_goal": requirements.get("discussion", {}).get(
+                "expert_bronze"
+            ),
+            "expert_bronze_gap": gap(
+                discussion,
+                requirements.get("discussion", {}),
+                "bronze",
+                "expert_bronze",
+            ),
         },
     }
 
@@ -777,7 +779,9 @@ def build_snapshot(content: str, today: date) -> dict[str, Any]:
         {
             "competition": deadline.competition,
             "deadline_raw": deadline.deadline_raw,
-            "deadline_date": deadline.deadline_date.isoformat() if deadline.deadline_date else None,
+            "deadline_date": deadline.deadline_date.isoformat()
+            if deadline.deadline_date
+            else None,
             "days_to_deadline": deadline.days_to_deadline,
             "teams": deadline.teams,
             "difficulty": deadline.difficulty,
@@ -788,7 +792,9 @@ def build_snapshot(content: str, today: date) -> dict[str, Any]:
 
     return {
         "generated_on": today.isoformat(),
-        "tracker_last_updated": tracker_last_updated.isoformat() if tracker_last_updated else None,
+        "tracker_last_updated": tracker_last_updated.isoformat()
+        if tracker_last_updated
+        else None,
         "tracker_stale_days": stale_days,
         "categories": category_summary,
         "active_competitions": active_competitions_json,
@@ -838,7 +844,9 @@ def write_snapshot(history_dir: Path, snapshot: dict[str, Any]) -> Path:
     return path
 
 
-def delta(current: dict[str, Any], previous: dict[str, Any] | None, path: tuple[str, ...]) -> int | None:
+def delta(
+    current: dict[str, Any], previous: dict[str, Any] | None, path: tuple[str, ...]
+) -> int | None:
     if not previous:
         return None
     curr: Any = current
@@ -879,7 +887,9 @@ def snapshot_generated_date(snapshot: dict[str, Any]) -> date | None:
     return parse_iso_date(generated)
 
 
-def weekly_velocity(snapshots: list[dict[str, Any]], path: tuple[str, ...]) -> float | None:
+def weekly_velocity(
+    snapshots: list[dict[str, Any]], path: tuple[str, ...]
+) -> float | None:
     if len(snapshots) < 2:
         return None
 
@@ -924,30 +934,43 @@ def top_actions(snapshot: dict[str, Any]) -> list[str]:
     categories = snapshot["categories"]
 
     if isinstance(stale_days, int) and stale_days > 7:
-        actions.append(f"Refresh `grandmaster-tracker.md` (currently {stale_days} days stale).")
+        actions.append(
+            f"Refresh `grandmaster-tracker.md` (currently {stale_days} days stale)."
+        )
 
     discussion = categories["discussion"]
-    if isinstance(discussion.get("expert_bronze_gap"), int) and discussion["expert_bronze_gap"] > 0:
+    if (
+        isinstance(discussion.get("expert_bronze_gap"), int)
+        and discussion["expert_bronze_gap"] > 0
+    ):
         actions.append(
             f"Prioritize discussion medals: need {discussion['expert_bronze_gap']} more bronze-equivalent medals for Discussion Expert."
         )
 
     competitions = categories["competitions"]
     if int(competitions.get("entered", 0)) < 3:
-        actions.append("Increase active competition footprint to at least 3 simultaneous entries.")
+        actions.append(
+            "Increase active competition footprint to at least 3 simultaneous entries."
+        )
 
     notebooks = categories["notebooks"]
     if int(notebooks.get("total_votes", 0)) < 20:
-        actions.append("Run a 7-day notebook promotion sprint on the top 5 notebooks to accelerate first notebook medals.")
+        actions.append(
+            "Run a 7-day notebook promotion sprint on the top 5 notebooks to accelerate first notebook medals."
+        )
 
     datasets = categories["datasets"]
     if int(datasets.get("total_votes", 0)) == 0:
-        actions.append("Improve dataset discoverability: add full data dictionaries and publish one baseline notebook per dataset.")
+        actions.append(
+            "Improve dataset discoverability: add full data dictionaries and publish one baseline notebook per dataset."
+        )
 
     return actions[:5]
 
 
-def generate_scorecard_markdown(snapshot: dict[str, Any], previous: dict[str, Any] | None) -> str:
+def generate_scorecard_markdown(
+    snapshot: dict[str, Any], previous: dict[str, Any] | None
+) -> str:
     categories = snapshot["categories"]
     stale_days = snapshot.get("tracker_stale_days")
     generated_on = snapshot["generated_on"]
@@ -1041,7 +1064,8 @@ def generate_weekly_plan_markdown(snapshot: dict[str, Any]) -> str:
     upcoming = [
         item
         for item in snapshot.get("active_competitions", [])
-        if isinstance(item.get("days_to_deadline"), int) and item["days_to_deadline"] >= 0
+        if isinstance(item.get("days_to_deadline"), int)
+        and item["days_to_deadline"] >= 0
     ]
     upcoming.sort(key=lambda item: item["days_to_deadline"])
     urgent = [item for item in upcoming if item["days_to_deadline"] <= 10][:3]
@@ -1079,7 +1103,9 @@ def generate_weekly_plan_markdown(snapshot: dict[str, Any]) -> str:
                 f"- {item['competition']} ({item['deadline_raw']}, {item['days_to_deadline']}d left): {item.get('strategy', 'No strategy recorded')}"
             )
     else:
-        lines.append("- Add current active competitions in `grandmaster-tracker.md` to generate a prioritized queue.")
+        lines.append(
+            "- Add current active competitions in `grandmaster-tracker.md` to generate a prioritized queue."
+        )
 
     lines.extend(
         [
@@ -1189,7 +1215,6 @@ def generate_pace_markdown(snapshots: list[dict[str, Any]]) -> str:
         return "# Kaggle Medal Ops Pace Analysis\n\n- No snapshots found.\n"
 
     current = snapshots[-1]
-    categories = current["categories"]
     first_date = snapshot_generated_date(snapshots[0])
     last_date = snapshot_generated_date(current)
     sample_days = (last_date - first_date).days if first_date and last_date else 0
@@ -1209,11 +1234,36 @@ def generate_pace_markdown(snapshots: list[dict[str, Any]]) -> str:
     ]
 
     metric_specs = [
-        ("Competitions Gold", ("categories", "competitions", "gold"), ("categories", "competitions", "gold_goal"), ("categories", "competitions", "gold_gap")),
-        ("Notebooks Gold", ("categories", "notebooks", "gold"), ("categories", "notebooks", "gold_goal"), ("categories", "notebooks", "gold_gap")),
-        ("Datasets Gold", ("categories", "datasets", "gold"), ("categories", "datasets", "gold_goal"), ("categories", "datasets", "gold_gap")),
-        ("Discussion Gold", ("categories", "discussion", "gold"), ("categories", "discussion", "gold_goal"), ("categories", "discussion", "gold_gap")),
-        ("Discussion Bronze (Expert)", ("categories", "discussion", "bronze"), ("categories", "discussion", "expert_bronze_goal"), ("categories", "discussion", "expert_bronze_gap")),
+        (
+            "Competitions Gold",
+            ("categories", "competitions", "gold"),
+            ("categories", "competitions", "gold_goal"),
+            ("categories", "competitions", "gold_gap"),
+        ),
+        (
+            "Notebooks Gold",
+            ("categories", "notebooks", "gold"),
+            ("categories", "notebooks", "gold_goal"),
+            ("categories", "notebooks", "gold_gap"),
+        ),
+        (
+            "Datasets Gold",
+            ("categories", "datasets", "gold"),
+            ("categories", "datasets", "gold_goal"),
+            ("categories", "datasets", "gold_gap"),
+        ),
+        (
+            "Discussion Gold",
+            ("categories", "discussion", "gold"),
+            ("categories", "discussion", "gold_goal"),
+            ("categories", "discussion", "gold_gap"),
+        ),
+        (
+            "Discussion Bronze (Expert)",
+            ("categories", "discussion", "bronze"),
+            ("categories", "discussion", "expert_bronze_goal"),
+            ("categories", "discussion", "expert_bronze_gap"),
+        ),
     ]
 
     for label, current_path, goal_path, gap_path in metric_specs:
@@ -1245,14 +1295,22 @@ def generate_pace_markdown(snapshots: list[dict[str, Any]]) -> str:
     if len(snapshots) < 2:
         lines.append("- Need at least 2 snapshots for reliable pace estimates.")
     elif not has_time_window:
-        lines.append("- Need snapshots across at least 1 full day for velocity and ETA estimates.")
+        lines.append(
+            "- Need snapshots across at least 1 full day for velocity and ETA estimates."
+        )
     else:
         critical_flags: list[str] = []
         for label, current_path, _, gap_path in metric_specs:
             gap_value = nested_int(current, gap_path)
             velocity = weekly_velocity(snapshots, current_path)
-            if isinstance(gap_value, int) and gap_value > 0 and (velocity is None or velocity <= 0):
-                critical_flags.append(f"- {label} is off pace (gap {gap_value}, velocity {format_velocity(velocity)}).")
+            if (
+                isinstance(gap_value, int)
+                and gap_value > 0
+                and (velocity is None or velocity <= 0)
+            ):
+                critical_flags.append(
+                    f"- {label} is off pace (gap {gap_value}, velocity {format_velocity(velocity)})."
+                )
         if not critical_flags:
             lines.append("- No negative pace flags detected in tracked outcomes.")
         else:
@@ -1268,7 +1326,9 @@ def _fmt_delta(value: int | None) -> str:
     return f"+{value}" if value > 0 else str(value)
 
 
-def generate_digest(snapshots: list[dict[str, Any]], queue_health: dict[str, Any]) -> str:
+def generate_digest(
+    snapshots: list[dict[str, Any]], queue_health: dict[str, Any]
+) -> str:
     """Compose a one-message daily Grandmaster digest (Markdown) from snapshot history.
 
     Pure function: takes the chronological snapshot list and a draft-queue health
@@ -1279,7 +1339,10 @@ def generate_digest(snapshots: list[dict[str, Any]], queue_health: dict[str, Any
 
     current = snapshots[-1]
     previous = snapshots[-2] if len(snapshots) >= 2 else None
-    lines = [f"\U0001F4CA *Grandmaster digest — {current.get('generated_on', '?')}*", ""]
+    lines = [
+        f"\U0001f4ca *Grandmaster digest — {current.get('generated_on', '?')}*",
+        "",
+    ]
 
     if previous is None:
         lines.append("_First snapshot recorded — deltas start next run._")
@@ -1295,16 +1358,21 @@ def generate_digest(snapshots: list[dict[str, Any]], queue_health: dict[str, Any
             d = delta(current, previous, path)
             if d:
                 bits.append(f"{label} {_fmt_delta(d)}")
-        lines.append("*Since last snapshot:* " + (", ".join(bits) if bits else "no change"))
+        lines.append(
+            "*Since last snapshot:* " + (", ".join(bits) if bits else "no change")
+        )
 
     upcoming = [
-        c for c in current.get("active_competitions", [])
+        c
+        for c in current.get("active_competitions", [])
         if isinstance(c.get("days_to_deadline"), int) and c["days_to_deadline"] >= 0
     ]
     if upcoming:
         nearest = min(upcoming, key=lambda c: c["days_to_deadline"])
-        lines.append(f"*Nearest deadline:* {nearest.get('competition', '?')} "
-                     f"in {nearest['days_to_deadline']}d")
+        lines.append(
+            f"*Nearest deadline:* {nearest.get('competition', '?')} "
+            f"in {nearest['days_to_deadline']}d"
+        )
     else:
         lines.append("*Nearest deadline:* none tracked")
 
@@ -1326,7 +1394,11 @@ def generate_digest(snapshots: list[dict[str, Any]], queue_health: dict[str, Any
 def _load_queue_health() -> dict[str, Any]:
     """Best-effort draft-queue health for the digest; empty dict if unavailable."""
     try:
-        from kaggle_portfolio.ops.discussion_scheduler import build_ops_summary, load_queue
+        from kaggle_portfolio.ops.discussion_scheduler import (
+            build_ops_summary,
+            load_queue,
+        )
+
         return build_ops_summary(load_queue())
     except Exception:
         return {}
@@ -1363,7 +1435,9 @@ def generate_sync_markdown(
             f"- Competition entries pulled: {live['competitions_entered']} (entered key: {live.get('competitions_entered_key')})"
         )
     else:
-        lines.append("- Competition entries pulled: n/a (no entered column found in competitions list output)")
+        lines.append(
+            "- Competition entries pulled: n/a (no entered column found in competitions list output)"
+        )
 
     lines.extend(
         [
@@ -1393,23 +1467,14 @@ def generate_sync_markdown(
     return "\n".join(lines)
 
 
-def has_kaggle_credentials() -> tuple[bool, list[str]]:
-    sources: list[str] = []
-
-    env_token = os.environ.get("KAGGLE_API_TOKEN", "").strip()
-    env_user = os.environ.get("KAGGLE_USERNAME", "").strip()
-    env_key = os.environ.get("KAGGLE_KEY", "").strip()
-    if env_token:
-        sources.append("environment-token")
-    if env_user and env_key:
-        sources.append("environment")
-
-    candidates = [Path.home() / ".kaggle" / "kaggle.json", Path("kaggle.json")]
-    sources.extend(str(path) for path in candidates if path.exists())
-    return bool(sources), sources
+def has_kaggle_credentials(client: KaggleClient) -> tuple[bool, list[str]]:
+    """Whether Kaggle credentials are resolvable, and where they came from."""
+    state = client.credentials()
+    return bool(state), list(state.sources)
 
 
 def run_preflight_checks(
+    client: KaggleClient,
     tracker_path: Path,
     output_root: Path,
     today: date,
@@ -1435,7 +1500,9 @@ def run_preflight_checks(
 
             requirements = parse_tier_requirements(tracker_content)
             if not requirements:
-                errors.append("Tier requirements table could not be parsed from tracker.")
+                errors.append(
+                    "Tier requirements table could not be parsed from tracker."
+                )
 
             for heading in ("Competitions", "Notebooks", "Datasets", "Discussion"):
                 metrics = parse_progress_metrics(tracker_content, heading)
@@ -1465,7 +1532,7 @@ def run_preflight_checks(
         errors.append(f"Output root is not writable (`{output_root}`): {exc}")
 
     offline_mode = bool(kernels_csv or datasets_csv or competitions_csv)
-    kaggle_cli_available = has_kaggle_cli()
+    kaggle_cli_available = client.available()
     if kaggle_cli_available:
         infos.append("kaggle CLI available.")
     else:
@@ -1476,24 +1543,32 @@ def run_preflight_checks(
         else:
             warnings.append("kaggle CLI not found; live sync is unavailable.")
 
-    creds_ok, creds_paths = has_kaggle_credentials()
+    creds_ok, creds_paths = has_kaggle_credentials(client)
     if creds_ok:
         joined = ", ".join(str(path) for path in creds_paths)
         infos.append(f"Kaggle credentials found: {joined}")
     else:
         if require_kaggle:
-            errors.append("Kaggle credentials not found (`~/.kaggle/kaggle.json` or local `kaggle.json`).")
+            errors.append(
+                "Kaggle credentials not found (`~/.kaggle/kaggle.json` or local `kaggle.json`)."
+            )
         elif offline_mode:
-            infos.append("Kaggle credentials not found; offline CSV sync mode selected.")
+            infos.append(
+                "Kaggle credentials not found; offline CSV sync mode selected."
+            )
         else:
             warnings.append("Kaggle credentials not found for live sync.")
 
     if offline_mode:
         if not kernels_csv or not datasets_csv:
-            errors.append("CSV preflight requires both --kernels-csv and --datasets-csv when any CSV is provided.")
+            errors.append(
+                "CSV preflight requires both --kernels-csv and --datasets-csv when any CSV is provided."
+            )
         else:
             try:
-                csv_metrics = fetch_metrics_from_csv(kernels_csv, datasets_csv, competitions_csv)
+                csv_metrics = fetch_metrics_from_csv(
+                    kernels_csv, datasets_csv, competitions_csv
+                )
                 infos.append(
                     "CSV sync inputs validated: "
                     f"notebooks={csv_metrics['notebooks_count']}, "
@@ -1588,17 +1663,28 @@ def generate_doctor_markdown(
     recommended: list[str] = []
     if any("Tracker file not found" in item for item in errors):
         recommended.append(f"Verify tracker path: `--tracker {tracker_path}`")
-    if any("missing a vote column" in item or "missing an entered column" in item for item in errors):
-        recommended.append("Regenerate CSVs using `./manage.sh sync-template` and the export script.")
+    if any(
+        "missing a vote column" in item or "missing an entered column" in item
+        for item in errors
+    ):
+        recommended.append(
+            "Regenerate CSVs using `./manage.sh sync-template` and the export script."
+        )
     if any("kaggle CLI not found" in item for item in warnings + errors):
-        recommended.append("Install/authenticate Kaggle CLI, or continue with CSV sync.")
+        recommended.append(
+            "Install/authenticate Kaggle CLI, or continue with CSV sync."
+        )
     if any("credentials not found" in item.lower() for item in warnings + errors):
-        recommended.append("Add Kaggle credentials to `~/.kaggle/kaggle.json` (chmod 600).")
+        recommended.append(
+            "Add Kaggle credentials to `~/.kaggle/kaggle.json` (chmod 600)."
+        )
 
     if not recommended and status == "READY":
         recommended.append("Preflight passed. Run `./manage.sh sync --dry-run`.")
     elif not recommended:
-        recommended.append("Resolve listed issues, then rerun `./manage.sh doctor --strict`.")
+        recommended.append(
+            "Resolve listed issues, then rerun `./manage.sh doctor --strict`."
+        )
 
     lines.append("## Recommended Next Step")
     lines.append("")
@@ -1613,7 +1699,9 @@ def write_report(path: Path, content: str) -> None:
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
 
 
-def add_shared_cli_args(parser: argparse.ArgumentParser, *, is_subparser: bool = False) -> None:
+def add_shared_cli_args(
+    parser: argparse.ArgumentParser, *, is_subparser: bool = False
+) -> None:
     # The shared flags are registered on both the top-level parser and each
     # subparser so they are accepted before OR after the subcommand. On the
     # subparsers we suppress the defaults: without this, a subparser default
@@ -1625,36 +1713,65 @@ def add_shared_cli_args(parser: argparse.ArgumentParser, *, is_subparser: bool =
     tracker_default = argparse.SUPPRESS if is_subparser else str(DEFAULT_TRACKER_PATH)
     output_default = argparse.SUPPRESS if is_subparser else str(DEFAULT_OUTPUT_ROOT)
     today_default = argparse.SUPPRESS if is_subparser else None
-    parser.add_argument("--tracker", default=tracker_default, help="Path to grandmaster tracker markdown file.")
-    parser.add_argument("--output-root", default=output_default, help="Output directory for history and reports.")
-    parser.add_argument("--today", default=today_default, help="Override date in YYYY-MM-DD format.")
+    parser.add_argument(
+        "--tracker",
+        default=tracker_default,
+        help="Path to grandmaster tracker markdown file.",
+    )
+    parser.add_argument(
+        "--output-root",
+        default=output_default,
+        help="Output directory for history and reports.",
+    )
+    parser.add_argument(
+        "--today", default=today_default, help="Override date in YYYY-MM-DD format."
+    )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Kaggle medal operations CLI.")
     add_shared_cli_args(parser)
 
     subparsers = parser.add_subparsers(dest="command", required=True)
-    scorecard_parser = subparsers.add_parser("scorecard", help="Generate scorecard report and save snapshot.")
+    scorecard_parser = subparsers.add_parser(
+        "scorecard", help="Generate scorecard report and save snapshot."
+    )
     add_shared_cli_args(scorecard_parser, is_subparser=True)
-    badge_plan_parser = subparsers.add_parser("badge-plan", help="Generate ordered Kaggle badge roadmap.")
+    badge_plan_parser = subparsers.add_parser(
+        "badge-plan", help="Generate ordered Kaggle badge roadmap."
+    )
     add_shared_cli_args(badge_plan_parser, is_subparser=True)
-    weekly_parser = subparsers.add_parser("weekly-plan", help="Generate weekly execution plan.")
+    weekly_parser = subparsers.add_parser(
+        "weekly-plan", help="Generate weekly execution plan."
+    )
     add_shared_cli_args(weekly_parser, is_subparser=True)
-    pace_parser = subparsers.add_parser("pace", help="Generate progress velocity and ETA analysis.")
+    pace_parser = subparsers.add_parser(
+        "pace", help="Generate progress velocity and ETA analysis."
+    )
     add_shared_cli_args(pace_parser, is_subparser=True)
-    sync_parser = subparsers.add_parser("sync", help="Sync tracker metrics from live Kaggle CLI data.")
+    sync_parser = subparsers.add_parser(
+        "sync", help="Sync tracker metrics from live Kaggle CLI data."
+    )
     add_shared_cli_args(sync_parser, is_subparser=True)
-    sync_parser.add_argument("--dry-run", action="store_true", help="Generate sync report without writing tracker changes.")
-    sync_parser.add_argument("--kernels-csv", default=None, help="Path to exported kernels CSV.")
-    sync_parser.add_argument("--datasets-csv", default=None, help="Path to exported datasets CSV.")
+    sync_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Generate sync report without writing tracker changes.",
+    )
+    sync_parser.add_argument(
+        "--kernels-csv", default=None, help="Path to exported kernels CSV."
+    )
+    sync_parser.add_argument(
+        "--datasets-csv", default=None, help="Path to exported datasets CSV."
+    )
     sync_parser.add_argument(
         "--competitions-csv",
         default=None,
         help="Path to exported competitions CSV (optional, used for 'Entered' metric).",
     )
     template_parser = subparsers.add_parser(
-        "sync-template", help="Generate CSV templates and helper script for offline sync."
+        "sync-template",
+        help="Generate CSV templates and helper script for offline sync.",
     )
     add_shared_cli_args(template_parser, is_subparser=True)
     template_parser.add_argument(
@@ -1662,7 +1779,9 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=f"Directory for generated template files (default: <output-root>/{DEFAULT_SYNC_INPUT_DIRNAME}).",
     )
-    template_parser.add_argument("--force", action="store_true", help="Overwrite existing template files.")
+    template_parser.add_argument(
+        "--force", action="store_true", help="Overwrite existing template files."
+    )
     doctor_parser = subparsers.add_parser(
         "doctor",
         help="Run preflight checks for tracker health, environment readiness, and sync inputs.",
@@ -1684,22 +1803,31 @@ def parse_args() -> argparse.Namespace:
         default=7,
         help="Warn when tracker staleness exceeds this threshold (default: 7).",
     )
-    doctor_parser.add_argument("--kernels-csv", default=None, help="Path to exported kernels CSV.")
-    doctor_parser.add_argument("--datasets-csv", default=None, help="Path to exported datasets CSV.")
+    doctor_parser.add_argument(
+        "--kernels-csv", default=None, help="Path to exported kernels CSV."
+    )
+    doctor_parser.add_argument(
+        "--datasets-csv", default=None, help="Path to exported datasets CSV."
+    )
     doctor_parser.add_argument(
         "--competitions-csv",
         default=None,
         help="Path to exported competitions CSV (optional).",
     )
-    digest_parser = subparsers.add_parser("digest", help="Print a one-message daily Grandmaster digest to stdout.")
+    digest_parser = subparsers.add_parser(
+        "digest", help="Print a one-message daily Grandmaster digest to stdout."
+    )
     add_shared_cli_args(digest_parser, is_subparser=True)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-
-
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(
+        output_root=getattr(args, "output_root", None),
+        today=getattr(args, "today", None),
+        effects=not bool(getattr(args, "dry_run", False)),
+    )
     today = resolve_today(args.today)
     output_root = Path(args.output_root)
     tracker_path = Path(args.tracker)
@@ -1707,7 +1835,11 @@ def main() -> int:
     reports_dir = output_root / "reports"
 
     if args.command == "sync-template":
-        out_dir = Path(args.out_dir) if args.out_dir else output_root / DEFAULT_SYNC_INPUT_DIRNAME
+        out_dir = (
+            Path(args.out_dir)
+            if args.out_dir
+            else output_root / DEFAULT_SYNC_INPUT_DIRNAME
+        )
         statuses = generate_sync_template_assets(out_dir, force=args.force)
         print(f"Sync templates directory: {out_dir}")
         for path, status in statuses.items():
@@ -1720,12 +1852,15 @@ def main() -> int:
         if int(args.max_stale_days) < 0:
             raise SystemExit("--max-stale-days must be >= 0")
         checks = run_preflight_checks(
+            client=deps.client,
             tracker_path=tracker_path,
             output_root=output_root,
             today=today,
             kernels_csv=Path(args.kernels_csv) if args.kernels_csv else None,
             datasets_csv=Path(args.datasets_csv) if args.datasets_csv else None,
-            competitions_csv=Path(args.competitions_csv) if args.competitions_csv else None,
+            competitions_csv=Path(args.competitions_csv)
+            if args.competitions_csv
+            else None,
             require_kaggle=bool(args.require_kaggle),
             max_stale_days=int(args.max_stale_days),
         )
@@ -1825,21 +1960,27 @@ def main() -> int:
     if args.command == "sync":
         if args.kernels_csv or args.datasets_csv or args.competitions_csv:
             if not args.kernels_csv or not args.datasets_csv:
-                raise SystemExit("CSV sync requires both --kernels-csv and --datasets-csv.")
+                raise SystemExit(
+                    "CSV sync requires both --kernels-csv and --datasets-csv."
+                )
             live = fetch_metrics_from_csv(
                 kernels_csv=Path(args.kernels_csv),
                 datasets_csv=Path(args.datasets_csv),
-                competitions_csv=Path(args.competitions_csv) if args.competitions_csv else None,
+                competitions_csv=Path(args.competitions_csv)
+                if args.competitions_csv
+                else None,
             )
         else:
-            live = fetch_live_kaggle_metrics()
+            live = fetch_live_kaggle_metrics(deps.client)
         original_content = tracker_path.read_text(encoding="utf-8")
         updated_content, changes = apply_tracker_sync(original_content, today, live)
 
         if not args.dry_run and updated_content != original_content:
             tracker_path.write_text(updated_content, encoding="utf-8")
 
-        report = generate_sync_markdown(tracker_path, today, live, changes, args.dry_run)
+        report = generate_sync_markdown(
+            tracker_path, today, live, changes, args.dry_run
+        )
         dated_report_path = reports_dir / f"sync-{today.isoformat()}.md"
         latest_report_path = reports_dir / "latest-sync.md"
         write_report(dated_report_path, report)

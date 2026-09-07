@@ -23,7 +23,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -46,15 +45,30 @@ from sklearn.kernel_ridge import KernelRidge
 from sklearn.linear_model import ElasticNet, Lasso, LogisticRegression
 from sklearn.metrics import accuracy_score, brier_score_loss, roc_auc_score
 from sklearn.metrics.pairwise import linear_kernel
-from sklearn.model_selection import KFold, StratifiedKFold, cross_val_predict, cross_val_score
+from sklearn.model_selection import (
+    KFold,
+    StratifiedKFold,
+    cross_val_predict,
+    cross_val_score,
+)
 from sklearn.naive_bayes import ComplementNB
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, RobustScaler, StandardScaler, TargetEncoder
+from sklearn.preprocessing import (
+    OneHotEncoder,
+    RobustScaler,
+    StandardScaler,
+    TargetEncoder,
+)
 
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleError
+from kaggle_portfolio.shared.layout import RepoLayout
 
 ROOT = Path(__file__).resolve().parents[2]
-LAB_ROOT = ROOT / ".competition_lab"
+# Derived from the layout so KAGGLE_DIR is honoured here too. The ~60 private
+# per-competition helpers still read this global; threading the layout into
+# them belongs with the competition_lab package split, not here.
+LAB_ROOT = RepoLayout.resolve().lab_root
 RANDOM_STATE = 42
 
 GREEN = "\033[0;32m"
@@ -74,28 +88,17 @@ class LabResult:
     submission_path: Path | None = None
 
 
-def _run_kaggle(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [*kaggle_command(), *args],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-
-def _ensure_data(slug: str, force_download: bool = False) -> Path:
-    data_dir = LAB_ROOT / slug / "data"
+def _ensure_data(deps: Deps, slug: str, force_download: bool = False) -> Path:
+    data_dir = deps.layout.lab_root / slug / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     csv_files = list(data_dir.glob("*.csv"))
     if csv_files and not force_download:
         return data_dir
 
-    result = _run_kaggle("competitions", "download", "-c", slug, "-p", str(data_dir), "--force")
-    if result.returncode != 0:
-        raise SystemExit(
-            f"Failed to download {slug}: {summarize_subprocess_error(result.stdout, result.stderr)}"
-        )
+    try:
+        deps.client.download_competition(slug, data_dir)
+    except KaggleError as exc:
+        raise SystemExit(f"Failed to download {slug}: {exc}") from exc
 
     zip_files = list(data_dir.glob("*.zip"))
     for archive in zip_files:
@@ -128,7 +131,9 @@ def _save_summary(result: LabResult) -> None:
         "best_model": result.best_model,
         "best_score": round(result.best_score, 6),
         "benchmarks": result.benchmark_rows,
-        "submission_path": str(result.submission_path) if result.submission_path else None,
+        "submission_path": str(result.submission_path)
+        if result.submission_path
+        else None,
     }
     (out_dir / "latest_benchmark.json").write_text(
         json.dumps(payload, indent=2) + "\n",
@@ -152,35 +157,35 @@ def _print_benchmarks(result: LabResult) -> None:
         print(f"Submission file: {result.submission_path}")
 
 
-def _submit(slug: str, submission_path: Path, message: str) -> None:
-    result = _run_kaggle(
-        "competitions",
-        "submit",
-        "-c",
-        slug,
-        "-f",
-        str(submission_path),
-        "-m",
-        message,
+def _submit(deps: Deps, slug: str, submission_path: Path, message: str) -> None:
+    outcome = deps.client.submit(slug, submission_path, message)
+    if not outcome.ok:
+        raise SystemExit(f"Submission failed: {outcome.detail}")
+    print(outcome.detail.strip() or "Submission accepted.")
+
+
+def _build_titanic_features(
+    train: pd.DataFrame, test: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    combined = pd.concat(
+        [train.drop(columns=["Survived"]), test], axis=0, ignore_index=True
     )
-    if result.returncode != 0:
-        raise SystemExit(
-            f"Submission failed: {summarize_subprocess_error(result.stdout, result.stderr)}"
-        )
-    print(result.stdout.strip() or "Submission accepted.")
-
-
-def _build_titanic_features(train: pd.DataFrame, test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    combined = pd.concat([train.drop(columns=["Survived"]), test], axis=0, ignore_index=True)
 
     combined["Title"] = (
-        combined["Name"].str.extract(r",\s*([^.]*)\.", expand=False).fillna("Unknown").str.strip()
+        combined["Name"]
+        .str.extract(r",\s*([^.]*)\.", expand=False)
+        .fillna("Unknown")
+        .str.strip()
     )
-    combined["FamilySize"] = combined["SibSp"].fillna(0) + combined["Parch"].fillna(0) + 1
+    combined["FamilySize"] = (
+        combined["SibSp"].fillna(0) + combined["Parch"].fillna(0) + 1
+    )
     combined["IsAlone"] = (combined["FamilySize"] == 1).astype(int)
     combined["Fare"] = combined["Fare"].fillna(combined["Fare"].median())
     combined["FarePerPerson"] = combined["Fare"] / combined["FamilySize"].replace(0, 1)
-    combined["Embarked"] = combined["Embarked"].fillna(combined["Embarked"].mode().iloc[0])
+    combined["Embarked"] = combined["Embarked"].fillna(
+        combined["Embarked"].mode().iloc[0]
+    )
     combined["CabinDeck"] = combined["Cabin"].fillna("U").astype(str).str[0]
     combined["TicketPrefix"] = (
         combined["Ticket"]
@@ -276,15 +281,43 @@ def benchmark_titanic(data_dir: Path, folds: int, write_submission: bool) -> Lab
     num_cols = [col for col in train_x.columns if col not in cat_cols]
     preprocessor = ColumnTransformer(
         transformers=[
-            ("num", Pipeline([("imputer", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), num_cols),
-            ("cat", Pipeline([("imputer", SimpleImputer(strategy="most_frequent")), ("onehot", OneHotEncoder(handle_unknown="ignore"))]), cat_cols),
+            (
+                "num",
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="median")),
+                        ("scale", StandardScaler()),
+                    ]
+                ),
+                num_cols,
+            ),
+            (
+                "cat",
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="most_frequent")),
+                        ("onehot", OneHotEncoder(handle_unknown="ignore")),
+                    ]
+                ),
+                cat_cols,
+            ),
         ]
     )
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=RANDOM_STATE)
     candidates: list[tuple[str, Any]] = [
         ("logreg", LogisticRegression(max_iter=2000, C=2.5)),
-        ("rf", RandomForestClassifier(n_estimators=500, random_state=RANDOM_STATE, min_samples_leaf=2)),
-        ("et", ExtraTreesClassifier(n_estimators=700, random_state=RANDOM_STATE, min_samples_leaf=2)),
+        (
+            "rf",
+            RandomForestClassifier(
+                n_estimators=500, random_state=RANDOM_STATE, min_samples_leaf=2
+            ),
+        ),
+        (
+            "et",
+            ExtraTreesClassifier(
+                n_estimators=700, random_state=RANDOM_STATE, min_samples_leaf=2
+            ),
+        ),
     ]
 
     benchmarks: list[dict[str, Any]] = []
@@ -297,7 +330,9 @@ def benchmark_titanic(data_dir: Path, folds: int, write_submission: bool) -> Lab
         trained_predictions[name] = pipe.predict(test_x)
 
     try:
-        cat_score, cat_preds = _titanic_catboost(train_x.copy(), test_x.copy(), y, folds)
+        cat_score, cat_preds = _titanic_catboost(
+            train_x.copy(), test_x.copy(), y, folds
+        )
         benchmarks.append({"model": "catboost", "score": round(cat_score, 5)})
         trained_predictions["catboost"] = cat_preds
     except RuntimeError:
@@ -306,9 +341,15 @@ def benchmark_titanic(data_dir: Path, folds: int, write_submission: bool) -> Lab
     best = max(benchmarks, key=lambda row: row["score"])
     submission_path = None
     if write_submission:
-        submission_path = _submission_dir("titanic") / f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        submission_path = (
+            _submission_dir("titanic")
+            / f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        )
         pd.DataFrame(
-            {"PassengerId": test["PassengerId"], "Survived": trained_predictions[best["model"]].astype(int)}
+            {
+                "PassengerId": test["PassengerId"],
+                "Survived": trained_predictions[best["model"]].astype(int),
+            }
         ).to_csv(submission_path, index=False)
 
     return LabResult(
@@ -325,19 +366,31 @@ def _build_spaceship_features(
     train: pd.DataFrame,
     test: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    combined = pd.concat([train.drop(columns=["Transported"]), test], axis=0, ignore_index=True)
+    combined = pd.concat(
+        [train.drop(columns=["Transported"]), test], axis=0, ignore_index=True
+    )
 
     spend_cols = ["RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"]
     group_id = combined["PassengerId"].astype(str).str.split("_").str[0]
     combined["GroupId"] = group_id
     combined["GroupSize"] = group_id.map(group_id.value_counts()).astype(int)
     combined["GroupMemberIdx"] = (
-        pd.to_numeric(combined["PassengerId"].astype(str).str.split("_").str[-1], errors="coerce").fillna(0).astype(int)
+        pd.to_numeric(
+            combined["PassengerId"].astype(str).str.split("_").str[-1], errors="coerce"
+        )
+        .fillna(0)
+        .astype(int)
     )
-    combined["Surname"] = combined["Name"].fillna("Unknown Unknown").astype(str).str.split().str[-1]
-    combined["SurnameSize"] = combined["Surname"].map(combined["Surname"].value_counts()).astype(int)
+    combined["Surname"] = (
+        combined["Name"].fillna("Unknown Unknown").astype(str).str.split().str[-1]
+    )
+    combined["SurnameSize"] = (
+        combined["Surname"].map(combined["Surname"].value_counts()).astype(int)
+    )
 
-    cabin = combined["Cabin"].fillna("Unknown/0/U").astype(str).str.split("/", expand=True)
+    cabin = (
+        combined["Cabin"].fillna("Unknown/0/U").astype(str).str.split("/", expand=True)
+    )
     combined["Deck"] = cabin[0].fillna("Unknown").astype(str)
     combined["CabinNum"] = pd.to_numeric(cabin[1], errors="coerce")
     combined["Side"] = cabin[2].fillna("Unknown").astype(str)
@@ -348,7 +401,11 @@ def _build_spaceship_features(
             df[[key, value]]
             .dropna(subset=[value])
             .groupby(key, observed=False)[value]
-            .agg(lambda s: s.mode(dropna=True).iloc[0] if not s.mode(dropna=True).empty else s.iloc[0])
+            .agg(
+                lambda s: s.mode(dropna=True).iloc[0]
+                if not s.mode(dropna=True).empty
+                else s.iloc[0]
+            )
         )
         return grouped.to_dict()
 
@@ -359,17 +416,31 @@ def _build_spaceship_features(
     combined["NoSpendObserved"] = combined[spend_cols].fillna(0.0).sum(axis=1).eq(0)
 
     for col in ["HomePlanet", "Destination", "Deck", "Side"]:
-        combined[col] = combined[col].fillna(combined["GroupId"].map(_mode_map(combined, "GroupId", col)))
-    combined["HomePlanet"] = combined["HomePlanet"].fillna(combined["Surname"].map(_mode_map(combined, "Surname", "HomePlanet")))
-    combined["Destination"] = combined["Destination"].fillna(combined["Surname"].map(_mode_map(combined, "Surname", "Destination")))
-    combined["HomePlanet"] = combined["HomePlanet"].fillna(combined["Deck"].map(_mode_map(combined, "Deck", "HomePlanet")))
+        combined[col] = combined[col].fillna(
+            combined["GroupId"].map(_mode_map(combined, "GroupId", col))
+        )
+    combined["HomePlanet"] = combined["HomePlanet"].fillna(
+        combined["Surname"].map(_mode_map(combined, "Surname", "HomePlanet"))
+    )
+    combined["Destination"] = combined["Destination"].fillna(
+        combined["Surname"].map(_mode_map(combined, "Surname", "Destination"))
+    )
+    combined["HomePlanet"] = combined["HomePlanet"].fillna(
+        combined["Deck"].map(_mode_map(combined, "Deck", "HomePlanet"))
+    )
     combined["Destination"] = combined["Destination"].fillna("TRAPPIST-1e")
 
     deck_cabin_median = combined.groupby("Deck", observed=False)["CabinNum"].median()
-    combined["CabinNum"] = combined["CabinNum"].fillna(combined["Deck"].map(deck_cabin_median))
-    combined["CabinNum"] = combined["CabinNum"].fillna(combined["CabinNum"].median()).astype(float)
+    combined["CabinNum"] = combined["CabinNum"].fillna(
+        combined["Deck"].map(deck_cabin_median)
+    )
+    combined["CabinNum"] = (
+        combined["CabinNum"].fillna(combined["CabinNum"].median()).astype(float)
+    )
 
-    combined["CryoSleep"] = combined["CryoSleep"].where(combined["CryoSleep"].notna(), np.nan)
+    combined["CryoSleep"] = combined["CryoSleep"].where(
+        combined["CryoSleep"].notna(), np.nan
+    )
     cryo_missing = combined["CryoSleep"].isna()
     combined.loc[cryo_missing & combined["NoSpendObserved"], "CryoSleep"] = True
     cryo_missing = combined["CryoSleep"].isna()
@@ -378,16 +449,26 @@ def _build_spaceship_features(
         combined["CryoSleep"].notna(),
         combined["GroupId"].map(_mode_map(combined, "GroupId", "CryoSleep")),
     )
-    combined["CryoSleep"] = combined["CryoSleep"].where(combined["CryoSleep"].notna(), False)
+    combined["CryoSleep"] = combined["CryoSleep"].where(
+        combined["CryoSleep"].notna(), False
+    )
 
     for col in spend_cols:
-        group_median = combined.groupby(["HomePlanet", "Deck"], observed=False)[col].transform("median")
+        group_median = combined.groupby(["HomePlanet", "Deck"], observed=False)[
+            col
+        ].transform("median")
         combined[col] = combined[col].fillna(group_median)
         combined[col] = combined[col].fillna(combined[col].median())
     combined.loc[combined["CryoSleep"].astype(bool), spend_cols] = 0.0
 
-    combined["Age"] = combined["Age"].fillna(combined.groupby("GroupId", observed=False)["Age"].transform("median"))
-    combined["Age"] = combined["Age"].fillna(combined.groupby(["HomePlanet", "Deck"], observed=False)["Age"].transform("median"))
+    combined["Age"] = combined["Age"].fillna(
+        combined.groupby("GroupId", observed=False)["Age"].transform("median")
+    )
+    combined["Age"] = combined["Age"].fillna(
+        combined.groupby(["HomePlanet", "Deck"], observed=False)["Age"].transform(
+            "median"
+        )
+    )
     combined["Age"] = combined["Age"].fillna(combined["Age"].median())
     combined["VIP"] = combined["VIP"].where(
         combined["VIP"].notna(),
@@ -405,36 +486,62 @@ def _build_spaceship_features(
     combined["TotalSpend"] = combined[spend_cols].sum(axis=1)
     combined["LogSpend"] = np.log1p(combined["TotalSpend"])
     combined["LuxurySpend"] = combined["Spa"] + combined["VRDeck"]
-    combined["EssentialSpend"] = combined["RoomService"] + combined["FoodCourt"] + combined["ShoppingMall"]
-    combined["SpendPerPerson"] = combined["TotalSpend"] / combined["GroupSize"].replace(0, 1)
+    combined["EssentialSpend"] = (
+        combined["RoomService"] + combined["FoodCourt"] + combined["ShoppingMall"]
+    )
+    combined["SpendPerPerson"] = combined["TotalSpend"] / combined["GroupSize"].replace(
+        0, 1
+    )
     combined["NoSpend"] = (combined["TotalSpend"] == 0).astype(int)
     combined["IsAlone"] = (combined["GroupSize"] == 1).astype(int)
     combined["CryoSpendMismatch"] = (
         (combined["CryoSleep"] & (combined["TotalSpend"] > 0))
         | (~combined["CryoSleep"] & (combined["TotalSpend"] == 0))
     ).astype(int)
-    combined["AgeGroup"] = pd.cut(
-        combined["Age"],
-        bins=[0, 12, 17, 30, 45, 60, 100],
-        labels=["Child", "Teen", "Young", "Adult", "Middle", "Senior"],
-        include_lowest=True,
-    ).astype(object).fillna("Unknown")
+    combined["AgeGroup"] = (
+        pd.cut(
+            combined["Age"],
+            bins=[0, 12, 17, 30, 45, 60, 100],
+            labels=["Child", "Teen", "Young", "Adult", "Middle", "Senior"],
+            include_lowest=True,
+        )
+        .astype(object)
+        .fillna("Unknown")
+    )
     combined["IsChild"] = (combined["Age"] < 13).astype(int)
     combined["IsSenior"] = (combined["Age"] >= 60).astype(int)
     combined["HomeDest"] = combined["HomePlanet"] + "__" + combined["Destination"]
     combined["DeckSide"] = combined["Deck"] + "__" + combined["Side"]
-    combined["CabinNumBin"] = pd.qcut(
-        combined["CabinNum"].rank(method="first"),
-        q=10,
-        labels=False,
-        duplicates="drop",
-    ).astype(int).astype(str)
-    combined["GroupSpendMean"] = combined.groupby("GroupId", observed=False)["TotalSpend"].transform("mean")
-    combined["GroupSpendStd"] = combined.groupby("GroupId", observed=False)["TotalSpend"].transform("std").fillna(0.0)
-    combined["GroupAgeMean"] = combined.groupby("GroupId", observed=False)["Age"].transform("mean")
-    combined["GroupNoSpendRate"] = combined.groupby("GroupId", observed=False)["NoSpend"].transform("mean")
-    combined["SurnameSpendMean"] = combined.groupby("Surname", observed=False)["TotalSpend"].transform("mean")
-    combined["SurnameCryoRate"] = combined.groupby("Surname", observed=False)["CryoSleep"].transform("mean")
+    combined["CabinNumBin"] = (
+        pd.qcut(
+            combined["CabinNum"].rank(method="first"),
+            q=10,
+            labels=False,
+            duplicates="drop",
+        )
+        .astype(int)
+        .astype(str)
+    )
+    combined["GroupSpendMean"] = combined.groupby("GroupId", observed=False)[
+        "TotalSpend"
+    ].transform("mean")
+    combined["GroupSpendStd"] = (
+        combined.groupby("GroupId", observed=False)["TotalSpend"]
+        .transform("std")
+        .fillna(0.0)
+    )
+    combined["GroupAgeMean"] = combined.groupby("GroupId", observed=False)[
+        "Age"
+    ].transform("mean")
+    combined["GroupNoSpendRate"] = combined.groupby("GroupId", observed=False)[
+        "NoSpend"
+    ].transform("mean")
+    combined["SurnameSpendMean"] = combined.groupby("Surname", observed=False)[
+        "TotalSpend"
+    ].transform("mean")
+    combined["SurnameCryoRate"] = combined.groupby("Surname", observed=False)[
+        "CryoSleep"
+    ].transform("mean")
 
     features = [
         "HomePlanet",
@@ -484,7 +591,9 @@ def _build_spaceship_features(
     return train_x, test_x
 
 
-def _spaceship_best_threshold(probabilities: np.ndarray, y_true: pd.Series | np.ndarray) -> tuple[float, float]:
+def _spaceship_best_threshold(
+    probabilities: np.ndarray, y_true: pd.Series | np.ndarray
+) -> tuple[float, float]:
     y_array = np.asarray(y_true).astype(int)
     best_threshold = 0.5
     best_score = float(accuracy_score(y_array, probabilities >= best_threshold))
@@ -544,7 +653,9 @@ def _spaceship_catboost(
     return best_score, submission_preds, best_threshold
 
 
-def benchmark_spaceship(data_dir: Path, folds: int, write_submission: bool) -> LabResult:
+def benchmark_spaceship(
+    data_dir: Path, folds: int, write_submission: bool
+) -> LabResult:
     train = pd.read_csv(data_dir / "train.csv")
     test = pd.read_csv(data_dir / "test.csv")
     y = train["Transported"].astype(int)
@@ -554,27 +665,64 @@ def benchmark_spaceship(data_dir: Path, folds: int, write_submission: bool) -> L
     num_cols = [col for col in train_x.columns if col not in cat_cols]
     preprocessor = ColumnTransformer(
         transformers=[
-            ("num", Pipeline([("imputer", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), num_cols),
-            ("cat", Pipeline([("imputer", SimpleImputer(strategy="most_frequent")), ("onehot", OneHotEncoder(handle_unknown="ignore"))]), cat_cols),
+            (
+                "num",
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="median")),
+                        ("scale", StandardScaler()),
+                    ]
+                ),
+                num_cols,
+            ),
+            (
+                "cat",
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="most_frequent")),
+                        ("onehot", OneHotEncoder(handle_unknown="ignore")),
+                    ]
+                ),
+                cat_cols,
+            ),
         ]
     )
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=RANDOM_STATE)
     candidates: list[tuple[str, Any]] = [
         ("logreg", LogisticRegression(max_iter=2000, C=2.0)),
-        ("rf", RandomForestClassifier(n_estimators=500, random_state=RANDOM_STATE, min_samples_leaf=2)),
-        ("hgb", HistGradientBoostingClassifier(max_depth=8, learning_rate=0.05, max_iter=400, random_state=RANDOM_STATE)),
-        ("et", ExtraTreesClassifier(n_estimators=700, random_state=RANDOM_STATE, min_samples_leaf=2)),
+        (
+            "rf",
+            RandomForestClassifier(
+                n_estimators=500, random_state=RANDOM_STATE, min_samples_leaf=2
+            ),
+        ),
+        (
+            "hgb",
+            HistGradientBoostingClassifier(
+                max_depth=8, learning_rate=0.05, max_iter=400, random_state=RANDOM_STATE
+            ),
+        ),
+        (
+            "et",
+            ExtraTreesClassifier(
+                n_estimators=700, random_state=RANDOM_STATE, min_samples_leaf=2
+            ),
+        ),
     ]
 
     benchmarks: list[dict[str, Any]] = []
     trained_predictions: dict[str, np.ndarray] = {}
     dense_cache_train = pd.get_dummies(train_x, drop_first=False)
     dense_cache_test = pd.get_dummies(test_x, drop_first=False)
-    dense_cache_test = dense_cache_test.reindex(columns=dense_cache_train.columns, fill_value=0)
+    dense_cache_test = dense_cache_test.reindex(
+        columns=dense_cache_train.columns, fill_value=0
+    )
 
     for name, model in candidates:
         if name == "hgb":
-            scores = cross_val_score(model, dense_cache_train, y, cv=skf, scoring="accuracy", n_jobs=1)
+            scores = cross_val_score(
+                model, dense_cache_train, y, cv=skf, scoring="accuracy", n_jobs=1
+            )
             benchmarks.append({"model": name, "score": round(float(scores.mean()), 5)})
             model.fit(dense_cache_train, y)
             trained_predictions[name] = model.predict(dense_cache_test).astype(bool)
@@ -586,8 +734,16 @@ def benchmark_spaceship(data_dir: Path, folds: int, write_submission: bool) -> L
         trained_predictions[name] = pipe.predict(test_x).astype(bool)
 
     try:
-        cat_score, cat_preds, cat_threshold = _spaceship_catboost(train_x.copy(), test_x.copy(), y, folds)
-        benchmarks.append({"model": "catboost", "score": round(cat_score, 5), "threshold": round(cat_threshold, 2)})
+        cat_score, cat_preds, cat_threshold = _spaceship_catboost(
+            train_x.copy(), test_x.copy(), y, folds
+        )
+        benchmarks.append(
+            {
+                "model": "catboost",
+                "score": round(cat_score, 5),
+                "threshold": round(cat_threshold, 2),
+            }
+        )
         trained_predictions["catboost"] = cat_preds
     except RuntimeError:
         pass
@@ -595,9 +751,15 @@ def benchmark_spaceship(data_dir: Path, folds: int, write_submission: bool) -> L
     best = max(benchmarks, key=lambda row: row["score"])
     submission_path = None
     if write_submission:
-        submission_path = _submission_dir("spaceship-titanic") / f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        submission_path = (
+            _submission_dir("spaceship-titanic")
+            / f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        )
         pd.DataFrame(
-            {"PassengerId": test["PassengerId"], "Transported": trained_predictions[best["model"]].astype(bool)}
+            {
+                "PassengerId": test["PassengerId"],
+                "Transported": trained_predictions[best["model"]].astype(bool),
+            }
         ).to_csv(submission_path, index=False)
 
     return LabResult(
@@ -623,7 +785,15 @@ def benchmark_nlp(data_dir: Path, folds: int, write_submission: bool) -> LabResu
             "word_lr",
             Pipeline(
                 [
-                    ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_features=60000, sublinear_tf=True)),
+                    (
+                        "tfidf",
+                        TfidfVectorizer(
+                            ngram_range=(1, 2),
+                            min_df=2,
+                            max_features=60000,
+                            sublinear_tf=True,
+                        ),
+                    ),
                     ("model", LogisticRegression(max_iter=2000, C=4.0)),
                 ]
             ),
@@ -632,7 +802,16 @@ def benchmark_nlp(data_dir: Path, folds: int, write_submission: bool) -> LabResu
             "char_lr",
             Pipeline(
                 [
-                    ("tfidf", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), min_df=2, max_features=90000, sublinear_tf=True)),
+                    (
+                        "tfidf",
+                        TfidfVectorizer(
+                            analyzer="char_wb",
+                            ngram_range=(3, 5),
+                            min_df=2,
+                            max_features=90000,
+                            sublinear_tf=True,
+                        ),
+                    ),
                     ("model", LogisticRegression(max_iter=2000, C=3.0)),
                 ]
             ),
@@ -641,7 +820,15 @@ def benchmark_nlp(data_dir: Path, folds: int, write_submission: bool) -> LabResu
             "cnb",
             Pipeline(
                 [
-                    ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_features=70000, sublinear_tf=True)),
+                    (
+                        "tfidf",
+                        TfidfVectorizer(
+                            ngram_range=(1, 2),
+                            min_df=2,
+                            max_features=70000,
+                            sublinear_tf=True,
+                        ),
+                    ),
                     ("model", ComplementNB(alpha=0.4)),
                 ]
             ),
@@ -659,8 +846,13 @@ def benchmark_nlp(data_dir: Path, folds: int, write_submission: bool) -> LabResu
     best = max(benchmarks, key=lambda row: row["score"])
     submission_path = None
     if write_submission:
-        submission_path = _submission_dir("nlp-getting-started") / f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
-        pd.DataFrame({"id": test["id"], "target": trained_predictions[best["model"]].astype(int)}).to_csv(
+        submission_path = (
+            _submission_dir("nlp-getting-started")
+            / f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
+        )
+        pd.DataFrame(
+            {"id": test["id"], "target": trained_predictions[best["model"]].astype(int)}
+        ).to_csv(
             submission_path,
             index=False,
         )
@@ -679,18 +871,26 @@ def _playground_prepare_features(
     train: pd.DataFrame,
     test: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    combined = pd.concat([train.drop(columns=["Churn"]), test], axis=0, ignore_index=True)
+    combined = pd.concat(
+        [train.drop(columns=["Churn"]), test], axis=0, ignore_index=True
+    )
     combined["TotalCharges"] = pd.to_numeric(combined["TotalCharges"], errors="coerce")
     tenure = combined["tenure"].replace(0, np.nan)
     combined["ChargesPerTenure"] = combined["TotalCharges"] / tenure
     combined["MonthlyToTenureRatio"] = combined["MonthlyCharges"] / tenure
     combined["IsNewCustomer"] = combined["tenure"].fillna(0).le(6).astype(int)
-    combined["HasFiber"] = combined["InternetService"].fillna("").eq("Fiber optic").astype(int)
+    combined["HasFiber"] = (
+        combined["InternetService"].fillna("").eq("Fiber optic").astype(int)
+    )
     combined["HasAutoPay"] = (
-        combined["PaymentMethod"].fillna("").str.contains("automatic", case=False, regex=False).astype(int)
+        combined["PaymentMethod"]
+        .fillna("")
+        .str.contains("automatic", case=False, regex=False)
+        .astype(int)
     )
     combined["HasStreaming"] = (
-        combined["StreamingTV"].fillna("").eq("Yes") | combined["StreamingMovies"].fillna("").eq("Yes")
+        combined["StreamingTV"].fillna("").eq("Yes")
+        | combined["StreamingMovies"].fillna("").eq("Yes")
     ).astype(int)
     combined["HasSecurityBundle"] = (
         combined["OnlineSecurity"].fillna("").eq("Yes")
@@ -722,7 +922,9 @@ def _playground_model_result(
     y: pd.Series,
     cv: StratifiedKFold,
 ) -> tuple[float, np.ndarray, np.ndarray]:
-    oof = cross_val_predict(model, train_x, y, cv=cv, method="predict_proba", n_jobs=1)[:, 1]
+    oof = cross_val_predict(model, train_x, y, cv=cv, method="predict_proba", n_jobs=1)[
+        :, 1
+    ]
     score = float(roc_auc_score(y, oof))
     model.fit(train_x, y)
     test_pred = model.predict_proba(test_x)[:, 1]
@@ -764,10 +966,22 @@ def _playground_advanced_feature_frames(
 
     target = "Churn"
     train[target] = (
-        train[target].astype(str).str.strip().str.lower().map({"yes": 1, "no": 0}).fillna(train[target]).astype(int)
+        train[target]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .map({"yes": 1, "no": 0})
+        .fillna(train[target])
+        .astype(int)
     )
     orig[target] = (
-        orig[target].astype(str).str.strip().str.lower().map({"yes": 1, "no": 0}).fillna(orig[target]).astype(int)
+        orig[target]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .map({"yes": 1, "no": 0})
+        .fillna(orig[target])
+        .astype(int)
     )
     cat_cols = [
         "gender",
@@ -808,29 +1022,44 @@ def _playground_advanced_feature_frames(
 
     new_num_cols: list[str] = []
     freq_maps = {
-        col: pd.concat([train[col], test[col], orig[col]], axis=0).value_counts(normalize=True)
+        col: pd.concat([train[col], test[col], orig[col]], axis=0).value_counts(
+            normalize=True
+        )
         for col in num_cols
     }
     train = _concat_feature_block(
         train,
-        {f"FREQ_{col}": train[col].map(freq_maps[col]).fillna(0).astype("float32") for col in num_cols},
+        {
+            f"FREQ_{col}": train[col].map(freq_maps[col]).fillna(0).astype("float32")
+            for col in num_cols
+        },
     )
     test = _concat_feature_block(
         test,
-        {f"FREQ_{col}": test[col].map(freq_maps[col]).fillna(0).astype("float32") for col in num_cols},
+        {
+            f"FREQ_{col}": test[col].map(freq_maps[col]).fillna(0).astype("float32")
+            for col in num_cols
+        },
     )
     orig = _concat_feature_block(
         orig,
-        {f"FREQ_{col}": orig[col].map(freq_maps[col]).fillna(0).astype("float32") for col in num_cols},
+        {
+            f"FREQ_{col}": orig[col].map(freq_maps[col]).fillna(0).astype("float32")
+            for col in num_cols
+        },
     )
     new_num_cols.extend([f"FREQ_{col}" for col in num_cols])
 
-    all_num = pd.concat([train[num_cols], test[num_cols], orig[num_cols]], axis=0, ignore_index=True)
+    all_num = pd.concat(
+        [train[num_cols], test[num_cols], orig[num_cols]], axis=0, ignore_index=True
+    )
     rank_updates_train: dict[str, Any] = {}
     rank_updates_test: dict[str, Any] = {}
     rank_updates_orig: dict[str, Any] = {}
     for col in num_cols:
-        ranks = all_num[col].rank(method="average", pct=True).astype("float32").to_numpy()
+        ranks = (
+            all_num[col].rank(method="average", pct=True).astype("float32").to_numpy()
+        )
         rank_updates_train[f"RANK_{col}"] = ranks[: len(train)]
         rank_updates_test[f"RANK_{col}"] = ranks[len(train) : len(train) + len(test)]
         rank_updates_orig[f"RANK_{col}"] = ranks[len(train) + len(test) :]
@@ -845,7 +1074,9 @@ def _playground_advanced_feature_frames(
             values = df[col].astype("float32")
             updates[f"LOG1P_{col}"] = np.log1p(values.clip(lower=0)).astype("float32")
             updates[f"SQRT_{col}"] = np.sqrt(values.clip(lower=0)).astype("float32")
-            updates[f"INV1P_{col}"] = (1.0 / (1.0 + values.clip(lower=0))).astype("float32")
+            updates[f"INV1P_{col}"] = (1.0 / (1.0 + values.clip(lower=0))).astype(
+                "float32"
+            )
         return updates
 
     train = _concat_feature_block(train, _power_updates(train))
@@ -856,20 +1087,33 @@ def _playground_advanced_feature_frames(
     new_num_cols.extend([f"INV1P_{col}" for col in num_cols])
 
     def _core_numeric_updates(df: pd.DataFrame) -> dict[str, Any]:
-        charges_deviation = (df["TotalCharges"] - df["tenure"] * df["MonthlyCharges"]).astype("float32")
+        charges_deviation = (
+            df["TotalCharges"] - df["tenure"] * df["MonthlyCharges"]
+        ).astype("float32")
         service_yes_count = (df[service_cols] == "Yes").sum(axis=1).astype("float32")
         return {
             "charges_deviation": charges_deviation,
             "abs_charges_dev": np.abs(charges_deviation).astype("float32"),
-            "monthly_to_total_ratio": (df["MonthlyCharges"] / (df["TotalCharges"] + 1)).astype("float32"),
-            "total_to_monthly_ratio": (df["TotalCharges"] / (df["MonthlyCharges"] + 1)).astype("float32"),
-            "avg_monthly_charges": (df["TotalCharges"] / (df["tenure"] + 1)).astype("float32"),
+            "monthly_to_total_ratio": (
+                df["MonthlyCharges"] / (df["TotalCharges"] + 1)
+            ).astype("float32"),
+            "total_to_monthly_ratio": (
+                df["TotalCharges"] / (df["MonthlyCharges"] + 1)
+            ).astype("float32"),
+            "avg_monthly_charges": (df["TotalCharges"] / (df["tenure"] + 1)).astype(
+                "float32"
+            ),
             "tenure_x_monthly": (df["tenure"] * df["MonthlyCharges"]).astype("float32"),
             "tenure_x_total": (df["tenure"] * df["TotalCharges"]).astype("float32"),
             "service_yes_count": service_yes_count,
-            "service_no_count": (df[service_cols] == "No").sum(axis=1).astype("float32"),
+            "service_no_count": (df[service_cols] == "No")
+            .sum(axis=1)
+            .astype("float32"),
             "service_other_count": (
-                df[service_cols].isin(["No phone service", "No internet service"]).sum(axis=1).astype("float32")
+                df[service_cols]
+                .isin(["No phone service", "No internet service"])
+                .sum(axis=1)
+                .astype("float32")
             ),
             "service_count": service_yes_count,
             "has_internet": (df["InternetService"] != "No").astype("float32"),
@@ -900,7 +1144,9 @@ def _playground_advanced_feature_frames(
     new_cat_cols: list[str] = []
     tenure_bins = [0, 1, 3, 6, 12, 24, 36, 48, 60, 72, 10_000]
     monthly_bins = pd.qcut(
-        pd.concat([train["MonthlyCharges"], test["MonthlyCharges"], orig["MonthlyCharges"]]),
+        pd.concat(
+            [train["MonthlyCharges"], test["MonthlyCharges"], orig["MonthlyCharges"]]
+        ),
         q=40,
         retbins=True,
         duplicates="drop",
@@ -914,25 +1160,43 @@ def _playground_advanced_feature_frames(
     train = _concat_feature_block(
         train,
         {
-            "tenure_bin": pd.cut(train["tenure"], bins=tenure_bins, include_lowest=True).astype(str),
-            "MonthlyCharges_bin": pd.cut(train["MonthlyCharges"], bins=monthly_bins, include_lowest=True).astype(str),
-            "TotalCharges_bin": pd.cut(train["TotalCharges"], bins=total_bins, include_lowest=True).astype(str),
+            "tenure_bin": pd.cut(
+                train["tenure"], bins=tenure_bins, include_lowest=True
+            ).astype(str),
+            "MonthlyCharges_bin": pd.cut(
+                train["MonthlyCharges"], bins=monthly_bins, include_lowest=True
+            ).astype(str),
+            "TotalCharges_bin": pd.cut(
+                train["TotalCharges"], bins=total_bins, include_lowest=True
+            ).astype(str),
         },
     )
     test = _concat_feature_block(
         test,
         {
-            "tenure_bin": pd.cut(test["tenure"], bins=tenure_bins, include_lowest=True).astype(str),
-            "MonthlyCharges_bin": pd.cut(test["MonthlyCharges"], bins=monthly_bins, include_lowest=True).astype(str),
-            "TotalCharges_bin": pd.cut(test["TotalCharges"], bins=total_bins, include_lowest=True).astype(str),
+            "tenure_bin": pd.cut(
+                test["tenure"], bins=tenure_bins, include_lowest=True
+            ).astype(str),
+            "MonthlyCharges_bin": pd.cut(
+                test["MonthlyCharges"], bins=monthly_bins, include_lowest=True
+            ).astype(str),
+            "TotalCharges_bin": pd.cut(
+                test["TotalCharges"], bins=total_bins, include_lowest=True
+            ).astype(str),
         },
     )
     orig = _concat_feature_block(
         orig,
         {
-            "tenure_bin": pd.cut(orig["tenure"], bins=tenure_bins, include_lowest=True).astype(str),
-            "MonthlyCharges_bin": pd.cut(orig["MonthlyCharges"], bins=monthly_bins, include_lowest=True).astype(str),
-            "TotalCharges_bin": pd.cut(orig["TotalCharges"], bins=total_bins, include_lowest=True).astype(str),
+            "tenure_bin": pd.cut(
+                orig["tenure"], bins=tenure_bins, include_lowest=True
+            ).astype(str),
+            "MonthlyCharges_bin": pd.cut(
+                orig["MonthlyCharges"], bins=monthly_bins, include_lowest=True
+            ).astype(str),
+            "TotalCharges_bin": pd.cut(
+                orig["TotalCharges"], bins=total_bins, include_lowest=True
+            ).astype(str),
         },
     )
     new_cat_cols.extend(["tenure_bin", "MonthlyCharges_bin", "TotalCharges_bin"])
@@ -950,6 +1214,7 @@ def _playground_advanced_feature_frames(
         "StreamingMovies",
         "MultipleLines",
     ]
+
     def _yn_updates(df: pd.DataFrame) -> dict[str, Any]:
         updates: dict[str, Any] = {}
         for col in yn_cols:
@@ -976,21 +1241,39 @@ def _playground_advanced_feature_frames(
         ("InternetService", "TechSupport"),
     ):
         name = f"{left}__{right}"
-        cat_feature_updates["train"][name] = train[left].astype(str) + "|" + train[right].astype(str)
-        cat_feature_updates["test"][name] = test[left].astype(str) + "|" + test[right].astype(str)
-        cat_feature_updates["orig"][name] = orig[left].astype(str) + "|" + orig[right].astype(str)
+        cat_feature_updates["train"][name] = (
+            train[left].astype(str) + "|" + train[right].astype(str)
+        )
+        cat_feature_updates["test"][name] = (
+            test[left].astype(str) + "|" + test[right].astype(str)
+        )
+        cat_feature_updates["orig"][name] = (
+            orig[left].astype(str) + "|" + orig[right].astype(str)
+        )
         new_cat_cols.append(name)
 
     for left, middle, right in (("Contract", "InternetService", "PaymentMethod"),):
         name = f"{left}__{middle}__{right}"
         cat_feature_updates["train"][name] = (
-            train[left].astype(str) + "|" + train[middle].astype(str) + "|" + train[right].astype(str)
+            train[left].astype(str)
+            + "|"
+            + train[middle].astype(str)
+            + "|"
+            + train[right].astype(str)
         )
         cat_feature_updates["test"][name] = (
-            test[left].astype(str) + "|" + test[middle].astype(str) + "|" + test[right].astype(str)
+            test[left].astype(str)
+            + "|"
+            + test[middle].astype(str)
+            + "|"
+            + test[right].astype(str)
         )
         cat_feature_updates["orig"][name] = (
-            orig[left].astype(str) + "|" + orig[middle].astype(str) + "|" + orig[right].astype(str)
+            orig[left].astype(str)
+            + "|"
+            + orig[middle].astype(str)
+            + "|"
+            + orig[right].astype(str)
         )
         new_cat_cols.append(name)
 
@@ -1004,21 +1287,39 @@ def _playground_advanced_feature_frames(
     ]
     for left, right in combinations(ngram_top_cols, 2):
         name = f"BG_{left}_{right}"
-        cat_feature_updates["train"][name] = train[left].astype(str) + "_" + train[right].astype(str)
-        cat_feature_updates["test"][name] = test[left].astype(str) + "_" + test[right].astype(str)
-        cat_feature_updates["orig"][name] = orig[left].astype(str) + "_" + orig[right].astype(str)
+        cat_feature_updates["train"][name] = (
+            train[left].astype(str) + "_" + train[right].astype(str)
+        )
+        cat_feature_updates["test"][name] = (
+            test[left].astype(str) + "_" + test[right].astype(str)
+        )
+        cat_feature_updates["orig"][name] = (
+            orig[left].astype(str) + "_" + orig[right].astype(str)
+        )
         new_cat_cols.append(name)
 
     for left, middle, right in combinations(ngram_top_cols[:4], 3):
         name = f"TG_{left}_{middle}_{right}"
         cat_feature_updates["train"][name] = (
-            train[left].astype(str) + "_" + train[middle].astype(str) + "_" + train[right].astype(str)
+            train[left].astype(str)
+            + "_"
+            + train[middle].astype(str)
+            + "_"
+            + train[right].astype(str)
         )
         cat_feature_updates["test"][name] = (
-            test[left].astype(str) + "_" + test[middle].astype(str) + "_" + test[right].astype(str)
+            test[left].astype(str)
+            + "_"
+            + test[middle].astype(str)
+            + "_"
+            + test[right].astype(str)
         )
         cat_feature_updates["orig"][name] = (
-            orig[left].astype(str) + "_" + orig[middle].astype(str) + "_" + orig[right].astype(str)
+            orig[left].astype(str)
+            + "_"
+            + orig[middle].astype(str)
+            + "_"
+            + orig[right].astype(str)
         )
         new_cat_cols.append(name)
     train = _concat_feature_block(train, cat_feature_updates["train"])
@@ -1026,7 +1327,10 @@ def _playground_advanced_feature_frames(
     orig = _concat_feature_block(orig, cat_feature_updates["orig"])
 
     counted_cat_cols = cat_cols + new_cat_cols
-    all_cat_frame = pd.concat([train[counted_cat_cols], test[counted_cat_cols], orig[counted_cat_cols]], ignore_index=True)
+    all_cat_frame = pd.concat(
+        [train[counted_cat_cols], test[counted_cat_cols], orig[counted_cat_cols]],
+        ignore_index=True,
+    )
     count_updates_train: dict[str, Any] = {}
     count_updates_test: dict[str, Any] = {}
     count_updates_orig: dict[str, Any] = {}
@@ -1053,18 +1357,30 @@ def _playground_advanced_feature_frames(
     for col in cat_cols + num_cols + new_cat_cols:
         lookup = orig.groupby(col, observed=False)[target].mean()
         name = f"ORIG_proba_{col}"
-        orig_proba_updates_train[name] = train[col].map(lookup).fillna(orig_global).astype("float32")
-        orig_proba_updates_test[name] = test[col].map(lookup).fillna(orig_global).astype("float32")
-        orig_proba_updates_orig[name] = orig[col].map(lookup).fillna(orig_global).astype("float32")
+        orig_proba_updates_train[name] = (
+            train[col].map(lookup).fillna(orig_global).astype("float32")
+        )
+        orig_proba_updates_test[name] = (
+            test[col].map(lookup).fillna(orig_global).astype("float32")
+        )
+        orig_proba_updates_orig[name] = (
+            orig[col].map(lookup).fillna(orig_global).astype("float32")
+        )
         new_num_cols.append(name)
     train = _concat_feature_block(train, orig_proba_updates_train)
     test = _concat_feature_block(test, orig_proba_updates_test)
     orig = _concat_feature_block(orig, orig_proba_updates_orig)
 
-    orig_churner_tc = orig.loc[orig[target] == 1, "TotalCharges"].to_numpy(dtype=np.float32)
-    orig_nonchurner_tc = orig.loc[orig[target] == 0, "TotalCharges"].to_numpy(dtype=np.float32)
+    orig_churner_tc = orig.loc[orig[target] == 1, "TotalCharges"].to_numpy(
+        dtype=np.float32
+    )
+    orig_nonchurner_tc = orig.loc[orig[target] == 0, "TotalCharges"].to_numpy(
+        dtype=np.float32
+    )
     orig_tc = orig["TotalCharges"].to_numpy(dtype=np.float32)
-    orig_is_mc_mean = orig.groupby("InternetService", observed=False)["MonthlyCharges"].mean()
+    orig_is_mc_mean = orig.groupby("InternetService", observed=False)[
+        "MonthlyCharges"
+    ].mean()
     distribution_cols = [
         "pctrank_nonchurner_TC",
         "pctrank_churner_TC",
@@ -1076,6 +1392,7 @@ def _playground_advanced_feature_frames(
         "cond_pctrank_IS_TC",
         "cond_pctrank_C_TC",
     ]
+
     def _distribution_updates(df: pd.DataFrame) -> dict[str, Any]:
         tc = df["TotalCharges"].to_numpy(dtype=np.float32)
         updates: dict[str, Any] = {
@@ -1083,14 +1400,20 @@ def _playground_advanced_feature_frames(
             "pctrank_churner_TC": pctrank_against(tc, orig_churner_tc),
             "pctrank_orig_TC": pctrank_against(tc, orig_tc),
             "zscore_churn_gap_TC": (
-                np.abs(zscore_against(tc, orig_churner_tc)) - np.abs(zscore_against(tc, orig_nonchurner_tc))
+                np.abs(zscore_against(tc, orig_churner_tc))
+                - np.abs(zscore_against(tc, orig_nonchurner_tc))
             ).astype(np.float32),
             "zscore_nonchurner_TC": zscore_against(tc, orig_nonchurner_tc),
             "pctrank_churn_gap_TC": (
-                pctrank_against(tc, orig_churner_tc) - pctrank_against(tc, orig_nonchurner_tc)
+                pctrank_against(tc, orig_churner_tc)
+                - pctrank_against(tc, orig_nonchurner_tc)
             ).astype(np.float32),
             "resid_IS_MC": (
-                df["MonthlyCharges"] - df["InternetService"].map(orig_is_mc_mean).fillna(0).to_numpy(dtype=np.float32)
+                df["MonthlyCharges"]
+                - df["InternetService"]
+                .map(orig_is_mc_mean)
+                .fillna(0)
+                .to_numpy(dtype=np.float32)
             ).astype(np.float32),
         }
         cond_is_vals = np.zeros(len(df), dtype=np.float32)
@@ -1098,7 +1421,9 @@ def _playground_advanced_feature_frames(
             mask = df["InternetService"].astype(str) == cat_val
             if not mask.any():
                 continue
-            ref = orig.loc[orig["InternetService"].astype(str) == cat_val, "TotalCharges"].to_numpy(dtype=np.float32)
+            ref = orig.loc[
+                orig["InternetService"].astype(str) == cat_val, "TotalCharges"
+            ].to_numpy(dtype=np.float32)
             cond_is_vals[mask.to_numpy()] = pctrank_against(
                 df.loc[mask, "TotalCharges"].to_numpy(dtype=np.float32),
                 ref,
@@ -1110,7 +1435,9 @@ def _playground_advanced_feature_frames(
             mask = df["Contract"].astype(str) == cat_val
             if not mask.any():
                 continue
-            ref = orig.loc[orig["Contract"].astype(str) == cat_val, "TotalCharges"].to_numpy(dtype=np.float32)
+            ref = orig.loc[
+                orig["Contract"].astype(str) == cat_val, "TotalCharges"
+            ].to_numpy(dtype=np.float32)
             cond_contract_vals[mask.to_numpy()] = pctrank_against(
                 df.loc[mask, "TotalCharges"].to_numpy(dtype=np.float32),
                 ref,
@@ -1154,10 +1481,12 @@ def _playground_advanced_xgboost_result(
     seeds: tuple[int, ...] = (11, 42, 99),
 ) -> tuple[float, np.ndarray, np.ndarray]:
     target = "Churn"
-    train_frame, test_frame, feature_cols, te_cols, drop_raw_cols = _playground_advanced_feature_frames(
-        train,
-        test,
-        orig,
+    train_frame, test_frame, feature_cols, te_cols, drop_raw_cols = (
+        _playground_advanced_feature_frames(
+            train,
+            test,
+            orig,
+        )
     )
     n_splits = min(max(3, folds), 5)
     inner_splits = min(3, n_splits)
@@ -1194,25 +1523,41 @@ def _playground_advanced_xgboost_result(
     for seed in seeds:
         outer_cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
         for train_idx, valid_idx in outer_cv.split(train_frame, train_frame[target]):
-            x_train = train_frame.iloc[train_idx][feature_cols + [target]].reset_index(drop=True).copy()
+            x_train = (
+                train_frame.iloc[train_idx][feature_cols + [target]]
+                .reset_index(drop=True)
+                .copy()
+            )
             y_train = train_frame.iloc[train_idx][target].to_numpy()
             y_valid = train_frame.iloc[valid_idx][target].to_numpy()
-            x_valid = train_frame.iloc[valid_idx][feature_cols].reset_index(drop=True).copy()
+            x_valid = (
+                train_frame.iloc[valid_idx][feature_cols].reset_index(drop=True).copy()
+            )
             x_test = test_frame[feature_cols].reset_index(drop=True).copy()
-            inner_cv = StratifiedKFold(n_splits=inner_splits, shuffle=True, random_state=seed)
+            inner_cv = StratifiedKFold(
+                n_splits=inner_splits, shuffle=True, random_state=seed
+            )
 
             te_stat_cols = [f"TE1_{col}_{stat}" for col in te_cols for stat in stats]
-            x_train = _concat_feature_block(x_train, {name: np.nan for name in te_stat_cols})
+            x_train = _concat_feature_block(
+                x_train, {name: np.nan for name in te_stat_cols}
+            )
 
             for inner_train_idx, inner_valid_idx in inner_cv.split(x_train, y_train):
-                x_inner_train = x_train.loc[inner_train_idx, feature_cols + [target]].copy()
+                x_inner_train = x_train.loc[
+                    inner_train_idx, feature_cols + [target]
+                ].copy()
                 x_inner_valid = x_train.loc[inner_valid_idx, feature_cols].copy()
                 for col in te_cols:
-                    grouped = x_inner_train.groupby(col, observed=False)[target].agg(stats)
+                    grouped = x_inner_train.groupby(col, observed=False)[target].agg(
+                        stats
+                    )
                     grouped.columns = [f"TE1_{col}_{stat}" for stat in stats]
                     x_inner_valid = x_inner_valid.merge(grouped, on=col, how="left")
                     for name in grouped.columns:
-                        x_train.loc[inner_valid_idx, name] = x_inner_valid[name].to_numpy(dtype="float32")
+                        x_train.loc[inner_valid_idx, name] = x_inner_valid[
+                            name
+                        ].to_numpy(dtype="float32")
 
             for col in te_cols:
                 grouped = x_train.groupby(col, observed=False)[target].agg(stats)
@@ -1300,8 +1645,12 @@ def _playground_pseudo_label_mask(
     upper_quantile: float = 0.92,
     absolute_confidence: float = 0.92,
 ) -> np.ndarray:
-    lower_threshold = min(float(np.quantile(predictions, lower_quantile)), 1.0 - absolute_confidence)
-    upper_threshold = max(float(np.quantile(predictions, upper_quantile)), absolute_confidence)
+    lower_threshold = min(
+        float(np.quantile(predictions, lower_quantile)), 1.0 - absolute_confidence
+    )
+    upper_threshold = max(
+        float(np.quantile(predictions, upper_quantile)), absolute_confidence
+    )
     return (predictions <= lower_threshold) | (predictions >= upper_threshold)
 
 
@@ -1317,14 +1666,18 @@ def _playground_advanced_xgboost_pseudo_result(
     folds: int,
 ) -> tuple[float, np.ndarray, np.ndarray]:
     target = "Churn"
-    train_frame, test_frame, feature_cols, te_cols, drop_raw_cols = _playground_advanced_feature_frames(
-        train,
-        test,
-        orig,
+    train_frame, test_frame, feature_cols, te_cols, drop_raw_cols = (
+        _playground_advanced_feature_frames(
+            train,
+            test,
+            orig,
+        )
     )
     n_splits = min(max(3, folds), 5)
     inner_splits = min(3, n_splits)
-    outer_cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
+    outer_cv = StratifiedKFold(
+        n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE
+    )
     stats = ["std", "min", "max"]
     oof = np.zeros(len(train_frame), dtype=float)
     test_pred = np.zeros(len(test_frame), dtype=float)
@@ -1355,15 +1708,25 @@ def _playground_advanced_xgboost_pseudo_result(
     }
 
     for train_idx, valid_idx in outer_cv.split(train_frame, train_frame[target]):
-        x_train = train_frame.iloc[train_idx][feature_cols + [target]].reset_index(drop=True).copy()
+        x_train = (
+            train_frame.iloc[train_idx][feature_cols + [target]]
+            .reset_index(drop=True)
+            .copy()
+        )
         y_train = train_frame.iloc[train_idx][target].to_numpy()
         y_valid = train_frame.iloc[valid_idx][target].to_numpy()
-        x_valid = train_frame.iloc[valid_idx][feature_cols].reset_index(drop=True).copy()
+        x_valid = (
+            train_frame.iloc[valid_idx][feature_cols].reset_index(drop=True).copy()
+        )
         x_test = test_frame[feature_cols].reset_index(drop=True).copy()
-        inner_cv = StratifiedKFold(n_splits=inner_splits, shuffle=True, random_state=RANDOM_STATE)
+        inner_cv = StratifiedKFold(
+            n_splits=inner_splits, shuffle=True, random_state=RANDOM_STATE
+        )
 
         te_stat_cols = [f"TE1_{col}_{stat}" for col in te_cols for stat in stats]
-        x_train = _concat_feature_block(x_train, {name: np.nan for name in te_stat_cols})
+        x_train = _concat_feature_block(
+            x_train, {name: np.nan for name in te_stat_cols}
+        )
 
         for inner_train_idx, inner_valid_idx in inner_cv.split(x_train, y_train):
             x_inner_train = x_train.loc[inner_train_idx, feature_cols + [target]].copy()
@@ -1373,7 +1736,9 @@ def _playground_advanced_xgboost_pseudo_result(
                 grouped.columns = [f"TE1_{col}_{stat}" for stat in stats]
                 x_inner_valid = x_inner_valid.merge(grouped, on=col, how="left")
                 for name in grouped.columns:
-                    x_train.loc[inner_valid_idx, name] = x_inner_valid[name].to_numpy(dtype="float32")
+                    x_train.loc[inner_valid_idx, name] = x_inner_valid[name].to_numpy(
+                        dtype="float32"
+                    )
 
         for col in te_cols:
             grouped = x_train.groupby(col, observed=False)[target].agg(stats)
@@ -1455,7 +1820,9 @@ def _playground_advanced_xgboost_pseudo_result(
 
         augmented_x = pd.concat([x_train, pseudo_x], axis=0, ignore_index=True).copy()
         augmented_y = np.concatenate([y_train, pseudo_y])
-        sample_weight = np.concatenate([np.ones(len(y_train), dtype=float), pseudo_weights])
+        sample_weight = np.concatenate(
+            [np.ones(len(y_train), dtype=float), pseudo_weights]
+        )
 
         model = xgb.XGBClassifier(**params)
         model.fit(
@@ -1526,7 +1893,18 @@ def _playground_catboost_selected_features(feature_cols: list[str]) -> list[str]
             selected_feature_cols.append(col)
             continue
         if (
-            col.startswith(("FREQ_", "RANK_", "LOG1P_", "SQRT_", "INV1P_", "ISYES_", "ISNO_", "ISOTHER_"))
+            col.startswith(
+                (
+                    "FREQ_",
+                    "RANK_",
+                    "LOG1P_",
+                    "SQRT_",
+                    "INV1P_",
+                    "ISYES_",
+                    "ISNO_",
+                    "ISOTHER_",
+                )
+            )
             or "__" in col
             or col.startswith(("BG_", "TG_"))
         ):
@@ -1534,11 +1912,16 @@ def _playground_catboost_selected_features(feature_cols: list[str]) -> list[str]
             continue
         if col.startswith("ORIG_proba_"):
             source_col = col.removeprefix("ORIG_proba_")
-            if source_col in base_num_cols or source_col in base_cat_cols or source_col in {
-                "tenure_bin",
-                "MonthlyCharges_bin",
-                "TotalCharges_bin",
-            }:
+            if (
+                source_col in base_num_cols
+                or source_col in base_cat_cols
+                or source_col
+                in {
+                    "tenure_bin",
+                    "MonthlyCharges_bin",
+                    "TotalCharges_bin",
+                }
+            ):
                 selected_feature_cols.append(col)
     return selected_feature_cols
 
@@ -1660,13 +2043,19 @@ def _playground_advanced_lightgbm_result(
         raise RuntimeError("lightgbm is not installed") from exc
 
     target = "Churn"
-    train_frame, test_frame, feature_cols, te_cols, _drop_raw_cols = _playground_advanced_feature_frames(
-        train,
-        test,
-        orig,
+    train_frame, test_frame, feature_cols, te_cols, _drop_raw_cols = (
+        _playground_advanced_feature_frames(
+            train,
+            test,
+            orig,
+        )
     )
     selected_feature_cols = _playground_lightgbm_selected_features(feature_cols)
-    selected_te_cols = [col for col in _playground_lightgbm_te_columns(te_cols) if col in selected_feature_cols]
+    selected_te_cols = [
+        col
+        for col in _playground_lightgbm_te_columns(te_cols)
+        if col in selected_feature_cols
+    ]
     train_model = train_frame[selected_feature_cols].copy()
     test_model = test_frame[selected_feature_cols].copy()
     y = train_frame[target].to_numpy()
@@ -1674,7 +2063,11 @@ def _playground_advanced_lightgbm_result(
     inner_splits = min(3, n_splits)
     stats = ["mean", "std"]
 
-    raw_cat_cols = [col for col in selected_feature_cols if str(train_model[col].dtype) == "category"]
+    raw_cat_cols = [
+        col
+        for col in selected_feature_cols
+        if str(train_model[col].dtype) == "category"
+    ]
     oof_sum = np.zeros(len(train_model), dtype=float)
     oof_count = np.zeros(len(train_model), dtype=float)
     test_pred = np.zeros(len(test_model), dtype=float)
@@ -1705,24 +2098,38 @@ def _playground_advanced_lightgbm_result(
             x_valid = train_model.iloc[valid_idx].reset_index(drop=True).copy()
             y_valid = y[valid_idx]
             x_test = test_model.copy()
-            inner_cv = StratifiedKFold(n_splits=inner_splits, shuffle=True, random_state=seed)
+            inner_cv = StratifiedKFold(
+                n_splits=inner_splits, shuffle=True, random_state=seed
+            )
 
-            te_stat_cols = [f"LGB_TE1_{col}_{stat}" for col in selected_te_cols for stat in stats]
-            x_train = _concat_feature_block(x_train, {name: np.nan for name in te_stat_cols})
+            te_stat_cols = [
+                f"LGB_TE1_{col}_{stat}" for col in selected_te_cols for stat in stats
+            ]
+            x_train = _concat_feature_block(
+                x_train, {name: np.nan for name in te_stat_cols}
+            )
 
             for inner_train_idx, inner_valid_idx in inner_cv.split(x_train, y_train):
                 x_inner_train = x_train.loc[inner_train_idx, selected_te_cols].copy()
                 x_inner_train[target] = y_train[inner_train_idx]
                 x_inner_valid = x_train.loc[inner_valid_idx, selected_te_cols].copy()
                 for col in selected_te_cols:
-                    grouped = x_inner_train.groupby(col, observed=False)[target].agg(stats)
+                    grouped = x_inner_train.groupby(col, observed=False)[target].agg(
+                        stats
+                    )
                     grouped.columns = [f"LGB_TE1_{col}_{stat}" for stat in stats]
                     x_inner_valid = x_inner_valid.merge(grouped, on=col, how="left")
                     for name in grouped.columns:
-                        x_train.loc[inner_valid_idx, name] = x_inner_valid[name].to_numpy(dtype="float32")
+                        x_train.loc[inner_valid_idx, name] = x_inner_valid[
+                            name
+                        ].to_numpy(dtype="float32")
 
             for col in selected_te_cols:
-                grouped = pd.DataFrame({col: x_train[col], target: y_train}).groupby(col, observed=False)[target].agg(stats)
+                grouped = (
+                    pd.DataFrame({col: x_train[col], target: y_train})
+                    .groupby(col, observed=False)[target]
+                    .agg(stats)
+                )
                 grouped.columns = [f"LGB_TE1_{col}_{stat}" for stat in stats]
                 x_valid = x_valid.merge(grouped.astype("float32"), on=col, how="left")
                 x_test = x_test.merge(grouped.astype("float32"), on=col, how="left")
@@ -1744,7 +2151,9 @@ def _playground_advanced_lightgbm_result(
                     [
                         x_train,
                         pd.DataFrame(
-                            mean_encoder.fit_transform(x_train[selected_te_cols], y_train),
+                            mean_encoder.fit_transform(
+                                x_train[selected_te_cols], y_train
+                            ),
                             columns=mean_cols,
                             index=x_train.index,
                         ),
@@ -1813,10 +2222,12 @@ def _playground_advanced_catboost_result(
         raise RuntimeError("catboost is not installed") from exc
 
     target = "Churn"
-    train_frame, test_frame, feature_cols, _te_cols, _drop_raw_cols = _playground_advanced_feature_frames(
-        train,
-        test,
-        orig,
+    train_frame, test_frame, feature_cols, _te_cols, _drop_raw_cols = (
+        _playground_advanced_feature_frames(
+            train,
+            test,
+            orig,
+        )
     )
     selected_feature_cols = _playground_catboost_selected_features(feature_cols)
     train_model = train_frame[selected_feature_cols].copy()
@@ -1824,7 +2235,11 @@ def _playground_advanced_catboost_result(
     y = train_frame[target].to_numpy()
     n_splits = min(max(3, folds), 5)
 
-    cat_cols = [col for col in selected_feature_cols if str(train_model[col].dtype) == "category"]
+    cat_cols = [
+        col
+        for col in selected_feature_cols
+        if str(train_model[col].dtype) == "category"
+    ]
     for df in (train_model, test_model):
         for col in cat_cols:
             df[col] = df[col].astype(str)
@@ -1913,8 +2328,12 @@ def _playground_best_blend(
         for subset in combinations(names, subset_size):
             oof_frames = {name: predictions[name][0] for name in subset}
             test_frames = {name: predictions[name][1] for name in subset}
-            rank_oof_frames = {name: _rank_scale(predictions[name][0]) for name in subset}
-            rank_test_frames = {name: _rank_scale(predictions[name][1]) for name in subset}
+            rank_oof_frames = {
+                name: _rank_scale(predictions[name][0]) for name in subset
+            }
+            rank_test_frames = {
+                name: _rank_scale(predictions[name][1]) for name in subset
+            }
 
             if len(subset) == 2:
                 for left_units in range(1, units):
@@ -1936,7 +2355,9 @@ def _playground_best_blend(
                     raw_units = [first_units, second_units, third_units]
                     if sum(unit > 0 for unit in raw_units) < 2:
                         continue
-                    weights = {name: raw_units[idx] / units for idx, name in enumerate(subset)}
+                    weights = {
+                        name: raw_units[idx] / units for idx, name in enumerate(subset)
+                    }
                     kind, score, pred = _consider(weights)
                     if score > best_score:
                         best_score = score
@@ -1949,12 +2370,23 @@ def _playground_best_blend(
     return best_kind, best_weights, best_score, best_pred
 
 
-def benchmark_playground_telco(data_dir: Path, folds: int, write_submission: bool) -> LabResult:
+def benchmark_playground_telco(
+    data_dir: Path, folds: int, write_submission: bool
+) -> LabResult:
     train = pd.read_csv(data_dir / "train.csv")
     test = pd.read_csv(data_dir / "test.csv")
-    y = train["Churn"].astype(str).str.lower().map({"yes": 1, "no": 0}).fillna(train["Churn"]).astype(int)
+    y = (
+        train["Churn"]
+        .astype(str)
+        .str.lower()
+        .map({"yes": 1, "no": 0})
+        .fillna(train["Churn"])
+        .astype(int)
+    )
     train_x, test_x = _playground_prepare_features(train, test)
-    skf = StratifiedKFold(n_splits=min(max(3, folds), 5), shuffle=True, random_state=RANDOM_STATE)
+    skf = StratifiedKFold(
+        n_splits=min(max(3, folds), 5), shuffle=True, random_state=RANDOM_STATE
+    )
 
     benchmarks: list[dict[str, Any]] = []
     trained_predictions: dict[str, np.ndarray] = {}
@@ -1975,7 +2407,9 @@ def benchmark_playground_telco(data_dir: Path, folds: int, write_submission: boo
             n_jobs=-1,
             verbose=-1,
         )
-        lgb_score, lgb_oof, lgb_pred = _playground_model_result(lgb_model, train_x, test_x, y, skf)
+        lgb_score, lgb_oof, lgb_pred = _playground_model_result(
+            lgb_model, train_x, test_x, y, skf
+        )
         benchmarks.append({"model": "lightgbm", "score": round(float(lgb_score), 5)})
         trained_predictions["lightgbm"] = lgb_pred
         blend_inputs["lightgbm"] = (lgb_oof, lgb_pred)
@@ -1998,7 +2432,9 @@ def benchmark_playground_telco(data_dir: Path, folds: int, write_submission: boo
             n_jobs=-1,
             verbosity=0,
         )
-        xgb_score, xgb_oof, xgb_pred = _playground_model_result(xgb_model, train_x, test_x, y, skf)
+        xgb_score, xgb_oof, xgb_pred = _playground_model_result(
+            xgb_model, train_x, test_x, y, skf
+        )
         benchmarks.append({"model": "xgboost", "score": round(float(xgb_score), 5)})
         trained_predictions["xgboost"] = xgb_pred
         blend_inputs["xgboost"] = (xgb_oof, xgb_pred)
@@ -2014,31 +2450,41 @@ def benchmark_playground_telco(data_dir: Path, folds: int, write_submission: boo
                 pd.read_csv(original_path),
                 folds,
             )
-            benchmarks.append({"model": "lightgbm_te", "score": round(float(lgb_score), 5)})
+            benchmarks.append(
+                {"model": "lightgbm_te", "score": round(float(lgb_score), 5)}
+            )
             trained_predictions["lightgbm_te"] = lgb_pred
             blend_inputs["lightgbm_te"] = (lgb_oof, lgb_pred)
         except (RuntimeError, ValueError):
             pass
         try:
-            advanced_score, advanced_oof, advanced_pred = _playground_advanced_xgboost_result(
-                train,
-                test,
-                pd.read_csv(original_path),
-                folds,
+            advanced_score, advanced_oof, advanced_pred = (
+                _playground_advanced_xgboost_result(
+                    train,
+                    test,
+                    pd.read_csv(original_path),
+                    folds,
+                )
             )
-            benchmarks.append({"model": "xgboost_te", "score": round(float(advanced_score), 5)})
+            benchmarks.append(
+                {"model": "xgboost_te", "score": round(float(advanced_score), 5)}
+            )
             trained_predictions["xgboost_te"] = advanced_pred
             blend_inputs["xgboost_te"] = (advanced_oof, advanced_pred)
         except (RuntimeError, ValueError):
             pass
         try:
-            pseudo_score, pseudo_oof, pseudo_pred = _playground_advanced_xgboost_pseudo_result(
-                train,
-                test,
-                pd.read_csv(original_path),
-                folds,
+            pseudo_score, pseudo_oof, pseudo_pred = (
+                _playground_advanced_xgboost_pseudo_result(
+                    train,
+                    test,
+                    pd.read_csv(original_path),
+                    folds,
+                )
             )
-            benchmarks.append({"model": "xgboost_te_pseudo", "score": round(float(pseudo_score), 5)})
+            benchmarks.append(
+                {"model": "xgboost_te_pseudo", "score": round(float(pseudo_score), 5)}
+            )
             trained_predictions["xgboost_te_pseudo"] = pseudo_pred
             blend_inputs["xgboost_te_pseudo"] = (pseudo_oof, pseudo_pred)
         except (RuntimeError, ValueError):
@@ -2050,7 +2496,9 @@ def benchmark_playground_telco(data_dir: Path, folds: int, write_submission: boo
                 pd.read_csv(original_path),
                 folds,
             )
-            benchmarks.append({"model": "catboost_te", "score": round(float(cat_score), 5)})
+            benchmarks.append(
+                {"model": "catboost_te", "score": round(float(cat_score), 5)}
+            )
             trained_predictions["catboost_te"] = cat_pred
             blend_inputs["catboost_te"] = (cat_oof, cat_pred)
         except (RuntimeError, ValueError):
@@ -2082,7 +2530,9 @@ def benchmark_playground_telco(data_dir: Path, folds: int, write_submission: boo
         submission_path = _submission_dir("playground-series-s6e3") / (
             f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
         )
-        pd.DataFrame({"id": test["id"], "Churn": trained_predictions[best["model"]]}).to_csv(
+        pd.DataFrame(
+            {"id": test["id"], "Churn": trained_predictions[best["model"]]}
+        ).to_csv(
             submission_path,
             index=False,
         )
@@ -2101,7 +2551,9 @@ def _house_prepare_features(
     train: pd.DataFrame,
     test: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    combined = pd.concat([train.drop(columns=["SalePrice"]), test], axis=0, ignore_index=True)
+    combined = pd.concat(
+        [train.drop(columns=["SalePrice"]), test], axis=0, ignore_index=True
+    )
 
     def _col(name: str, default: float = 0.0) -> pd.Series:
         if name in combined:
@@ -2137,7 +2589,15 @@ def _house_prepare_features(
         "GarageArea",
         "GarageYrBlt",
     ]
-    mode_fill_cols = ["MSZoning", "KitchenQual", "Electrical", "Exterior1st", "Exterior2nd", "SaleType", "Utilities"]
+    mode_fill_cols = [
+        "MSZoning",
+        "KitchenQual",
+        "Electrical",
+        "Exterior1st",
+        "Exterior2nd",
+        "SaleType",
+        "Utilities",
+    ]
 
     for col in none_fill_cols:
         if col in combined:
@@ -2149,10 +2609,12 @@ def _house_prepare_features(
         if col in combined and combined[col].notna().any():
             combined[col] = combined[col].fillna(combined[col].mode().iloc[0])
     if "LotFrontage" in combined:
-        combined["LotFrontage"] = combined.groupby("Neighborhood")["LotFrontage"].transform(
-            lambda s: s.fillna(s.median())
+        combined["LotFrontage"] = combined.groupby("Neighborhood")[
+            "LotFrontage"
+        ].transform(lambda s: s.fillna(s.median()))
+        combined["LotFrontage"] = combined["LotFrontage"].fillna(
+            combined["LotFrontage"].median()
         )
-        combined["LotFrontage"] = combined["LotFrontage"].fillna(combined["LotFrontage"].median())
 
     combined["MSSubClass"] = combined["MSSubClass"].astype(str)
     yr_sold_num = pd.to_numeric(combined["YrSold"], errors="coerce").fillna(0)
@@ -2177,7 +2639,9 @@ def _house_prepare_features(
         + _col("3SsnPorch")
         + _col("ScreenPorch")
     )
-    combined["TotalOutsideSF"] = _col("LotArea") + combined["TotalPorchSF"] + _col("PoolArea")
+    combined["TotalOutsideSF"] = (
+        _col("LotArea") + combined["TotalPorchSF"] + _col("PoolArea")
+    )
     combined["QualSF"] = _col("OverallQual") * _col("GrLivArea")
     combined["TotalHomeQuality"] = _col("OverallQual") + _col("OverallCond")
     combined["OverallGrade"] = _col("OverallQual") * _col("OverallCond")
@@ -2185,7 +2649,9 @@ def _house_prepare_features(
     combined["AgeWhenSold"] = yr_sold_num - _col("YearBuilt")
     combined["AgeSinceRemodel"] = yr_sold_num - _col("YearRemodAdd")
     combined["LivLotRatio"] = _col("GrLivArea") / _col("LotArea", 1.0).clip(lower=1)
-    combined["BathPerRoom"] = combined["TotalBath"] / combined["TotalRooms"].replace(0, 1)
+    combined["BathPerRoom"] = combined["TotalBath"] / combined["TotalRooms"].replace(
+        0, 1
+    )
     combined["GarageScore"] = _col("GarageCars") * _col("GarageArea")
     combined["BsmtScore"] = _col("BsmtFinSF1") + _col("BsmtFinSF2") + _col("BsmtUnfSF")
     combined["QualBath"] = _col("OverallQual") * combined["TotalBath"]
@@ -2223,7 +2689,11 @@ def _house_rmse(y_true: Any, y_pred: Any) -> float:
 
 
 def _house_blend_candidates(names: list[str]) -> list[tuple[str, ...]]:
-    return [combo for size in range(2, min(4, len(names)) + 1) for combo in combinations(names, size)]
+    return [
+        combo
+        for size in range(2, min(4, len(names)) + 1)
+        for combo in combinations(names, size)
+    ]
 
 
 def _house_weight_options(size: int, step: float = 0.05) -> list[tuple[float, ...]]:
@@ -2232,7 +2702,11 @@ def _house_weight_options(size: int, step: float = 0.05) -> list[tuple[float, ..
 
     def _build(prefix: list[int], remaining: int, slots: int) -> None:
         if slots == 1:
-            weights.append(tuple((prefix + [remaining])[idx] * step for idx in range(len(prefix) + 1)))
+            weights.append(
+                tuple(
+                    (prefix + [remaining])[idx] * step for idx in range(len(prefix) + 1)
+                )
+            )
             return
         for value in range(1, remaining - slots + 2):
             _build(prefix + [value], remaining - value, slots - 1)
@@ -2263,7 +2737,9 @@ def _house_best_blend(
             score = _house_rmse(target, blended_oof)
             if score < best_score:
                 best_score = score
-                best_weights = {name: float(weight) for name, weight in zip(combo, weights)}
+                best_weights = {
+                    name: float(weight) for name, weight in zip(combo, weights)
+                }
                 best_pred = test_stack @ weight_arr
 
     if best_weights is None or best_pred is None:
@@ -2271,7 +2747,9 @@ def _house_best_blend(
     return best_weights, best_score, best_pred
 
 
-def benchmark_house_prices(data_dir: Path, folds: int, write_submission: bool) -> LabResult:
+def benchmark_house_prices(
+    data_dir: Path, folds: int, write_submission: bool
+) -> LabResult:
     train = pd.read_csv(data_dir / "train.csv")
     test = pd.read_csv(data_dir / "test.csv")
 
@@ -2281,8 +2759,12 @@ def benchmark_house_prices(data_dir: Path, folds: int, write_submission: bool) -
 
     y = np.log1p(train["SalePrice"])
     train_x, test_x = _house_prepare_features(train, test)
-    dense_train = pd.get_dummies(train_x, dummy_na=True).apply(pd.to_numeric, errors="coerce")
-    dense_test = pd.get_dummies(test_x, dummy_na=True).apply(pd.to_numeric, errors="coerce")
+    dense_train = pd.get_dummies(train_x, dummy_na=True).apply(
+        pd.to_numeric, errors="coerce"
+    )
+    dense_test = pd.get_dummies(test_x, dummy_na=True).apply(
+        pd.to_numeric, errors="coerce"
+    )
     dense_test = dense_test.reindex(columns=dense_train.columns, fill_value=0)
     medians = dense_train.median()
     dense_train = dense_train.fillna(medians)
@@ -2326,7 +2808,15 @@ def benchmark_house_prices(data_dir: Path, folds: int, write_submission: bool) -
     elastic = Pipeline(
         [
             ("scale", RobustScaler()),
-            ("model", ElasticNet(alpha=0.0005, l1_ratio=0.9, max_iter=50000, random_state=RANDOM_STATE)),
+            (
+                "model",
+                ElasticNet(
+                    alpha=0.0005,
+                    l1_ratio=0.9,
+                    max_iter=50000,
+                    random_state=RANDOM_STATE,
+                ),
+            ),
         ]
     )
     _fit_house_model("elasticnet", elastic)
@@ -2400,7 +2890,9 @@ def benchmark_house_prices(data_dir: Path, folds: int, write_submission: bool) -
             {
                 "model": "blend",
                 "score": round(float(blend_rmse), 5),
-                "weights": {name: round(weight, 2) for name, weight in blend_weights.items()},
+                "weights": {
+                    name: round(weight, 2) for name, weight in blend_weights.items()
+                },
             }
         )
         trained_predictions["blend"] = np.expm1(blend_pred).clip(min=0)
@@ -2408,10 +2900,14 @@ def benchmark_house_prices(data_dir: Path, folds: int, write_submission: bool) -
     best = min(benchmarks, key=lambda row: row["score"])
     submission_path = None
     if write_submission:
-        submission_path = _submission_dir("house-prices-advanced-regression-techniques") / (
+        submission_path = _submission_dir(
+            "house-prices-advanced-regression-techniques"
+        ) / (
             f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
         )
-        pd.DataFrame({"Id": test["Id"], "SalePrice": trained_predictions[best["model"]]}).to_csv(
+        pd.DataFrame(
+            {"Id": test["Id"], "SalePrice": trained_predictions[best["model"]]}
+        ).to_csv(
             submission_path,
             index=False,
         )
@@ -2432,7 +2928,9 @@ def _store_sales_rmsle(y_true: Any, y_pred: Any) -> float:
     return float(np.sqrt(np.mean((np.log1p(y_pred_arr) - np.log1p(y_true_arr)) ** 2)))
 
 
-def _store_sales_prediction_frame(history: pd.DataFrame, target: pd.DataFrame) -> pd.DataFrame:
+def _store_sales_prediction_frame(
+    history: pd.DataFrame, target: pd.DataFrame
+) -> pd.DataFrame:
     history = history.copy()
     target = target.copy()
     history["date"] = pd.to_datetime(history["date"])
@@ -2440,9 +2938,15 @@ def _store_sales_prediction_frame(history: pd.DataFrame, target: pd.DataFrame) -
     history["dow"] = history["date"].dt.dayofweek
     target["dow"] = target["date"].dt.dayofweek
 
-    recent_140 = history.loc[history["date"] >= history["date"].max() - pd.Timedelta(days=140)]
-    recent_56 = history.loc[history["date"] >= history["date"].max() - pd.Timedelta(days=56)]
-    recent_28 = history.loc[history["date"] >= history["date"].max() - pd.Timedelta(days=28)]
+    recent_140 = history.loc[
+        history["date"] >= history["date"].max() - pd.Timedelta(days=140)
+    ]
+    recent_56 = history.loc[
+        history["date"] >= history["date"].max() - pd.Timedelta(days=56)
+    ]
+    recent_28 = history.loc[
+        history["date"] >= history["date"].max() - pd.Timedelta(days=28)
+    ]
 
     group_sf_dow_promo = (
         recent_140.groupby(["store_nbr", "family", "dow", "onpromotion"])["sales"]
@@ -2451,18 +2955,43 @@ def _store_sales_prediction_frame(history: pd.DataFrame, target: pd.DataFrame) -
         .reset_index()
     )
     group_sf_dow = (
-        recent_140.groupby(["store_nbr", "family", "dow"])["sales"].mean().rename("pred_sf_dow").reset_index()
+        recent_140.groupby(["store_nbr", "family", "dow"])["sales"]
+        .mean()
+        .rename("pred_sf_dow")
+        .reset_index()
     )
-    group_sf_28 = recent_28.groupby(["store_nbr", "family"])["sales"].mean().rename("pred_sf_28").reset_index()
-    group_sf_56 = recent_56.groupby(["store_nbr", "family"])["sales"].mean().rename("pred_sf_56").reset_index()
-    group_family_dow = recent_140.groupby(["family", "dow"])["sales"].mean().rename("pred_family_dow").reset_index()
+    group_sf_28 = (
+        recent_28.groupby(["store_nbr", "family"])["sales"]
+        .mean()
+        .rename("pred_sf_28")
+        .reset_index()
+    )
+    group_sf_56 = (
+        recent_56.groupby(["store_nbr", "family"])["sales"]
+        .mean()
+        .rename("pred_sf_56")
+        .reset_index()
+    )
+    group_family_dow = (
+        recent_140.groupby(["family", "dow"])["sales"]
+        .mean()
+        .rename("pred_family_dow")
+        .reset_index()
+    )
     group_store_dow = (
-        recent_140.groupby(["store_nbr", "dow"])["sales"].mean().rename("pred_store_dow").reset_index()
+        recent_140.groupby(["store_nbr", "dow"])["sales"]
+        .mean()
+        .rename("pred_store_dow")
+        .reset_index()
     )
     global_mean = float(history["sales"].mean())
 
     frame = (
-        target.merge(group_sf_dow_promo, on=["store_nbr", "family", "dow", "onpromotion"], how="left")
+        target.merge(
+            group_sf_dow_promo,
+            on=["store_nbr", "family", "dow", "onpromotion"],
+            how="left",
+        )
         .merge(group_sf_dow, on=["store_nbr", "family", "dow"], how="left")
         .merge(group_sf_28, on=["store_nbr", "family"], how="left")
         .merge(group_sf_56, on=["store_nbr", "family"], how="left")
@@ -2486,7 +3015,9 @@ def _store_sales_prediction_frame(history: pd.DataFrame, target: pd.DataFrame) -
         .fillna(frame["pred_store_dow"])
         .fillna(global_mean)
     )
-    frame["hybrid_mean"] = 0.65 * frame["recent_dow_promo_mean"] + 0.35 * frame["recent_28_mean"]
+    frame["hybrid_mean"] = (
+        0.65 * frame["recent_dow_promo_mean"] + 0.35 * frame["recent_28_mean"]
+    )
     return frame
 
 
@@ -2510,12 +3041,18 @@ def _store_sales_make_features(
     df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
     df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
 
-    oil_filled = oil_df.set_index("date")["dcoilwtico"].resample("D").interpolate("linear")
+    oil_filled = (
+        oil_df.set_index("date")["dcoilwtico"].resample("D").interpolate("linear")
+    )
     df["oil_price"] = df["date"].map(oil_filled).ffill().fillna(50.0)
 
-    national_holidays = holidays_df.loc[holidays_df["locale"] == "National", "date"].drop_duplicates()
+    national_holidays = holidays_df.loc[
+        holidays_df["locale"] == "National", "date"
+    ].drop_duplicates()
     df["is_holiday"] = df["date"].isin(national_holidays).astype(int)
-    df = df.merge(stores_df[["store_nbr", "type", "cluster"]], on="store_nbr", how="left")
+    df = df.merge(
+        stores_df[["store_nbr", "type", "cluster"]], on="store_nbr", how="left"
+    )
 
     if "sales" in df.columns:
         grouped_sales = df.groupby(["store_nbr", "family"])["sales"]
@@ -2523,21 +3060,37 @@ def _store_sales_make_features(
         for lag in (7, 14, 28):
             df[f"lag_{lag}"] = grouped_sales.shift(lag)
         for window in (7, 14, 28):
-            df[f"roll_mean_{window}"] = grouped_sales.transform(lambda s: s.shift(1).rolling(window).mean())
-            df[f"roll_std_{window}"] = grouped_sales.transform(lambda s: s.shift(1).rolling(window).std())
+            df[f"roll_mean_{window}"] = grouped_sales.transform(
+                lambda s: s.shift(1).rolling(window).mean()
+            )
+            df[f"roll_std_{window}"] = grouped_sales.transform(
+                lambda s: s.shift(1).rolling(window).std()
+            )
         df["ewma_7"] = grouped_sales.transform(lambda s: s.shift(1).ewm(span=7).mean())
-        df["promo_roll_mean_14"] = grouped_promo.transform(lambda s: s.shift(1).rolling(14).mean())
-        df["promo_roll_mean_28"] = grouped_promo.transform(lambda s: s.shift(1).rolling(28).mean())
-        df["history_mean"] = grouped_sales.transform(lambda s: s.shift(1).expanding().mean())
+        df["promo_roll_mean_14"] = grouped_promo.transform(
+            lambda s: s.shift(1).rolling(14).mean()
+        )
+        df["promo_roll_mean_28"] = grouped_promo.transform(
+            lambda s: s.shift(1).rolling(28).mean()
+        )
+        df["history_mean"] = grouped_sales.transform(
+            lambda s: s.shift(1).expanding().mean()
+        )
         df["trend_7_28"] = df["roll_mean_7"] / (df["roll_mean_28"] + 1)
         df["sales_momentum"] = df["roll_mean_7"] - df["roll_mean_28"]
 
-    df["oil_to_trend"] = df["oil_price"] / (df.get("roll_mean_28", pd.Series(0, index=df.index)).fillna(0) + 1)
-    df["promo_x_trend"] = df["onpromotion"] * df.get("trend_7_28", pd.Series(1.0, index=df.index)).fillna(1.0)
+    df["oil_to_trend"] = df["oil_price"] / (
+        df.get("roll_mean_28", pd.Series(0, index=df.index)).fillna(0) + 1
+    )
+    df["promo_x_trend"] = df["onpromotion"] * df.get(
+        "trend_7_28", pd.Series(1.0, index=df.index)
+    ).fillna(1.0)
     return df
 
 
-def _store_sales_history_artifacts(history: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def _store_sales_history_artifacts(
+    history: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     history = history.sort_values(["store_nbr", "family", "date"]).copy()
     lag_lookup = history[["store_nbr", "family", "date", "sales"]].copy()
     history_summary = (
@@ -2564,8 +3117,10 @@ def _store_sales_history_artifacts(history: pd.DataFrame) -> tuple[pd.DataFrame,
                     "promo_roll_mean_14_fill": g["onpromotion"].tail(14).mean(),
                     "promo_roll_mean_28_fill": g["onpromotion"].tail(28).mean(),
                     "history_mean_fill": g["sales"].mean(),
-                    "trend_7_28_fill": g["sales"].tail(7).mean() / (g["sales"].tail(28).mean() + 1),
-                    "sales_momentum_fill": g["sales"].tail(7).mean() - g["sales"].tail(28).mean(),
+                    "trend_7_28_fill": g["sales"].tail(7).mean()
+                    / (g["sales"].tail(28).mean() + 1),
+                    "sales_momentum_fill": g["sales"].tail(7).mean()
+                    - g["sales"].tail(28).mean(),
                 }
             )
         )
@@ -2615,7 +3170,9 @@ def _store_sales_build_future_frame(
             right_on=["store_nbr", "family", "forecast_date"],
             how="left",
         ).drop(columns=["forecast_date"])
-        future[f"lag_{lag}"] = future[f"lag_{lag}_direct"].fillna(future[f"lag_{lag}_fill"])
+        future[f"lag_{lag}"] = future[f"lag_{lag}_direct"].fillna(
+            future[f"lag_{lag}_fill"]
+        )
 
     fill_map = {
         "roll_mean_7": "roll_mean_7_fill",
@@ -2632,7 +3189,9 @@ def _store_sales_build_future_frame(
         "sales_momentum": "sales_momentum_fill",
     }
     for feature, fallback in fill_map.items():
-        future[feature] = future.get(feature, pd.Series(np.nan, index=future.index)).fillna(future[fallback])
+        future[feature] = future.get(
+            feature, pd.Series(np.nan, index=future.index)
+        ).fillna(future[fallback])
 
     future["oil_to_trend"] = future["oil_price"] / (future["roll_mean_28"] + 1)
     future["promo_x_trend"] = future["onpromotion"] * future["trend_7_28"]
@@ -2652,15 +3211,17 @@ def _store_sales_recursive_predictions(
     category_maps: dict[str, dict[str, int]],
     feature_cols: list[str],
 ) -> np.ndarray:
-    working_history = history[["date", "store_nbr", "family", "onpromotion", "sales"]].copy()
+    working_history = history[
+        ["date", "store_nbr", "family", "onpromotion", "sales"]
+    ].copy()
     ordered_target = target.copy()
     ordered_target["_row_order"] = np.arange(len(ordered_target))
     predictions: list[pd.DataFrame] = []
 
     for pred_date in sorted(pd.to_datetime(ordered_target["date"]).drop_duplicates()):
         day_rows = ordered_target.loc[ordered_target["date"] == pred_date].copy()
-        lag_lookup, history_summary, family_dow_history, store_dow_history = _store_sales_history_artifacts(
-            working_history
+        lag_lookup, history_summary, family_dow_history, store_dow_history = (
+            _store_sales_history_artifacts(working_history)
         )
         future_day = _store_sales_build_future_frame(
             day_rows.drop(columns=["_row_order"]),
@@ -2674,12 +3235,22 @@ def _store_sales_recursive_predictions(
             category_maps,
         )
         day_pred = np.clip(np.expm1(model.predict(future_day[feature_cols])), 0, None)
-        predictions.append(pd.DataFrame({"_row_order": day_rows["_row_order"].to_numpy(), "pred": day_pred}))
-        history_extension = day_rows[["date", "store_nbr", "family", "onpromotion"]].copy()
+        predictions.append(
+            pd.DataFrame(
+                {"_row_order": day_rows["_row_order"].to_numpy(), "pred": day_pred}
+            )
+        )
+        history_extension = day_rows[
+            ["date", "store_nbr", "family", "onpromotion"]
+        ].copy()
         history_extension["sales"] = day_pred
-        working_history = pd.concat([working_history, history_extension], ignore_index=True)
+        working_history = pd.concat(
+            [working_history, history_extension], ignore_index=True
+        )
 
-    ordered_predictions = pd.concat(predictions, ignore_index=True).sort_values("_row_order")
+    ordered_predictions = pd.concat(predictions, ignore_index=True).sort_values(
+        "_row_order"
+    )
     return ordered_predictions["pred"].to_numpy(dtype=float)
 
 
@@ -2696,18 +3267,26 @@ def _store_sales_lightgbm_future_result(
     except ImportError as exc:
         raise RuntimeError("lightgbm is not installed") from exc
 
-    history_features = _store_sales_make_features(history, oil_df, stores_df, holidays_df)
+    history_features = _store_sales_make_features(
+        history, oil_df, stores_df, holidays_df
+    )
     category_maps: dict[str, dict[str, int]] = {}
     for col in ("family", "type"):
         mapping = {
             value: idx
-            for idx, value in enumerate(sorted(pd.Index(history_features[col].astype(str)).drop_duplicates()))
+            for idx, value in enumerate(
+                sorted(pd.Index(history_features[col].astype(str)).drop_duplicates())
+            )
         }
         category_maps[col] = mapping
-        history_features[col] = history_features[col].astype(str).map(mapping).astype(int)
+        history_features[col] = (
+            history_features[col].astype(str).map(mapping).astype(int)
+        )
     history_features = history_features.fillna(0)
 
-    lag_lookup, history_summary, family_dow_history, store_dow_history = _store_sales_history_artifacts(history)
+    lag_lookup, history_summary, family_dow_history, store_dow_history = (
+        _store_sales_history_artifacts(history)
+    )
     validation_future = _store_sales_build_future_frame(
         validation.drop(columns=["sales"]),
         oil_df,
@@ -2719,7 +3298,10 @@ def _store_sales_lightgbm_future_result(
         store_dow_history,
         category_maps,
     )
-    submission_future = _store_sales_build_future_frame(
+    # FIXME: computed and then discarded before the return — a refactor
+    # leftover. Left in place rather than deleted because it is outside the
+    # scope of this change and may have been meant to feed the submission.
+    _submission_future = _store_sales_build_future_frame(
         test,
         oil_df,
         stores_df,
@@ -2732,7 +3314,10 @@ def _store_sales_lightgbm_future_result(
     )
 
     feature_cols = [
-        col for col in history_features.columns if col not in {"id", "date", "sales"} and history_features[col].dtype != "object"
+        col
+        for col in history_features.columns
+        if col not in {"id", "date", "sales"}
+        and history_features[col].dtype != "object"
     ]
     model = lgb.LGBMRegressor(
         n_estimators=1500,
@@ -2750,7 +3335,12 @@ def _store_sales_lightgbm_future_result(
     model.fit(
         history_features[feature_cols],
         np.log1p(history_features["sales"].clip(lower=0)),
-        eval_set=[(validation_future[feature_cols], np.log1p(validation["sales"].clip(lower=0)))],
+        eval_set=[
+            (
+                validation_future[feature_cols],
+                np.log1p(validation["sales"].clip(lower=0)),
+            )
+        ],
         callbacks=[lgb.early_stopping(100, verbose=False), lgb.log_evaluation(0)],
     )
     validation_pred = _store_sales_recursive_predictions(
@@ -2780,7 +3370,9 @@ def _store_sales_lightgbm_future_result(
     )
 
 
-def benchmark_store_sales(data_dir: Path, _folds: int, write_submission: bool) -> LabResult:
+def benchmark_store_sales(
+    data_dir: Path, _folds: int, write_submission: bool
+) -> LabResult:
     train = pd.read_csv(data_dir / "train.csv", parse_dates=["date"])
     test = pd.read_csv(data_dir / "test.csv", parse_dates=["date"])
     valid_dates = sorted(train["date"].drop_duplicates())[-16:]
@@ -2791,15 +3383,30 @@ def benchmark_store_sales(data_dir: Path, _folds: int, write_submission: bool) -
     benchmarks = [
         {
             "model": "recent_dow_promo_mean",
-            "score": round(_store_sales_rmsle(validation["sales"], validation_frame["recent_dow_promo_mean"]), 5),
+            "score": round(
+                _store_sales_rmsle(
+                    validation["sales"], validation_frame["recent_dow_promo_mean"]
+                ),
+                5,
+            ),
         },
         {
             "model": "recent_28_mean",
-            "score": round(_store_sales_rmsle(validation["sales"], validation_frame["recent_28_mean"]), 5),
+            "score": round(
+                _store_sales_rmsle(
+                    validation["sales"], validation_frame["recent_28_mean"]
+                ),
+                5,
+            ),
         },
         {
             "model": "hybrid_mean",
-            "score": round(_store_sales_rmsle(validation["sales"], validation_frame["hybrid_mean"]), 5),
+            "score": round(
+                _store_sales_rmsle(
+                    validation["sales"], validation_frame["hybrid_mean"]
+                ),
+                5,
+            ),
         },
     ]
     learned_predictions: dict[str, np.ndarray] = {}
@@ -2811,15 +3418,19 @@ def benchmark_store_sales(data_dir: Path, _folds: int, write_submission: bool) -
             stores_df = pd.read_csv(stores_path)
             oil_df = pd.read_csv(oil_path, parse_dates=["date"])
             holidays_df = pd.read_csv(holidays_path, parse_dates=["date"])
-            future_score, _validation_pred, submission_pred = _store_sales_lightgbm_future_result(
-                history,
-                validation,
-                test,
-                stores_df,
-                oil_df,
-                holidays_df,
+            future_score, _validation_pred, submission_pred = (
+                _store_sales_lightgbm_future_result(
+                    history,
+                    validation,
+                    test,
+                    stores_df,
+                    oil_df,
+                    holidays_df,
+                )
             )
-            benchmarks.append({"model": "lightgbm_future", "score": round(future_score, 5)})
+            benchmarks.append(
+                {"model": "lightgbm_future", "score": round(future_score, 5)}
+            )
             learned_predictions["lightgbm_future"] = submission_pred
         except RuntimeError:
             pass
@@ -2835,7 +3446,9 @@ def benchmark_store_sales(data_dir: Path, _folds: int, write_submission: bool) -
             sales = learned_predictions[best["model"]]
         else:
             sales = submission_frame[best["model"]].clip(lower=0)
-        pd.DataFrame({"id": test["id"], "sales": sales}).to_csv(submission_path, index=False)
+        pd.DataFrame({"id": test["id"], "sales": sales}).to_csv(
+            submission_path, index=False
+        )
 
     return LabResult(
         competition="store-sales-time-series-forecasting",
@@ -2908,7 +3521,9 @@ def _deep_past_display_name_candidates(row: pd.Series) -> list[str]:
             if not part:
                 continue
             candidates.append(part)
-            stripped = re.sub(r"^cuneiform\s+(tablet|envelope)\s+", "", part, flags=re.IGNORECASE).strip()
+            stripped = re.sub(
+                r"^cuneiform\s+(tablet|envelope)\s+", "", part, flags=re.IGNORECASE
+            ).strip()
             if stripped and stripped != part:
                 candidates.append(stripped)
     deduped: list[str] = []
@@ -2937,7 +3552,9 @@ def _deep_past_optional_csv(
     return frame
 
 
-def _deep_past_sentence_rows(sentences: pd.DataFrame, published_row: pd.Series) -> pd.DataFrame:
+def _deep_past_sentence_rows(
+    sentences: pd.DataFrame, published_row: pd.Series
+) -> pd.DataFrame:
     if sentences.empty or "display_name" not in sentences:
         return sentences.iloc[0:0]
     display_names = sentences["display_name"].astype(str).str.strip()
@@ -2956,19 +3573,29 @@ def _deep_past_sentence_rows(sentences: pd.DataFrame, published_row: pd.Series) 
     )
 
 
-def _deep_past_assign_sentences_to_rows(test: pd.DataFrame, sentence_rows: pd.DataFrame) -> list[str]:
+def _deep_past_assign_sentences_to_rows(
+    test: pd.DataFrame, sentence_rows: pd.DataFrame
+) -> list[str]:
     ordered_test = test.sort_values(["line_start", "line_end"]).reset_index(drop=True)
     ordered_sentences = sentence_rows.sort_values("line_number").reset_index(drop=True)
     predictions: list[str] = []
 
     for idx, row in ordered_test.iterrows():
         start = int(row["line_start"])
-        next_start = int(ordered_test.loc[idx + 1, "line_start"]) if idx + 1 < len(ordered_test) else None
+        next_start = (
+            int(ordered_test.loc[idx + 1, "line_start"])
+            if idx + 1 < len(ordered_test)
+            else None
+        )
         if next_start is None:
             mask = ordered_sentences["line_number"] >= start
         else:
-            mask = (ordered_sentences["line_number"] >= start) & (ordered_sentences["line_number"] < next_start)
-        translation = " ".join(ordered_sentences.loc[mask, "translation"].astype(str)).strip()
+            mask = (ordered_sentences["line_number"] >= start) & (
+                ordered_sentences["line_number"] < next_start
+            )
+        translation = " ".join(
+            ordered_sentences.loc[mask, "translation"].astype(str)
+        ).strip()
         predictions.append(translation)
 
     return predictions
@@ -2976,10 +3603,16 @@ def _deep_past_assign_sentences_to_rows(test: pd.DataFrame, sentence_rows: pd.Da
 
 def _deep_past_split_translation_by_rows(text: str, test: pd.DataFrame) -> list[str]:
     weights = (
-        test.sort_values(["line_start", "line_end"])["line_end"].fillna(test["line_start"]).astype(int)
-        - test.sort_values(["line_start", "line_end"])["line_start"].astype(int)
-        + 1
-    ).clip(lower=1).tolist()
+        (
+            test.sort_values(["line_start", "line_end"])["line_end"]
+            .fillna(test["line_start"])
+            .astype(int)
+            - test.sort_values(["line_start", "line_end"])["line_start"].astype(int)
+            + 1
+        )
+        .clip(lower=1)
+        .tolist()
+    )
     words = str(text or "").split()
     if not words:
         return ["" for _ in weights]
@@ -3000,8 +3633,12 @@ def _deep_past_split_translation_by_rows(text: str, test: pd.DataFrame) -> list[
     return chunks
 
 
-def _deep_past_train_retrieval(train: pd.DataFrame, test: pd.DataFrame, sample: pd.DataFrame) -> tuple[list[str], float]:
-    query = " ".join(test.sort_values(["line_start", "line_end"])["transliteration"].astype(str))
+def _deep_past_train_retrieval(
+    train: pd.DataFrame, test: pd.DataFrame, sample: pd.DataFrame
+) -> tuple[list[str], float]:
+    query = " ".join(
+        test.sort_values(["line_start", "line_end"])["transliteration"].astype(str)
+    )
     best_idx, best_score = _deep_past_best_match(train["transliteration"], query)
     best_translation = str(train.iloc[best_idx]["translation"])
     predictions = _deep_past_split_translation_by_rows(best_translation, test)
@@ -3010,11 +3647,23 @@ def _deep_past_train_retrieval(train: pd.DataFrame, test: pd.DataFrame, sample: 
     return completed, best_score
 
 
-def benchmark_deep_past(data_dir: Path, _folds: int, write_submission: bool) -> LabResult:
+def benchmark_deep_past(
+    data_dir: Path, _folds: int, write_submission: bool
+) -> LabResult:
     train = pd.read_csv(data_dir / "train.csv")
-    test = pd.read_csv(data_dir / "test.csv").sort_values(["line_start", "line_end"]).reset_index(drop=True)
-    sample = pd.read_csv(data_dir / "sample_submission.csv").sort_values("id").reset_index(drop=True)
-    published = _deep_past_optional_csv(data_dir, "published_texts.csv", ["transliteration", "label", "aliases", "note"])
+    test = (
+        pd.read_csv(data_dir / "test.csv")
+        .sort_values(["line_start", "line_end"])
+        .reset_index(drop=True)
+    )
+    sample = (
+        pd.read_csv(data_dir / "sample_submission.csv")
+        .sort_values("id")
+        .reset_index(drop=True)
+    )
+    published = _deep_past_optional_csv(
+        data_dir, "published_texts.csv", ["transliteration", "label", "aliases", "note"]
+    )
     sentences = _deep_past_optional_csv(
         data_dir,
         "Sentences_Oare_FirstWord_LinNum.csv",
@@ -3022,7 +3671,11 @@ def benchmark_deep_past(data_dir: Path, _folds: int, write_submission: bool) -> 
     )
 
     query = " ".join(test["transliteration"].astype(str))
-    published_available = not published.empty and "transliteration" in published and published["transliteration"].notna().any()
+    published_available = (
+        not published.empty
+        and "transliteration" in published
+        and published["transliteration"].notna().any()
+    )
     sentences_available = (
         not sentences.empty
         and "display_name" in sentences
@@ -3034,15 +3687,21 @@ def benchmark_deep_past(data_dir: Path, _folds: int, write_submission: bool) -> 
     sentence_rows = sentences.iloc[0:0]
     sentence_predictions: list[str] = []
     if published_available:
-        published_idx, published_score = _deep_past_best_match(published["transliteration"], query)
+        published_idx, published_score = _deep_past_best_match(
+            published["transliteration"], query
+        )
         published_row = published.iloc[published_idx]
         if sentences_available:
             sentence_rows = _deep_past_sentence_rows(sentences, published_row)
             if not sentence_rows.empty:
-                sentence_predictions = _deep_past_assign_sentences_to_rows(test, sentence_rows)
+                sentence_predictions = _deep_past_assign_sentences_to_rows(
+                    test, sentence_rows
+                )
     train_predictions, train_score = _deep_past_train_retrieval(train, test, sample)
     sentence_coverage = (
-        sum(1 for pred in sentence_predictions if pred.strip()) / len(test) if len(sentence_predictions) == len(test) else 0.0
+        sum(1 for pred in sentence_predictions if pred.strip()) / len(test)
+        if len(sentence_predictions) == len(test)
+        else 0.0
     )
     published_decision_score = min(1.0, published_score + 0.15 * sentence_coverage)
 
@@ -3078,7 +3737,9 @@ def benchmark_deep_past(data_dir: Path, _folds: int, write_submission: bool) -> 
             _submission_dir("deep-past-initiative-machine-translation")
             / f"submission_{_safe_slug(chosen_model)}_{int(chosen_score * 100000)}.csv"
         )
-        pd.DataFrame({"id": test["id"], "translation": predictions}).to_csv(submission_path, index=False)
+        pd.DataFrame({"id": test["id"], "translation": predictions}).to_csv(
+            submission_path, index=False
+        )
 
     return LabResult(
         competition="deep-past-initiative-machine-translation",
@@ -3207,27 +3868,45 @@ def _march_team_game_rows_detailed(results: pd.DataFrame) -> pd.DataFrame:
     team_games = pd.concat([winners, losers], ignore_index=True)
     team_games["Margin"] = team_games["Score"] - team_games["OppScore"]
     team_games["Possessions"] = (
-        team_games["FGA"] - team_games["OR"] + team_games["TO"] + (0.475 * team_games["FTA"])
+        team_games["FGA"]
+        - team_games["OR"]
+        + team_games["TO"]
+        + (0.475 * team_games["FTA"])
     ).clip(lower=1.0)
     team_games["OppPossessions"] = (
-        team_games["OppFGA"] - team_games["OppOR"] + team_games["OppTO"] + (0.475 * team_games["OppFTA"])
+        team_games["OppFGA"]
+        - team_games["OppOR"]
+        + team_games["OppTO"]
+        + (0.475 * team_games["OppFTA"])
     ).clip(lower=1.0)
-    team_games["Pace"] = ((team_games["Possessions"] + team_games["OppPossessions"]) / 2.0).clip(lower=1.0)
+    team_games["Pace"] = (
+        (team_games["Possessions"] + team_games["OppPossessions"]) / 2.0
+    ).clip(lower=1.0)
     team_games["OffEff"] = 100.0 * team_games["Score"] / team_games["Pace"]
     team_games["DefEff"] = 100.0 * team_games["OppScore"] / team_games["Pace"]
     team_games["NetEff"] = team_games["OffEff"] - team_games["DefEff"]
-    team_games["eFG"] = (team_games["FGM"] + (0.5 * team_games["FGM3"])) / team_games["FGA"].clip(lower=1.0)
+    team_games["eFG"] = (team_games["FGM"] + (0.5 * team_games["FGM3"])) / team_games[
+        "FGA"
+    ].clip(lower=1.0)
     team_games["OppEfg"] = (
         team_games["OppFGM"] + (0.5 * team_games["OppFGM3"])
     ) / team_games["OppFGA"].clip(lower=1.0)
     team_games["TOVRate"] = team_games["TO"] / team_games["Possessions"]
     team_games["OppTOVRate"] = team_games["OppTO"] / team_games["OppPossessions"]
-    team_games["ORBRate"] = team_games["OR"] / (team_games["OR"] + team_games["OppDR"]).clip(lower=1.0)
-    team_games["OppORBRate"] = team_games["OppOR"] / (team_games["OppOR"] + team_games["DR"]).clip(lower=1.0)
+    team_games["ORBRate"] = team_games["OR"] / (
+        team_games["OR"] + team_games["OppDR"]
+    ).clip(lower=1.0)
+    team_games["OppORBRate"] = team_games["OppOR"] / (
+        team_games["OppOR"] + team_games["DR"]
+    ).clip(lower=1.0)
     team_games["FTRate"] = team_games["FTA"] / team_games["FGA"].clip(lower=1.0)
-    team_games["OppFTRate"] = team_games["OppFTA"] / team_games["OppFGA"].clip(lower=1.0)
+    team_games["OppFTRate"] = team_games["OppFTA"] / team_games["OppFGA"].clip(
+        lower=1.0
+    )
     team_games["AstRate"] = team_games["Ast"] / team_games["FGM"].clip(lower=1.0)
-    team_games["OppAstRate"] = team_games["OppAst"] / team_games["OppFGM"].clip(lower=1.0)
+    team_games["OppAstRate"] = team_games["OppAst"] / team_games["OppFGM"].clip(
+        lower=1.0
+    )
     team_games["IsHome"] = team_games["Loc"].eq("H").astype(int)
     team_games["IsAway"] = team_games["Loc"].eq("A").astype(int)
     team_games["IsNeutral"] = team_games["Loc"].eq("N").astype(int)
@@ -3236,16 +3915,24 @@ def _march_team_game_rows_detailed(results: pd.DataFrame) -> pd.DataFrame:
 
 def _march_elo_features(results: pd.DataFrame) -> pd.DataFrame:
     ratings_rows: list[dict[str, float]] = []
-    for season, season_games in results.sort_values(["Season", "DayNum"]).groupby("Season", sort=True):
+    for season, season_games in results.sort_values(["Season", "DayNum"]).groupby(
+        "Season", sort=True
+    ):
         season_ratings: dict[int, float] = {}
         for game in season_games.itertuples(index=False):
             winner_rating = season_ratings.get(int(game.WTeamID), 1500.0)
             loser_rating = season_ratings.get(int(game.LTeamID), 1500.0)
-            expected_winner = 1.0 / (1.0 + 10 ** ((loser_rating - winner_rating) / 400.0))
+            expected_winner = 1.0 / (
+                1.0 + 10 ** ((loser_rating - winner_rating) / 400.0)
+            )
             margin = max(int(game.WScore) - int(game.LScore), 1)
             k_factor = 20.0 * min(2.5, 1.0 + (margin - 1) / 25.0)
-            season_ratings[int(game.WTeamID)] = winner_rating + k_factor * (1.0 - expected_winner)
-            season_ratings[int(game.LTeamID)] = loser_rating + k_factor * (0.0 - (1.0 - expected_winner))
+            season_ratings[int(game.WTeamID)] = winner_rating + k_factor * (
+                1.0 - expected_winner
+            )
+            season_ratings[int(game.LTeamID)] = loser_rating + k_factor * (
+                0.0 - (1.0 - expected_winner)
+            )
 
         for team_id, rating in season_ratings.items():
             ratings_rows.append({"Season": season, "TeamID": team_id, "elo": rating})
@@ -3256,37 +3943,57 @@ def _march_massey_features(massey: pd.DataFrame) -> pd.DataFrame:
     if massey.empty:
         return pd.DataFrame(columns=["Season", "TeamID"])
 
-    working = massey[["Season", "RankingDayNum", "SystemName", "TeamID", "OrdinalRank"]].copy()
-    working["season_latest_day"] = working.groupby("Season")["RankingDayNum"].transform("max")
+    working = massey[
+        ["Season", "RankingDayNum", "SystemName", "TeamID", "OrdinalRank"]
+    ].copy()
+    working["season_latest_day"] = working.groupby("Season")["RankingDayNum"].transform(
+        "max"
+    )
 
     latest = working.loc[working["RankingDayNum"] == working["season_latest_day"]]
-    latest_features = latest.groupby(["Season", "TeamID"]).agg(
-        massey_latest_mean=("OrdinalRank", "mean"),
-        massey_latest_median=("OrdinalRank", "median"),
-        massey_latest_best=("OrdinalRank", "min"),
-        massey_latest_worst=("OrdinalRank", "max"),
-        massey_latest_std=("OrdinalRank", "std"),
-        massey_latest_count=("OrdinalRank", "size"),
-    ).reset_index()
+    latest_features = (
+        latest.groupby(["Season", "TeamID"])
+        .agg(
+            massey_latest_mean=("OrdinalRank", "mean"),
+            massey_latest_median=("OrdinalRank", "median"),
+            massey_latest_best=("OrdinalRank", "min"),
+            massey_latest_worst=("OrdinalRank", "max"),
+            massey_latest_std=("OrdinalRank", "std"),
+            massey_latest_count=("OrdinalRank", "size"),
+        )
+        .reset_index()
+    )
 
     recent = working.loc[working["RankingDayNum"] >= (working["season_latest_day"] - 7)]
-    recent_features = recent.groupby(["Season", "TeamID"]).agg(
-        massey_recent_mean=("OrdinalRank", "mean"),
-        massey_recent_best=("OrdinalRank", "min"),
-        massey_recent_std=("OrdinalRank", "std"),
-    ).reset_index()
+    recent_features = (
+        recent.groupby(["Season", "TeamID"])
+        .agg(
+            massey_recent_mean=("OrdinalRank", "mean"),
+            massey_recent_best=("OrdinalRank", "min"),
+            massey_recent_std=("OrdinalRank", "std"),
+        )
+        .reset_index()
+    )
 
     previous = working.loc[
         (working["RankingDayNum"] >= (working["season_latest_day"] - 14))
         & (working["RankingDayNum"] < (working["season_latest_day"] - 7))
     ]
-    previous_features = previous.groupby(["Season", "TeamID"]).agg(
-        massey_prev_mean=("OrdinalRank", "mean"),
-    ).reset_index()
+    previous_features = (
+        previous.groupby(["Season", "TeamID"])
+        .agg(
+            massey_prev_mean=("OrdinalRank", "mean"),
+        )
+        .reset_index()
+    )
 
-    features = latest_features.merge(recent_features, on=["Season", "TeamID"], how="left")
+    features = latest_features.merge(
+        recent_features, on=["Season", "TeamID"], how="left"
+    )
     features = features.merge(previous_features, on=["Season", "TeamID"], how="left")
-    features["massey_trend"] = features["massey_prev_mean"] - features["massey_recent_mean"]
+    features["massey_trend"] = (
+        features["massey_prev_mean"] - features["massey_recent_mean"]
+    )
     return features
 
 
@@ -3302,11 +4009,15 @@ def _march_training_weights(seasons: pd.Series) -> np.ndarray:
     return 1.0 + (1.5 * scaled)
 
 
-def _march_fit_model(model: Any, x_train: pd.DataFrame, y_train: pd.Series, sample_weight: np.ndarray) -> Any:
+def _march_fit_model(
+    model: Any, x_train: pd.DataFrame, y_train: pd.Series, sample_weight: np.ndarray
+) -> Any:
     if isinstance(model, Pipeline):
         estimator_name = model.steps[-1][0]
         try:
-            model.fit(x_train, y_train, **{f"{estimator_name}__sample_weight": sample_weight})
+            model.fit(
+                x_train, y_train, **{f"{estimator_name}__sample_weight": sample_weight}
+            )
             return model
         except TypeError:
             pass
@@ -3318,7 +4029,9 @@ def _march_fit_model(model: Any, x_train: pd.DataFrame, y_train: pd.Series, samp
         return model
 
 
-def _march_team_features(results: pd.DataFrame, seeds: pd.DataFrame, massey: pd.DataFrame | None = None) -> pd.DataFrame:
+def _march_team_features(
+    results: pd.DataFrame, seeds: pd.DataFrame, massey: pd.DataFrame | None = None
+) -> pd.DataFrame:
     team_games = _march_team_game_rows_detailed(results)
     recent = (
         team_games.groupby(["Season", "TeamID"], group_keys=False)
@@ -3401,14 +4114,24 @@ def _march_team_features(results: pd.DataFrame, seeds: pd.DataFrame, massey: pd.
     features["recent_off_eff"] = features["recent_off_eff"].fillna(features["off_eff"])
     features["recent_def_eff"] = features["recent_def_eff"].fillna(features["def_eff"])
     features["recent_efg"] = features["recent_efg"].fillna(features["efg"])
-    features["recent_tov_rate"] = features["recent_tov_rate"].fillna(features["tov_rate"])
-    features["recent_orb_rate"] = features["recent_orb_rate"].fillna(features["orb_rate"])
-    features["neutral_win_pct"] = features["neutral_win_pct"].fillna(features["win_pct"])
-    features["neutral_margin"] = features["neutral_margin"].fillna(features["avg_margin"])
+    features["recent_tov_rate"] = features["recent_tov_rate"].fillna(
+        features["tov_rate"]
+    )
+    features["recent_orb_rate"] = features["recent_orb_rate"].fillna(
+        features["orb_rate"]
+    )
+    features["neutral_win_pct"] = features["neutral_win_pct"].fillna(
+        features["win_pct"]
+    )
+    features["neutral_margin"] = features["neutral_margin"].fillna(
+        features["avg_margin"]
+    )
     features["close_games"] = features["close_games"].fillna(0.0)
     features["close_win_pct"] = features["close_win_pct"].fillna(features["win_pct"])
 
-    opp_base = features[["Season", "TeamID", "win_pct", "net_eff", "off_eff", "def_eff", "elo"]].rename(
+    opp_base = features[
+        ["Season", "TeamID", "win_pct", "net_eff", "off_eff", "def_eff", "elo"]
+    ].rename(
         columns={
             "TeamID": "OppTeamID",
             "win_pct": "sos_win_pct",
@@ -3436,7 +4159,9 @@ def _march_team_features(results: pd.DataFrame, seeds: pd.DataFrame, massey: pd.
     features["elo_vs_schedule"] = features["elo"] - features["sos_elo"]
 
     if massey is not None and not massey.empty:
-        features = features.merge(_march_massey_features(massey), on=["Season", "TeamID"], how="left")
+        features = features.merge(
+            _march_massey_features(massey), on=["Season", "TeamID"], how="left"
+        )
 
     numeric_cols = [col for col in features.columns if col not in {"Season", "TeamID"}]
     for col in numeric_cols:
@@ -3444,9 +4169,15 @@ def _march_team_features(results: pd.DataFrame, seeds: pd.DataFrame, massey: pd.
         features[col] = features[col].fillna(season_medians)
         if features[col].isna().any():
             fallback = features[col].median()
-            features[col] = features[col].fillna(0.0 if pd.isna(fallback) else float(fallback))
+            features[col] = features[col].fillna(
+                0.0 if pd.isna(fallback) else float(fallback)
+            )
 
-    features["has_massey"] = features.get("massey_latest_count", pd.Series(0.0, index=features.index)).gt(0).astype(int)
+    features["has_massey"] = (
+        features.get("massey_latest_count", pd.Series(0.0, index=features.index))
+        .gt(0)
+        .astype(int)
+    )
     return features
 
 
@@ -3509,9 +4240,13 @@ def _march_matchups(
         if "net_eff_diff" in row:
             row["net_eff_win_prob_1"] = 1.0 / (1.0 + np.exp(-row["net_eff_diff"] / 5.0))
         if "recent_net_eff_diff" in row:
-            row["recent_net_eff_win_prob_1"] = 1.0 / (1.0 + np.exp(-row["recent_net_eff_diff"] / 5.0))
+            row["recent_net_eff_win_prob_1"] = 1.0 / (
+                1.0 + np.exp(-row["recent_net_eff_diff"] / 5.0)
+            )
         if "massey_latest_mean_diff" in row:
-            row["massey_win_prob_1"] = 1.0 / (1.0 + np.exp(row["massey_latest_mean_diff"] / 7.5))
+            row["massey_win_prob_1"] = 1.0 / (
+                1.0 + np.exp(row["massey_latest_mean_diff"] / 7.5)
+            )
         rows.append(row)
 
     return pd.DataFrame(rows)
@@ -3560,7 +4295,9 @@ def _march_build_models() -> dict[str, Any]:
     }
 
 
-def benchmark_march_mania(data_dir: Path, _folds: int, write_submission: bool) -> LabResult:
+def benchmark_march_mania(
+    data_dir: Path, _folds: int, write_submission: bool
+) -> LabResult:
     regular_season = pd.concat(
         [
             pd.read_csv(data_dir / "MRegularSeasonDetailedResults.csv"),
@@ -3587,15 +4324,23 @@ def benchmark_march_mania(data_dir: Path, _folds: int, write_submission: bool) -
     features = _march_team_features(regular_season, seeds, massey)
     train_df = _march_matchups(tournament, features, include_target=True)
     if train_df.empty:
-        raise SystemExit("Failed to build March Mania training rows from downloaded competition files.")
+        raise SystemExit(
+            "Failed to build March Mania training rows from downloaded competition files."
+        )
 
-    feature_cols = [col for col in train_df.columns if col not in {"target", "Team1", "Team2"}]
-    holdout_seasons = sorted(season for season in train_df["Season"].unique() if season >= 2021)
+    feature_cols = [
+        col for col in train_df.columns if col not in {"target", "Team1", "Team2"}
+    ]
+    holdout_seasons = sorted(
+        season for season in train_df["Season"].unique() if season >= 2021
+    )
     if not holdout_seasons:
         holdout_seasons = sorted(train_df["Season"].unique())[-5:]
 
     model_defs = _march_build_models()
-    season_predictions: dict[str, dict[int, tuple[np.ndarray, np.ndarray]]] = {name: {} for name in model_defs}
+    season_predictions: dict[str, dict[int, tuple[np.ndarray, np.ndarray]]] = {
+        name: {} for name in model_defs
+    }
     for season in holdout_seasons:
         train_mask = train_df["Season"] < season
         valid_mask = train_df["Season"] == season
@@ -3613,25 +4358,39 @@ def benchmark_march_mania(data_dir: Path, _folds: int, write_submission: bool) -
 
     benchmarks: list[dict[str, Any]] = []
     for name, rows in season_predictions.items():
-        scores = [(season, brier_score_loss(y_true, probs)) for season, (y_true, probs) in rows.items()]
+        scores = [
+            (season, brier_score_loss(y_true, probs))
+            for season, (y_true, probs) in rows.items()
+        ]
         if scores:
-            benchmarks.append({"model": name, "score": round(float(np.mean([score for _, score in scores])), 5)})
+            benchmarks.append(
+                {
+                    "model": name,
+                    "score": round(float(np.mean([score for _, score in scores])), 5),
+                }
+            )
 
     model_names = list(model_defs)
     for combo_size in range(2, len(model_names) + 1):
         for combo in combinations(model_names, combo_size):
-            common_seasons = sorted(set.intersection(*(set(season_predictions[name]) for name in combo)))
+            common_seasons = sorted(
+                set.intersection(*(set(season_predictions[name]) for name in combo))
+            )
             if not common_seasons:
                 continue
             ensemble_scores = []
             for season in common_seasons:
                 y_true = season_predictions[combo[0]][season][0]
-                blended = np.mean([season_predictions[name][season][1] for name in combo], axis=0)
+                blended = np.mean(
+                    [season_predictions[name][season][1] for name in combo], axis=0
+                )
                 ensemble_scores.append((season, brier_score_loss(y_true, blended)))
             benchmarks.append(
                 {
                     "model": f"{'_'.join(combo)}_ensemble",
-                    "score": round(float(np.mean([score for _, score in ensemble_scores])), 5),
+                    "score": round(
+                        float(np.mean([score for _, score in ensemble_scores])), 5
+                    ),
                     "members": list(combo),
                 }
             )
@@ -3649,7 +4408,9 @@ def benchmark_march_mania(data_dir: Path, _folds: int, write_submission: bool) -
         )
         sample = pd.read_csv(sample_path)
         submission_pairs = _march_submission_pairs(sample)
-        submission_features = _march_matchups(submission_pairs, features, include_target=False)
+        submission_features = _march_matchups(
+            submission_pairs, features, include_target=False
+        )
         if submission_features.empty:
             raise SystemExit("Failed to build March Mania submission rows.")
 
@@ -3663,14 +4424,22 @@ def benchmark_march_mania(data_dir: Path, _folds: int, write_submission: bool) -
             fitted[name] = _march_fit_model(model, train_x, train_y, sample_weight)
 
         if best.get("members"):
-            preds = np.mean([fitted[name].predict_proba(submit_x)[:, 1] for name in best["members"]], axis=0)
+            preds = np.mean(
+                [
+                    fitted[name].predict_proba(submit_x)[:, 1]
+                    for name in best["members"]
+                ],
+                axis=0,
+            )
         else:
             preds = fitted[best["model"]].predict_proba(submit_x)[:, 1]
 
         submission_path = _submission_dir("march-machine-learning-mania-2026") / (
             f"submission_{_safe_slug(best['model'])}_{int(best['score'] * 100000)}.csv"
         )
-        pd.DataFrame({"ID": submission_pairs["ID"], "Pred": preds}).to_csv(submission_path, index=False)
+        pd.DataFrame({"ID": submission_pairs["ID"], "Pred": preds}).to_csv(
+            submission_path, index=False
+        )
 
     return LabResult(
         competition="march-machine-learning-mania-2026",
@@ -3695,20 +4464,40 @@ BENCHMARKS = {
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run local competition benchmarks and generate Kaggle submissions.")
+    parser = argparse.ArgumentParser(
+        description="Run local competition benchmarks and generate Kaggle submissions."
+    )
     parser.add_argument("slug", choices=sorted(BENCHMARKS))
-    parser.add_argument("--cv-folds", type=int, default=5, help="Number of cross-validation folds (default: 5)")
-    parser.add_argument("--write-submission", action="store_true", help="Write the best local submission CSV")
-    parser.add_argument("--submit", action="store_true", help="Submit the generated CSV to Kaggle")
-    parser.add_argument("--force-download", action="store_true", help="Re-download competition data even if cached locally")
+    parser.add_argument(
+        "--cv-folds",
+        type=int,
+        default=5,
+        help="Number of cross-validation folds (default: 5)",
+    )
+    parser.add_argument(
+        "--write-submission",
+        action="store_true",
+        help="Write the best local submission CSV",
+    )
+    parser.add_argument(
+        "--submit", action="store_true", help="Submit the generated CSV to Kaggle"
+    )
+    parser.add_argument(
+        "--force-download",
+        action="store_true",
+        help="Re-download competition data even if cached locally",
+    )
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
-    data_dir = _ensure_data(args.slug, force_download=args.force_download)
+    deps = deps or Deps.resolve(effects=bool(getattr(args, "submit", False)))
+    data_dir = _ensure_data(deps, args.slug, force_download=args.force_download)
     bench_fn = BENCHMARKS[args.slug]
-    result = bench_fn(data_dir, args.cv_folds, write_submission=(args.write_submission or args.submit))
+    result = bench_fn(
+        data_dir, args.cv_folds, write_submission=(args.write_submission or args.submit)
+    )
     _save_summary(result)
     _print_benchmarks(result)
 
@@ -3716,7 +4505,7 @@ def main(argv: list[str] | None = None) -> int:
         if result.submission_path is None:
             raise SystemExit("No submission file was generated.")
         message = f"Local {result.best_model} baseline via competition-lab ({result.metric_name}={result.best_score:.5f})"
-        _submit(args.slug, result.submission_path, message)
+        _submit(deps, args.slug, result.submission_path, message)
 
     return 0
 

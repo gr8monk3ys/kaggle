@@ -1,4 +1,5 @@
 """Configuration leaf for the growth flywheel. No intra-package imports."""
+
 from __future__ import annotations
 
 import json
@@ -22,7 +23,7 @@ class FlywheelConfig:
     max_posts_per_week: int = 8
     max_forum_drops_per_comp_per_week: int = 1
     window_start_hour: int = 13  # inclusive UTC hour
-    window_end_hour: int = 23    # inclusive UTC hour
+    window_end_hour: int = 23  # inclusive UTC hour
     enabled: bool = True
     ema_alpha: float = 0.3
 

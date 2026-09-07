@@ -15,13 +15,19 @@ FROZEN_TODAY = date(2026, 3, 2)
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _write_notebook(path: Path, cells: list[dict] | None = None) -> None:
     """Write a minimal .ipynb file."""
     if cells is None:
         cells = [
             {"cell_type": "markdown", "metadata": {}, "source": "# Hello"},
-            {"cell_type": "code", "metadata": {}, "source": "import numpy as np",
-             "outputs": [], "execution_count": None},
+            {
+                "cell_type": "code",
+                "metadata": {},
+                "source": "import numpy as np",
+                "outputs": [],
+                "execution_count": None,
+            },
         ]
     payload = {
         "cells": cells,
@@ -41,9 +47,7 @@ def _write_kernel_metadata(dir_path: Path, code_file: str = "guide.ipynb") -> No
         "language": "python",
         "kernel_type": "notebook",
     }
-    (dir_path / "kernel-metadata.json").write_text(
-        json.dumps(meta), encoding="utf-8"
-    )
+    (dir_path / "kernel-metadata.json").write_text(json.dumps(meta), encoding="utf-8")
 
 
 def _write_dataset_metadata(dir_path: Path) -> None:
@@ -52,9 +56,7 @@ def _write_dataset_metadata(dir_path: Path) -> None:
         "id": "user/test-dataset",
         "title": "Test Dataset Title Here",
     }
-    (dir_path / "dataset-metadata.json").write_text(
-        json.dumps(meta), encoding="utf-8"
-    )
+    (dir_path / "dataset-metadata.json").write_text(json.dumps(meta), encoding="utf-8")
 
 
 def _set_mtime_days_ago(path: Path, days: int) -> None:
@@ -283,9 +285,9 @@ def test_parse_version_tuple():
 
 
 def test_is_outdated():
-    assert scd.is_outdated((0, 4), (2, 5)) is True       # 2 major behind
-    assert scd.is_outdated((1, 0), (2, 5)) is False      # only 1 major behind
-    assert scd.is_outdated((2, 0), (2, 5)) is False      # same major
+    assert scd.is_outdated((0, 4), (2, 5)) is True  # 2 major behind
+    assert scd.is_outdated((1, 0), (2, 5)) is False  # only 1 major behind
+    assert scd.is_outdated((2, 0), (2, 5)) is False  # same major
 
 
 # ---------------------------------------------------------------------------
@@ -302,11 +304,16 @@ def test_main_with_today_flag(tmp_path, capsys):
     _write_notebook(nb_file)
     _set_mtime_days_ago(nb_file, 100)
 
-    ret = scd.main([
-        "--root", str(tmp_path),
-        "--today", "2026-03-02",
-        "--max-nb-age", "60",
-    ])
+    ret = scd.main(
+        [
+            "--root",
+            str(tmp_path),
+            "--today",
+            "2026-03-02",
+            "--max-nb-age",
+            "60",
+        ]
+    )
 
     assert ret == 0
     captured = capsys.readouterr()
@@ -323,12 +330,17 @@ def test_main_json_output(tmp_path, capsys):
     _write_notebook(nb_file)
     _set_mtime_days_ago(nb_file, 70)
 
-    ret = scd.main([
-        "--root", str(tmp_path),
-        "--today", "2026-03-02",
-        "--max-nb-age", "60",
-        "--json",
-    ])
+    ret = scd.main(
+        [
+            "--root",
+            str(tmp_path),
+            "--today",
+            "2026-03-02",
+            "--max-nb-age",
+            "60",
+            "--json",
+        ]
+    )
 
     assert ret == 0
     captured = capsys.readouterr()
@@ -349,21 +361,38 @@ def test_main_json_output(tmp_path, capsys):
 def test_markdown_report_format():
     """The markdown report should contain expected sections and tables."""
     stale_nbs = [
-        {"rel_dir": "old-nb", "nb_path": "/tmp/old-nb/guide.ipynb",
-         "last_modified": "2025-11-01", "days_stale": 122},
+        {
+            "rel_dir": "old-nb",
+            "nb_path": "/tmp/old-nb/guide.ipynb",
+            "last_modified": "2025-11-01",
+            "days_stale": 122,
+        },
     ]
     stale_ds = [
-        {"rel_dir": "datasets/old-ds", "oldest_file": "/tmp/data.csv",
-         "last_modified": "2025-10-15", "days_stale": 139},
+        {
+            "rel_dir": "datasets/old-ds",
+            "oldest_file": "/tmp/data.csv",
+            "last_modified": "2025-10-15",
+            "days_stale": 139,
+        },
     ]
     outdated = [
-        {"rel_dir": "old-nb", "nb_path": "/tmp/old-nb/guide.ipynb",
-         "library": "torch", "pinned_version": "0.4.1", "recent_version": "2.5"},
+        {
+            "rel_dir": "old-nb",
+            "nb_path": "/tmp/old-nb/guide.ipynb",
+            "library": "torch",
+            "pinned_version": "0.4.1",
+            "recent_version": "2.5",
+        },
     ]
 
     report = scd.build_markdown_report(
-        stale_nbs, stale_ds, outdated,
-        today=FROZEN_TODAY, max_nb_age=60, max_ds_age=90,
+        stale_nbs,
+        stale_ds,
+        outdated,
+        today=FROZEN_TODAY,
+        max_nb_age=60,
+        max_ds_age=90,
     )
 
     assert "# Stale Content Report" in report
@@ -383,8 +412,12 @@ def test_markdown_report_format():
 def test_markdown_report_empty():
     """Empty report should say no stale items found."""
     report = scd.build_markdown_report(
-        [], [], [],
-        today=FROZEN_TODAY, max_nb_age=60, max_ds_age=90,
+        [],
+        [],
+        [],
+        today=FROZEN_TODAY,
+        max_nb_age=60,
+        max_ds_age=90,
     )
 
     assert "No stale notebooks found" in report
@@ -396,9 +429,19 @@ def test_markdown_report_empty():
 def test_json_report_structure():
     """JSON report should have expected keys."""
     report = scd.build_json_report(
-        [{"rel_dir": "x", "nb_path": "/x", "last_modified": "2025-01-01", "days_stale": 100}],
-        [], [],
-        today=FROZEN_TODAY, max_nb_age=60, max_ds_age=90,
+        [
+            {
+                "rel_dir": "x",
+                "nb_path": "/x",
+                "last_modified": "2025-01-01",
+                "days_stale": 100,
+            }
+        ],
+        [],
+        [],
+        today=FROZEN_TODAY,
+        max_nb_age=60,
+        max_ds_age=90,
     )
 
     assert report["generated"] == "2026-03-02"

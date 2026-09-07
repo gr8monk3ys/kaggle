@@ -26,11 +26,33 @@ def _action(
 
 def test_due_supported_actions_prioritizes_in_progress_and_filters_unsupported():
     queue = [
-        _action("a", status="planned", channel="kaggle-discussion", scheduled_for="2026-03-02T10:00:00Z"),
-        _action("b", status="in_progress", channel="kaggle-changelog", scheduled_for="2026-03-02T11:00:00Z"),
-        _action("c", status="planned", channel="kaggle-discussion", scheduled_for="2026-03-03T10:00:00Z"),
-        _action("d", status="planned", channel="x", scheduled_for="2026-03-02T09:00:00Z"),
-        _action("e", status="done", channel="kaggle-discussion", scheduled_for="2026-03-02T08:00:00Z"),
+        _action(
+            "a",
+            status="planned",
+            channel="kaggle-discussion",
+            scheduled_for="2026-03-02T10:00:00Z",
+        ),
+        _action(
+            "b",
+            status="in_progress",
+            channel="kaggle-changelog",
+            scheduled_for="2026-03-02T11:00:00Z",
+        ),
+        _action(
+            "c",
+            status="planned",
+            channel="kaggle-discussion",
+            scheduled_for="2026-03-03T10:00:00Z",
+        ),
+        _action(
+            "d", status="planned", channel="x", scheduled_for="2026-03-02T09:00:00Z"
+        ),
+        _action(
+            "e",
+            status="done",
+            channel="kaggle-discussion",
+            scheduled_for="2026-03-02T08:00:00Z",
+        ),
     ]
     now = datetime(2026, 3, 2, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -49,8 +71,18 @@ def test_due_supported_actions_prioritizes_in_progress_and_filters_unsupported()
 
 def test_due_supported_actions_respects_channel_filter_and_can_ignore_schedule():
     queue = [
-        _action("a", status="planned", channel="kaggle-discussion", scheduled_for="2026-03-03T10:00:00Z"),
-        _action("b", status="planned", channel="kaggle-changelog", scheduled_for="2026-03-03T11:00:00Z"),
+        _action(
+            "a",
+            status="planned",
+            channel="kaggle-discussion",
+            scheduled_for="2026-03-03T10:00:00Z",
+        ),
+        _action(
+            "b",
+            status="planned",
+            channel="kaggle-changelog",
+            scheduled_for="2026-03-03T11:00:00Z",
+        ),
     ]
     now = datetime(2026, 3, 2, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -84,7 +116,11 @@ def test_mark_done_and_mark_error_update_expected_fields():
     action = _action("a", status="in_progress")
     action["last_error"] = "previous failure"
 
-    campaign_execute.mark_done(action, post_url="https://www.kaggle.com/discussion/123", stamp="2026-03-02T12:01:00Z")
+    campaign_execute.mark_done(
+        action,
+        post_url="https://www.kaggle.com/discussion/123",
+        stamp="2026-03-02T12:01:00Z",
+    )
     assert action["status"] == "done"
     assert action["completed_at"] == "2026-03-02T12:01:00Z"
     assert action["note"] == "posted: https://www.kaggle.com/discussion/123"
@@ -113,13 +149,17 @@ def test_topic_title_for_action_defaults_and_changelog_prefix():
 
 
 def test_parse_channels_normalizes_and_skips_empty_values():
-    assert campaign_execute.parse_channels([" Kaggle-Discussion ", "", "kaggle-changelog"]) == {
+    assert campaign_execute.parse_channels(
+        [" Kaggle-Discussion ", "", "kaggle-changelog"]
+    ) == {
         "kaggle-discussion",
         "kaggle-changelog",
     }
 
 
-def test_post_dataset_discussion_topic_raises_clear_error_on_browser_challenge(monkeypatch):
+def test_post_dataset_discussion_topic_raises_clear_error_on_browser_challenge(
+    monkeypatch,
+):
     class FakePage:
         def goto(self, *args, **kwargs):
             return None
@@ -208,12 +248,15 @@ def test_post_dataset_discussion_topic_uses_direct_composer_url(monkeypatch):
                 return self._title
             if role == "textbox" and "content" in pattern.lower():
                 return self._content
-            if role == "button" and ("publish" in pattern.lower() or "post" in pattern.lower()):
+            if role == "button" and (
+                "publish" in pattern.lower() or "post" in pattern.lower()
+            ):
                 return self._publish
             return FakeLocator(0)
 
         def locator(self, selector):
             if selector == "body":
+
                 class FakeBody:
                     def inner_text(self, timeout=None):
                         return ""

@@ -27,7 +27,7 @@ from math import ceil
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from kaggle_portfolio.shared.kaggle_utils import parse_iso_date
+from kaggle_portfolio.shared.clock import parse_iso_date
 
 ROOT = Path(__file__).resolve().parents[2]
 DRAFTS_FILE = ROOT / "docs" / "discussions" / "discussion-drafts.md"
@@ -63,7 +63,13 @@ BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
 VALID_STATUSES = {
-    "idea", "ready", "scheduled", "posted", "won-medal", "pending", "skipped",
+    "idea",
+    "ready",
+    "scheduled",
+    "posted",
+    "won-medal",
+    "pending",
+    "skipped",
     "expired",
     # Asserts a measured result the repo cannot back. Non-postable until the
     # number is either produced for real or removed from the draft.
@@ -95,7 +101,9 @@ MEASUREMENT_CLAIM = re.compile(
     r"|compared|comparing|evaluated|evaluating|tried|trying)\b",
     re.IGNORECASE,
 )
-RESULT_TABLE = re.compile(r"\|\s*(?:AUC|RMSE|RMSLE|MAE|Accuracy|F1|Score|LB|CV)\b", re.IGNORECASE)
+RESULT_TABLE = re.compile(
+    r"\|\s*(?:AUC|RMSE|RMSLE|MAE|Accuracy|F1|Score|LB|CV)\b", re.IGNORECASE
+)
 METRIC_NUMBER = re.compile(r"\b0\.\d{3,5}\b")
 # Anchored to line start: an evidence pointer is its own line. Matching it
 # mid-sentence let a draft clear the check merely by *mentioning* evidence.
@@ -139,8 +147,6 @@ def normalize_priority(value: str | None) -> str:
     if normalized in PRIORITY_RANK:
         return normalized
     return "medium"
-
-
 
 
 def parse_scheduled_datetime(value: str | None) -> datetime | None:
@@ -197,9 +203,7 @@ def parse_drafts(drafts_path: Path) -> list[dict]:
     drafts = []
 
     # Each draft starts with "## Draft N: Title"
-    pattern = re.compile(
-        r"## (Draft \d+): (.+?)\n(.*?)(?=\n## Draft |\Z)", re.DOTALL
-    )
+    pattern = re.compile(r"## (Draft \d+): (.+?)\n(.*?)(?=\n## Draft |\Z)", re.DOTALL)
     for m in pattern.finditer(content):
         draft_label = m.group(1)
         title_from_header = m.group(2).strip()
@@ -213,7 +217,9 @@ def parse_drafts(drafts_path: Path) -> list[dict]:
         category = category_m.group(1).strip() if category_m else ""
         expected_medal_m = re.search(r"\*\*Expected medal:\*\*\s*(.+)", body_block)
         expected_medal = expected_medal_m.group(1).strip() if expected_medal_m else ""
-        deadline_m = re.search(r"\*\*Deadline:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})", body_block)
+        deadline_m = re.search(
+            r"\*\*Deadline:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})", body_block
+        )
         deadline = deadline_m.group(1).strip() if deadline_m else None
         priority_m = re.search(r"\*\*Priority:\*\*\s*(.+)", body_block)
         status_m = re.search(r"\*\*Status:\*\*\s*(.+)", body_block)
@@ -231,20 +237,22 @@ def parse_drafts(drafts_path: Path) -> list[dict]:
         num_m = re.search(r"\d+", draft_label)
         num = int(num_m.group()) if num_m else 999
 
-        drafts.append({
-            "id": f"draft_{num:03d}",
-            "number": num,
-            "title": post_title,
-            "forum_url": forum_url,
-            "body_section": draft_label,
-            "body_title": title_from_header,
-            "body_file": DRAFTS_REL,
-            "category": category,
-            "expected_medal": expected_medal,
-            "priority": priority,
-            "deadline": deadline,
-            "status": status,
-        })
+        drafts.append(
+            {
+                "id": f"draft_{num:03d}",
+                "number": num,
+                "title": post_title,
+                "forum_url": forum_url,
+                "body_section": draft_label,
+                "body_title": title_from_header,
+                "body_file": DRAFTS_REL,
+                "category": category,
+                "expected_medal": expected_medal,
+                "priority": priority,
+                "deadline": deadline,
+                "status": status,
+            }
+        )
 
     return drafts
 
@@ -274,7 +282,9 @@ def generate_queue(
     scheduled_count = 0
 
     def sort_key(draft: dict) -> tuple[int, date, int]:
-        pr = PRIORITY_RANK.get(normalize_priority(draft.get("priority")), PRIORITY_RANK["medium"])
+        pr = PRIORITY_RANK.get(
+            normalize_priority(draft.get("priority")), PRIORITY_RANK["medium"]
+        )
         dd = parse_iso_date(draft.get("deadline")) or date.max
         return (pr, dd, int(draft.get("number", 999)))
 
@@ -291,21 +301,23 @@ def generate_queue(
             item_status = "scheduled"
             scheduled_count += 1
 
-        queue.append({
-            "id": draft["id"],
-            "title": draft["title"],
-            "forum_url": draft["forum_url"],
-            "body_section": draft["body_section"],
-            "body_file": draft["body_file"],
-            "priority": normalize_priority(draft.get("priority")),
-            "deadline": draft.get("deadline"),
-            "category": draft.get("category", ""),
-            "expected_medal": draft.get("expected_medal", ""),
-            "scheduled_after": scheduled_after,
-            "status": item_status,
-            "post_url": None,
-            "posted_at": None,
-        })
+        queue.append(
+            {
+                "id": draft["id"],
+                "title": draft["title"],
+                "forum_url": draft["forum_url"],
+                "body_section": draft["body_section"],
+                "body_file": draft["body_file"],
+                "priority": normalize_priority(draft.get("priority")),
+                "deadline": draft.get("deadline"),
+                "category": draft.get("category", ""),
+                "expected_medal": draft.get("expected_medal", ""),
+                "scheduled_after": scheduled_after,
+                "status": item_status,
+                "post_url": None,
+                "posted_at": None,
+            }
+        )
         if item_status == "scheduled":
             # Advance to next post day only for scheduled queue entries.
             current_dt += timedelta(days=1)
@@ -335,7 +347,9 @@ def rebalance_existing_queue(
         }
         for item in queue
     ]
-    generated = generate_queue(drafts, start_date=start_date, schedule_weeks=schedule_weeks)
+    generated = generate_queue(
+        drafts, start_date=start_date, schedule_weeks=schedule_weeks
+    )
     by_id = {str(item.get("id")): item.copy() for item in queue}
     ordered: list[dict] = []
 
@@ -393,7 +407,9 @@ def update_draft(
     elif deadline is not None:
         parsed_deadline = parse_iso_date(deadline)
         if parsed_deadline is None:
-            raise SystemExit(f"Invalid --deadline value: {deadline} (expected YYYY-MM-DD)")
+            raise SystemExit(
+                f"Invalid --deadline value: {deadline} (expected YYYY-MM-DD)"
+            )
         match_item["deadline"] = parsed_deadline.isoformat()
 
     if status is not None:
@@ -403,7 +419,10 @@ def update_draft(
             match_item["scheduled_after"] = None
         if next_status in {"posted", "won-medal"} and not match_item.get("posted_at"):
             match_item["posted_at"] = now.isoformat()
-        if old_status in {"posted", "won-medal"} and next_status not in {"posted", "won-medal"}:
+        if old_status in {"posted", "won-medal"} and next_status not in {
+            "posted",
+            "won-medal",
+        }:
             match_item["post_url"] = None
             match_item["posted_at"] = None
 
@@ -436,7 +455,11 @@ def show_dry_run(queue: list[dict], n: int = 3) -> None:
         status = normalize_status(item.get("status"))
         status_counts[status] = status_counts.get(status, 0) + 1
 
-    postable = [item for item in queue if normalize_status(item.get("status")) in POSTABLE_STATUSES]
+    postable = [
+        item
+        for item in queue
+        if normalize_status(item.get("status")) in POSTABLE_STATUSES
+    ]
     has_future_scheduled = any(
         normalize_status(item.get("status")) == "scheduled"
         and (parse_scheduled_datetime(item.get("scheduled_after")) or now) > now
@@ -446,7 +469,9 @@ def show_dry_run(queue: list[dict], n: int = 3) -> None:
     print(f"{BLUE}=== Next {n} queued discussion drafts ==={RESET}\n")
     print(
         "Queue status: "
-        + ", ".join(f"{status}={count}" for status, count in sorted(status_counts.items()))
+        + ", ".join(
+            f"{status}={count}" for status, count in sorted(status_counts.items())
+        )
         + "\n"
     )
 
@@ -488,7 +513,11 @@ def show_dry_run(queue: list[dict], n: int = 3) -> None:
 def build_ops_summary(queue: list[dict], now: datetime | None = None) -> dict:
     now = now or datetime.now(tz=timezone.utc)
     counts: dict[str, int] = {}
-    backlog = [item for item in queue if normalize_status(item.get("status")) in {"idea", "ready", "scheduled"}]
+    backlog = [
+        item
+        for item in queue
+        if normalize_status(item.get("status")) in {"idea", "ready", "scheduled"}
+    ]
 
     ready_backlog = 0
     due_scheduled = 0
@@ -527,7 +556,9 @@ def build_ops_summary(queue: list[dict], now: datetime | None = None) -> dict:
 
     schedule_horizon = max(scheduled_dates).isoformat() if scheduled_dates else "n/a"
     estimated_weeks = (postable_backlog + 2) // 3 if postable_backlog else 0
-    ready_now = due_scheduled if due_scheduled > 0 or has_future_scheduled else ready_backlog
+    ready_now = (
+        due_scheduled if due_scheduled > 0 or has_future_scheduled else ready_backlog
+    )
     next_post_due: str | None = None
     days_until_next_post: int | None = None
     if due_scheduled > 0:
@@ -577,18 +608,28 @@ def show_ops_report(queue: list[dict], n: int = 10) -> None:
     print(f"  - overdue_scheduled: {summary['overdue_scheduled']}")
     next_due = summary["next_post_due"][:10] if summary["next_post_due"] else "n/a"
     print(f"  - next_post_due: {next_due}")
-    print(f"  - days_until_next_post: {summary['days_until_next_post'] if summary['days_until_next_post'] is not None else 'n/a'}")
+    print(
+        f"  - days_until_next_post: {summary['days_until_next_post'] if summary['days_until_next_post'] is not None else 'n/a'}"
+    )
     print(f"  - schedule_horizon: {summary['schedule_horizon']}")
-    print(f"  - estimated_weeks_to_clear: {summary['estimated_weeks_to_clear']} (at 3 posts/week)")
+    print(
+        f"  - estimated_weeks_to_clear: {summary['estimated_weeks_to_clear']} (at 3 posts/week)"
+    )
     print()
 
-    backlog = [item for item in queue if normalize_status(item.get("status")) in {"idea", "ready", "scheduled"}]
+    backlog = [
+        item
+        for item in queue
+        if normalize_status(item.get("status")) in {"idea", "ready", "scheduled"}
+    ]
     if not backlog:
         print(f"{GREEN}No active backlog items.{RESET}")
         return
 
     def backlog_key(item: dict) -> tuple[int, date, str]:
-        pr = PRIORITY_RANK.get(normalize_priority(item.get("priority")), PRIORITY_RANK["medium"])
+        pr = PRIORITY_RANK.get(
+            normalize_priority(item.get("priority")), PRIORITY_RANK["medium"]
+        )
         dd = parse_iso_date(item.get("deadline")) or date.max
         return (pr, dd, str(item.get("id", "")))
 
@@ -606,7 +647,9 @@ def show_ops_report(queue: list[dict], n: int = 10) -> None:
             is_ready = sched_dt <= now
         readiness = "READY" if is_ready else status.upper()
         print(f"  - {item.get('id')}: {item.get('title')} [{readiness}]")
-        print(f"    priority={priority} deadline={deadline} scheduled={sched[:10] if sched != 'n/a' else 'n/a'}")
+        print(
+            f"    priority={priority} deadline={deadline} scheduled={sched[:10] if sched != 'n/a' else 'n/a'}"
+        )
 
 
 def run_health_check(
@@ -643,7 +686,11 @@ def run_health_check(
     print(f"next_post_due={(summary['next_post_due'] or 'n/a')[:10]}")
     print(
         "days_until_next_post="
-        + str(summary["days_until_next_post"] if summary["days_until_next_post"] is not None else "n/a")
+        + str(
+            summary["days_until_next_post"]
+            if summary["days_until_next_post"] is not None
+            else "n/a"
+        )
     )
 
     if failures:
@@ -659,6 +706,7 @@ def run_health_check(
 def do_post(queue: list[dict], schedule_weeks: int = DEFAULT_SCHEDULE_WEEKS) -> int:
     """Invoke pi-automation/scripts/discussion_post.py to post next ready item."""
     import os
+
     env = os.environ.copy()
     env["QUEUE_PATH"] = str(QUEUE_FILE)
     env["REPO_PATH"] = str(ROOT)
@@ -666,7 +714,8 @@ def do_post(queue: list[dict], schedule_weeks: int = DEFAULT_SCHEDULE_WEEKS) -> 
 
     result = __import__("subprocess").run(
         [sys.executable, str(PI_SCRIPTS / "discussion_post.py")],
-        env=env, cwd=str(ROOT),
+        env=env,
+        cwd=str(ROOT),
     )
     return result.returncode
 
@@ -674,7 +723,11 @@ def do_post(queue: list[dict], schedule_weeks: int = DEFAULT_SCHEDULE_WEEKS) -> 
 def select_next_post(queue: list[dict], now: datetime | None = None) -> dict | None:
     """Pick the next postable draft: due items first (most overdue), then soonest upcoming; priority breaks ties."""
     now = now or datetime.now(tz=timezone.utc)
-    postable = [item for item in queue if normalize_status(item.get("status")) in POSTABLE_STATUSES]
+    postable = [
+        item
+        for item in queue
+        if normalize_status(item.get("status")) in POSTABLE_STATUSES
+    ]
     if not postable:
         return None
 
@@ -696,12 +749,15 @@ def extract_post_body(drafts_path: Path, body_section: str) -> str:
         content = Path(drafts_path).read_text(encoding="utf-8")
     except OSError:
         return ""
-    pattern = re.compile(rf"## {re.escape(body_section)}:.*?\n(.*?)(?=\n## Draft |\Z)", re.DOTALL)
+    pattern = re.compile(
+        rf"## {re.escape(body_section)}:.*?\n(.*?)(?=\n## Draft |\Z)", re.DOTALL
+    )
     match = pattern.search(content)
     if not match:
         return ""
     body_lines = [
-        line for line in match.group(1).splitlines()
+        line
+        for line in match.group(1).splitlines()
         if not re.match(r"\s*\*\*[A-Za-z /]+:\*\*", line)
     ]
     return "\n".join(body_lines).strip()
@@ -710,25 +766,32 @@ def extract_post_body(drafts_path: Path, body_section: str) -> str:
 def format_next_post(draft: dict, body: str) -> str:
     """Render a postable draft as a copy-paste block for manual posting."""
     draft_id = draft.get("id", "?")
-    return "\n".join([
-        f"Next post to publish - {draft.get('title', '(untitled)')}",
-        f"Forum: {draft.get('forum_url', '?')}",
-        f"After posting, mark it done: ./manage.sh draft-set {draft_id} --status posted",
-        "",
-        "----- copy below this line -----",
-        body or "(no body found for this draft in discussion-drafts.md)",
-        "----- end -----",
-    ])
+    return "\n".join(
+        [
+            f"Next post to publish - {draft.get('title', '(untitled)')}",
+            f"Forum: {draft.get('forum_url', '?')}",
+            f"After posting, mark it done: ./manage.sh draft-set {draft_id} --status posted",
+            "",
+            "----- copy below this line -----",
+            body or "(no body found for this draft in discussion-drafts.md)",
+            "----- end -----",
+        ]
+    )
 
 
-def cmd_next_post(queue: list[dict] | None = None, drafts_path: Path | None = None,
-                  now: datetime | None = None) -> int:
+def cmd_next_post(
+    queue: list[dict] | None = None,
+    drafts_path: Path | None = None,
+    now: datetime | None = None,
+) -> int:
     """Surface the next ready draft for manual posting (safe assist; never automates posting)."""
     queue = load_queue() if queue is None else queue
     draft = select_next_post(queue, now=now)
     if draft is None:
-        print("No postable drafts queued. Mark a draft 'ready' first "
-              "(./manage.sh draft-set <id> --status ready).")
+        print(
+            "No postable drafts queued. Mark a draft 'ready' first "
+            "(./manage.sh draft-set <id> --status ready)."
+        )
         return 0
     body = extract_post_body(drafts_path or DRAFTS_FILE, draft.get("body_section", ""))
     print(format_next_post(draft, body))
@@ -737,12 +800,22 @@ def cmd_next_post(queue: list[dict] | None = None, drafts_path: Path | None = No
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Discussion queue scheduler.")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Print next 3 queued drafts without posting.")
-    parser.add_argument("--init", action="store_true",
-                        help="(Re-)generate queue JSON from discussion-drafts.md.")
-    parser.add_argument("--show", type=int, default=3,
-                        help="Number of drafts to show in --dry-run (default 3).")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print next 3 queued drafts without posting.",
+    )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="(Re-)generate queue JSON from discussion-drafts.md.",
+    )
+    parser.add_argument(
+        "--show",
+        type=int,
+        default=3,
+        help="Number of drafts to show in --dry-run (default 3).",
+    )
     parser.add_argument(
         "--schedule-weeks",
         type=int,
@@ -752,28 +825,59 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default {DEFAULT_SCHEDULE_WEEKS})."
         ),
     )
-    parser.add_argument("--ops-report", action="store_true",
-                        help="Show stage counts and prioritized backlog view.")
-    parser.add_argument("--health-check", action="store_true",
-                        help="Run stale-draft SLA checks and exit non-zero on violation.")
-    parser.add_argument("--today", default=None,
-                        help="Optional YYYY-MM-DD override used by health-check for deterministic runs.")
-    parser.add_argument("--max-overdue-scheduled", type=int, default=0,
-                        help="SLA: maximum allowed overdue scheduled drafts (default 0).")
-    parser.add_argument("--max-days-until-next-post", type=int, default=7,
-                        help="SLA: maximum allowed days until next postable draft (default 7).")
-    parser.add_argument("--set-id", default=None,
-                        help="Update a queue item by id (e.g. draft_007).")
-    parser.add_argument("--status", choices=["idea", "ready", "scheduled", "posted", "won-medal"],
-                        help="Set draft status for --set-id.")
-    parser.add_argument("--priority", choices=["high", "medium", "low"],
-                        help="Set draft priority for --set-id.")
-    parser.add_argument("--deadline", default=None,
-                        help="Set draft deadline (YYYY-MM-DD) for --set-id.")
-    parser.add_argument("--clear-deadline", action="store_true",
-                        help="Clear draft deadline for --set-id.")
-    parser.add_argument("--next-post", action="store_true",
-                        help="Surface the next ready draft to post manually (safe assist; no automation).")
+    parser.add_argument(
+        "--ops-report",
+        action="store_true",
+        help="Show stage counts and prioritized backlog view.",
+    )
+    parser.add_argument(
+        "--health-check",
+        action="store_true",
+        help="Run stale-draft SLA checks and exit non-zero on violation.",
+    )
+    parser.add_argument(
+        "--today",
+        default=None,
+        help="Optional YYYY-MM-DD override used by health-check for deterministic runs.",
+    )
+    parser.add_argument(
+        "--max-overdue-scheduled",
+        type=int,
+        default=0,
+        help="SLA: maximum allowed overdue scheduled drafts (default 0).",
+    )
+    parser.add_argument(
+        "--max-days-until-next-post",
+        type=int,
+        default=7,
+        help="SLA: maximum allowed days until next postable draft (default 7).",
+    )
+    parser.add_argument(
+        "--set-id", default=None, help="Update a queue item by id (e.g. draft_007)."
+    )
+    parser.add_argument(
+        "--status",
+        choices=["idea", "ready", "scheduled", "posted", "won-medal"],
+        help="Set draft status for --set-id.",
+    )
+    parser.add_argument(
+        "--priority",
+        choices=["high", "medium", "low"],
+        help="Set draft priority for --set-id.",
+    )
+    parser.add_argument(
+        "--deadline", default=None, help="Set draft deadline (YYYY-MM-DD) for --set-id."
+    )
+    parser.add_argument(
+        "--clear-deadline",
+        action="store_true",
+        help="Clear draft deadline for --set-id.",
+    )
+    parser.add_argument(
+        "--next-post",
+        action="store_true",
+        help="Surface the next ready draft to post manually (safe assist; no automation).",
+    )
     return parser
 
 
@@ -844,7 +948,9 @@ def run_selected_mode(args: argparse.Namespace, queue: list[dict]) -> int:
         now_override = None
         if args.today is not None:
             today = parse_iso_date(args.today)
-            now_override = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+            now_override = datetime.combine(
+                today, datetime.min.time(), tzinfo=timezone.utc
+            )
         return run_health_check(
             queue,
             max_overdue_scheduled=args.max_overdue_scheduled,
@@ -868,19 +974,29 @@ def main(argv: list[str] | None = None) -> int:
     if args.today is not None and parse_iso_date(args.today) is None:
         parser.error("--today must be YYYY-MM-DD")
 
-    mode_count = sum([
-        1 if args.dry_run else 0,
-        1 if args.ops_report else 0,
-        1 if args.health_check else 0,
-        1 if args.set_id else 0,
-        1 if args.next_post else 0,
-    ])
+    mode_count = sum(
+        [
+            1 if args.dry_run else 0,
+            1 if args.ops_report else 0,
+            1 if args.health_check else 0,
+            1 if args.set_id else 0,
+            1 if args.next_post else 0,
+        ]
+    )
     if mode_count > 1:
-        parser.error("Choose only one of --dry-run, --ops-report, --health-check, --set-id, or --next-post.")
+        parser.error(
+            "Choose only one of --dry-run, --ops-report, --health-check, --set-id, or --next-post."
+        )
 
     queue_initialized = initialize_queue_if_needed(args)
     if queue_initialized:
-        if not args.dry_run and not args.ops_report and not args.health_check and not args.set_id and not args.next_post:
+        if (
+            not args.dry_run
+            and not args.ops_report
+            and not args.health_check
+            and not args.set_id
+            and not args.next_post
+        ):
             return 0
 
     queue = load_queue()

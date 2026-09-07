@@ -8,20 +8,15 @@ import csv
 import io
 import json
 import statistics
-import subprocess
 import tempfile
 from dataclasses import asdict, dataclass
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.shared.kaggle_utils import (
-    kaggle_command,
-    parse_iso_date,
-    resolve_today,
-    run_kaggle,
-    summarize_subprocess_error,
-)
+from kaggle_portfolio.shared.clock import resolve_today
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 
@@ -54,8 +49,6 @@ class DatasetFeatures:
     has_notebook_or_script: bool
 
 
-
-
 def parse_listing_csv(raw_csv: str) -> list[ListingRow]:
     rows: list[ListingRow] = []
     reader = csv.DictReader(io.StringIO(raw_csv))
@@ -72,7 +65,9 @@ def parse_listing_csv(raw_csv: str) -> list[ListingRow]:
                     last_updated=str(row.get("lastUpdated", "")).strip(),
                     download_count=int(str(row.get("downloadCount", "0")).strip() or 0),
                     vote_count=int(str(row.get("voteCount", "0")).strip() or 0),
-                    usability_rating=float(str(row.get("usabilityRating", "0")).strip() or 0.0),
+                    usability_rating=float(
+                        str(row.get("usabilityRating", "0")).strip() or 0.0
+                    ),
                 )
             )
         except ValueError:
@@ -80,22 +75,38 @@ def parse_listing_csv(raw_csv: str) -> list[ListingRow]:
     return rows
 
 
-def fetch_public_listings(sort_by: str, pages: int) -> list[ListingRow]:
+def fetch_public_listings(
+    client: KaggleClient, sort_by: str, pages: int
+) -> list[ListingRow]:
     all_rows: dict[str, ListingRow] = {}
-    for page in range(1, pages + 1):
-        raw = run_kaggle(["datasets", "list", "--sort-by", sort_by, "--page", str(page), "--csv"])
-        for row in parse_listing_csv(raw):
-            if row.ref not in all_rows:
-                all_rows[row.ref] = row
+    for dataset in client.search_datasets(sort_by=sort_by, pages=pages):
+        if dataset.ref not in all_rows:
+            all_rows[dataset.ref] = ListingRow(
+                ref=dataset.ref,
+                title=dataset.title,
+                size=dataset.size,
+                last_updated=dataset.last_updated,
+                download_count=dataset.download_count,
+                vote_count=dataset.vote_count,
+                usability_rating=dataset.usability_rating or 0.0,
+            )
     return list(all_rows.values())
 
 
-def choose_exemplars(rows: list[ListingRow], target_rating: float, max_items: int) -> list[ListingRow]:
+def choose_exemplars(
+    rows: list[ListingRow], target_rating: float, max_items: int
+) -> list[ListingRow]:
     above_target = [row for row in rows if row.usability_rating >= target_rating]
     if not above_target:
-        above_target = sorted(rows, key=lambda row: (row.usability_rating, row.vote_count), reverse=True)
+        above_target = sorted(
+            rows, key=lambda row: (row.usability_rating, row.vote_count), reverse=True
+        )
     else:
-        above_target = sorted(above_target, key=lambda row: (row.vote_count, row.download_count), reverse=True)
+        above_target = sorted(
+            above_target,
+            key=lambda row: (row.vote_count, row.download_count),
+            reverse=True,
+        )
     return above_target[:max_items]
 
 
@@ -112,36 +123,55 @@ def load_stringified_metadata(path: Path) -> dict[str, Any]:
 
 def parse_files_csv(raw_csv: str) -> tuple[int, bool, bool]:
     reader = csv.DictReader(io.StringIO(raw_csv))
-    names = [str(row.get("name", "")).strip().lower() for row in reader if str(row.get("name", "")).strip()]
+    names = [
+        str(row.get("name", "")).strip().lower()
+        for row in reader
+        if str(row.get("name", "")).strip()
+    ]
     file_count = len(names)
     has_csv = any(name.endswith(".csv") for name in names)
-    has_notebook_or_script = any(name.endswith(ext) for name in names for ext in (".ipynb", ".py", ".r", ".rmd"))
+    has_notebook_or_script = any(
+        name.endswith(ext) for name in names for ext in (".ipynb", ".py", ".r", ".rmd")
+    )
     return file_count, has_csv, has_notebook_or_script
 
 
-def fetch_dataset_features(ref: str, temp_root: Path) -> DatasetFeatures:
+def fetch_dataset_features(
+    client: KaggleClient, ref: str, temp_root: Path
+) -> DatasetFeatures:
     staging = temp_root / ref.replace("/", "__")
     staging.mkdir(parents=True, exist_ok=True)
 
-    run_kaggle(["datasets", "metadata", ref, "-p", str(staging)])
-    meta = load_stringified_metadata(staging / "dataset-metadata.json")
+    metadata = client.dataset_metadata(ref, staging)
+    names = [name.strip().lower() for name in client.dataset_files(ref) if name.strip()]
+    file_count = len(names)
+    has_csv = any(name.endswith(".csv") for name in names)
+    has_notebook_or_script = any(
+        name.endswith(ext) for name in names for ext in (".ipynb", ".py", ".r", ".rmd")
+    )
 
-    files_raw = run_kaggle(["datasets", "files", ref, "--csv"])
-    file_count, has_csv, has_notebook_or_script = parse_files_csv(files_raw)
-
-    keywords = meta.get("keywords") if isinstance(meta.get("keywords"), list) else []
-    licenses = meta.get("licenses") if isinstance(meta.get("licenses"), list) else []
-    subtitle = str(meta.get("subtitle", "")).strip()
-    description = str(meta.get("description", "")).strip()
+    meta = metadata.raw
+    keywords = metadata.keywords
+    licenses = metadata.licenses
+    subtitle = metadata.subtitle.strip()
+    description = metadata.description.strip()
 
     return DatasetFeatures(
         ref=ref,
         title=str(meta.get("title", ref)).strip(),
-        usability_rating=float(meta["usabilityRating"]) if meta.get("usabilityRating") is not None else None,
-        vote_count=int(meta["totalVotes"]) if meta.get("totalVotes") is not None else None,
-        download_count=int(meta["totalDownloads"]) if meta.get("totalDownloads") is not None else None,
+        usability_rating=float(meta["usabilityRating"])
+        if meta.get("usabilityRating") is not None
+        else None,
+        vote_count=int(meta["totalVotes"])
+        if meta.get("totalVotes") is not None
+        else None,
+        download_count=int(meta["totalDownloads"])
+        if meta.get("totalDownloads") is not None
+        else None,
         # `datasets metadata <public-ref>` may omit isPrivate; treat omission as public.
-        is_private=bool(meta["isPrivate"]) if meta.get("isPrivate") is not None else False,
+        is_private=bool(meta["isPrivate"])
+        if meta.get("isPrivate") is not None
+        else False,
         has_license=bool(licenses),
         keyword_count=len(keywords),
         subtitle_length=len(subtitle),
@@ -156,7 +186,11 @@ def discover_local_dataset_dirs(root: Path) -> list[Path]:
     ds_root = root / "datasets"
     if not ds_root.exists():
         return []
-    return sorted(path for path in ds_root.iterdir() if path.is_dir() and (path / "dataset-metadata.json").exists())
+    return sorted(
+        path
+        for path in ds_root.iterdir()
+        if path.is_dir() and (path / "dataset-metadata.json").exists()
+    )
 
 
 def load_json_object(path: Path) -> dict[str, Any]:
@@ -177,7 +211,9 @@ def local_dataset_features(ds_dir: Path, root: Path) -> DatasetFeatures:
     description = str(meta.get("description", "")).strip()
 
     file_names = [p.name.lower() for p in ds_dir.iterdir() if p.is_file()]
-    data_file_names = [name for name in file_names if name.endswith((".csv", ".parquet"))]
+    data_file_names = [
+        name for name in file_names if name.endswith((".csv", ".parquet"))
+    ]
 
     is_private_raw = meta.get("isPrivate", meta.get("is_private"))
     is_private: bool | None
@@ -199,7 +235,11 @@ def local_dataset_features(ds_dir: Path, root: Path) -> DatasetFeatures:
         description_length=len(description),
         file_count=len(data_file_names),
         has_csv=any(name.endswith(".csv") for name in data_file_names),
-        has_notebook_or_script=any(name.endswith(ext) for name in file_names for ext in (".ipynb", ".py", ".r", ".rmd")),
+        has_notebook_or_script=any(
+            name.endswith(ext)
+            for name in file_names
+            for ext in (".ipynb", ".py", ".r", ".rmd")
+        ),
     )
 
 
@@ -236,26 +276,38 @@ def summarize_feature_set(features: list[DatasetFeatures]) -> dict[str, float | 
         "csv_pct": round((100.0 * csv_count) / count, 1),
         "starter_asset_pct": round((100.0 * starter_count) / count, 1),
         "keyword_median": round(_median([item.keyword_count for item in features]), 1),
-        "subtitle_median": round(_median([item.subtitle_length for item in features]), 1),
-        "description_median": round(_median([item.description_length for item in features]), 1),
+        "subtitle_median": round(
+            _median([item.subtitle_length for item in features]), 1
+        ),
+        "description_median": round(
+            _median([item.description_length for item in features]), 1
+        ),
         "file_count_median": round(_median([item.file_count for item in features]), 1),
     }
 
 
-def build_recommendations(local_summary: dict[str, float | int], benchmark_summary: dict[str, float | int]) -> list[str]:
+def build_recommendations(
+    local_summary: dict[str, float | int], benchmark_summary: dict[str, float | int]
+) -> list[str]:
     recs: list[str] = []
 
-    if float(local_summary.get("public_pct", 0.0)) < float(benchmark_summary.get("public_pct", 0.0)):
+    if float(local_summary.get("public_pct", 0.0)) < float(
+        benchmark_summary.get("public_pct", 0.0)
+    ):
         recs.append(
             "For datasets targeting max live Kaggle usability, publish public variants (`isPrivate=false`) and reserve private mode for staging only."
         )
 
-    if float(local_summary.get("keyword_median", 0.0)) < float(benchmark_summary.get("keyword_median", 0.0)):
+    if float(local_summary.get("keyword_median", 0.0)) < float(
+        benchmark_summary.get("keyword_median", 0.0)
+    ):
         recs.append(
             "Increase keyword coverage to at least the benchmark median (typically ~4-5 validated Kaggle tags)."
         )
 
-    if float(local_summary.get("starter_asset_pct", 0.0)) < float(benchmark_summary.get("starter_asset_pct", 0.0)):
+    if float(local_summary.get("starter_asset_pct", 0.0)) < float(
+        benchmark_summary.get("starter_asset_pct", 0.0)
+    ):
         recs.append(
             "Ensure each dataset includes starter assets (e.g., `explore.ipynb` and/or `starter_baseline.py`)."
         )
@@ -266,10 +318,14 @@ def build_recommendations(local_summary: dict[str, float | int], benchmark_summa
         )
 
     if float(local_summary.get("csv_pct", 0.0)) < 100.0:
-        recs.append("Provide at least one CSV export per dataset for immediate Kaggle usability.")
+        recs.append(
+            "Provide at least one CSV export per dataset for immediate Kaggle usability."
+        )
 
     if not recs:
-        recs.append("Local structure already matches benchmark medians. Next gains are likely from public visibility and audience engagement.")
+        recs.append(
+            "Local structure already matches benchmark medians. Next gains are likely from public visibility and audience engagement."
+        )
 
     return recs
 
@@ -350,11 +406,19 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Benchmark local datasets against top Kaggle usability exemplars.")
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Benchmark local datasets against top Kaggle usability exemplars."
+    )
     parser.add_argument("--root", default=".", help="Repository root.")
-    parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Output root for reports.")
-    parser.add_argument("--today", default=None, help="Override date in YYYY-MM-DD format.")
+    parser.add_argument(
+        "--output-root",
+        default=str(DEFAULT_OUTPUT_ROOT),
+        help="Output root for reports.",
+    )
+    parser.add_argument(
+        "--today", default=None, help="Override date in YYYY-MM-DD format."
+    )
     parser.add_argument(
         "--sample-pages",
         type=int,
@@ -373,11 +437,12 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         help="Target Kaggle usability rating for exemplar selection.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.sample_pages < 1:
         raise SystemExit("--sample-pages must be >= 1")
     if args.max_exemplars < 1:
@@ -389,8 +454,12 @@ def main() -> int:
     output_root = Path(args.output_root)
     today = resolve_today(args.today)
 
-    sampled_rows = fetch_public_listings("updated", pages=args.sample_pages)
-    sampled_rows.extend(fetch_public_listings("votes", pages=args.sample_pages))
+    sampled_rows = fetch_public_listings(
+        deps.client, "updated", pages=args.sample_pages
+    )
+    sampled_rows.extend(
+        fetch_public_listings(deps.client, "votes", pages=args.sample_pages)
+    )
 
     deduped_rows: dict[str, ListingRow] = {}
     for row in sampled_rows:
@@ -398,7 +467,9 @@ def main() -> int:
         if current is None or row.vote_count > current.vote_count:
             deduped_rows[row.ref] = row
 
-    exemplars = choose_exemplars(list(deduped_rows.values()), args.target_rating, args.max_exemplars)
+    exemplars = choose_exemplars(
+        list(deduped_rows.values()), args.target_rating, args.max_exemplars
+    )
 
     exemplar_features: list[DatasetFeatures] = []
     exemplar_errors: list[str] = []
@@ -406,7 +477,9 @@ def main() -> int:
         temp_root = Path(temp_dir)
         for row in exemplars:
             try:
-                exemplar_features.append(fetch_dataset_features(row.ref, temp_root))
+                exemplar_features.append(
+                    fetch_dataset_features(deps.client, row.ref, temp_root)
+                )
             except Exception as exc:  # pragma: no cover - network+CLI surface
                 exemplar_errors.append(f"{row.ref}: {exc}")
 

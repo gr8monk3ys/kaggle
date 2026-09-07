@@ -16,6 +16,7 @@ Usage
 
 Invoked by: ./manage.sh build-explore-notebooks [--push]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,7 +26,8 @@ from pathlib import Path
 
 from kaggle_portfolio.datasets.dataset_optimizer import analyze_csv, analyze_parquet
 from kaggle_portfolio.shared.build_utils import code, md, write_notebook
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient
 
 ROOT = Path(__file__).resolve().parents[2]
 DATASETS_DIR = ROOT / "datasets"
@@ -41,9 +43,22 @@ SKIP_DIRS = {"spotify-tracks", "mental-health-tech"}
 
 # Common target column names to detect automatically.
 TARGET_CANDIDATES = [
-    "target", "label", "class", "Class", "is_fraud", "is_churned",
-    "converted", "outcome", "survived", "treatment", "rating",
-    "popularity", "grade", "score", "salary", "price",
+    "target",
+    "label",
+    "class",
+    "Class",
+    "is_fraud",
+    "is_churned",
+    "converted",
+    "outcome",
+    "survived",
+    "treatment",
+    "rating",
+    "popularity",
+    "grade",
+    "score",
+    "salary",
+    "price",
 ]
 
 # Per-dataset modeling plans: a real target and metric chosen by reading each
@@ -58,7 +73,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "MAE (report RMSE alongside)",
         "validation": "5-fold CV grouped by company_id to avoid company leakage",
         "rationale": "Salary is the question this jobs table exists to answer; "
-                     "`salary_mid_usd` is the midpoint of the posted band.",
+        "`salary_mid_usd` is the midpoint of the posted band.",
     },
     "ai-research-trends": {
         "target": "citation_count",
@@ -66,7 +81,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "MAE on log1p(citation_count) — citations are heavy-tailed",
         "validation": "time-based split: train on earlier years, validate on the latest year",
         "rationale": "Predicting citation impact from paper metadata (venue, category, "
-                     "author count, code release) is the natural supervised task here.",
+        "author count, code release) is the natural supervised task here.",
     },
     "github-repo-metrics": {
         "target": "stars",
@@ -74,7 +89,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "MAE on log1p(stars) — star counts span orders of magnitude",
         "validation": "5-fold CV; check residuals per language",
         "rationale": "Stars are the standard popularity signal for a repository; "
-                     "activity and hygiene columns are the candidate predictors.",
+        "activity and hygiene columns are the candidate predictors.",
     },
     "job-postings": {
         "target": "salary_max",
@@ -82,7 +97,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "MAE (report RMSE alongside)",
         "validation": "5-fold CV; hold out by company for a stricter generalization check",
         "rationale": "Salary is the outcome of interest in a postings table; "
-                     "`salary_max` is the top of the posted range (`salary_min` is the alternate).",
+        "`salary_max` is the top of the posted range (`salary_min` is the alternate).",
     },
     "ml-interview-qa": {
         "target": "category",
@@ -90,7 +105,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "accuracy and macro-F1 across the 10 categories",
         "validation": "stratified 5-fold CV (small dataset — expect wide fold variance)",
         "rationale": "Category is the only hand-assigned label suited to modeling: "
-                     "classify each question's text into its topic category.",
+        "classify each question's text into its topic category.",
     },
     "programming-benchmarks": {
         "target": "execution_time_ms",
@@ -98,7 +113,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "MAE on log-scaled runtime",
         "validation": "grouped CV by benchmark_name (predict a held-out benchmark's runtimes)",
         "rationale": "Runtime is what a benchmark measures; language traits "
-                     "(paradigm, typing, gc) are the candidate predictors.",
+        "(paradigm, typing, gc) are the candidate predictors.",
     },
     "student-performance": {
         "target": "math_score",
@@ -106,8 +121,8 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "MAE (report RMSE alongside)",
         "validation": "5-fold CV; exclude overall_gpa from features (it is computed from the subject scores)",
         "rationale": "Predicting an exam score from study habits and background is the "
-                     "canonical task for this table; math_score is the target, and "
-                     "overall_gpa must stay out of the feature set to avoid leakage.",
+        "canonical task for this table; math_score is the target, and "
+        "overall_gpa must stay out of the feature set to avoid leakage.",
     },
     "credit-card-fraud": {
         "target": "Class",
@@ -115,7 +130,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
         "metric": "PR-AUC (average precision) — ROC-AUC is misleading at this imbalance",
         "validation": "stratified 5-fold CV with the fraud rate checked per fold",
         "rationale": "`Class` is the fraud flag; the positive class is rare, so "
-                     "precision-recall trade-offs are the whole problem.",
+        "precision-recall trade-offs are the whole problem.",
     },
 }
 
@@ -123,6 +138,7 @@ DATASET_PLANS: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 # Column classification helpers
 # ---------------------------------------------------------------------------
+
 
 def _classify_columns(analysis: dict) -> dict:
     """Classify columns from analyze_csv output into numeric, categorical, etc."""
@@ -136,7 +152,6 @@ def _classify_columns(analysis: dict) -> dict:
         name = col["name"]
         dtype = col["dtype"]
         n_unique = col["n_unique"]
-        total = col["total"]
 
         # Detect ID-like columns
         if name.lower().endswith("_id") or name.lower() == "id":
@@ -191,6 +206,7 @@ def _find_csv_file(ds_dir: Path, preferred: str | None = None) -> Path | None:
 # Cell generators
 # ---------------------------------------------------------------------------
 
+
 def _cell_title(meta: dict, analysis: dict) -> list[dict]:
     """Generate title + TOC cells."""
     title = meta.get("title", "Dataset Explorer")
@@ -238,7 +254,9 @@ def _infer_modeling_plan(
 
     target = classified["target"]
     if target:
-        target_meta = next((col for col in analysis.get("columns", []) if col["name"] == target), {})
+        target_meta = next(
+            (col for col in analysis.get("columns", []) if col["name"] == target), {}
+        )
         dtype = str(target_meta.get("dtype", "")).lower()
         n_unique = int(target_meta.get("n_unique", 0) or 0)
         if dtype in {"integer", "float"} and n_unique > 20:
@@ -440,7 +458,7 @@ for j in range(i + 1, len(axes)):
 plt.suptitle('Numeric Feature Distributions', fontsize=14, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.show()"""),
-        code(f"""# Box plots for outlier detection
+        code("""# Box plots for outlier detection
 fig, axes = plt.subplots(1, min(len(NUMERIC_COLS), 6), figsize=(min(len(NUMERIC_COLS), 6) * 3, 5))
 if min(len(NUMERIC_COLS), 6) == 1:
     axes = [axes]
@@ -551,11 +569,15 @@ def _cell_target(classified: dict) -> list[dict]:
     if not target:
         return [
             md("## 8. Target Analysis <a id='target'></a>"),
-            md("*No standard target column detected. Explore potential targets manually.*"),
+            md(
+                "*No standard target column detected. Explore potential targets manually.*"
+            ),
         ]
 
     return [
-        md(f"## 8. Target Analysis <a id='target'></a>\n\nDetected target column: **`{target}`**"),
+        md(
+            f"## 8. Target Analysis <a id='target'></a>\n\nDetected target column: **`{target}`**"
+        ),
         code(f"""target_col = '{target}'
 
 print(f"Target: {{target_col}}")
@@ -694,6 +716,7 @@ if len(numeric_cols) > 0:
 # Main notebook generator
 # ---------------------------------------------------------------------------
 
+
 def generate_explore_notebook(ds_dir: Path) -> list[dict]:
     """Generate a rich EDA notebook for a dataset directory.
 
@@ -735,8 +758,10 @@ def generate_explore_notebook(ds_dir: Path) -> list[dict]:
         if plan["target"] in col_names:
             classified["target"] = plan["target"]
         else:
-            print(f"  {YELLOW}WARN{RESET} {ds_dir.name}: planned target "
-                  f"{plan['target']!r} not in {analysis.get('file')}; falling back")
+            print(
+                f"  {YELLOW}WARN{RESET} {ds_dir.name}: planned target "
+                f"{plan['target']!r} not in {analysis.get('file')}; falling back"
+            )
             plan = None
 
     # Build cells
@@ -756,7 +781,7 @@ def generate_explore_notebook(ds_dir: Path) -> list[dict]:
     return cells
 
 
-def build_explore(ds_dir: Path, push: bool = False) -> bool:
+def build_explore(client: KaggleClient, ds_dir: Path, push: bool = False) -> bool:
     """Generate explore.ipynb for a dataset directory and optionally push."""
     print(f"  {BLUE}{ds_dir.name}{RESET}...")
 
@@ -769,34 +794,33 @@ def build_explore(ds_dir: Path, push: bool = False) -> bool:
     print(f"  {GREEN}OK{RESET} {len(cells)} cells → {out}")
 
     if push:
-        import subprocess
-
-        cli = kaggle_command()
-        result = subprocess.run(
-            [*cli, "kernels", "push", "-p", str(ds_dir)],
-            capture_output=True, text=True,
-        )
-        if result.returncode == 0:
-            print(f"  {GREEN}PUSHED{RESET}")
+        outcome = client.push_kernel(ds_dir)
+        if outcome.ok:
+            print(
+                f"  {GREEN}{'SKIPPED (dry run)' if outcome.skipped else 'PUSHED'}{RESET}"
+            )
         else:
-            msg = summarize_subprocess_error(result.stdout, result.stderr)
-            print(f"  {RED}PUSH FAILED{RESET}: {msg}")
+            print(f"  {RED}PUSH FAILED{RESET}: {outcome.detail}")
             return False
 
     return True
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Generate rich EDA explore notebooks for datasets."
     )
-    parser.add_argument("--dir", type=Path, default=None,
-                        help="Single dataset directory to process.")
-    parser.add_argument("--all", action="store_true",
-                        help="Process all dataset directories.")
-    parser.add_argument("--push", action="store_true",
-                        help="Push notebooks to Kaggle after generating.")
+    parser.add_argument(
+        "--dir", type=Path, default=None, help="Single dataset directory to process."
+    )
+    parser.add_argument(
+        "--all", action="store_true", help="Process all dataset directories."
+    )
+    parser.add_argument(
+        "--push", action="store_true", help="Push notebooks to Kaggle after generating."
+    )
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(effects=bool(getattr(args, "push", False)))
 
     if not args.all and not args.dir:
         parser.error("Specify --dir or --all")
@@ -808,8 +832,7 @@ def main(argv: list[str] | None = None) -> int:
         dirs = [target]
     else:
         dirs = sorted(
-            d for d in DATASETS_DIR.iterdir()
-            if d.is_dir() and d.name not in SKIP_DIRS
+            d for d in DATASETS_DIR.iterdir() if d.is_dir() and d.name not in SKIP_DIRS
         )
 
     success = 0
@@ -821,15 +844,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {YELLOW}SKIP{RESET} {ds_dir.name} (has custom build_notebook.py)")
             skipped += 1
             continue
-        if build_explore(ds_dir, push=args.push):
+        if build_explore(deps.client, ds_dir, push=args.push):
             success += 1
         else:
             failed += 1
 
-    print(f"\n{BLUE}=== Done ==={RESET}  "
-          f"Built: {GREEN}{success}{RESET}  "
-          f"Failed: {RED}{failed}{RESET}  "
-          f"Skipped: {YELLOW}{skipped}{RESET}")
+    print(
+        f"\n{BLUE}=== Done ==={RESET}  "
+        f"Built: {GREEN}{success}{RESET}  "
+        f"Failed: {RED}{failed}{RESET}  "
+        f"Skipped: {YELLOW}{skipped}{RESET}"
+    )
     return 0 if failed == 0 else 1
 
 

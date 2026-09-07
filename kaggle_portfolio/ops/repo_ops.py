@@ -60,7 +60,9 @@ def module_cmd(module: str, *args: str) -> list[str]:
 def build_preflight_steps(args: argparse.Namespace) -> list[Step]:
     output_root = str(Path(args.output_root))
 
-    doctor_cmd = module_cmd("kaggle_portfolio.ops.medal_ops", "--output-root", output_root)
+    doctor_cmd = module_cmd(
+        "kaggle_portfolio.ops.medal_ops", "--output-root", output_root
+    )
     if args.today:
         doctor_cmd.extend(["--today", args.today])
     doctor_cmd.extend(["doctor", "--max-stale-days", str(args.max_stale_days)])
@@ -75,7 +77,9 @@ def build_preflight_steps(args: argparse.Namespace) -> list[Step]:
     if args.competitions_csv:
         doctor_cmd.extend(["--competitions-csv", args.competitions_csv])
 
-    quality_cmd = module_cmd("kaggle_portfolio.quality.notebook_quality", "--output-root", output_root)
+    quality_cmd = module_cmd(
+        "kaggle_portfolio.quality.notebook_quality", "--output-root", output_root
+    )
     if args.today:
         quality_cmd.extend(["--today", args.today])
     quality_cmd.extend(
@@ -88,10 +92,14 @@ def build_preflight_steps(args: argparse.Namespace) -> list[Step]:
         ]
     )
 
-    dataset_cmd = module_cmd("kaggle_portfolio.datasets.dataset_usability", "--output-root", output_root)
+    dataset_cmd = module_cmd(
+        "kaggle_portfolio.datasets.dataset_usability", "--output-root", output_root
+    )
     if args.today:
         dataset_cmd.extend(["--today", args.today])
-    dataset_cmd.extend(["--strict", "--fail-under", str(args.min_dataset_usability_score)])
+    dataset_cmd.extend(
+        ["--strict", "--fail-under", str(args.min_dataset_usability_score)]
+    )
 
     draft_cmd = module_cmd(
         "kaggle_portfolio.ops.discussion_scheduler",
@@ -160,36 +168,104 @@ def build_smoke_live_steps(args: argparse.Namespace) -> list[Step]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Repository operations for local preflight and live smoke checks.")
+    parser = argparse.ArgumentParser(
+        description="Repository operations for local preflight and live smoke checks."
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    preflight = sub.add_parser("preflight", help="Run the core repo gates in one command.")
-    preflight.add_argument("--output-root", default="/tmp/kaggle-preflight", help="Output root for generated reports.")
-    preflight.add_argument("--today", default=None, help="Optional YYYY-MM-DD override for deterministic runs.")
-    preflight.add_argument("--max-stale-days", type=int, default=30, help="Doctor stale-content threshold.")
-    preflight.add_argument("--strict-doctor", action="store_true", help="Fail preflight on doctor warnings, not only errors.")
-    preflight.add_argument("--require-kaggle", action="store_true", help="Require live Kaggle access in doctor.")
-    preflight.add_argument("--kernels-csv", default=None, help="Optional exported kernels CSV for doctor.")
-    preflight.add_argument("--datasets-csv", default=None, help="Optional exported datasets CSV for doctor.")
-    preflight.add_argument("--competitions-csv", default=None, help="Optional exported competitions CSV for doctor.")
-    preflight.add_argument("--min-quality-score", type=int, default=95, help="Notebook quality threshold.")
-    preflight.add_argument("--min-dataset-usability-score", type=int, default=85, help="Dataset usability threshold.")
-    preflight.add_argument("--max-overdue-scheduled", type=int, default=0, help="Allowed overdue scheduled drafts.")
-    preflight.add_argument("--max-days-until-next-post", type=int, default=14, help="Allowed gap to next scheduled post.")
-    preflight.add_argument("--no-pytest", action="store_true", help="Skip the full pytest run.")
+    preflight = sub.add_parser(
+        "preflight", help="Run the core repo gates in one command."
+    )
+    preflight.add_argument(
+        "--output-root",
+        default="/tmp/kaggle-preflight",
+        help="Output root for generated reports.",
+    )
+    preflight.add_argument(
+        "--today",
+        default=None,
+        help="Optional YYYY-MM-DD override for deterministic runs.",
+    )
+    preflight.add_argument(
+        "--max-stale-days", type=int, default=30, help="Doctor stale-content threshold."
+    )
+    preflight.add_argument(
+        "--strict-doctor",
+        action="store_true",
+        help="Fail preflight on doctor warnings, not only errors.",
+    )
+    preflight.add_argument(
+        "--require-kaggle",
+        action="store_true",
+        help="Require live Kaggle access in doctor.",
+    )
+    preflight.add_argument(
+        "--kernels-csv", default=None, help="Optional exported kernels CSV for doctor."
+    )
+    preflight.add_argument(
+        "--datasets-csv",
+        default=None,
+        help="Optional exported datasets CSV for doctor.",
+    )
+    preflight.add_argument(
+        "--competitions-csv",
+        default=None,
+        help="Optional exported competitions CSV for doctor.",
+    )
+    preflight.add_argument(
+        "--min-quality-score", type=int, default=95, help="Notebook quality threshold."
+    )
+    preflight.add_argument(
+        "--min-dataset-usability-score",
+        type=int,
+        default=85,
+        help="Dataset usability threshold.",
+    )
+    preflight.add_argument(
+        "--max-overdue-scheduled",
+        type=int,
+        default=0,
+        help="Allowed overdue scheduled drafts.",
+    )
+    preflight.add_argument(
+        "--max-days-until-next-post",
+        type=int,
+        default=14,
+        help="Allowed gap to next scheduled post.",
+    )
+    preflight.add_argument(
+        "--no-pytest", action="store_true", help="Skip the full pytest run."
+    )
 
-    smoke = sub.add_parser("smoke-live", help="Safely exercise live Kaggle publish/post prerequisites without mutating state.")
+    smoke = sub.add_parser(
+        "smoke-live",
+        help="Safely exercise live Kaggle publish/post prerequisites without mutating state.",
+    )
     smoke.add_argument("--owner", default=None, help="Expected Kaggle owner slug.")
-    smoke.add_argument("--limit", type=int, default=1, help="Max items to inspect in dry-run checks.")
+    smoke.add_argument(
+        "--limit", type=int, default=1, help="Max items to inspect in dry-run checks."
+    )
     smoke.add_argument(
         "--report-json",
         default="/tmp/kaggle-live-smoke-dataset-publish.json",
         help="Output path for dataset publish dry-run report.",
     )
-    smoke.add_argument("--include-live-datasets", action="store_true", help="Inspect all datasets, not only draft candidates.")
-    smoke.add_argument("--no-publish", action="store_true", help="Skip dataset publish dry-run.")
-    smoke.add_argument("--no-campaign", action="store_true", help="Skip campaign queue dry-run.")
-    smoke.add_argument("--no-discussion", action="store_true", help="Skip discussion posting smoke test.")
+    smoke.add_argument(
+        "--include-live-datasets",
+        action="store_true",
+        help="Inspect all datasets, not only draft candidates.",
+    )
+    smoke.add_argument(
+        "--no-publish", action="store_true", help="Skip dataset publish dry-run."
+    )
+    smoke.add_argument(
+        "--no-campaign", action="store_true", help="Skip campaign queue dry-run."
+    )
+    smoke.add_argument(
+        "--no-discussion",
+        action="store_true",
+        help="Skip discussion posting smoke test.",
+    )
     smoke.add_argument(
         "--check-discussion-login",
         action="store_true",

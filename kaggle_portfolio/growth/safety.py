@@ -1,4 +1,5 @@
 """The dispatch gate: kill switch, posting window, dedupe, rate caps."""
+
 from __future__ import annotations
 
 import os
@@ -45,8 +46,11 @@ def recent_counts(history: list[dict], now: datetime) -> dict:
         elif kind == "forum_drop" and ts >= week_ago:
             comp = str(row.get("competition") or "")
             forum_drops_week[comp] = forum_drops_week.get(comp, 0) + 1
-    return {"posts_today": posts_today, "posts_week": posts_week,
-            "forum_drops_week": forum_drops_week}
+    return {
+        "posts_today": posts_today,
+        "posts_week": posts_week,
+        "forum_drops_week": forum_drops_week,
+    }
 
 
 def gate(ranked, history, cfg: FlywheelConfig, now: datetime):

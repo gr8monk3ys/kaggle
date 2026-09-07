@@ -11,6 +11,7 @@ Usage
 
 Invoked by: ./manage.sh promote-notebooks [--auto]
 """
+
 from __future__ import annotations
 
 import json
@@ -32,11 +33,23 @@ COMPETITION_TOPICS = {
     },
     "spaceship-titanic": {
         "url": "https://www.kaggle.com/competitions/spaceship-titanic/discussion",
-        "topics": ["classification", "ensemble", "xgboost", "feature engineering", "titanic"],
+        "topics": [
+            "classification",
+            "ensemble",
+            "xgboost",
+            "feature engineering",
+            "titanic",
+        ],
     },
     "titanic": {
         "url": "https://www.kaggle.com/competitions/titanic/discussion",
-        "topics": ["classification", "random forest", "feature engineering", "eda", "titanic"],
+        "topics": [
+            "classification",
+            "random forest",
+            "feature engineering",
+            "eda",
+            "titanic",
+        ],
     },
     "digit-recognizer": {
         "url": "https://www.kaggle.com/competitions/digit-recognizer/discussion",
@@ -48,7 +61,13 @@ COMPETITION_TOPICS = {
     },
     "house-prices-advanced-regression-techniques": {
         "url": "https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/discussion",
-        "topics": ["regression", "feature engineering", "house prices", "ensemble", "stacking"],
+        "topics": [
+            "regression",
+            "feature engineering",
+            "house prices",
+            "ensemble",
+            "stacking",
+        ],
     },
     # Currently-active competitions (kept in sync with the tracker's Active
     # Competitions table) so the growth flywheel can promote real entries in the
@@ -56,15 +75,36 @@ COMPETITION_TOPICS = {
     # specific to avoid pulling unrelated tutorials into a focused comp forum.
     "playground-series-s6e6": {
         "url": "https://www.kaggle.com/competitions/playground-series-s6e6/discussion",
-        "topics": ["stellar", "astronomy", "redshift", "classification", "tabular", "xgboost"],
+        "topics": [
+            "stellar",
+            "astronomy",
+            "redshift",
+            "classification",
+            "tabular",
+            "xgboost",
+        ],
     },
     "hull-tactical-market-prediction": {
         "url": "https://www.kaggle.com/competitions/hull-tactical-market-prediction/discussion",
-        "topics": ["market", "financial", "sharpe", "allocation", "time series", "forecasting"],
+        "topics": [
+            "market",
+            "financial",
+            "sharpe",
+            "allocation",
+            "time series",
+            "forecasting",
+        ],
     },
     "rogii-wellbore-geology-prediction": {
         "url": "https://www.kaggle.com/competitions/rogii-wellbore-geology-prediction/discussion",
-        "topics": ["geology", "wellbore", "geosteering", "depth", "petrophysical", "regression"],
+        "topics": [
+            "geology",
+            "wellbore",
+            "geosteering",
+            "depth",
+            "petrophysical",
+            "regression",
+        ],
     },
 }
 
@@ -76,11 +116,7 @@ def normalize_ref(value: str | None) -> str:
 def parse_ref_filter(raw: str | None) -> set[str]:
     if not raw:
         return set()
-    return {
-        normalize_ref(part)
-        for part in raw.split(",")
-        if normalize_ref(part)
-    }
+    return {normalize_ref(part) for part in raw.split(",") if normalize_ref(part)}
 
 
 def load_notebooks() -> tuple[list[dict], list[str]]:
@@ -95,13 +131,19 @@ def load_notebooks() -> tuple[list[dict], list[str]]:
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             if not isinstance(meta, dict):
-                warnings.append(f"{meta_path.relative_to(ROOT)}: metadata root is not an object")
+                warnings.append(
+                    f"{meta_path.relative_to(ROOT)}: metadata root is not an object"
+                )
                 continue
             if not meta.get("id"):
-                warnings.append(f"{meta_path.relative_to(ROOT)}: missing required field 'id'")
+                warnings.append(
+                    f"{meta_path.relative_to(ROOT)}: missing required field 'id'"
+                )
                 continue
             if not meta.get("title"):
-                warnings.append(f"{meta_path.relative_to(ROOT)}: missing required field 'title'")
+                warnings.append(
+                    f"{meta_path.relative_to(ROOT)}: missing required field 'title'"
+                )
                 continue
             meta["_dir"] = str(meta_path.parent.relative_to(ROOT))
             notebooks.append(meta)
@@ -154,7 +196,9 @@ def generate_promo_comment(nb: dict, comp_slug: str) -> str:
         "nlp-getting-started": "applies BERT fine-tuning for disaster tweet classification",
         "house-prices-advanced-regression-techniques": "explores feature engineering for house price prediction",
     }
-    verb = verb_map.get(comp_slug, "provides a complete ML walkthrough for this competition")
+    verb = verb_map.get(
+        comp_slug, "provides a complete ML walkthrough for this competition"
+    )
 
     return (
         f"I put together a notebook that {verb}: {url}\n"
@@ -206,8 +250,13 @@ def filter_notebooks(
 
 def main(argv: list[str] | None = None) -> int:
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--auto", action="store_true", help="Auto-submit via Playwright (not yet implemented).")
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="Auto-submit via Playwright (not yet implemented).",
+    )
     parser.add_argument(
         "--strict-metadata",
         action="store_true",
@@ -227,7 +276,9 @@ def main(argv: list[str] | None = None) -> int:
     notebooks, missing_refs = filter_notebooks(notebooks, selected_refs)
     print(f"Loaded {len(notebooks)} notebooks\n")
     if warnings:
-        print(f"{YELLOW}Skipped {len(warnings)} notebook(s) due to metadata issues:{RESET}")
+        print(
+            f"{YELLOW}Skipped {len(warnings)} notebook(s) due to metadata issues:{RESET}"
+        )
         for warning in warnings[:10]:
             print(f"  - {warning}")
         if len(warnings) > 10:
@@ -257,11 +308,13 @@ def main(argv: list[str] | None = None) -> int:
             )
             continue
         for comp in comps:
-            plan.setdefault(comp, []).append({
-                "notebook": nb.get("_dir"),
-                "title": nb.get("title", nb.get("_dir")),
-                "comment": generate_promo_comment(nb, comp),
-            })
+            plan.setdefault(comp, []).append(
+                {
+                    "notebook": nb.get("_dir"),
+                    "title": nb.get("title", nb.get("_dir")),
+                    "comment": generate_promo_comment(nb, comp),
+                }
+            )
 
     if not plan and not manual_share:
         print(f"{YELLOW}No notebook-competition matches found.{RESET}")
@@ -269,7 +322,9 @@ def main(argv: list[str] | None = None) -> int:
 
     total = sum(len(v) for v in plan.values())
     print(f"Found {total} promotion opportunities across {len(plan)} competitions.\n")
-    print("Post these this week (prioritize competitions with most active discussions):\n")
+    print(
+        "Post these this week (prioritize competitions with most active discussions):\n"
+    )
 
     for comp_slug, entries in sorted(plan.items()):
         comp_info = COMPETITION_TOPICS[comp_slug]
@@ -292,7 +347,9 @@ def main(argv: list[str] | None = None) -> int:
         print()
 
     if args.auto:
-        print(f"{YELLOW}--auto not yet implemented. Post manually using the drafts above.{RESET}")
+        print(
+            f"{YELLOW}--auto not yet implemented. Post manually using the drafts above.{RESET}"
+        )
 
     return 0
 

@@ -15,22 +15,17 @@ Usage
 
 Invoked by: ./manage.sh metadata-tracker <subcommand> [args...]
 """
+
 from __future__ import annotations
 
 import argparse
-import csv
-import io
 import json
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
-
-ROOT = Path(__file__).resolve().parents[2]
-MEDAL_OPS_DIR = ROOT / "medal_ops"
-LOG_PATH = MEDAL_OPS_DIR / "metadata_ab_log.json"
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError
 
 GREEN = "\033[0;32m"
 YELLOW = "\033[0;33m"
@@ -43,12 +38,18 @@ RESET = "\033[0m"
 # Log I/O
 # ---------------------------------------------------------------------------
 
-def _load_log() -> list[dict]:
+
+def log_path(deps: Deps) -> Path:
+    return deps.layout.output_root / "metadata_ab_log.json"
+
+
+def _load_log(deps: Deps) -> list[dict]:
     """Load the snapshot log from disk."""
-    if not LOG_PATH.exists():
+    path = log_path(deps)
+    if not path.exists():
         return []
     try:
-        data = json.loads(LOG_PATH.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(data, list):
             return data
     except (json.JSONDecodeError, OSError):
@@ -56,33 +57,34 @@ def _load_log() -> list[dict]:
     return []
 
 
-def _save_log(entries: list[dict]) -> None:
+def _save_log(deps: Deps, entries: list[dict]) -> None:
     """Write the snapshot log to disk."""
-    MEDAL_OPS_DIR.mkdir(parents=True, exist_ok=True)
-    LOG_PATH.write_text(
-        json.dumps(entries, indent=2) + "\n", encoding="utf-8"
-    )
+    path = log_path(deps)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(entries, indent=2) + "\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
 # Metadata collection
 # ---------------------------------------------------------------------------
 
-def collect_metadata() -> dict[str, dict]:
-    """Scan all kernel-metadata.json files and return a dict keyed by directory name."""
-    results: dict[str, dict] = {}
-    for meta_path in sorted(ROOT.rglob("kernel-metadata.json")):
-        # Skip node_modules, .venv, etc.
-        rel = meta_path.relative_to(ROOT)
-        if any(part.startswith(".") for part in rel.parts):
-            continue
 
+def collect_metadata(deps: Deps) -> dict[str, dict]:
+    """Scan every kernel-metadata.json and return a dict keyed by directory name.
+
+    Includes the ``datasets/*`` explore notebooks: they earn votes like any other
+    notebook, even though ``push`` treats their directories as datasets.
+    """
+    results: dict[str, dict] = {}
+    for rel_dir in deps.layout.kernel_metadata_dirs(include_dataset_notebooks=True):
+        rel = Path(rel_dir) / "kernel-metadata.json"
+        meta_path = deps.layout.root / rel
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
 
-        dir_name = str(rel.parent)
+        dir_name = rel_dir
         results[dir_name] = {
             "id": meta.get("id", ""),
             "title": meta.get("title", ""),
@@ -94,48 +96,22 @@ def collect_metadata() -> dict[str, dict]:
     return results
 
 
-def fetch_vote_counts() -> dict[str, int] | None:
-    """Fetch vote counts from Kaggle CLI for all owned kernels.
+def fetch_vote_counts(client: KaggleClient) -> dict[str, int] | None:
+    """Fetch vote counts for all owned kernels, keyed by slug.
 
-    Returns a dict mapping kernel slug to votes on success (possibly empty), or
-    None if the Kaggle CLI call fails — so callers can distinguish 'fetch
-    failed' from 'genuinely zero votes' instead of silently recording zeros.
+    Returns ``None`` when Kaggle could not be reached, so callers can tell
+    'fetch failed' from 'genuinely zero votes' instead of recording zeros.
     """
-    votes: dict[str, int] = {}
     try:
-        cli = kaggle_command()
-        result = subprocess.run(
-            [*cli, "kernels", "list", "--mine", "--csv", "--page-size", "50"],
-            capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            print(
-                f"{YELLOW}Vote fetch failed{RESET}: "
-                f"{summarize_subprocess_error(result.stdout, result.stderr)}",
-                file=sys.stderr,
-            )
-            return None
-
-        reader = csv.DictReader(io.StringIO(result.stdout))
-        for row in reader:
-            ref = row.get("ref", "")
-            slug = ref.split("/")[-1] if "/" in ref else ref
-            vote_col = next(
-                (k for k in row if "vote" in k.lower() or "upvote" in k.lower()),
-                None,
-            )
-            if vote_col:
-                try:
-                    votes[slug] = int(row[vote_col] or 0)
-                except (ValueError, TypeError):
-                    pass
-    except Exception as exc:
+        return {kernel.slug: kernel.total_votes for kernel in client.my_kernels()}
+    except KaggleError as exc:
         print(f"{YELLOW}Vote fetch failed{RESET}: {exc}", file=sys.stderr)
         return None
-    return votes
 
 
-def _merge_votes(metadata: dict[str, dict], votes: dict[str, int] | None) -> dict[str, dict]:
+def _merge_votes(
+    metadata: dict[str, dict], votes: dict[str, int] | None
+) -> dict[str, dict]:
     """Merge vote counts into metadata entries, matching by slug.
 
     When ``votes`` is None (a failed fetch), record votes as None rather than 0
@@ -155,12 +131,13 @@ def _merge_votes(metadata: dict[str, dict], votes: dict[str, int] | None) -> dic
 # Subcommands
 # ---------------------------------------------------------------------------
 
-def cmd_snapshot(dry_run: bool = False, votes: dict[str, int] | None = None) -> int:
+
+def cmd_snapshot(deps: Deps, votes: dict[str, int] | None = None) -> int:
     """Take a snapshot of all metadata + votes and append to the log."""
-    metadata = collect_metadata()
+    metadata = collect_metadata(deps)
     votes_unavailable = False
     if votes is None:
-        votes = fetch_vote_counts()
+        votes = fetch_vote_counts(deps.client)
         if votes is None:
             votes_unavailable = True
 
@@ -173,31 +150,39 @@ def cmd_snapshot(dry_run: bool = False, votes: dict[str, int] | None = None) -> 
         "votes_available": not votes_unavailable,
     }
 
-    if dry_run:
-        print(f"{YELLOW}DRY RUN{RESET} — would write snapshot with "
-              f"{len(metadata)} notebooks")
+    if not deps.effects:
+        print(
+            f"{YELLOW}DRY RUN{RESET} — would write snapshot with "
+            f"{len(metadata)} notebooks"
+        )
         for name, entry in sorted(metadata.items()):
-            print(f"  {name}: votes={entry.get('votes', '?')} "
-                  f"title={entry.get('title', '?')[:50]}")
+            print(
+                f"  {name}: votes={entry.get('votes', '?')} "
+                f"title={entry.get('title', '?')[:50]}"
+            )
         return 0
 
     if votes_unavailable:
-        print(f"{YELLOW}Warning{RESET}: vote counts unavailable (Kaggle CLI "
-              "fetch failed); recording votes as unknown for this snapshot.",
-              file=sys.stderr)
+        print(
+            f"{YELLOW}Warning{RESET}: vote counts unavailable (Kaggle CLI "
+            "fetch failed); recording votes as unknown for this snapshot.",
+            file=sys.stderr,
+        )
 
-    log = _load_log()
+    log = _load_log(deps)
     log.append(snapshot)
-    _save_log(log)
+    _save_log(deps, log)
     total_votes = sum((e.get("votes") or 0) for e in metadata.values())
-    print(f"{GREEN}Snapshot saved{RESET} — {len(metadata)} notebooks, "
-          f"{total_votes} total votes")
+    print(
+        f"{GREEN}Snapshot saved{RESET} — {len(metadata)} notebooks, "
+        f"{total_votes} total votes"
+    )
     return 0
 
 
-def cmd_annotate(directory: str, note: str) -> int:
+def cmd_annotate(deps: Deps, directory: str, note: str) -> int:
     """Add an annotation to the most recent snapshot."""
-    log = _load_log()
+    log = _load_log(deps)
     if not log:
         print(f"{RED}No snapshots found. Run 'snapshot' first.{RESET}")
         return 1
@@ -208,18 +193,17 @@ def cmd_annotate(directory: str, note: str) -> int:
         existing_annotation = {"_general": existing_annotation}
     existing_annotation[directory] = note
     latest["annotation"] = existing_annotation
-    _save_log(log)
+    _save_log(deps, log)
 
     print(f"{GREEN}Annotated{RESET} latest snapshot: {directory} → {note}")
     return 0
 
 
-def cmd_report(as_json: bool = False) -> int:
+def cmd_report(deps: Deps, as_json: bool = False) -> int:
     """Show metadata changes correlated with vote deltas across snapshots."""
-    log = _load_log()
+    log = _load_log(deps)
     if len(log) < 2:
-        print("Need at least 2 snapshots for comparison. "
-              f"Currently have {len(log)}.")
+        print(f"Need at least 2 snapshots for comparison. Currently have {len(log)}.")
         return 0
 
     changes: list[dict] = []
@@ -311,33 +295,36 @@ def cmd_report(as_json: bool = False) -> int:
 # Main
 # ---------------------------------------------------------------------------
 
-def main(argv: list[str] | None = None) -> int:
+
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Track notebook metadata changes vs vote deltas."
     )
     sub = parser.add_subparsers(dest="command")
 
     snap = sub.add_parser("snapshot", help="Take a metadata + vote snapshot.")
-    snap.add_argument("--dry-run", action="store_true",
-                      help="Preview without writing.")
+    snap.add_argument("--dry-run", action="store_true", help="Preview without writing.")
 
-    ann = sub.add_parser("annotate",
-                         help="Annotate latest snapshot with a change note.")
+    ann = sub.add_parser(
+        "annotate", help="Annotate latest snapshot with a change note."
+    )
     ann.add_argument("directory", help="Notebook directory name.")
     ann.add_argument("note", help="Description of the deliberate change.")
 
     rep = sub.add_parser("report", help="Show changes correlated with votes.")
-    rep.add_argument("--json", action="store_true", dest="as_json",
-                     help="Output as JSON.")
+    rep.add_argument(
+        "--json", action="store_true", dest="as_json", help="Output as JSON."
+    )
 
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(effects=not getattr(args, "dry_run", False))
 
     if args.command == "snapshot":
-        return cmd_snapshot(dry_run=args.dry_run)
+        return cmd_snapshot(deps)
     elif args.command == "annotate":
-        return cmd_annotate(args.directory, args.note)
+        return cmd_annotate(deps, args.directory, args.note)
     elif args.command == "report":
-        return cmd_report(as_json=args.as_json)
+        return cmd_report(deps, as_json=args.as_json)
     else:
         parser.print_help()
         return 0

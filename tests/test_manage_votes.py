@@ -12,7 +12,9 @@ def test_manage_votes_parses_kernel_csv_rows(tmp_path):
     fake_home = tmp_path / "home"
     kaggle_dir = fake_home / ".kaggle"
     kaggle_dir.mkdir(parents=True)
-    (kaggle_dir / "kaggle.json").write_text('{"username":"u","key":"k"}\n', encoding="utf-8")
+    (kaggle_dir / "kaggle.json").write_text(
+        '{"username":"u","key":"k"}\n', encoding="utf-8"
+    )
 
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir(parents=True)
@@ -22,8 +24,8 @@ def test_manage_votes_parses_kernel_csv_rows(tmp_path):
             [
                 "#!/usr/bin/env bash",
                 "set -euo pipefail",
-                "if [[ \"${1:-}\" == \"kernels\" && \"${2:-}\" == \"list\" ]]; then",
-                "  if [[ \" $* \" == *\" --csv \"* ]]; then",
+                'if [[ "${1:-}" == "kernels" && "${2:-}" == "list" ]]; then',
+                '  if [[ " $* " == *" --csv "* ]]; then',
                 "    cat <<'CSV'",
                 "ref,title,totalVotes",
                 "alice/kernel-one,Kernel One,3",
@@ -31,11 +33,11 @@ def test_manage_votes_parses_kernel_csv_rows(tmp_path):
                 "alice/kernel-two,Kernel Two,8",
                 "CSV",
                 "  else",
-                "    echo \"kernels list\"",
+                '    echo "kernels list"',
                 "  fi",
                 "  exit 0",
                 "fi",
-                "if [[ \"${1:-}\" == \"datasets\" && \"${2:-}\" == \"list\" ]]; then",
+                'if [[ "${1:-}" == "datasets" && "${2:-}" == "list" ]]; then',
                 "  cat <<'TXT'",
                 "ref title size",
                 "---- ----- ----",
@@ -43,7 +45,7 @@ def test_manage_votes_parses_kernel_csv_rows(tmp_path):
                 "TXT",
                 "  exit 0",
                 "fi",
-                "echo \"unexpected args: $*\" >&2",
+                'echo "unexpected args: $*" >&2',
                 "exit 1",
                 "",
             ]

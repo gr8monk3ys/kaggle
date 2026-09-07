@@ -4,15 +4,9 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import io
 import json
 import os
-import socket
-import subprocess
 import sys
-import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 
 # The `kaggle` package is only needed for the live upload-auth probe. Import it
@@ -25,17 +19,8 @@ from pathlib import Path
 # present, which is exactly the state CI collects tests in. kagglesdk's types
 # have no such side effect, so they stay importable and the tests can
 # monkeypatch `KaggleApi` alone.
-try:  # pragma: no cover - exercised via environments with/without kaggle installed
-    from kaggle.api.kaggle_api_extended import KaggleApi
-except (Exception, SystemExit):  # pragma: no cover
-    KaggleApi = None  # type: ignore[assignment]
-try:  # pragma: no cover
-    from kagglesdk.blobs.types.blob_api_service import ApiBlobType, ApiStartBlobUploadRequest
-except Exception:  # pragma: no cover
-    ApiBlobType = None  # type: ignore[assignment]
-    ApiStartBlobUploadRequest = None  # type: ignore[assignment]
-
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError
 
 
 BLUE = "\033[0;34m"
@@ -47,59 +32,18 @@ RESET = "\033[0m"
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@dataclass(frozen=True)
-class Credentials:
-    username: str
-    key: str
-    source: str
-
-
-
-
 def kaggle_config_path() -> Path:
+    """Where the credentials file is expected to live. Reported in failure hints."""
     config_dir = os.environ.get("KAGGLE_CONFIG_DIR")
     if config_dir:
         return Path(config_dir) / "kaggle.json"
-
     home_default = Path.home() / ".kaggle" / "kaggle.json"
     if home_default.exists():
         return home_default
-
     if sys.platform.startswith("linux"):
         xdg = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
         return xdg / "kaggle" / "kaggle.json"
     return home_default
-
-
-def resolve_credentials() -> tuple[Credentials | None, str | None]:
-    env_user = os.environ.get("KAGGLE_USERNAME", "").strip()
-    env_key = os.environ.get("KAGGLE_KEY", "").strip()
-    if env_user and env_key:
-        return Credentials(username=env_user, key=env_key, source="environment"), None
-
-    cfg = kaggle_config_path()
-    if not cfg.exists():
-        return None, f"Missing Kaggle credentials file: {cfg}"
-
-    try:
-        payload = json.loads(cfg.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return None, f"Invalid kaggle.json: {exc}"
-    if not isinstance(payload, dict):
-        return None, "kaggle.json must be a JSON object"
-
-    user = str(payload.get("username", "")).strip()
-    key = str(payload.get("key", "")).strip()
-    if not user or not key:
-        return None, "kaggle.json must include non-empty username and key"
-
-    return Credentials(username=user, key=key, source=f"file:{cfg}"), None
-
-
-def mask_key(key: str) -> str:
-    if len(key) <= 8:
-        return "*" * len(key)
-    return f"{key[:4]}...{key[-4:]}"
 
 
 def dataset_id_owners(root: Path) -> tuple[dict[str, int], list[str]]:
@@ -123,76 +67,44 @@ def dataset_id_owners(root: Path) -> tuple[dict[str, int], list[str]]:
     return owners, malformed
 
 
-def probe_public_listing(owner: str, timeout: int) -> tuple[bool, str]:
-    cmd = [*kaggle_command(), "datasets", "list", "-s", owner, "--csv"]
+def probe_public_listing(client: KaggleClient, owner: str) -> tuple[bool, str]:
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return False, f"public listing probe timed out after {timeout}s"
-    if result.returncode != 0:
-        return False, summarize_subprocess_error(result.stdout, result.stderr)
-    reader = csv.DictReader(io.StringIO(result.stdout))
-    count = sum(1 for _ in reader)
-    return True, f"retrieved {count} public dataset rows"
+        rows = client.datasets_by_owner(owner)
+    except KaggleError as exc:
+        return False, str(exc)
+    return True, f"retrieved {len(rows)} public dataset rows"
 
 
-def probe_blob_upload_auth(timeout: int) -> tuple[bool, str]:
-    """Check whether Kaggle's official upload-start flow accepts the local credentials."""
-    if KaggleApi is None or ApiStartBlobUploadRequest is None or ApiBlobType is None:
-        return False, "kaggle package not installed; skipping official upload-start probe"
-
-    temp_path: str | None = None
-    previous_timeout = socket.getdefaulttimeout()
-    try:
-        socket.setdefaulttimeout(timeout)
-        with tempfile.NamedTemporaryFile("wb", prefix="kaggle-auth-doctor-", suffix=".txt", delete=False) as handle:
-            handle.write(b"auth-doctor upload probe\n")
-            temp_path = handle.name
-
-        api = KaggleApi()
-        api.authenticate()
-
-        request = ApiStartBlobUploadRequest()
-        request.type = ApiBlobType.DATASET
-        request.name = Path(temp_path).name
-        request.content_length = os.path.getsize(temp_path)
-        request.last_modified_epoch_seconds = int(os.path.getmtime(temp_path))
-
-        with api.build_kaggle_client() as kaggle:
-            response = kaggle.blobs.blob_api_client.start_blob_upload(request)
-
-        create_url = str(getattr(response, "create_url", "") or "")
-        token = str(getattr(response, "token", "") or "")
-        if create_url and token:
-            return True, "official upload-start probe succeeded"
-        return False, "official upload-start probe returned no create_url/token"
-    except Exception as exc:
-        message = str(exc).strip() or exc.__class__.__name__
-        lowered = message.lower()
-        if any(marker in lowered for marker in ("401", "403", "unauthenticated", "unauthorized")):
-            return False, f"official upload-start probe rejected credentials ({message})"
-        return False, f"official upload-start probe failed: {message}"
-    finally:
-        socket.setdefaulttimeout(previous_timeout)
-        if temp_path:
-            Path(temp_path).unlink(missing_ok=True)
+def probe_blob_upload_auth(client: KaggleClient, timeout: int) -> tuple[bool, str]:
+    """Check whether Kaggle's official upload-start flow accepts the credentials."""
+    probe = client.probe_upload_auth(timeout)
+    return probe.ok, probe.detail
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run Kaggle credential and upload preflight checks.")
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run Kaggle credential and upload preflight checks."
+    )
     parser.add_argument("--root", default=".", help="Repository root (default: .)")
     parser.add_argument(
         "--expected-owner",
         default=None,
         help="Expected dataset owner slug (defaults to credential username).",
     )
-    parser.add_argument("--timeout", type=int, default=20, help="HTTP timeout seconds for upload probe.")
-    parser.add_argument("--strict", action="store_true", help="Fail on warnings in addition to hard failures.")
-    return parser.parse_args()
+    parser.add_argument(
+        "--timeout", type=int, default=20, help="HTTP timeout seconds for upload probe."
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail on warnings in addition to hard failures.",
+    )
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(timeout=args.timeout)
     root = Path(args.root).resolve()
 
     print(f"{BLUE}=== Kaggle Auth Doctor ==={RESET}")
@@ -200,22 +112,25 @@ def main() -> int:
     failures: list[str] = []
     warnings: list[str] = []
 
-    creds, cred_err = resolve_credentials()
-    if cred_err or creds is None:
-        failures.append(cred_err or "Unable to resolve credentials.")
+    state = deps.client.credentials()
+    creds = state.credentials
+    if creds is None:
+        failures.append(state.error or "Unable to resolve credentials.")
     else:
         print(f"Credentials: {GREEN}OK{RESET} ({creds.source})")
         print(f"Username: {creds.username}")
-        print(f"Key: {mask_key(creds.key)}")
+        print(f"Key: {creds.masked()}")
 
     if creds is None:
         print(f"{RED}FAIL{RESET}: {failures[0]}")
         return 1
 
-    expected_owner = (args.expected_owner or creds.username).strip().lower()
+    expected_owner = (args.expected_owner or creds.username or "").strip().lower()
     owners, malformed_ids = dataset_id_owners(root)
     if malformed_ids:
-        warnings.append(f"{len(malformed_ids)} dataset IDs are missing owner/slug format")
+        warnings.append(
+            f"{len(malformed_ids)} dataset IDs are missing owner/slug format"
+        )
     if owners:
         mismatch_owners = sorted(owner for owner in owners if owner != expected_owner)
         if mismatch_owners:
@@ -228,13 +143,14 @@ def main() -> int:
     else:
         warnings.append("no dataset metadata IDs found for owner consistency check")
 
-    listing_ok, listing_msg = probe_public_listing(expected_owner, timeout=args.timeout)
+    listing_ok, listing_msg = probe_public_listing(deps.client, expected_owner)
     if listing_ok:
         print(f"Public listing probe: {GREEN}OK{RESET} ({listing_msg})")
     else:
         warnings.append(f"public listing probe failed: {listing_msg}")
 
-    if KaggleApi is None:
+    upload_ok, upload_msg = probe_blob_upload_auth(deps.client, args.timeout)
+    if "kaggle package not installed" in upload_msg:
         # The kaggle package is an optional dependency for the live upload probe.
         # Its absence is an environment-setup gap, not a credential failure, so it
         # is a (skippable) warning rather than a hard failure unless --strict.
@@ -244,7 +160,6 @@ def main() -> int:
         )
         print(f"Upload auth probe: {YELLOW}SKIP{RESET} (kaggle package not installed)")
     else:
-        upload_ok, upload_msg = probe_blob_upload_auth(timeout=args.timeout)
         if upload_ok:
             print(f"Upload auth probe: {GREEN}OK{RESET} ({upload_msg})")
         else:

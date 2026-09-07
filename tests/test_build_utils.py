@@ -1,4 +1,5 @@
 """Tests for the shared notebook cell factory and writer."""
+
 import json
 from pathlib import Path
 
@@ -123,11 +124,14 @@ def test_write_notebook_no_exporter_key_in_plain_text(tmp_path, repo_root):
     # The literal string would be split across the variable assignment in build_utils.py
     assert "nbconvert_exporter" in raw  # key is in the file...
     # ...but the shared utility module itself does not contain the literal undivided string
-    src = (repo_root / "kaggle_portfolio" / "shared" / "build_utils.py").read_text(encoding="utf-8")
+    src = (repo_root / "kaggle_portfolio" / "shared" / "build_utils.py").read_text(
+        encoding="utf-8"
+    )
     assert '"nbconvert_exporter"' not in src  # uses string concatenation trick
 
 
 # ── build_notebook.py import smoke tests ─────────────────────────────────────
+
 
 def _build_scripts_using_imports():
     """Return all build_notebook.py paths that should import from shared build_utils.
@@ -151,17 +155,21 @@ def _build_scripts_using_imports():
 def test_build_notebook_uses_build_utils_import(script):
     """Each refactored build_notebook.py must import the shared build_utils helpers."""
     src = script.read_text(encoding="utf-8")
-    assert "from kaggle_portfolio.shared.build_utils import" in src, \
+    assert "from kaggle_portfolio.shared.build_utils import" in src, (
         f"{script.relative_to(ROOT)}: missing shared build_utils import"
+    )
     # Must NOT define md or code locally (as functions or lambdas)
     import ast
+
     try:
         tree = ast.parse(src)
     except SyntaxError:
         pytest.fail(f"{script.relative_to(ROOT)}: SyntaxError in refactored file")
     local_defs = [
-        node.name for node in ast.walk(tree)
+        node.name
+        for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name in ("md", "code")
     ]
-    assert local_defs == [], \
+    assert local_defs == [], (
         f"{script.relative_to(ROOT)}: still defines local {local_defs} — remove them"
+    )

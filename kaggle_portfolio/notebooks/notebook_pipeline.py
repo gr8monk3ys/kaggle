@@ -21,19 +21,17 @@ Invoked by manage.sh build-all.
 from __future__ import annotations
 
 import argparse
-import os
 import subprocess
 import sys
 from pathlib import Path
 
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient
 
 ROOT = Path(__file__).resolve().parents[2]
 
 # Quality gate: notebooks below this score are not pushed automatically
 DEFAULT_QUALITY_THRESHOLD = 60
-
-
 
 
 def discover_build_scripts(root: Path) -> list[Path]:
@@ -81,7 +79,9 @@ def score_notebook_dir(nb_dir: Path) -> tuple[float, str]:
         except ValueError:
             score_root = nb_path.parent
 
-        scored = notebook_quality.score_notebook(path=nb_path, root=score_root, min_score=0)
+        scored = notebook_quality.score_notebook(
+            path=nb_path, root=score_root, min_score=0
+        )
         summary = f"Score: {scored.score}/100"
         if scored.error:
             summary = f"{summary} ({scored.error})"
@@ -90,17 +90,10 @@ def score_notebook_dir(nb_dir: Path) -> tuple[float, str]:
         return 0.0, f"scoring failed: {exc}"
 
 
-def push_notebook(nb_dir: Path) -> tuple[bool, str]:
+def push_notebook(client: KaggleClient, nb_dir: Path) -> tuple[bool, str]:
     """Push a notebook directory to Kaggle."""
-    cli = kaggle_command()
-    result = subprocess.run(
-        [*cli, "kernels", "push", "-p", str(nb_dir)],
-        capture_output=True,
-        text=True,
-        cwd=str(ROOT),
-    )
-    output = (result.stdout + result.stderr).strip()
-    return result.returncode == 0, output
+    outcome = client.push_kernel(nb_dir)
+    return outcome.ok, outcome.detail
 
 
 def run_validate() -> bool:
@@ -124,17 +117,33 @@ BLUE = "\033[0;34m"
 RESET = "\033[0m"
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Batch build + validate + push notebooks.")
-    parser.add_argument("--stale-only", action="store_true",
-                        help="Only build notebooks whose .ipynb is older than the build script.")
-    parser.add_argument("--push", action="store_true",
-                        help="Push notebooks that pass the quality threshold.")
-    parser.add_argument("--validate-only", action="store_true",
-                        help="Run metadata validation only, no build or push.")
-    parser.add_argument("--min-score", type=int, default=DEFAULT_QUALITY_THRESHOLD,
-                        help=f"Minimum quality score to push (default: {DEFAULT_QUALITY_THRESHOLD}).")
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Batch build + validate + push notebooks."
+    )
+    parser.add_argument(
+        "--stale-only",
+        action="store_true",
+        help="Only build notebooks whose .ipynb is older than the build script.",
+    )
+    parser.add_argument(
+        "--push",
+        action="store_true",
+        help="Push notebooks that pass the quality threshold.",
+    )
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="Run metadata validation only, no build or push.",
+    )
+    parser.add_argument(
+        "--min-score",
+        type=int,
+        default=DEFAULT_QUALITY_THRESHOLD,
+        help=f"Minimum quality score to push (default: {DEFAULT_QUALITY_THRESHOLD}).",
+    )
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(effects=bool(getattr(args, "push", False)))
 
     print(f"{BLUE}=== Notebook Pipeline ==={RESET}\n")
 
@@ -170,12 +179,16 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"{RED}FAILED{RESET}")
             print(f"    {output[:200]}")
-            results.append({"dir": script.parent, "tag": tag, "built": False, "score": 0.0})
+            results.append(
+                {"dir": script.parent, "tag": tag, "built": False, "score": 0.0}
+            )
             continue
 
         # Score the built notebook
         score, score_summary = score_notebook_dir(script.parent)
-        score_color = GREEN if score >= args.min_score else (YELLOW if score >= 40 else RED)
+        score_color = (
+            GREEN if score >= args.min_score else (YELLOW if score >= 40 else RED)
+        )
         print(f"    Quality: {score_color}{score:.0f}/100{RESET}  {score_summary[:80]}")
 
         pushed = False
@@ -189,10 +202,19 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     print(f"{RED}push failed{RESET}: {push_out[:120]}")
             else:
-                print(f"    {YELLOW}Skipping push{RESET} (score {score:.0f} < {args.min_score})")
+                print(
+                    f"    {YELLOW}Skipping push{RESET} (score {score:.0f} < {args.min_score})"
+                )
 
-        results.append({"dir": script.parent, "tag": tag, "built": True,
-                        "score": score, "pushed": pushed})
+        results.append(
+            {
+                "dir": script.parent,
+                "tag": tag,
+                "built": True,
+                "score": score,
+                "pushed": pushed,
+            }
+        )
 
     # Summary
     print(f"\n{BLUE}=== Summary ==={RESET}")
@@ -210,7 +232,11 @@ def main(argv: list[str] | None = None) -> int:
         print("-" * 60)
         for r in sorted(results, key=lambda x: -x.get("score", 0)):
             score_str = f"{r['score']:.0f}/100" if r.get("built") else "FAILED"
-            status = "pushed" if r.get("pushed") else ("built" if r.get("built") else "FAILED")
+            status = (
+                "pushed"
+                if r.get("pushed")
+                else ("built" if r.get("built") else "FAILED")
+            )
             tag = r["tag"][:39]
             col = GREEN if r.get("pushed") else (YELLOW if r.get("built") else RED)
             print(f"  {col}{tag:<40}{RESET} {score_str:>6}  {status}")

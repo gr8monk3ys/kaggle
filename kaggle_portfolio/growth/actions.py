@@ -1,4 +1,5 @@
 """ToS-safe action catalog + generators. Own-content actions only."""
+
 from __future__ import annotations
 
 import json
@@ -46,13 +47,18 @@ def _discussion_actions(queue_path: Path) -> list[Action]:
     if not nxt:
         return []
     did = str(nxt.get("id", ""))
-    return [Action(
-        kind="discussion_post",
-        target_id=f"discussion_post:{did}",
-        title=str(nxt.get("title", did)),
-        # The live queue uses 'forum_url'; tolerate the older 'forum' too.
-        payload={"draft_id": did, "forum": nxt.get("forum_url") or nxt.get("forum") or ""},
-    )]
+    return [
+        Action(
+            kind="discussion_post",
+            target_id=f"discussion_post:{did}",
+            title=str(nxt.get("title", did)),
+            # The live queue uses 'forum_url'; tolerate the older 'forum' too.
+            payload={
+                "draft_id": did,
+                "forum": nxt.get("forum_url") or nxt.get("forum") or "",
+            },
+        )
+    ]
 
 
 def _lookup_audience(comp_slug: str, audience_by_comp: dict[str, int]) -> int:
@@ -81,25 +87,29 @@ def _notebook_slug(nb: dict) -> str:
     return nb_id.split("/")[-1] if nb_id else str(nb.get("title", ""))
 
 
-def _forum_drop_actions(gs: GrowthState, audience_by_comp: dict[str, int]) -> list[Action]:
+def _forum_drop_actions(
+    gs: GrowthState, audience_by_comp: dict[str, int]
+) -> list[Action]:
     notebooks, _ = notebook_promoter.load_notebooks()
     votes_by_slug = {i.slug: i.votes for i in gs.items}
     out = []
     for nb in notebooks:
         slug = _notebook_slug(nb)
         for comp in notebook_promoter.match_notebook_to_competitions(nb):
-            out.append(Action(
-                kind="forum_drop",
-                target_id=f"forum_drop:{slug}:{comp}",
-                title=f"Share {slug} in {comp}",
-                payload={
-                    "competition": comp,
-                    "comment": notebook_promoter.generate_promo_comment(nb, comp),
-                    "notebook_url": notebook_promoter.notebook_url(nb),
-                },
-                audience=_lookup_audience(comp, audience_by_comp),
-                item_votes=votes_by_slug.get(slug),
-            ))
+            out.append(
+                Action(
+                    kind="forum_drop",
+                    target_id=f"forum_drop:{slug}:{comp}",
+                    title=f"Share {slug} in {comp}",
+                    payload={
+                        "competition": comp,
+                        "comment": notebook_promoter.generate_promo_comment(nb, comp),
+                        "notebook_url": notebook_promoter.notebook_url(nb),
+                    },
+                    audience=_lookup_audience(comp, audience_by_comp),
+                    item_votes=votes_by_slug.get(slug),
+                )
+            )
     return out
 
 
@@ -111,4 +121,6 @@ def enumerate_actions(
 ) -> list[Action]:
     """All candidate actions for this tick (un-scored, un-gated)."""
     audience_by_comp = audience_by_comp or {}
-    return _discussion_actions(discussion_queue_path) + _forum_drop_actions(gs, audience_by_comp)
+    return _discussion_actions(discussion_queue_path) + _forum_drop_actions(
+        gs, audience_by_comp
+    )

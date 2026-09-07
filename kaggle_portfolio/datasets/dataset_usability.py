@@ -6,22 +6,16 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import csv
-import io
 import json
-import shutil
 import statistics
-import subprocess
 from dataclasses import dataclass, replace
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.shared.kaggle_utils import (
-    kaggle_command,
-    parse_iso_date,
-    resolve_today,
-    summarize_subprocess_error,
-)
+from kaggle_portfolio.shared.clock import resolve_today
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError, parse_csv
 
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
@@ -40,8 +34,6 @@ class DatasetScore:
     dataset_ref: str | None = None
     kaggle_usability_rating: float | None = None
     kaggle_score_10: float | None = None
-
-
 
 
 def load_json(path: Path) -> dict[str, Any] | None:
@@ -71,37 +63,24 @@ def kaggle_rating_to_10(rating: float) -> float:
     return max(0.0, min(10.0, round(rating * 10.0, 1)))
 
 
-
-
-def parse_kaggle_datasets_csv(raw_csv: str) -> dict[str, float]:
-    lines = raw_csv.splitlines()
-    start_idx = None
-    for idx, line in enumerate(lines):
-        if line.strip().lower().startswith("ref,"):
-            start_idx = idx
-            break
-    if start_idx is None:
-        return {}
-
+def parse_live_ratings_csv(raw_csv: str) -> dict[str, float]:
+    """Parse a ``ref,usabilityRating`` CSV — the file this module writes itself."""
     ratings: dict[str, float] = {}
-    csv_payload = "\n".join(lines[start_idx:]) + "\n"
-    reader = csv.DictReader(io.StringIO(csv_payload))
-    for row in reader:
+    for row in parse_csv(raw_csv):
         ref = str(row.get("ref", "")).strip().lower()
         if not ref:
             continue
         try:
-            rating = float(str(row.get("usabilityRating", "")).strip())
+            ratings[ref] = float(str(row.get("usabilityRating", "")).strip())
         except ValueError:
             continue
-        ratings[ref] = rating
     return ratings
 
 
 def load_live_ratings_csv(path: Path) -> dict[str, float]:
     if not path.exists():
         raise SystemExit(f"Live ratings CSV not found: {path}")
-    return parse_kaggle_datasets_csv(path.read_text(encoding="utf-8"))
+    return parse_live_ratings_csv(path.read_text(encoding="utf-8"))
 
 
 def write_live_ratings_csv(path: Path, ratings: dict[str, float]) -> None:
@@ -132,37 +111,24 @@ def infer_owner_from_scores(scores: list[DatasetScore]) -> str | None:
     return max(owners.items(), key=lambda row: row[1])[0]
 
 
-def _run_kaggle_dataset_list(args: list[str]) -> tuple[dict[str, float] | None, str | None]:
-    result = subprocess.run([*kaggle_command(), "datasets", "list", *args], capture_output=True, text=True)
-    if result.returncode != 0:
-        return None, summarize_subprocess_error(result.stdout, result.stderr)
-    return parse_kaggle_datasets_csv(result.stdout), None
-
-
-def fetch_kaggle_live_ratings(owner: str) -> tuple[dict[str, float], str | None]:
+def fetch_kaggle_live_ratings(
+    client: KaggleClient, owner: str
+) -> tuple[dict[str, float], str | None]:
+    """Return ``{ref: usabilityRating}`` for everything *owner* owns."""
     owner = owner.strip().lower()
     if not owner:
         return {}, "owner is required"
-
-    ratings: dict[str, float] = {}
-    errors: list[str] = []
-
-    mine_ratings, mine_err = _run_kaggle_dataset_list(["--mine", "--csv"])
-    if mine_ratings is not None:
-        ratings.update({ref: rating for ref, rating in mine_ratings.items() if ref.startswith(f"{owner}/")})
-    elif mine_err:
-        errors.append(f"--mine: {mine_err}")
-
-    search_ratings, search_err = _run_kaggle_dataset_list(["-s", owner, "--csv"])
-    if search_ratings is not None:
-        ratings.update({ref: rating for ref, rating in search_ratings.items() if ref.startswith(f"{owner}/")})
-    elif search_err:
-        errors.append(f"-s {owner}: {search_err}")
-
+    try:
+        datasets = client.datasets_owned_by(owner)
+    except KaggleError as exc:
+        return {}, str(exc)
+    ratings = {
+        d.ref.strip().lower(): d.usability_rating
+        for d in datasets
+        if d.usability_rating is not None
+    }
     if ratings:
         return ratings, None
-    if errors:
-        return {}, "; ".join(errors)
     return {}, "no live ratings returned"
 
 
@@ -178,7 +144,9 @@ def attach_kaggle_live_ratings(
             replace(
                 item,
                 kaggle_usability_rating=rating,
-                kaggle_score_10=(kaggle_rating_to_10(rating) if rating is not None else None),
+                kaggle_score_10=(
+                    kaggle_rating_to_10(rating) if rating is not None else None
+                ),
             )
         )
     return updated
@@ -203,16 +171,16 @@ def build_live_priority_queue(
     queue: list[dict[str, Any]] = []
     for item in scores:
         rating = item.kaggle_usability_rating
-        status = live_status(rating, alert_under=alert_under, target_rating=target_rating)
+        status = live_status(
+            rating, alert_under=alert_under, target_rating=target_rating
+        )
         if status == "critical":
             action = (
                 "Critical sprint: refresh metadata and README, push one dataset explorer update, "
                 "and run promotion within 48h."
             )
         elif status == "watch":
-            action = (
-                "Boost sprint: publish one changelog update and one cross-channel promotion to break 0.8."
-            )
+            action = "Boost sprint: publish one changelog update and one cross-channel promotion to break 0.8."
         elif status == "strong":
             action = "Scale momentum: keep promotion cadence and optimize toward 1.0."
         else:
@@ -226,9 +194,13 @@ def build_live_priority_queue(
                 "rating": rating,
                 "status": status,
                 "gap_to_target": (
-                    round(max(0.0, target_rating - rating), 4) if rating is not None else None
+                    round(max(0.0, target_rating - rating), 4)
+                    if rating is not None
+                    else None
                 ),
-                "gap_to_one": (round(max(0.0, 1.0 - rating), 4) if rating is not None else None),
+                "gap_to_one": (
+                    round(max(0.0, 1.0 - rating), 4) if rating is not None else None
+                ),
                 "action": action,
             }
         )
@@ -262,7 +234,11 @@ def generate_live_tracker_markdown(
     alert_under: float,
     target_rating: float,
 ) -> str:
-    live_values = [item.kaggle_usability_rating for item in scores if item.kaggle_usability_rating is not None]
+    live_values = [
+        item.kaggle_usability_rating
+        for item in scores
+        if item.kaggle_usability_rating is not None
+    ]
     summary = summarize_live_queue(queue)
     lines = [
         "# Dataset Usability Daily Tracker",
@@ -292,7 +268,9 @@ def generate_live_tracker_markdown(
         rating_text = f"{rating:.3f}" if isinstance(rating, float) else "n/a"
         gap_target = item.get("gap_to_target")
         gap_one = item.get("gap_to_one")
-        gap_target_text = f"{gap_target:.3f}" if isinstance(gap_target, float) else "n/a"
+        gap_target_text = (
+            f"{gap_target:.3f}" if isinstance(gap_target, float) else "n/a"
+        )
         gap_one_text = f"{gap_one:.3f}" if isinstance(gap_one, float) else "n/a"
         dataset_label = f"`{item.get('path')}`"
         if item.get("dataset_ref"):
@@ -310,7 +288,9 @@ def generate_live_tracker_markdown(
         lines.append("- All tracked datasets have live Kaggle ratings.")
     else:
         for item in missing:
-            lines.append(f"- `{item.get('dataset_ref') or item.get('path')}` has no live rating match.")
+            lines.append(
+                f"- `{item.get('dataset_ref') or item.get('path')}` has no live rating match."
+            )
     lines.append("")
 
     return "\n".join(lines)
@@ -324,7 +304,11 @@ def build_live_tracker_json(
     alert_under: float,
     target_rating: float,
 ) -> dict[str, Any]:
-    live_values = [item.kaggle_usability_rating for item in scores if item.kaggle_usability_rating is not None]
+    live_values = [
+        item.kaggle_usability_rating
+        for item in scores
+        if item.kaggle_usability_rating is not None
+    ]
     summary = summarize_live_queue(queue)
     return {
         "generated_on": today.isoformat(),
@@ -336,7 +320,9 @@ def build_live_tracker_json(
         "summary": {
             "dataset_count": len(scores),
             "live_matched": len(live_values),
-            "average_live_rating": round(statistics.mean(live_values), 4) if live_values else None,
+            "average_live_rating": round(statistics.mean(live_values), 4)
+            if live_values
+            else None,
             **summary,
         },
         "priority_queue": queue,
@@ -355,11 +341,11 @@ def score_dataset(ds_dir: Path, root: Path) -> DatasetScore:
     data_files = len(csv_files) + len(parquet_files)
 
     criteria = {
-        "metadata_core": 0,   # max 25
-        "documentation": 0,   # max 35
-        "data_assets": 0,     # max 20
-        "notebook_assets": 0, # max 10
-        "discovery": 0,       # max 10
+        "metadata_core": 0,  # max 25
+        "documentation": 0,  # max 35
+        "data_assets": 0,  # max 20
+        "notebook_assets": 0,  # max 10
+        "discovery": 0,  # max 10
     }
     issues: list[str] = []
 
@@ -373,8 +359,12 @@ def score_dataset(ds_dir: Path, root: Path) -> DatasetScore:
         ds_id = str(meta.get("id", "")).strip()
         ds_ref = ds_id or None
         description = str(meta.get("description", "")).strip()
-        licenses = meta.get("licenses") if isinstance(meta.get("licenses"), list) else []
-        keywords = meta.get("keywords") if isinstance(meta.get("keywords"), list) else []
+        licenses = (
+            meta.get("licenses") if isinstance(meta.get("licenses"), list) else []
+        )
+        keywords = (
+            meta.get("keywords") if isinstance(meta.get("keywords"), list) else []
+        )
         subtitle = str(meta.get("subtitle", "")).strip()
 
         if title:
@@ -508,7 +498,9 @@ def criteria_averages(scores: list[DatasetScore]) -> dict[str, float]:
     return {key: round(total / len(scores), 2) for key, total in sorted(totals.items())}
 
 
-def summarize_common_gaps(scores: list[DatasetScore], limit: int = 8) -> list[tuple[str, int]]:
+def summarize_common_gaps(
+    scores: list[DatasetScore], limit: int = 8
+) -> list[tuple[str, int]]:
     counts: dict[str, int] = {}
     for item in scores:
         for issue in item.issues:
@@ -524,7 +516,11 @@ def generate_markdown(scores: list[DatasetScore], today: date, fail_under: int) 
     avg = statistics.mean(values)
     med = statistics.median(values)
     avg10 = statistics.mean([item.score_10 for item in scores])
-    live_values = [item.kaggle_usability_rating for item in scores if item.kaggle_usability_rating is not None]
+    live_values = [
+        item.kaggle_usability_rating
+        for item in scores
+        if item.kaggle_usability_rating is not None
+    ]
     below = [item for item in scores if item.score < fail_under]
     avg_by_criteria = criteria_averages(scores)
     common_gaps = summarize_common_gaps(scores)
@@ -560,8 +556,14 @@ def generate_markdown(scores: list[DatasetScore], today: date, fail_under: int) 
 
     for item in sorted(scores, key=lambda s: (s.score, s.path)):
         gaps = "; ".join(item.issues[:2]) if item.issues else "Strong baseline"
-        kaggle_rating = f"{item.kaggle_usability_rating:.3f}" if item.kaggle_usability_rating is not None else "n/a"
-        kaggle_10 = f"{item.kaggle_score_10:.1f}" if item.kaggle_score_10 is not None else "n/a"
+        kaggle_rating = (
+            f"{item.kaggle_usability_rating:.3f}"
+            if item.kaggle_usability_rating is not None
+            else "n/a"
+        )
+        kaggle_10 = (
+            f"{item.kaggle_score_10:.1f}" if item.kaggle_score_10 is not None else "n/a"
+        )
         lines.append(
             f"| `{item.path}` | {item.score} | {item.score_10} | {kaggle_rating} | {kaggle_10} | {item.tier} | {gaps} |"
         )
@@ -573,7 +575,9 @@ def generate_markdown(scores: list[DatasetScore], today: date, fail_under: int) 
         lines.append("- No datasets below fail-under threshold.")
     else:
         for item in sorted(below, key=lambda s: s.score):
-            lines.append(f"- `{item.path}` ({item.score}): {'; '.join(item.issues[:3])}")
+            lines.append(
+                f"- `{item.path}` ({item.score}): {'; '.join(item.issues[:3])}"
+            )
     lines.append("")
 
     lines.append("## Criteria Averages")
@@ -610,26 +614,43 @@ def generate_markdown(scores: list[DatasetScore], today: date, fail_under: int) 
     return "\n".join(lines)
 
 
-def build_json_report(scores: list[DatasetScore], today: date, fail_under: int) -> dict[str, Any]:
-    live_values = [item.kaggle_usability_rating for item in scores if item.kaggle_usability_rating is not None]
+def build_json_report(
+    scores: list[DatasetScore], today: date, fail_under: int
+) -> dict[str, Any]:
+    live_values = [
+        item.kaggle_usability_rating
+        for item in scores
+        if item.kaggle_usability_rating is not None
+    ]
     return {
         "generated_on": today.isoformat(),
         "fail_under": fail_under,
         "summary": {
             "count": len(scores),
-            "average_score": round(statistics.mean([item.score for item in scores]), 2) if scores else 0.0,
-            "average_score_10": round(statistics.mean([item.score_10 for item in scores]), 2) if scores else 0.0,
-            "median_score": round(statistics.median([item.score for item in scores]), 2) if scores else 0.0,
+            "average_score": round(statistics.mean([item.score for item in scores]), 2)
+            if scores
+            else 0.0,
+            "average_score_10": round(
+                statistics.mean([item.score_10 for item in scores]), 2
+            )
+            if scores
+            else 0.0,
+            "median_score": round(statistics.median([item.score for item in scores]), 2)
+            if scores
+            else 0.0,
             "below_gate": sum(1 for item in scores if item.score < fail_under),
             "criteria_average": criteria_averages(scores),
             "live_kaggle": {
                 "matched_count": len(live_values),
                 "missing_count": len(scores) - len(live_values),
-                "average_usability_rating": round(statistics.mean(live_values), 4) if live_values else None,
+                "average_usability_rating": round(statistics.mean(live_values), 4)
+                if live_values
+                else None,
             },
         },
         "common_gaps": [
-            {"issue": issue, "count": count} for issue, count in summarize_common_gaps(scores)
+            {"issue": issue, "count": count}
+            for issue, count in summarize_common_gaps(scores)
         ],
         "datasets": [
             {
@@ -660,20 +681,39 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Score dataset usability and emit reports.")
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Score dataset usability and emit reports."
+    )
     parser.add_argument("--root", default=".", help="Repository root.")
-    parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Output root for reports.")
-    parser.add_argument("--today", default=None, help="Override date in YYYY-MM-DD format.")
-    parser.add_argument("--fail-under", type=int, default=70, help="Exit non-zero if any dataset score is below this value.")
+    parser.add_argument(
+        "--output-root",
+        default=str(DEFAULT_OUTPUT_ROOT),
+        help="Output root for reports.",
+    )
+    parser.add_argument(
+        "--today", default=None, help="Override date in YYYY-MM-DD format."
+    )
+    parser.add_argument(
+        "--fail-under",
+        type=int,
+        default=70,
+        help="Exit non-zero if any dataset score is below this value.",
+    )
     parser.add_argument("--strict", action="store_true", help="Enable fail-under gate.")
-    parser.add_argument("--live", action="store_true", help="Join report with live Kaggle usability ratings.")
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Join report with live Kaggle usability ratings.",
+    )
     parser.add_argument(
         "--live-ratings-csv",
         default=None,
         help="Optional CSV path with ref/usabilityRating columns for live joins without Kaggle API.",
     )
-    parser.add_argument("--owner", default=None, help="Kaggle owner for --live lookups.")
+    parser.add_argument(
+        "--owner", default=None, help="Kaggle owner for --live lookups."
+    )
     parser.add_argument(
         "--daily-tracker",
         action="store_true",
@@ -706,11 +746,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional CSV used when --live fetch fails.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(today=getattr(args, "today", None))
     if args.fail_under < 0 or args.fail_under > 100:
         raise SystemExit("--fail-under must be between 0 and 100")
     if args.alert_under < 0.0 or args.alert_under > 1.0:
@@ -738,19 +779,27 @@ def main() -> int:
     elif args.live:
         owner = (args.owner or infer_owner_from_scores(scores) or "").strip().lower()
         if owner:
-            live_ratings, live_error = fetch_kaggle_live_ratings(owner)
+            live_ratings, live_error = fetch_kaggle_live_ratings(deps.client, owner)
             if live_error:
                 print(f"Warning: live Kaggle rating lookup failed: {live_error}")
-                fallback_path = Path(args.fallback_live_ratings_csv).resolve() if args.fallback_live_ratings_csv else None
+                fallback_path = (
+                    Path(args.fallback_live_ratings_csv).resolve()
+                    if args.fallback_live_ratings_csv
+                    else None
+                )
                 if fallback_path is not None and fallback_path.exists():
                     fallback_ratings = load_live_ratings_csv(fallback_path)
                     scores = attach_kaggle_live_ratings(scores, fallback_ratings)
                     live_loaded = True
-                    print(f"Fallback live ratings loaded from CSV: {len(fallback_ratings)} refs ({fallback_path})")
+                    print(
+                        f"Fallback live ratings loaded from CSV: {len(fallback_ratings)} refs ({fallback_path})"
+                    )
             else:
                 scores = attach_kaggle_live_ratings(scores, live_ratings)
                 live_loaded = True
-                print(f"Live Kaggle ratings loaded for owner '{owner}': {len(live_ratings)} refs")
+                print(
+                    f"Live Kaggle ratings loaded for owner '{owner}': {len(live_ratings)} refs"
+                )
                 if args.write_live_ratings_csv:
                     local_refs = {
                         (item.dataset_ref or "").strip().lower()
@@ -766,7 +815,9 @@ def main() -> int:
                     write_live_ratings_csv(write_path, filtered)
                     print(f"Live ratings CSV written: {write_path}")
         else:
-            print("Warning: unable to infer Kaggle owner for --live lookup; skipping live join.")
+            print(
+                "Warning: unable to infer Kaggle owner for --live lookup; skipping live join."
+            )
 
     markdown = generate_markdown(scores, today=today, fail_under=args.fail_under)
     json_report = build_json_report(scores, today=today, fail_under=args.fail_under)
@@ -785,7 +836,9 @@ def main() -> int:
     live_alert_fail = False
     if args.daily_tracker:
         if not live_loaded:
-            print("Warning: --daily-tracker enabled without live ratings. Report will show unknown live status.")
+            print(
+                "Warning: --daily-tracker enabled without live ratings. Report will show unknown live status."
+            )
         live_queue = build_live_priority_queue(
             scores,
             alert_under=args.alert_under,
@@ -805,9 +858,13 @@ def main() -> int:
             alert_under=args.alert_under,
             target_rating=args.target_rating,
         )
-        tracker_dated_md = reports_dir / f"dataset-usability-tracker-{today.isoformat()}.md"
+        tracker_dated_md = (
+            reports_dir / f"dataset-usability-tracker-{today.isoformat()}.md"
+        )
         tracker_latest_md = reports_dir / "latest-dataset-usability-tracker.md"
-        tracker_dated_json = reports_dir / f"dataset-usability-tracker-{today.isoformat()}.json"
+        tracker_dated_json = (
+            reports_dir / f"dataset-usability-tracker-{today.isoformat()}.json"
+        )
         tracker_latest_json = reports_dir / "latest-dataset-usability-tracker.json"
 
         write_text(tracker_dated_md, live_markdown)
@@ -838,7 +895,9 @@ def main() -> int:
 
     strict_fail = args.strict and bool(below)
     if strict_fail:
-        print(f"Dataset usability gate failed: {len(below)} dataset(s) below {args.fail_under}.")
+        print(
+            f"Dataset usability gate failed: {len(below)} dataset(s) below {args.fail_under}."
+        )
     if live_alert_fail:
         print(
             f"Live usability alert gate failed: one or more datasets are below {args.alert_under:.3f}."
