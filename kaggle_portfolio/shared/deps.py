@@ -15,6 +15,11 @@ from pathlib import Path
 from kaggle_portfolio.shared.clock import Clock
 from kaggle_portfolio.shared.kaggle_client import CliKaggleClient, KaggleClient
 from kaggle_portfolio.shared.layout import RepoLayout
+from kaggle_portfolio.shared.reports import (
+    RecordingEmitter,
+    ReportEmitter,
+    WritingEmitter,
+)
 
 
 @dataclass
@@ -30,6 +35,19 @@ class Deps:
     clock: Clock
     client: KaggleClient
     effects: bool = True
+    _emitter: ReportEmitter | None = None
+
+    @property
+    def emitter(self) -> ReportEmitter:
+        """Where reports go — nowhere, when effects are off.
+
+        Built lazily so that constructing Deps never touches the filesystem, and
+        cached so that a RecordingEmitter's record survives across a command.
+        """
+        if self._emitter is None:
+            factory = WritingEmitter if self.effects else RecordingEmitter
+            self._emitter = factory(self.layout.reports_dir, self.clock.today)
+        return self._emitter
 
     @classmethod
     def resolve(

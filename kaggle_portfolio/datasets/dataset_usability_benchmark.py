@@ -443,7 +443,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
-    deps = deps or Deps.resolve(today=getattr(args, "today", None))
+    deps = deps or Deps.resolve(
+        output_root=getattr(args, "output_root", None),
+        today=getattr(args, "today", None),
+    )
     if args.sample_pages < 1:
         raise CommandError("--sample-pages must be >= 1")
     if args.max_exemplars < 1:

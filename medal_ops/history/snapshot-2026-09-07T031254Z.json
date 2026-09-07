@@ -1,0 +1,108 @@
+{
+  "generated_on": "2026-09-06",
+  "tracker_last_updated": "2026-08-19",
+  "tracker_stale_days": 18,
+  "categories": {
+    "competitions": {
+      "tier": "Novice",
+      "gold": 0,
+      "silver": 0,
+      "bronze": 0,
+      "entered": 13,
+      "gold_goal": 5,
+      "gold_gap": 5,
+      "expert_bronze_goal": 2,
+      "expert_bronze_gap": 2
+    },
+    "notebooks": {
+      "tier": "Novice",
+      "total_notebooks": 77,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 3,
+      "total_votes": 80,
+      "gold_goal": 15,
+      "gold_gap": 15,
+      "expert_bronze_goal": 5,
+      "expert_bronze_gap": 2
+    },
+    "datasets": {
+      "tier": "Novice",
+      "total_datasets": 12,
+      "gold": 0,
+      "silver": 1,
+      "bronze": 1,
+      "total_votes": 55,
+      "gold_goal": 5,
+      "gold_gap": 5,
+      "expert_bronze_goal": 3,
+      "expert_bronze_gap": 2
+    },
+    "discussion": {
+      "tier": "Novice",
+      "total_posts": 28,
+      "gold_goal": 50,
+      "gold_gap": null,
+      "total_goal": 500,
+      "total_gap": 472,
+      "expert_bronze_goal": 50,
+      "expert_bronze_gap": null
+    }
+  },
+  "active_competitions": [
+    {
+      "competition": "Playground Series S6E7",
+      "deadline_raw": "Jul 31, 2026",
+      "deadline_date": "2026-07-31",
+      "days_to_deadline": -37,
+      "teams": "1,480",
+      "difficulty": "Medium (playground)",
+      "strategy": "Reuse S6E6 PS-playbook (augment + 4-model stack)"
+    },
+    {
+      "competition": "Autonomous Agent Prediction (beta)",
+      "deadline_raw": "Aug 6, 2026",
+      "deadline_date": "2026-08-06",
+      "days_to_deadline": -31,
+      "teams": "102",
+      "difficulty": "Easier (small field)",
+      "strategy": "Fast baseline, iterate"
+    },
+    {
+      "competition": "Rogii Wellbore Geology",
+      "deadline_raw": "Aug 5, 2026",
+      "deadline_date": "2026-08-05",
+      "days_to_deadline": -32,
+      "teams": "4,769",
+      "difficulty": "Hard (large field)",
+      "strategy": "Sequence features + GBM baseline"
+    },
+    {
+      "competition": "AI Agent Security: Tool Attacks",
+      "deadline_raw": "Sep 1, 2026",
+      "deadline_date": "2026-09-01",
+      "days_to_deadline": -5,
+      "teams": "1,794",
+      "difficulty": "Medium (was 19 teams in June, now 1,794)",
+      "strategy": "Prompt-attack detection pipeline"
+    },
+    {
+      "competition": "ARC Prize 2026 (ARC-AGI-2)",
+      "deadline_raw": "Nov 2, 2026",
+      "deadline_date": "2026-11-02",
+      "days_to_deadline": 57,
+      "teams": "1,132",
+      "difficulty": "Very Hard (reasoning)",
+      "strategy": "Program synthesis + LLM hybrid"
+    },
+    {
+      "competition": "ARC Prize 2026 (ARC-AGI-3)",
+      "deadline_raw": "Nov 2, 2026",
+      "deadline_date": "2026-11-02",
+      "days_to_deadline": 57,
+      "teams": "1,704",
+      "difficulty": "Very Hard (reasoning)",
+      "strategy": "Program synthesis + LLM hybrid"
+    }
+  ]
+}

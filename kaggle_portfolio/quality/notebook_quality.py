@@ -16,6 +16,7 @@ from typing import Any
 from kaggle_portfolio.manage_commands import is_skipped
 from kaggle_portfolio.shared.clock import resolve_today
 from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 
 
@@ -692,7 +693,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
-    deps = deps or Deps.resolve(today=getattr(args, "today", None))
+    deps = deps or Deps.resolve(
+        output_root=getattr(args, "output_root", None),
+        today=getattr(args, "today", None),
+    )
     if args.min_score < 0 or args.min_score > 100:
         raise CommandError("--min-score must be between 0 and 100")
     if args.fix_target_score < 0 or args.fix_target_score > 100:
@@ -704,7 +708,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     today = resolve_today(args.today)
     root = Path(args.root).resolve()
-    output_root = Path(args.output_root)
 
     notebooks, warnings = discover_notebooks(root, scope=args.scope)
     if not notebooks:
@@ -734,32 +737,12 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         max_notebooks=args.fix_max_notebooks,
     )
 
-    reports_dir = output_root / "reports"
-    dated_md_path = reports_dir / f"notebook-quality-{today.isoformat()}.md"
-    latest_md_path = reports_dir / "latest-notebook-quality.md"
-    dated_json_path = reports_dir / f"notebook-quality-{today.isoformat()}.json"
-    latest_json_path = reports_dir / "latest-notebook-quality.json"
-    dated_fixer_md_path = reports_dir / f"notebook-quality-fixes-{today.isoformat()}.md"
-    latest_fixer_md_path = reports_dir / "latest-notebook-quality-fixes.md"
-    dated_fixer_json_path = (
-        reports_dir / f"notebook-quality-fixes-{today.isoformat()}.json"
-    )
-    latest_fixer_json_path = reports_dir / "latest-notebook-quality-fixes.json"
-
-    write_text(dated_md_path, markdown)
-    write_text(latest_md_path, markdown)
-    write_json(dated_json_path, json_report)
-    write_json(latest_json_path, json_report)
-    write_text(dated_fixer_md_path, fixer_markdown)
-    write_text(latest_fixer_md_path, fixer_markdown)
-    write_json(dated_fixer_json_path, fixer_json)
-    write_json(latest_fixer_json_path, fixer_json)
+    deps.emitter.emit(reports.NOTEBOOK_QUALITY, markdown)
+    deps.emitter.emit(reports.NOTEBOOK_QUALITY, json_report, ext="json")
+    deps.emitter.emit(reports.NOTEBOOK_QUALITY_FIXES, fixer_markdown)
+    deps.emitter.emit(reports.NOTEBOOK_QUALITY_FIXES, fixer_json, ext="json")
 
     failed = [item for item in scores if not item.passed]
-    print(f"Notebook quality report written: {dated_md_path}")
-    print(f"Latest notebook quality report: {latest_md_path}")
-    print(f"Notebook fixer checklist written: {dated_fixer_md_path}")
-    print(f"Latest notebook fixer checklist: {latest_fixer_md_path}")
     print(
         "Summary: "
         f"{len(scores) - len(failed)} pass, {len(failed)} improve, "

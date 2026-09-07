@@ -1126,10 +1126,18 @@ def main(argv: list[str] | None = None, deps_override: Deps | None = None) -> in
         print(f"Unknown command: {command_name}")
         print_usage()
         return 1
+    # --dry-run is read once, here. Commands used to each parse their own and
+    # act on it, which is how `medal_ops sync --dry-run` still wrote two reports:
+    # the dispatcher handed the module its own effects-on Deps, so the module's
+    # own computation never ran.
+    active = deps()
+    if "--dry-run" in argv and active.effects:
+        active = active.with_effects(False)
+
     try:
         if command.requires_kaggle:
             ensure_kaggle_ready()
-        return command.run(argv, deps())
+        return command.run(argv, active)
     except CommandError as exc:
         # Commands signal user-facing failure by raising, so that a failure deep
         # inside one does not terminate the interpreter the others share.
