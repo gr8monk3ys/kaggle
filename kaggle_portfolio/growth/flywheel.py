@@ -60,8 +60,8 @@ def append_history(path: Path, entry: dict) -> None:
         fh.write(json.dumps(entry) + "\n")
 
 
-def _load_last_snapshot() -> dict | None:
-    path = GROWTH_DIR / LAST_SNAPSHOT_NAME
+def _load_last_snapshot(growth_dir: Path) -> dict | None:
+    path = growth_dir / LAST_SNAPSHOT_NAME
     if not path.exists():
         return None
     try:
@@ -70,8 +70,8 @@ def _load_last_snapshot() -> dict | None:
         return None
 
 
-def _save_last_snapshot(snapshot: dict) -> None:
-    path = GROWTH_DIR / LAST_SNAPSHOT_NAME
+def _save_last_snapshot(growth_dir: Path, snapshot: dict) -> None:
+    path = growth_dir / LAST_SNAPSHOT_NAME
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(snapshot), encoding="utf-8")
 
@@ -123,8 +123,8 @@ def _audience_by_comp(gs) -> dict[str, int]:
     return out
 
 
-def _ranked(gs, cfg: FlywheelConfig, weights: dict[str, float]):
-    candidates = actions.enumerate_actions(
+def _ranked(gs, cfg: FlywheelConfig, weights: dict[str, float], enumerate_actions):
+    candidates = enumerate_actions(
         gs,
         discussion_queue_path=_QUEUE_PATH,
         audience_by_comp=_audience_by_comp(gs),
@@ -149,17 +149,25 @@ def tick(
     executor=None,
     gs=None,
     cfg=None,
+    growth_dir: Path | None = None,
+    enumerate_actions=None,
 ) -> int:
+    # `is None`, not `or`: a caller-supplied state or config must survive even if
+    # it is empty and therefore falsy.
     now = now or datetime.now(timezone.utc)
-    executor = executor or _default_executor
-    cfg = cfg or load_config(GROWTH_DIR / CONFIG_NAME)
-    gs = gs or _load_state(now.date())
+    growth_dir = GROWTH_DIR if growth_dir is None else growth_dir
+    executor = _default_executor if executor is None else executor
+    enumerate_actions = (
+        actions.enumerate_actions if enumerate_actions is None else enumerate_actions
+    )
+    cfg = load_config(growth_dir / CONFIG_NAME) if cfg is None else cfg
+    gs = _load_state(now.date()) if gs is None else gs
 
-    history_path = GROWTH_DIR / HISTORY_NAME
+    history_path = growth_dir / HISTORY_NAME
     history = load_history(history_path)
-    weights = feedback.load_weights(GROWTH_DIR / WEIGHTS_NAME)
+    weights = feedback.load_weights(growth_dir / WEIGHTS_NAME)
 
-    ranked = _ranked(gs, cfg, weights)
+    ranked = _ranked(gs, cfg, weights, enumerate_actions)
 
     if dry_run:
         # Preview ignores the kill switch so the OBSERVE phase shows real decisions
@@ -172,7 +180,7 @@ def tick(
         return 0
 
     safe = safety.gate(ranked, history, cfg, now)
-    prev_snapshot = _load_last_snapshot()
+    prev_snapshot = _load_last_snapshot(growth_dir)
     dispatched = 0
     for action, score in safe:
         try:
@@ -209,14 +217,15 @@ def tick(
             cfg,
             now,
         )
-        feedback.save_weights(GROWTH_DIR / WEIGHTS_NAME, new_weights)
-        _save_last_snapshot(gs.snapshot)
+        feedback.save_weights(growth_dir / WEIGHTS_NAME, new_weights)
+        _save_last_snapshot(growth_dir, gs.snapshot)
     return dispatched
 
 
-def status(*, gs=None, cfg=None) -> int:
-    cfg = cfg or load_config(GROWTH_DIR / CONFIG_NAME)
-    gs = gs or _load_state(date.today())
+def status(*, gs=None, cfg=None, growth_dir: Path | None = None) -> int:
+    growth_dir = GROWTH_DIR if growth_dir is None else growth_dir
+    cfg = load_config(growth_dir / CONFIG_NAME) if cfg is None else cfg
+    gs = _load_state(date.today()) if gs is None else gs
     score = scorer.reach_score(
         gs.followers, [i.votes for i in gs.items], gs.discussion_medals, cfg
     )

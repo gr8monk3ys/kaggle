@@ -355,7 +355,12 @@ def test_attribute_decays_toward_one_when_no_gain():
 from kaggle_portfolio.growth import flywheel as fw  # noqa: E402 - imported after env setup above
 
 
-def test_tick_dispatches_highest_scored_safe_action(tmp_path, monkeypatch):
+def _one_post_action(*a, **k):
+    """The stub action source most tick() tests need."""
+    return [actmod.Action("discussion_post", "discussion_post:057", "x", {})]
+
+
+def test_tick_dispatches_highest_scored_safe_action(tmp_path):
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
     gs = _state([ItemState("nb-a", "notebook", 18, "NB A")])
     a_low = actmod.Action("discussion_post", "discussion_post:057", "low", {})
@@ -367,12 +372,6 @@ def test_tick_dispatches_highest_scored_safe_action(tmp_path, monkeypatch):
         audience=4000,
         item_votes=18,
     )
-    monkeypatch.setattr(fw, "_load_state", lambda today: gs)
-    monkeypatch.setattr(
-        fw.actions, "enumerate_actions", lambda *a, **k: [a_low, a_high]
-    )
-    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
-
     dispatched = []
 
     def fake_exec(action):
@@ -383,6 +382,9 @@ def test_tick_dispatches_highest_scored_safe_action(tmp_path, monkeypatch):
         now=now,
         executor=fake_exec,
         cfg=_cfg(max_posts_per_day=1, max_forum_drops_per_comp_per_week=1),
+        gs=gs,
+        growth_dir=tmp_path,
+        enumerate_actions=lambda *a, **k: [a_low, a_high],
     )
     assert n == 2  # one of each kind fits the caps
     assert "forum_drop:nb-a:hull" in dispatched  # higher score acted
@@ -390,65 +392,51 @@ def test_tick_dispatches_highest_scored_safe_action(tmp_path, monkeypatch):
     assert any(h["status"] == "done" for h in hist)
 
 
-def test_tick_dry_run_posts_nothing(tmp_path, monkeypatch):
+def test_tick_dry_run_posts_nothing(tmp_path):
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
-    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
-    monkeypatch.setattr(
-        fw.actions,
-        "enumerate_actions",
-        lambda *a, **k: [
-            actmod.Action("discussion_post", "discussion_post:057", "x", {})
-        ],
-    )
-    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
     called = []
     n = fw.tick(
         now=now,
         dry_run=True,
         executor=lambda a: called.append(a) or fw.DispatchResult(ok=True),
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
     )
     assert n == 0
     assert called == []  # executor never invoked in dry-run
     assert not (tmp_path / "flywheel_history.jsonl").exists()
 
 
-def test_tick_failed_dispatch_logged_failed_and_no_cap_consumed(tmp_path, monkeypatch):
+def test_tick_failed_dispatch_logged_failed_and_no_cap_consumed(tmp_path):
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
-    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
-    monkeypatch.setattr(
-        fw.actions,
-        "enumerate_actions",
-        lambda *a, **k: [
-            actmod.Action("discussion_post", "discussion_post:057", "x", {})
-        ],
-    )
-    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
     n = fw.tick(
         now=now,
         executor=lambda a: fw.DispatchResult(ok=False, error="captcha"),
         cfg=_cfg(),
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
     )
     assert n == 0
     hist = fw.load_history(tmp_path / "flywheel_history.jsonl")
     assert hist and hist[-1]["status"] == "failed"
 
 
-def test_tick_wraps_executor_exception_as_failed(tmp_path, monkeypatch):
+def test_tick_wraps_executor_exception_as_failed(tmp_path):
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
-    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
-    monkeypatch.setattr(
-        fw.actions,
-        "enumerate_actions",
-        lambda *a, **k: [
-            actmod.Action("discussion_post", "discussion_post:057", "x", {})
-        ],
-    )
-    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
 
     def boom(action):
         raise RuntimeError("playwright exploded")
 
-    n = fw.tick(now=now, executor=boom, cfg=_cfg())
+    n = fw.tick(
+        now=now,
+        executor=boom,
+        cfg=_cfg(),
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
+    )
     assert n == 0
     hist = fw.load_history(tmp_path / "flywheel_history.jsonl")
     assert hist[-1]["status"] == "failed" and "playwright exploded" in hist[-1]["error"]
@@ -466,20 +454,14 @@ def test_default_executor_forum_drop_unavailable_is_safe():
 def test_kill_switch_env_blocks_dispatch(tmp_path, monkeypatch):
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
     monkeypatch.setenv("FLYWHEEL_DISABLED", "1")
-    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
-    monkeypatch.setattr(
-        fw.actions,
-        "enumerate_actions",
-        lambda *a, **k: [
-            actmod.Action("discussion_post", "discussion_post:057", "x", {})
-        ],
-    )
-    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
     called = []
     n = fw.tick(
         now=now,
         executor=lambda a: called.append(a) or fw.DispatchResult(ok=True),
         cfg=_cfg(),
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
     )
     assert n == 0 and called == []
 
@@ -639,16 +621,14 @@ def test_discussion_action_reads_forum_url(tmp_path, monkeypatch):
 def test_tick_no_dispatch_does_not_persist_baseline(tmp_path, monkeypatch):
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
     monkeypatch.setenv("FLYWHEEL_DISABLED", "1")
-    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
-    monkeypatch.setattr(
-        fw.actions,
-        "enumerate_actions",
-        lambda *a, **k: [
-            actmod.Action("discussion_post", "discussion_post:057", "x", {})
-        ],
+    fw.tick(
+        now=now,
+        executor=lambda a: fw.DispatchResult(ok=True),
+        cfg=_cfg(),
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
     )
-    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
-    fw.tick(now=now, executor=lambda a: fw.DispatchResult(ok=True), cfg=_cfg())
     assert not (tmp_path / "flywheel_last_snapshot.json").exists()
     assert not (tmp_path / "flywheel_weights.json").exists()
 
@@ -662,25 +642,19 @@ def test_growth_dir_honors_env_override(monkeypatch):
     assert stmod._default_growth_dir() == stmod.ROOT / "medal_ops" / "growth"
 
 
-def test_tick_dry_run_previews_even_when_disabled(monkeypatch, capsys, tmp_path):
+def test_tick_dry_run_previews_even_when_disabled(capsys, tmp_path):
     # The OBSERVE-phase cron runs --dry-run while enabled:false; the kill switch
     # must NOT suppress the preview, or there'd be nothing to observe.
     now = datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc)
-    monkeypatch.setattr(fw, "_load_state", lambda today: _state())
-    monkeypatch.setattr(
-        fw.actions,
-        "enumerate_actions",
-        lambda *a, **k: [
-            actmod.Action("discussion_post", "discussion_post:057", "x", {})
-        ],
-    )
-    monkeypatch.setattr(fw, "GROWTH_DIR", tmp_path)
     called = []
     n = fw.tick(
         now=now,
         dry_run=True,
         executor=lambda a: called.append(a) or fw.DispatchResult(ok=True),
         cfg=_cfg(enabled=False),
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
     )  # kill switch ON
     out = capsys.readouterr().out
     assert n == 0 and called == []  # still posts nothing
@@ -769,3 +743,45 @@ def test_attribute_tolerates_history_row_missing_kind():
     assert fbmod.attribute(history, _snap(50), _snap(56), {"x": 1.0}, _cfg(), now) == {
         "x": 1.0
     }
+
+
+def test_tick_honours_a_falsy_caller_supplied_config(tmp_path):
+    """`cfg or load_config(...)` would silently discard an all-defaults config.
+
+    The same shape once made FakeKaggleClient drop a deliberately-empty
+    CredentialState, so the resolution is `is None` and this pins it.
+    """
+
+    class _FalsyCfg(type(_cfg())):
+        def __bool__(self):
+            return False
+
+    cfg = _FalsyCfg(**vars(_cfg(enabled=False)))
+    n = fw.tick(
+        now=datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc),
+        executor=lambda a: fw.DispatchResult(ok=True),
+        cfg=cfg,
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
+    )
+    # The kill switch in the supplied config was honoured, not replaced by the
+    # on-disk default.
+    assert n == 0
+
+
+def test_tick_writes_only_under_the_supplied_growth_dir(tmp_path):
+    """The seam is real: nothing escapes to the module-level GROWTH_DIR."""
+    n = fw.tick(
+        now=datetime(2026, 6, 17, 15, 0, tzinfo=timezone.utc),
+        executor=lambda a: fw.DispatchResult(ok=True, post_url="https://k/p/1"),
+        cfg=_cfg(),
+        gs=_state(),
+        growth_dir=tmp_path,
+        enumerate_actions=_one_post_action,
+    )
+    assert n == 1
+    written = {p.name for p in tmp_path.iterdir()}
+    assert "flywheel_history.jsonl" in written
+    assert "flywheel_weights.json" in written
+    assert "flywheel_last_snapshot.json" in written
