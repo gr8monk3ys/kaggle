@@ -213,6 +213,52 @@ class TestCredentials:
 
 
 class TestCliDiscovery:
+    """CLI discovery lives here now; these are ported from the deleted kaggle_utils suite."""
+
+    def test_discovers_a_binary_sitting_next_to_the_interpreter(
+        self, tmp_path, monkeypatch
+    ):
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        python_path = bin_dir / "python"
+        python_path.write_text("", encoding="utf-8")
+        kaggle_path = bin_dir / "kaggle"
+        kaggle_path.write_text("#!/bin/sh\n", encoding="utf-8")
+        kaggle_path.chmod(0o755)
+
+        monkeypatch.delenv("KAGGLE_CLI_BIN", raising=False)
+        monkeypatch.setattr(kc.shutil, "which", lambda _: None)
+        monkeypatch.setattr(kc.sys, "executable", str(python_path))
+
+        assert CliKaggleClient._cli_path() == str(kaggle_path)
+
+    def test_honours_the_binary_override(self, tmp_path, monkeypatch):
+        override = tmp_path / "my-kaggle"
+        override.write_text("#!/bin/sh\n", encoding="utf-8")
+        override.chmod(0o755)
+        monkeypatch.setenv("KAGGLE_CLI_BIN", str(override))
+        assert CliKaggleClient._cli_path() == str(override)
+
+    @pytest.mark.parametrize(
+        "boom",
+        [
+            ModuleNotFoundError("No module named 'kaggle'"),
+            # kaggle 1.x touches credentials at import time and can raise OSError.
+            OSError("Could not find kaggle.json. Make sure it's located in ..."),
+        ],
+    )
+    def test_a_missing_or_broken_kaggle_package_is_not_fatal(self, monkeypatch, boom):
+        import importlib.util
+
+        def raise_it(_name):
+            raise boom
+
+        monkeypatch.setattr(CliKaggleClient, "_cli_path", staticmethod(lambda: None))
+        monkeypatch.setattr(importlib.util, "find_spec", raise_it)
+
+        assert CliKaggleClient()._prefix() == ["kaggle"]
+        assert CliKaggleClient().available() is False
+
     def test_falls_back_to_the_python_module(self, monkeypatch):
         monkeypatch.setattr(CliKaggleClient, "_cli_path", staticmethod(lambda: None))
         monkeypatch.setattr(

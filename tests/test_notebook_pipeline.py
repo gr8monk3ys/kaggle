@@ -35,16 +35,3 @@ def test_discover_build_scripts_includes_underscore_variant(repo_root):
         / "timeseries-transformers"
         / "_build_notebook.py"
     ) in scripts
-
-
-def test_kaggle_command_falls_back_to_module_cli(monkeypatch):
-    from kaggle_portfolio.shared import kaggle_utils
-
-    monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
-    monkeypatch.setattr(
-        kaggle_utils.importlib.util,
-        "find_spec",
-        lambda name: object() if name == "kaggle.cli" else None,
-    )
-    cmd = kaggle_utils.kaggle_command()
-    assert cmd[1:] == ["-m", "kaggle.cli"]

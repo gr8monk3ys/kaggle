@@ -5,23 +5,16 @@ from __future__ import annotations
 
 import argparse
 import csv
-import io
 import json
-import os
 import re
-import subprocess
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.shared.kaggle_utils import (
-    has_kaggle_cli,
-    kaggle_command,
-    parse_iso_date,
-    resolve_today,
-    summarize_subprocess_error,
-)
+from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient
 
 
 DEFAULT_TRACKER_PATH = Path("docs/reports/grandmaster-tracker.md")
@@ -258,63 +251,6 @@ def update_progress_current_cell(
     return updated, True
 
 
-def run_checked_command(cmd: list[str]) -> str:
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    except FileNotFoundError as exc:
-        raise SystemExit(f"Command failed: {' '.join(cmd)}\n{exc}") from exc
-    if result.returncode != 0:
-        stderr = summarize_subprocess_error(result.stdout, result.stderr)
-        raise SystemExit(f"Command failed: {' '.join(cmd)}\n{stderr}")
-    return result.stdout
-
-
-def run_kaggle_csv(args: list[str]) -> tuple[list[dict[str, str]], list[str]]:
-    output = run_checked_command([*kaggle_command(), *args, "--csv"])
-    reader = csv.DictReader(io.StringIO(output))
-    rows = [dict(row) for row in reader]
-    fieldnames = [name for name in (reader.fieldnames or []) if name]
-    return rows, fieldnames
-
-
-def is_page_size_unsupported(exc: SystemExit) -> bool:
-    message = str(exc).lower()
-    return "--page-size" in message and "unrecognized arguments" in message
-
-
-def run_kaggle_csv_paginated(
-    args: list[str], *, page_size: int | None = None
-) -> tuple[list[dict[str, str]], list[str]]:
-    rows_all: list[dict[str, str]] = []
-    fieldnames: list[str] = []
-    page = 1
-    expected_page_size = page_size or DEFAULT_KAGGLE_PAGE_SIZE
-    include_page_size = page_size is not None
-
-    while True:
-        paged_args = [*args]
-        if include_page_size and page_size is not None:
-            paged_args.extend(["--page-size", str(page_size)])
-        paged_args.extend(["--page", str(page)])
-        try:
-            rows, fields = run_kaggle_csv(paged_args)
-        except SystemExit as exc:
-            if not include_page_size or not is_page_size_unsupported(exc):
-                raise
-            include_page_size = False
-            expected_page_size = DEFAULT_KAGGLE_PAGE_SIZE
-            paged_args = [*args, "--page", str(page)]
-            rows, fields = run_kaggle_csv(paged_args)
-        if rows and not fieldnames:
-            fieldnames = fields
-        rows_all.extend(rows)
-        if len(rows) < expected_page_size:
-            break
-        page += 1
-
-    return rows_all, fieldnames
-
-
 def load_csv_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
     if not path.exists():
         raise SystemExit(f"CSV file not found: {path}")
@@ -433,22 +369,25 @@ def parse_entered_total(
     return total, entered_key
 
 
-def fetch_live_kaggle_metrics() -> dict[str, Any]:
-    if not has_kaggle_cli():
+def fetch_live_kaggle_metrics(client: KaggleClient) -> dict[str, Any]:
+    if not client.available():
         raise SystemExit(
             "kaggle CLI not found. Install/authenticate it, or run sync with exported CSV files "
             "(--kernels-csv, --datasets-csv, --competitions-csv)."
         )
 
-    kernels_rows, kernels_columns = run_kaggle_csv_paginated(
-        ["kernels", "list", "--mine"], page_size=100
-    )
-    datasets_rows, datasets_columns = run_kaggle_csv_paginated(
-        ["datasets", "list", "-m"]
-    )
-    entered_rows, _ = run_kaggle_csv_paginated(
-        ["competitions", "list", "--group", "entered"], page_size=100
-    )
+    # The client paginates and strips Kaggle's banner lines; the raw rows are
+    # kept so the metric parsers below stay identical for the live and the
+    # exported-CSV paths.
+    kernels = client.my_kernels()
+    datasets = client.my_datasets()
+    entered = client.entered_competitions()
+
+    kernels_rows = [k.raw for k in kernels]
+    datasets_rows = [d.raw for d in datasets]
+    entered_rows = [c.raw for c in entered]
+    kernels_columns = list(kernels_rows[0]) if kernels_rows else []
+    datasets_columns = list(datasets_rows[0]) if datasets_rows else []
 
     notebooks_votes, notebooks_vote_key = parse_vote_total(
         kernels_rows, kernels_columns, "kaggle kernels list output", strict=True
@@ -1276,7 +1215,6 @@ def generate_pace_markdown(snapshots: list[dict[str, Any]]) -> str:
         return "# Kaggle Medal Ops Pace Analysis\n\n- No snapshots found.\n"
 
     current = snapshots[-1]
-    categories = current["categories"]
     first_date = snapshot_generated_date(snapshots[0])
     last_date = snapshot_generated_date(current)
     sample_days = (last_date - first_date).days if first_date and last_date else 0
@@ -1529,23 +1467,14 @@ def generate_sync_markdown(
     return "\n".join(lines)
 
 
-def has_kaggle_credentials() -> tuple[bool, list[str]]:
-    sources: list[str] = []
-
-    env_token = os.environ.get("KAGGLE_API_TOKEN", "").strip()
-    env_user = os.environ.get("KAGGLE_USERNAME", "").strip()
-    env_key = os.environ.get("KAGGLE_KEY", "").strip()
-    if env_token:
-        sources.append("environment-token")
-    if env_user and env_key:
-        sources.append("environment")
-
-    candidates = [Path.home() / ".kaggle" / "kaggle.json", Path("kaggle.json")]
-    sources.extend(str(path) for path in candidates if path.exists())
-    return bool(sources), sources
+def has_kaggle_credentials(client: KaggleClient) -> tuple[bool, list[str]]:
+    """Whether Kaggle credentials are resolvable, and where they came from."""
+    state = client.credentials()
+    return bool(state), list(state.sources)
 
 
 def run_preflight_checks(
+    client: KaggleClient,
     tracker_path: Path,
     output_root: Path,
     today: date,
@@ -1603,7 +1532,7 @@ def run_preflight_checks(
         errors.append(f"Output root is not writable (`{output_root}`): {exc}")
 
     offline_mode = bool(kernels_csv or datasets_csv or competitions_csv)
-    kaggle_cli_available = has_kaggle_cli()
+    kaggle_cli_available = client.available()
     if kaggle_cli_available:
         infos.append("kaggle CLI available.")
     else:
@@ -1614,7 +1543,7 @@ def run_preflight_checks(
         else:
             warnings.append("kaggle CLI not found; live sync is unavailable.")
 
-    creds_ok, creds_paths = has_kaggle_credentials()
+    creds_ok, creds_paths = has_kaggle_credentials(client)
     if creds_ok:
         joined = ", ".join(str(path) for path in creds_paths)
         infos.append(f"Kaggle credentials found: {joined}")
@@ -1799,7 +1728,7 @@ def add_shared_cli_args(
     )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Kaggle medal operations CLI.")
     add_shared_cli_args(parser)
 
@@ -1889,11 +1818,16 @@ def parse_args() -> argparse.Namespace:
         "digest", help="Print a one-message daily Grandmaster digest to stdout."
     )
     add_shared_cli_args(digest_parser, is_subparser=True)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(
+        output_root=getattr(args, "output_root", None),
+        today=getattr(args, "today", None),
+        effects=not bool(getattr(args, "dry_run", False)),
+    )
     today = resolve_today(args.today)
     output_root = Path(args.output_root)
     tracker_path = Path(args.tracker)
@@ -1918,6 +1852,7 @@ def main() -> int:
         if int(args.max_stale_days) < 0:
             raise SystemExit("--max-stale-days must be >= 0")
         checks = run_preflight_checks(
+            client=deps.client,
             tracker_path=tracker_path,
             output_root=output_root,
             today=today,
@@ -2036,7 +1971,7 @@ def main() -> int:
                 else None,
             )
         else:
-            live = fetch_live_kaggle_metrics()
+            live = fetch_live_kaggle_metrics(deps.client)
         original_content = tracker_path.read_text(encoding="utf-8")
         updated_content, changes = apply_tracker_sync(original_content, today, live)
 

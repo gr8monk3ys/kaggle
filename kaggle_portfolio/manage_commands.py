@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import csv
-import io
 import json
 import os
 import re
@@ -11,46 +9,47 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from kaggle_portfolio.shared.kaggle_utils import (
-    has_kaggle_cli as shared_has_kaggle_cli,
-    kaggle_command,
-)
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleError
+from kaggle_portfolio.shared.layout import METADATA_NAMES, RepoLayout
+
+_DEPS: Deps | None = None
+
+
+def deps() -> Deps:
+    """The process-wide dependencies, built on first use.
+
+    Lazily, not at import: constructing these used to mean two repo-wide rglob
+    walks every time anything imported this module — including notebook_quality,
+    which only wanted a twelve-line path predicate.
+    """
+    global _DEPS
+    if _DEPS is None:
+        _DEPS = Deps.resolve()
+    return _DEPS
+
+
+def set_deps(new: Deps | None) -> None:
+    """Override or reset the process-wide dependencies. For tests and the CLI edge."""
+    global _DEPS
+    _DEPS = new
+
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-ROOT = Path(os.environ.get("KAGGLE_DIR", str(PACKAGE_ROOT))).resolve()
 PI_SCRIPTS = PACKAGE_ROOT / "pi-automation" / "scripts"
 DEFAULT_CREDENTIALS = Path.home() / ".kaggle" / "kaggle.json"
-LOCAL_CREDENTIALS = ROOT / "kaggle.json"
-METADATA_NAMES = {"kernel-metadata.json", "dataset-metadata.json"}
 # Kaggle rejects dataset uploads carrying more than this many keywords with
 # "You have exceeded the max category limit". Measured 2026-08-19: 7 fails, 6 succeeds.
 MAX_KEYWORDS = 6
-SKIP_DIRS = {
-    ".claude",
-    ".git",
-    ".venv",
-    ".pytest_cache",
-    ".playwright-cli",
-    ".playwright-mcp",
-    "__pycache__",
-}
 SUSPICIOUS_PATTERN = re.compile(
     r"(password|secret|api_key|kgat_|kaggle_token)", re.IGNORECASE
 )
 
 
-def is_skipped(path: Path, root: Path = ROOT) -> bool:
-    """True when path lies inside a skipped directory, judged relative to root.
-
-    Relative, not absolute: the checkout itself can sit under a hidden
-    directory (agent worktrees live in .claude/worktrees/), and matching on
-    absolute parts would then skip every file in the repo.
-    """
-    try:
-        rel = path.relative_to(root)
-    except ValueError:
-        return True
-    return any(part in SKIP_DIRS for part in rel.parts)
+def is_skipped(path: Path, root: Path | None = None) -> bool:
+    """True when path lies inside a skipped directory, judged relative to root."""
+    layout = deps().layout if root is None else RepoLayout.resolve(root)
+    return layout.is_skipped(path)
 
 
 TRUTHY = {"1", "true", "yes", "on"}
@@ -64,34 +63,11 @@ RESET = "\033[0m"
 
 
 def discover_notebook_dirs() -> list[str]:
-    items: list[str] = []
-    for meta in sorted(ROOT.rglob("kernel-metadata.json")):
-        if is_skipped(meta):
-            continue
-        try:
-            rel = meta.parent.relative_to(ROOT)
-        except ValueError:
-            continue
-        if rel.parts and rel.parts[0] == "datasets":
-            continue
-        items.append(str(rel))
-    return items
+    return deps().layout.notebook_dirs()
 
 
 def discover_dataset_dirs() -> list[str]:
-    items: list[str] = []
-    for meta in sorted(ROOT.rglob("dataset-metadata.json")):
-        if is_skipped(meta):
-            continue
-        try:
-            items.append(str(meta.parent.relative_to(ROOT)))
-        except ValueError:
-            continue
-    return items
-
-
-NOTEBOOK_DIRS = discover_notebook_dirs()
-DATASET_DIRS = discover_dataset_dirs()
+    return deps().layout.dataset_dirs()
 
 
 def print_usage() -> None:
@@ -106,7 +82,7 @@ def print_usage() -> None:
 
 
 def has_kaggle_cli() -> bool:
-    return shared_has_kaggle_cli()
+    return deps().client.available()
 
 
 def require_kaggle_cli() -> None:
@@ -117,22 +93,9 @@ def require_kaggle_cli() -> None:
 
 
 def has_kaggle_credentials() -> tuple[bool, list[str]]:
-    sources: list[str] = []
-
-    env_token = os.environ.get("KAGGLE_API_TOKEN", "").strip()
-    env_user = os.environ.get("KAGGLE_USERNAME", "").strip()
-    env_key = os.environ.get("KAGGLE_KEY", "").strip()
-
-    if env_token:
-        sources.append("environment-token")
-    if env_user and env_key:
-        sources.append("environment")
-    if DEFAULT_CREDENTIALS.exists():
-        sources.append(str(DEFAULT_CREDENTIALS))
-    if LOCAL_CREDENTIALS.exists():
-        sources.append(str(LOCAL_CREDENTIALS))
-
-    return bool(sources), sources
+    """Whether Kaggle credentials are resolvable, and where they came from."""
+    state = deps().client.credentials()
+    return bool(state), list(state.sources)
 
 
 def require_kaggle_credentials() -> None:
@@ -151,19 +114,6 @@ def ensure_kaggle_ready() -> None:
     require_kaggle_credentials()
 
 
-def kaggle_cmd(
-    *args: str, check: bool = False, capture_output: bool = False
-) -> subprocess.CompletedProcess[str]:
-    cmd = [*kaggle_command(), *args]
-    return subprocess.run(
-        cmd,
-        cwd=ROOT,
-        text=True,
-        capture_output=capture_output,
-        check=check,
-    )
-
-
 def run_script(path: Path, args: list[str]) -> int:
     result = subprocess.run(
         [sys.executable, str(path), *args], cwd=PACKAGE_ROOT, check=False
@@ -180,14 +130,14 @@ def run_module(module: str, args: list[str]) -> int:
 
 def rel_path(path: Path) -> str:
     try:
-        return str(path.relative_to(ROOT))
+        return str(path.relative_to(deps().layout.root))
     except ValueError:
         return str(path)
 
 
 def git_run(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["git", "-C", str(ROOT), *args],
+        ["git", "-C", str(deps().layout.root), *args],
         capture_output=True,
         text=True,
         check=False,
@@ -231,20 +181,22 @@ def resolve_target(target: str) -> Path:
     if path.is_absolute():
         return path.resolve()
 
-    direct = (ROOT / target).resolve()
+    direct = (deps().layout.root / target).resolve()
     if direct.exists():
         return direct
 
     matches: list[Path] = []
-    for rel in NOTEBOOK_DIRS + DATASET_DIRS:
+    for rel in discover_notebook_dirs() + discover_dataset_dirs():
         rel_path = Path(rel)
         if str(rel_path) == target or rel_path.name == target:
-            matches.append((ROOT / rel_path).resolve())
+            matches.append((deps().layout.root / rel_path).resolve())
 
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
-        joined = ", ".join(str(match.relative_to(ROOT)) for match in matches[:10])
+        joined = ", ".join(
+            str(match.relative_to(deps().layout.root)) for match in matches[:10]
+        )
         raise SystemExit(f"Ambiguous target '{target}'. Matches: {joined}")
     return direct
 
@@ -264,7 +216,7 @@ def in_scope(path: Path, scope: Path | None) -> bool:
 
 def iter_metadata_files(scope: Path | None) -> list[Path]:
     files: list[Path] = []
-    for path in ROOT.rglob("*-metadata.json"):
+    for path in deps().layout.root.rglob("*-metadata.json"):
         if path.name not in METADATA_NAMES:
             continue
         if is_skipped(path):
@@ -526,45 +478,27 @@ def cmd_status(_: list[str]) -> int:
     print(f"{BLUE}=== Kaggle Portfolio Status ==={RESET}")
     print("")
     print(f"{YELLOW}Notebooks:{RESET}")
-    result = kaggle_cmd(
-        "kernels",
-        "list",
-        "--mine",
-        "--page-size",
-        "50",
-        check=False,
-        capture_output=True,
-    )
-    if result.stdout:
-        print("\n".join(result.stdout.splitlines()[:30]))
+    try:
+        for kernel in deps().client.my_kernels()[:30]:
+            print(f"  {kernel.ref:<60} {kernel.total_votes:>5} votes")
+    except KaggleError as exc:
+        print(f"  {RED}unavailable{RESET}: {exc}")
     print("")
     print(f"{YELLOW}Datasets:{RESET}")
-    result = kaggle_cmd("datasets", "list", "-m", check=False, capture_output=True)
-    if result.stdout:
-        print("\n".join(result.stdout.splitlines()[:20]))
+    try:
+        for dataset in deps().client.my_datasets()[:20]:
+            print(f"  {dataset.ref:<60} {dataset.vote_count:>5} votes")
+    except KaggleError as exc:
+        print(f"  {RED}unavailable{RESET}: {exc}")
     print("")
     print(f"{YELLOW}Local directories:{RESET}")
-    print(f"  Notebooks: {len(NOTEBOOK_DIRS)}")
-    print(f"  Datasets:  {len(DATASET_DIRS)}")
+    print(f"  Notebooks: {len(discover_notebook_dirs())}")
+    print(f"  Datasets:  {len(discover_dataset_dirs())}")
     return 0
 
 
 def push_dataset(path: Path) -> int:
-    create = ["datasets", "create", "-p", str(path), "--dir-mode", "zip"]
-    version = [
-        "datasets",
-        "version",
-        "-p",
-        str(path),
-        "-m",
-        "Updated content",
-        "--dir-mode",
-        "zip",
-    ]
-    result = kaggle_cmd(*version, check=False)
-    if result.returncode == 0:
-        return 0
-    return kaggle_cmd(*create, check=False).returncode
+    return 0 if deps().client.publish_dataset(path, "Updated content").ok else 1
 
 
 def cmd_push(args: list[str]) -> int:
@@ -585,7 +519,7 @@ def cmd_push(args: list[str]) -> int:
         return push_dataset(path)
     if (path / "kernel-metadata.json").exists():
         print(f"Pushing notebook: {target}")
-        return kaggle_cmd("kernels", "push", "-p", str(path), check=False).returncode
+        return 0 if deps().client.push_kernel(path).ok else 1
     raise SystemExit(f"Error: No metadata found in {path}")
 
 
@@ -598,22 +532,18 @@ def cmd_push_nb(_: list[str]) -> int:
     print("")
     success = 0
     failed = 0
-    for rel in NOTEBOOK_DIRS:
-        path = ROOT / rel
+    for rel in discover_notebook_dirs():
+        path = deps().layout.root / rel
         if not (path / "kernel-metadata.json").exists():
             print(f"  {YELLOW}SKIP{RESET} {rel} (no kernel-metadata.json)")
             continue
         print(f"  Pushing {rel}... ", end="", flush=True)
-        result = kaggle_cmd(
-            "kernels", "push", "-p", str(path), check=False, capture_output=True
-        )
-        if result.returncode == 0:
+        outcome = deps().client.push_kernel(path)
+        if outcome.ok:
             print(f"{GREEN}OK{RESET}")
             success += 1
         else:
-            print(
-                f"{RED}FAILED{RESET}: {result.stderr.strip() or result.stdout.strip()}"
-            )
+            print(f"{RED}FAILED{RESET}: {outcome.detail}")
             failed += 1
     print("")
     print(f"Results: {GREEN}{success} succeeded{RESET}, {RED}{failed} failed{RESET}")
@@ -629,45 +559,18 @@ def cmd_push_ds(_: list[str]) -> int:
     print("")
     success = 0
     failed = 0
-    for rel in DATASET_DIRS:
-        path = ROOT / rel
+    for rel in discover_dataset_dirs():
+        path = deps().layout.root / rel
         if not (path / "dataset-metadata.json").exists():
             print(f"  {YELLOW}SKIP{RESET} {rel} (no dataset-metadata.json)")
             continue
         print(f"  Pushing {rel}... ", end="", flush=True)
-        result = kaggle_cmd(
-            "datasets",
-            "version",
-            "-p",
-            str(path),
-            "-m",
-            "Updated content",
-            "--dir-mode",
-            "zip",
-            check=False,
-            capture_output=True,
-        )
-        if result.returncode == 0:
+        outcome = deps().client.publish_dataset(path, "Updated content")
+        if outcome.ok:
             print(f"{GREEN}UPDATED{RESET}")
             success += 1
-            continue
-        create = kaggle_cmd(
-            "datasets",
-            "create",
-            "-p",
-            str(path),
-            "--dir-mode",
-            "zip",
-            check=False,
-            capture_output=True,
-        )
-        if create.returncode == 0:
-            print(f"{GREEN}CREATED{RESET}")
-            success += 1
         else:
-            print(
-                f"{RED}FAILED{RESET}: {create.stderr.strip() or create.stdout.strip()}"
-            )
+            print(f"{RED}FAILED{RESET}: {outcome.detail}")
             failed += 1
     print("")
     print(f"Results: {GREEN}{success} succeeded{RESET}, {RED}{failed} failed{RESET}")
@@ -691,47 +594,18 @@ def cmd_votes(_: list[str]) -> int:
         f"{YELLOW}Medal thresholds:{RESET}  Bronze >={bronze_t}  Silver >={silver_t}  Gold >={gold_t}"
     )
     print("")
-    raw = kaggle_cmd(
-        "kernels",
-        "list",
-        "--mine",
-        "--page-size",
-        "100",
-        "--kernel-type",
-        "notebook",
-        "--csv",
-        check=False,
-        capture_output=True,
-    )
-    if raw.returncode != 0:
-        print(f"{RED}Failed to fetch kernel list from Kaggle.{RESET}")
+    try:
+        kernels = deps().client.my_kernels(kernel_type="notebook")
+    except KaggleError as exc:
+        print(f"{RED}Failed to fetch kernel list from Kaggle.{RESET} {exc}")
         return 1
 
-    csv_lines = "\n".join(
-        line
-        for line in raw.stdout.splitlines()
-        if not line.startswith("Warning:") and not line.startswith("/")
-    )
-    rows = list(csv.DictReader(io.StringIO(csv_lines)))
-    if not rows:
+    if not kernels:
         print("No kernels found.")
         return 0
 
-    sample = rows[0] if rows else {}
-    vote_col = next(
-        (k for k in sample if k and ("vote" in k.lower() or "upvote" in k.lower())),
-        None,
-    )
-    ref_col = next((k for k in sample if k and "ref" in k.lower()), None)
-    title_col = next((k for k in sample if k and "title" in k.lower()), None)
-
-    def is_public_notebook(row: dict[str, str]) -> bool:
-        ref = str(row.get(ref_col, "")).strip() if ref_col else ""
-        title = str(row.get(title_col, "")).strip().lower() if title_col else ""
-        return bool(ref) and title != "[private notebook]"
-
-    rows = [row for row in rows if is_public_notebook(row)]
-    if not rows:
+    kernels = [k for k in kernels if k.ref and not k.is_private_placeholder]
+    if not kernels:
         print("No public notebooks found.")
         return 0
 
@@ -756,30 +630,25 @@ def cmd_votes(_: list[str]) -> int:
     print(f"{'Notebook':<45} {'Votes':>6}  {'Tier':<8} {'Next':<8} {'Gap':>4}")
     print("-" * 78)
 
-    def sort_key(row: dict[str, str]) -> tuple[int, int]:
-        votes = int(row.get(vote_col or "", 0) or 0)
-        _, threshold = next_tier(votes)
-        return (-votes, threshold - votes)
+    def sort_key(kernel) -> tuple[int, int]:
+        _, threshold = next_tier(kernel.total_votes)
+        return (-kernel.total_votes, threshold - kernel.total_votes)
 
-    for row in sorted(rows, key=sort_key):
-        ref = (
-            row.get(ref_col, row.get(title_col, row.get("ref", "unknown")))
-            if (ref_col or title_col)
-            else row.get("ref", "unknown")
+    for kernel in sorted(kernels, key=sort_key):
+        votes = kernel.total_votes
+        tier_name, threshold = next_tier(votes)
+        current = (
+            "GOLD"
+            if votes >= gold_t
+            else "Silver"
+            if votes >= silver_t
+            else "Bronze"
+            if votes >= bronze_t
+            else "-"
         )
-        votes = int(row.get(vote_col or "", 0) or 0) if vote_col else 0
-        tier_name, tier_thresh = next_tier(votes)
-        gap = tier_thresh - votes
-        if votes >= gold_t:
-            current = "GOLD"
-        elif votes >= silver_t:
-            current = "Silver"
-        elif votes >= bronze_t:
-            current = "Bronze"
-        else:
-            current = "—"
+        gap = max(0, threshold - votes)
         gap_color = GREEN if 0 < gap <= 3 else YELLOW if 0 < gap <= 10 else RESET
-        name = str(ref).split("/")[-1][:44]
+        name = kernel.slug[:44]
         print(
             f"{medal_color(votes)}{name:<45}{RESET} {votes:>6}  {current:<8} "
             f"{tier_name:<8} {gap_color}{gap:>4}{RESET}"
@@ -787,11 +656,11 @@ def cmd_votes(_: list[str]) -> int:
 
     print("")
     print(f"{YELLOW}Datasets:{RESET}")
-    result = kaggle_cmd("datasets", "list", "-m", check=False, capture_output=True)
-    if result.returncode == 0:
-        lines = result.stdout.splitlines()[2:]
-        if lines:
-            print("\n".join(lines))
+    try:
+        for dataset in deps().client.my_datasets():
+            print(f"  {dataset.ref:<60} {dataset.vote_count:>5} votes")
+    except KaggleError as exc:
+        print(f"  {RED}unavailable{RESET}: {exc}")
     return 0
 
 
@@ -801,7 +670,7 @@ def cmd_link_competition(args: list[str]) -> int:
             "Usage: ./manage.sh link-competition <notebook-dir> <competition-slug>"
         )
     directory, slug = args[0], args[1]
-    path = ROOT / directory
+    path = deps().layout.root / directory
     meta = path / "kernel-metadata.json"
     if not meta.exists():
         raise SystemExit(f"Error: kernel-metadata.json not found in {directory}")
@@ -817,7 +686,7 @@ def cmd_link_competition(args: list[str]) -> int:
         print(f"{RED}Fix validation errors before pushing.{RESET}")
         return 1
     print("Pushing updated notebook ...")
-    rc = kaggle_cmd("kernels", "push", "-p", str(path), check=False).returncode
+    rc = 0 if deps().client.push_kernel(path).ok else 1
     if rc == 0:
         print(
             f"{GREEN}Done. Remember to accept the competition rules on Kaggle.com if push fails.{RESET}"
@@ -827,36 +696,19 @@ def cmd_link_competition(args: list[str]) -> int:
 
 def cmd_competitions(_: list[str]) -> int:
     print(f"{BLUE}=== Active Medal-Eligible Competitions ==={RESET}")
-    kaggle_cmd(
-        "competitions",
-        "list",
-        "--sort-by",
-        "latestDeadline",
-        "--category",
-        "featured",
-        check=False,
-    )
-    print("")
-    kaggle_cmd(
-        "competitions",
-        "list",
-        "--sort-by",
-        "latestDeadline",
-        "--category",
-        "research",
-        check=False,
-    )
-    print("")
-    kaggle_cmd(
-        "competitions",
-        "list",
-        "--sort-by",
-        "latestDeadline",
-        "--category",
-        "playground",
-        check=False,
-    )
-    return 0
+    failures = 0
+    for category in ("featured", "research", "playground"):
+        print(f"{YELLOW}{category.title()}:{RESET}")
+        try:
+            for comp in deps().client.search_competitions(category=category):
+                print(f"  {comp.slug:<55} {comp.team_count:>6} teams  {comp.deadline}")
+        except KaggleError as exc:
+            # This used to discard the return code entirely and always report
+            # success, so a broken CLI looked like an empty competition list.
+            print(f"  {RED}unavailable{RESET}: {exc}")
+            failures += 1
+        print("")
+    return 1 if failures else 0
 
 
 def cmd_dataset_ui_sync(args: list[str]) -> int:
@@ -1018,9 +870,19 @@ COMMANDS = [
                 "1.0",
                 "--fail-on-live-alert",
                 "--write-live-ratings-csv",
-                str(ROOT / "medal_ops" / "reports" / "latest-live-ratings.csv"),
+                str(
+                    deps().layout.root
+                    / "medal_ops"
+                    / "reports"
+                    / "latest-live-ratings.csv"
+                ),
                 "--fallback-live-ratings-csv",
-                str(ROOT / "medal_ops" / "reports" / "latest-live-ratings.csv"),
+                str(
+                    deps().layout.root
+                    / "medal_ops"
+                    / "reports"
+                    / "latest-live-ratings.csv"
+                ),
                 *a,
             ],
         ),
