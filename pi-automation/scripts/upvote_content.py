@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import kaggle_browser as kb
+from kaggle_portfolio.shared.kaggle_site import PlaywrightSite  # noqa: E402
 
 
 REPO_ROOT = kb.REPO_ROOT
@@ -62,43 +63,32 @@ def load_queue(queue_path: Path) -> list[dict]:
 
 
 def upvote_page(page, url: str, *, timeout_ms: int) -> str:
-    """Navigate to content page and click upvote. Returns result message."""
-    page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
-    page.wait_for_timeout(1500)
-
-    if not kb.is_authenticated(page):
-        raise RuntimeError("Not authenticated")
-
-    # Look for upvote button — Kaggle uses various aria labels
-    upvote_btn = kb.first_available(
-        page.get_by_role("button", name=re.compile(r"upvote", re.IGNORECASE)).first,
-        page.locator('button[aria-label*="upvote" i]').first,
-        page.locator('button[data-testid="upvote"]').first,
-        # Thumbs up / vote icon buttons
-        page.locator('button[aria-label*="vote" i]').first,
-    )
-    if upvote_btn is None:
-        raise RuntimeError(f"Upvote button not found on {url}")
-
-    # Check if already upvoted (button often has active/pressed state)
-    aria_pressed = upvote_btn.get_attribute("aria-pressed")
-    if aria_pressed == "true":
-        return f"already upvoted {url}"
-
-    upvote_btn.click(timeout=timeout_ms)
-    page.wait_for_timeout(1000)
-    return f"upvoted {url}"
+    """Upvote via the site seam. Selectors live in PlaywrightSite, not here."""
+    site = PlaywrightSite(page, timeout_ms=timeout_ms)
+    return site.upvote(url).detail
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Upvote Kaggle content to build goodwill.")
+    parser = argparse.ArgumentParser(
+        description="Upvote Kaggle content to build goodwill."
+    )
     kb.add_common_browser_args(parser)
     parser.add_argument("--url", nargs="*", default=[], help="URLs or slugs to upvote.")
-    parser.add_argument("--type", choices=["notebook", "dataset", "discussion"], default=None,
-                        help="Content type hint for slug resolution.")
-    parser.add_argument("--queue", type=Path, default=QUEUE_PATH, help="Upvote queue JSON path.")
-    parser.add_argument("--limit", type=int, default=5, help="Max upvotes per session (default 5).")
-    parser.add_argument("--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path.")
+    parser.add_argument(
+        "--type",
+        choices=["notebook", "dataset", "discussion"],
+        default=None,
+        help="Content type hint for slug resolution.",
+    )
+    parser.add_argument(
+        "--queue", type=Path, default=QUEUE_PATH, help="Upvote queue JSON path."
+    )
+    parser.add_argument(
+        "--limit", type=int, default=5, help="Max upvotes per session (default 5)."
+    )
+    parser.add_argument(
+        "--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path."
+    )
     return parser.parse_args()
 
 
@@ -123,7 +113,7 @@ def main() -> int:
 
     tracker = kb.TrackerFile(args.tracker)
     pending = [u for u in urls if not tracker.has(tracker_key(u))]
-    pending = pending[:args.limit]
+    pending = pending[: args.limit]
 
     if not pending:
         print(f"All {len(urls)} items already upvoted.")

@@ -20,6 +20,10 @@ if str(REPO) not in sys.path:
 
 import notify  # noqa: E402
 from kaggle_portfolio.discussions import draft_queue as dq  # noqa: E402
+from kaggle_portfolio.shared._browser_session import (  # noqa: E402,F401
+    is_browser_challenge,
+    require_playwright,
+)
 
 QUEUE_PATH = Path(
     os.environ.get(
@@ -50,23 +54,6 @@ def notify_safe(message: str) -> None:
         notify.send(message)
     except Exception as exc:
         print(f"Notification failed: {exc}", file=sys.stderr)
-
-
-def is_browser_challenge(page) -> bool:
-    try:
-        title = str(page.title() or "").lower()
-    except Exception:
-        title = ""
-    if "checking your browser" in title or "recaptcha" in title:
-        return True
-    try:
-        body = str(page.locator("body").inner_text(timeout=1500) or "").lower()
-    except Exception:
-        body = ""
-    return (
-        "checking your browser before accessing" in body
-        or "click here if you are not automatically redirected" in body
-    )
 
 
 def require_kaggle_login_env() -> None:
@@ -152,18 +139,6 @@ def load_item_body(item: dict) -> str:
         )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"Cannot extract draft body: {exc}") from exc
-
-
-def require_playwright():
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError as exc:
-        raise RuntimeError(
-            "playwright is not installed. Run:\n"
-            "  pip install -r pi-automation/scripts/requirements.txt\n"
-            "  python -m playwright install chromium"
-        ) from exc
-    return sync_playwright
 
 
 def smoke_test(*, check_login: bool = False) -> int:

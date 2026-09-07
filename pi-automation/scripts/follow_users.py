@@ -12,13 +12,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import kaggle_browser as kb
+from kaggle_portfolio.shared.kaggle_site import PlaywrightSite  # noqa: E402
 
 
 REPO_ROOT = kb.REPO_ROOT
@@ -41,41 +41,31 @@ def load_targets(targets_path: Path) -> list[str]:
 
 
 def follow_user(page, username: str, *, timeout_ms: int) -> str:
-    """Navigate to user profile and click Follow. Returns result message."""
-    profile_url = f"https://www.kaggle.com/{username}"
-    page.goto(profile_url, wait_until="domcontentloaded", timeout=timeout_ms)
-    page.wait_for_timeout(1000)
-
-    if not kb.is_authenticated(page):
-        raise RuntimeError("Not authenticated")
-
-    # Check if already following
-    following_btn = kb.first_available(
-        page.get_by_role("button", name=re.compile(r"^following$", re.IGNORECASE)).first,
-        page.get_by_role("button", name=re.compile(r"^unfollow$", re.IGNORECASE)).first,
-    )
-    if following_btn is not None:
-        return f"already following {username}"
-
-    # Find and click Follow button
-    follow_btn = kb.first_available(
-        page.get_by_role("button", name=re.compile(r"^follow$", re.IGNORECASE)).first,
-    )
-    if follow_btn is None:
-        raise RuntimeError(f"Follow button not found on {profile_url}")
-
-    follow_btn.click(timeout=timeout_ms)
-    page.wait_for_timeout(1000)
-    return f"followed {username}"
+    """Follow via the site seam. Selectors live in PlaywrightSite, not here."""
+    site = PlaywrightSite(page, timeout_ms=timeout_ms)
+    return site.follow(username).detail
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Follow Kaggle users to build visibility.")
+    parser = argparse.ArgumentParser(
+        description="Follow Kaggle users to build visibility."
+    )
     kb.add_common_browser_args(parser)
-    parser.add_argument("--limit", type=int, default=10, help="Max follows per session (default 10).")
-    parser.add_argument("--users", nargs="*", default=[], help="Usernames to follow (in addition to targets file).")
-    parser.add_argument("--targets", type=Path, default=TARGETS_PATH, help="Follow targets JSON path.")
-    parser.add_argument("--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path.")
+    parser.add_argument(
+        "--limit", type=int, default=10, help="Max follows per session (default 10)."
+    )
+    parser.add_argument(
+        "--users",
+        nargs="*",
+        default=[],
+        help="Usernames to follow (in addition to targets file).",
+    )
+    parser.add_argument(
+        "--targets", type=Path, default=TARGETS_PATH, help="Follow targets JSON path."
+    )
+    parser.add_argument(
+        "--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path."
+    )
     return parser.parse_args()
 
 
@@ -97,7 +87,7 @@ def main() -> int:
 
     tracker = kb.TrackerFile(args.tracker)
     pending = [u for u in targets if not tracker.has(u)]
-    pending = pending[:args.limit]
+    pending = pending[: args.limit]
 
     if not pending:
         print(f"All {len(targets)} targets already followed.")
