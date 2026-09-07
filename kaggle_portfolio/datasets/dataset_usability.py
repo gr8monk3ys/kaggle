@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from kaggle_portfolio.shared.clock import resolve_today
+from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError, parse_csv
 from kaggle_portfolio.shared.errors import CommandError
@@ -752,7 +753,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
-    deps = deps or Deps.resolve(today=getattr(args, "today", None))
+    deps = deps or Deps.resolve(
+        output_root=getattr(args, "output_root", None),
+        today=getattr(args, "today", None),
+    )
     if args.fail_under < 0 or args.fail_under > 100:
         raise CommandError("--fail-under must be between 0 and 100")
     if args.alert_under < 0.0 or args.alert_under > 1.0:
@@ -763,7 +767,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         raise CommandError("--alert-under cannot be greater than --target-rating")
 
     root = Path(args.root).resolve()
-    output_root = Path(args.output_root)
     today = resolve_today(args.today)
 
     dataset_dirs = discover_dataset_dirs(root)
@@ -823,16 +826,8 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     markdown = generate_markdown(scores, today=today, fail_under=args.fail_under)
     json_report = build_json_report(scores, today=today, fail_under=args.fail_under)
 
-    reports_dir = output_root / "reports"
-    dated_md = reports_dir / f"dataset-usability-{today.isoformat()}.md"
-    latest_md = reports_dir / "latest-dataset-usability.md"
-    dated_json = reports_dir / f"dataset-usability-{today.isoformat()}.json"
-    latest_json = reports_dir / "latest-dataset-usability.json"
-
-    write_text(dated_md, markdown)
-    write_text(latest_md, markdown)
-    write_json(dated_json, json_report)
-    write_json(latest_json, json_report)
+    deps.emitter.emit(reports.DATASET_USABILITY, markdown)
+    deps.emitter.emit(reports.DATASET_USABILITY, json_report, ext="json")
 
     live_alert_fail = False
     if args.daily_tracker:
@@ -859,22 +854,11 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
             alert_under=args.alert_under,
             target_rating=args.target_rating,
         )
-        tracker_dated_md = (
-            reports_dir / f"dataset-usability-tracker-{today.isoformat()}.md"
-        )
-        tracker_latest_md = reports_dir / "latest-dataset-usability-tracker.md"
-        tracker_dated_json = (
-            reports_dir / f"dataset-usability-tracker-{today.isoformat()}.json"
-        )
-        tracker_latest_json = reports_dir / "latest-dataset-usability-tracker.json"
 
-        write_text(tracker_dated_md, live_markdown)
-        write_text(tracker_latest_md, live_markdown)
-        write_json(tracker_dated_json, live_json)
-        write_json(tracker_latest_json, live_json)
+        deps.emitter.emit(reports.DATASET_USABILITY_TRACKER, live_markdown)
+        deps.emitter.emit(reports.DATASET_USABILITY_TRACKER, live_json, ext="json")
 
         live_summary = live_json["summary"]
-        print(f"Dataset usability tracker written: {tracker_dated_md}")
         print(
             "Live alerts: "
             f"critical={live_summary['critical']} "
@@ -885,8 +869,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         live_alert_fail = args.fail_on_live_alert and int(live_summary["critical"]) > 0
 
     below = [item for item in scores if item.score < args.fail_under]
-    print(f"Dataset usability report written: {dated_md}")
-    print(f"Latest dataset usability report: {latest_md}")
     print(
         "Summary: "
         f"{len(scores)} datasets, "

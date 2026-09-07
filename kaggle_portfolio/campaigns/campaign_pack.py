@@ -12,11 +12,14 @@ from typing import Any
 
 from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
 from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
 DEFAULT_DATASET_REPORT = (
-    DEFAULT_OUTPUT_ROOT / "reports" / "latest-dataset-usability.json"
+    DEFAULT_OUTPUT_ROOT
+    / "reports"
+    / reports.latest_name(reports.DATASET_USABILITY, "json")
 )
 DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
 DEFAULT_CHANNELS = ["kaggle-discussion", "kaggle-changelog", "x", "linkedin"]
@@ -406,7 +409,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     args = parse_args(argv)
-    deps = deps or Deps.resolve(today=getattr(args, "today", None))
+    deps = deps or Deps.resolve(
+        output_root=getattr(args, "output_root", None),
+        today=getattr(args, "today", None),
+    )
     if args.days < 1:
         raise CommandError("--days must be >= 1")
     if args.posts_per_day < 1:
@@ -422,7 +428,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     today = resolve_today(args.today)
     start_date = resolve_start_date(today, args.start_date)
-    output_root = Path(args.output_root)
     report_path = Path(args.dataset_report)
     queue_path = Path(args.queue_path)
 
@@ -474,20 +479,10 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         "queue": queue,
     }
 
-    reports_dir = output_root / "reports"
-    dated_md = reports_dir / f"promotion-campaign-{today.isoformat()}.md"
-    latest_md = reports_dir / "latest-promotion-campaign.md"
-    dated_json = reports_dir / f"promotion-campaign-{today.isoformat()}.json"
-    latest_json = reports_dir / "latest-promotion-campaign.json"
-
-    write_text(dated_md, markdown)
-    write_text(latest_md, markdown)
-    write_json(dated_json, payload)
-    write_json(latest_json, payload)
+    deps.emitter.emit(reports.PROMOTION_CAMPAIGN, markdown)
+    deps.emitter.emit(reports.PROMOTION_CAMPAIGN, payload, ext="json")
     write_json(queue_path, {"generated_on": today.isoformat(), "queue": queue})
 
-    print(f"Campaign pack written: {dated_md}")
-    print(f"Latest campaign pack: {latest_md}")
     print(f"Campaign queue written: {queue_path}")
     for warning in ref_warnings:
         print(f"Warning: {warning}")

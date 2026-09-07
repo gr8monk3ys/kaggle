@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
+from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleClient
 from kaggle_portfolio.shared.errors import CommandError
@@ -1695,11 +1696,6 @@ def generate_doctor_markdown(
     return "\n".join(lines)
 
 
-def write_report(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content.rstrip() + "\n", encoding="utf-8")
-
-
 def add_shared_cli_args(
     parser: argparse.ArgumentParser, *, is_subparser: bool = False
 ) -> None:
@@ -1833,7 +1829,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     output_root = Path(args.output_root)
     tracker_path = Path(args.tracker)
     history_dir = output_root / "history"
-    reports_dir = output_root / "reports"
 
     if args.command == "sync-template":
         out_dir = (
@@ -1874,15 +1869,10 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
             strict=bool(args.strict),
             max_stale_days=int(args.max_stale_days),
         )
-        dated_report_path = reports_dir / f"doctor-{today.isoformat()}.md"
-        latest_report_path = reports_dir / "latest-doctor.md"
-        write_report(dated_report_path, report)
-        write_report(latest_report_path, report)
+        deps.emitter.emit(reports.DOCTOR, report)
 
         errors = checks["errors"]
         warnings = checks["warnings"]
-        print(f"Doctor report written: {dated_report_path}")
-        print(f"Latest doctor report: {latest_report_path}")
         print(f"Summary: {len(errors)} error(s), {len(warnings)} warning(s)")
 
         if errors:
@@ -1915,47 +1905,27 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         previous = load_latest_snapshot(history_dir)
         snapshot_path = write_snapshot(history_dir, snapshot)
         report = generate_scorecard_markdown(snapshot, previous)
-        dated_report_path = reports_dir / f"scorecard-{today.isoformat()}.md"
-        latest_report_path = reports_dir / "latest-scorecard.md"
-        write_report(dated_report_path, report)
-        write_report(latest_report_path, report)
+        deps.emitter.emit(reports.SCORECARD, report)
         print(f"Snapshot written: {snapshot_path}")
-        print(f"Scorecard written: {dated_report_path}")
-        print(f"Latest scorecard: {latest_report_path}")
         return 0
 
     if args.command == "badge-plan":
         report = generate_badge_plan_markdown(snapshot)
-        dated_report_path = reports_dir / f"badge-plan-{today.isoformat()}.md"
-        latest_report_path = reports_dir / "latest-badge-plan.md"
-        write_report(dated_report_path, report)
-        write_report(latest_report_path, report)
-        print(f"Badge roadmap written: {dated_report_path}")
-        print(f"Latest badge roadmap: {latest_report_path}")
+        deps.emitter.emit(reports.BADGE_PLAN, report)
         return 0
 
     if args.command == "weekly-plan":
         latest_snapshot = load_latest_snapshot(history_dir) or snapshot
         report = generate_weekly_plan_markdown(latest_snapshot)
-        dated_report_path = reports_dir / f"weekly-plan-{today.isoformat()}.md"
-        latest_report_path = reports_dir / "latest-weekly-plan.md"
-        write_report(dated_report_path, report)
-        write_report(latest_report_path, report)
-        print(f"Weekly plan written: {dated_report_path}")
-        print(f"Latest weekly plan: {latest_report_path}")
+        deps.emitter.emit(reports.WEEKLY_PLAN, report)
         return 0
 
     if args.command == "pace":
         snapshot_path = write_snapshot(history_dir, snapshot)
         snapshots = load_all_snapshots(history_dir)
         report = generate_pace_markdown(snapshots)
-        dated_report_path = reports_dir / f"pace-{today.isoformat()}.md"
-        latest_report_path = reports_dir / "latest-pace.md"
-        write_report(dated_report_path, report)
-        write_report(latest_report_path, report)
+        deps.emitter.emit(reports.PACE, report)
         print(f"Snapshot written: {snapshot_path}")
-        print(f"Pace report written: {dated_report_path}")
-        print(f"Latest pace report: {latest_report_path}")
         return 0
 
     if args.command == "sync":
@@ -1982,10 +1952,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         report = generate_sync_markdown(
             tracker_path, today, live, changes, args.dry_run
         )
-        dated_report_path = reports_dir / f"sync-{today.isoformat()}.md"
-        latest_report_path = reports_dir / "latest-sync.md"
-        write_report(dated_report_path, report)
-        write_report(latest_report_path, report)
+        deps.emitter.emit(reports.SYNC, report)
 
         if args.dry_run:
             print("Dry-run mode: tracker file was not modified.")
@@ -1993,8 +1960,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
             print(f"Tracker updated: {tracker_path}")
         else:
             print("Tracker already up to date with pulled metrics.")
-        print(f"Sync report written: {dated_report_path}")
-        print(f"Latest sync report: {latest_report_path}")
         return 0
 
     raise CommandError(f"Unsupported command: {args.command}")
