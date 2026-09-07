@@ -6,7 +6,15 @@ import types
 import numpy as np
 import pandas as pd
 
-from kaggle_portfolio.notebooks import local_competition_lab as lab
+from kaggle_portfolio.notebooks import competition_lab as lab
+from kaggle_portfolio.notebooks.competition_lab import (
+    deep_past,
+    house_prices,
+    march_mania,
+    playground_telco,
+    spaceship,
+    store_sales,
+)
 
 
 def test_deep_past_display_name_candidates_strip_cuneiform_prefix():
@@ -17,7 +25,7 @@ def test_deep_past_display_name_candidates_strip_cuneiform_prefix():
         }
     )
 
-    candidates = lab._deep_past_display_name_candidates(row)
+    candidates = deep_past._deep_past_display_name_candidates(row)
 
     assert "Kt 92/k 221 (AKT 5 1)" in candidates
     assert "AKT 5 1" in candidates
@@ -44,7 +52,7 @@ def test_deep_past_assign_sentences_uses_half_open_row_boundaries():
         ]
     )
 
-    predictions = lab._deep_past_assign_sentences_to_rows(test, sentence_rows)
+    predictions = deep_past._deep_past_assign_sentences_to_rows(test, sentence_rows)
 
     assert predictions == ["a b", "c d", "e", "f g"]
 
@@ -57,7 +65,7 @@ def test_deep_past_split_translation_handles_missing_line_end():
         ]
     )
 
-    predictions = lab._deep_past_split_translation_by_rows(
+    predictions = deep_past._deep_past_split_translation_by_rows(
         "alpha beta gamma delta", test
     )
 
@@ -86,7 +94,7 @@ def test_deep_past_sentence_rows_match_stripped_display_name():
         }
     )
 
-    matched = lab._deep_past_sentence_rows(sentences, row)
+    matched = deep_past._deep_past_sentence_rows(sentences, row)
 
     assert matched["translation"].tolist() == ["Line 1", "Line 7"]
 
@@ -111,7 +119,7 @@ def test_benchmark_deep_past_falls_back_without_auxiliary_files(tmp_path):
         ]
     ).to_csv(tmp_path / "sample_submission.csv", index=False)
 
-    result = lab.benchmark_deep_past(tmp_path, _folds=0, write_submission=False)
+    result = deep_past.benchmark_deep_past(tmp_path, _folds=0, write_submission=False)
 
     assert result.best_model == "train_retrieval"
     assert any(
@@ -121,14 +129,14 @@ def test_benchmark_deep_past_falls_back_without_auxiliary_files(tmp_path):
 
 
 def test_march_seed_number_parses_seed_codes():
-    assert lab._march_seed_number("W01") == 1.0
-    assert lab._march_seed_number("X16b") == 16.0
+    assert march_mania._march_seed_number("W01") == 1.0
+    assert march_mania._march_seed_number("X16b") == 16.0
 
 
 def test_march_submission_pairs_parses_stage_ids():
     sample = pd.DataFrame({"ID": ["2026_1101_1102", "2026_2101_2102"]})
 
-    parsed = lab._march_submission_pairs(sample)
+    parsed = march_mania._march_submission_pairs(sample)
 
     assert parsed.to_dict("records") == [
         {"ID": "2026_1101_1102", "Season": 2026, "Team1": 1101, "Team2": 1102},
@@ -177,7 +185,7 @@ def test_march_massey_features_uses_latest_window_and_trend():
         ]
     )
 
-    features = lab._march_massey_features(massey)
+    features = march_mania._march_massey_features(massey)
     row = features.loc[features["TeamID"] == 1101].iloc[0]
 
     assert row["massey_latest_mean"] == 8.5
@@ -288,7 +296,7 @@ def test_march_team_features_adds_schedule_and_massey_columns():
         ]
     )
 
-    features = lab._march_team_features(results, seeds, massey)
+    features = march_mania._march_team_features(results, seeds, massey)
 
     row = features.loc[features["TeamID"] == 1101].iloc[0]
     assert row["seed"] == 1
@@ -341,7 +349,7 @@ def test_march_matchups_uses_sorted_team_ids_and_binary_target():
         ]
     )
 
-    matchups = lab._march_matchups(games, features, include_target=True)
+    matchups = march_mania._march_matchups(games, features, include_target=True)
 
     assert len(matchups) == 1
     row = matchups.iloc[0]
@@ -391,7 +399,7 @@ def test_playground_prepare_features_adds_telco_derivatives():
     )
     test = train.drop(columns=["Churn"]).copy()
 
-    train_x, test_x = lab._playground_prepare_features(train, test)
+    train_x, test_x = playground_telco._playground_prepare_features(train, test)
 
     assert "ChargesPerTenure" in train_x.columns
     assert "HasAutoPay" in train_x.columns
@@ -436,10 +444,12 @@ def test_benchmark_playground_prefers_advanced_model_when_available(
     test.to_csv(tmp_path / "test.csv", index=False)
 
     monkeypatch.setattr(
-        lab, "_playground_original_path", lambda _data_dir: tmp_path / "orig.csv"
+        playground_telco,
+        "_playground_original_path",
+        lambda _data_dir: tmp_path / "orig.csv",
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_model_result",
         lambda _model, _train_x, _test_x, _y, _cv: (
             0.91001,
@@ -448,7 +458,7 @@ def test_benchmark_playground_prefers_advanced_model_when_available(
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_lightgbm_result",
         lambda _train, _test, _orig, _folds: (
             0.9188,
@@ -457,7 +467,7 @@ def test_benchmark_playground_prefers_advanced_model_when_available(
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_xgboost_result",
         lambda _train, _test, _orig, _folds: (
             0.91999,
@@ -466,7 +476,7 @@ def test_benchmark_playground_prefers_advanced_model_when_available(
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_xgboost_pseudo_result",
         lambda _train, _test, _orig, _folds: (
             0.9192,
@@ -475,7 +485,7 @@ def test_benchmark_playground_prefers_advanced_model_when_available(
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_catboost_result",
         lambda _train, _test, _orig, _folds: (
             0.9185,
@@ -484,13 +494,15 @@ def test_benchmark_playground_prefers_advanced_model_when_available(
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_best_blend",
         lambda _predictions, _y, step=0.05: None,
     )
     pd.DataFrame({"dummy": [1]}).to_csv(tmp_path / "orig.csv", index=False)
 
-    result = lab.benchmark_playground_telco(tmp_path, folds=3, write_submission=True)
+    result = playground_telco.benchmark_playground_telco(
+        tmp_path, folds=3, write_submission=True
+    )
 
     assert result.best_model == "xgboost_te"
     assert any(
@@ -535,7 +547,7 @@ def test_benchmark_playground_prefers_blend_when_it_wins(tmp_path, monkeypatch):
     test.to_csv(tmp_path / "test.csv", index=False)
 
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_model_result",
         lambda _model, _train_x, _test_x, _y, _cv: (
             0.915,
@@ -543,9 +555,11 @@ def test_benchmark_playground_prefers_blend_when_it_wins(tmp_path, monkeypatch):
             np.array([0.4, 0.6]),
         ),
     )
-    monkeypatch.setattr(lab, "_playground_original_path", lambda _data_dir: None)
     monkeypatch.setattr(
-        lab,
+        playground_telco, "_playground_original_path", lambda _data_dir: None
+    )
+    monkeypatch.setattr(
+        playground_telco,
         "_playground_best_blend",
         lambda _predictions, _y, step=0.05: (
             "rank",
@@ -555,7 +569,7 @@ def test_benchmark_playground_prefers_blend_when_it_wins(tmp_path, monkeypatch):
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_catboost_result",
         lambda _train, _test, _orig, _folds: (
             0.917,
@@ -564,7 +578,9 @@ def test_benchmark_playground_prefers_blend_when_it_wins(tmp_path, monkeypatch):
         ),
     )
 
-    result = lab.benchmark_playground_telco(tmp_path, folds=3, write_submission=True)
+    result = playground_telco.benchmark_playground_telco(
+        tmp_path, folds=3, write_submission=True
+    )
 
     assert result.best_model == "blend"
     assert any(
@@ -612,10 +628,12 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
     test.to_csv(tmp_path / "test.csv", index=False)
 
     monkeypatch.setattr(
-        lab, "_playground_original_path", lambda _data_dir: tmp_path / "orig.csv"
+        playground_telco,
+        "_playground_original_path",
+        lambda _data_dir: tmp_path / "orig.csv",
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_model_result",
         lambda _model, _train_x, _test_x, _y, _cv: (
             0.91001,
@@ -624,7 +642,7 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_lightgbm_result",
         lambda _train, _test, _orig, _folds: (
             0.9188,
@@ -633,7 +651,7 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_xgboost_result",
         lambda _train, _test, _orig, _folds: (
             0.91999,
@@ -642,7 +660,7 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_xgboost_pseudo_result",
         lambda _train, _test, _orig, _folds: (
             0.92055,
@@ -651,7 +669,7 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_catboost_result",
         lambda _train, _test, _orig, _folds: (
             0.9185,
@@ -660,13 +678,15 @@ def test_benchmark_playground_prefers_pseudo_model_when_it_wins(tmp_path, monkey
         ),
     )
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_best_blend",
         lambda _predictions, _y, step=0.05: None,
     )
     pd.DataFrame({"dummy": [1]}).to_csv(tmp_path / "orig.csv", index=False)
 
-    result = lab.benchmark_playground_telco(tmp_path, folds=3, write_submission=True)
+    result = playground_telco.benchmark_playground_telco(
+        tmp_path, folds=3, write_submission=True
+    )
 
     assert result.best_model == "xgboost_te_pseudo"
     assert any(
@@ -690,7 +710,7 @@ def test_playground_best_blend_can_prefer_rank_average():
         ),
     }
 
-    blend = lab._playground_best_blend(predictions, y, step=0.5)
+    blend = playground_telco._playground_best_blend(predictions, y, step=0.5)
 
     assert blend is not None
     blend_type, weights, score, pred = blend
@@ -709,7 +729,7 @@ def test_playground_best_blend_handles_four_models_by_using_subsets():
         "model_d": (np.array([0.3, 0.7, 0.1, 0.9, 0.2, 0.8]), np.array([0.5, 0.5])),
     }
 
-    blend = lab._playground_best_blend(predictions, y, step=0.5)
+    blend = playground_telco._playground_best_blend(predictions, y, step=0.5)
 
     assert blend is not None
     blend_type, weights, score, pred = blend
@@ -721,7 +741,7 @@ def test_playground_best_blend_handles_four_models_by_using_subsets():
 
 
 def test_playground_catboost_selected_features_prunes_heavy_te_only_columns():
-    selected = lab._playground_catboost_selected_features(
+    selected = playground_telco._playground_catboost_selected_features(
         [
             "tenure",
             "Contract",
@@ -747,7 +767,7 @@ def test_playground_catboost_selected_features_prunes_heavy_te_only_columns():
 
 
 def test_playground_lightgbm_selected_features_keeps_counts_and_interactions():
-    selected = lab._playground_lightgbm_selected_features(
+    selected = playground_telco._playground_lightgbm_selected_features(
         [
             "tenure",
             "Contract",
@@ -773,7 +793,7 @@ def test_playground_lightgbm_selected_features_keeps_counts_and_interactions():
 
 
 def test_playground_lightgbm_te_columns_focuses_on_core_categories_and_bins():
-    selected = lab._playground_lightgbm_te_columns(
+    selected = playground_telco._playground_lightgbm_te_columns(
         [
             "Contract",
             "tenure_bin",
@@ -794,8 +814,8 @@ def test_playground_lightgbm_te_columns_focuses_on_core_categories_and_bins():
 def test_playground_pseudo_label_helpers_focus_on_confident_predictions():
     predictions = np.array([0.01, 0.04, 0.18, 0.51, 0.83, 0.96, 0.99])
 
-    mask = lab._playground_pseudo_label_mask(predictions)
-    weights = lab._playground_pseudo_label_weights(predictions[mask])
+    mask = playground_telco._playground_pseudo_label_mask(predictions)
+    weights = playground_telco._playground_pseudo_label_weights(predictions[mask])
 
     assert mask.tolist() == [True, False, False, False, False, False, True]
     assert weights.shape == (2,)
@@ -858,7 +878,7 @@ def test_playground_advanced_feature_frames_add_ngram_and_distribution_columns()
     orig = train.copy()
 
     train_frame, test_frame, feature_cols, te_cols, drop_raw_cols = (
-        lab._playground_advanced_feature_frames(
+        playground_telco._playground_advanced_feature_frames(
             train,
             test,
             orig,
@@ -890,7 +910,7 @@ def test_playground_advanced_xgboost_result_averages_across_seed_ensemble(monkey
     test_frame = pd.DataFrame({"num": [10.0, 11.0]})
 
     monkeypatch.setattr(
-        lab,
+        playground_telco,
         "_playground_advanced_feature_frames",
         lambda _train, _test, _orig: (
             train_frame.copy(),
@@ -921,7 +941,7 @@ def test_playground_advanced_xgboost_result_averages_across_seed_ensemble(monkey
         sys.modules, "xgboost", types.SimpleNamespace(XGBClassifier=FakeXGBClassifier)
     )
 
-    score, oof, test_pred = lab._playground_advanced_xgboost_result(
+    score, oof, test_pred = playground_telco._playground_advanced_xgboost_result(
         pd.DataFrame(),
         pd.DataFrame(),
         pd.DataFrame(),
@@ -1006,7 +1026,7 @@ def test_spaceship_build_features_adds_group_domain_columns_and_enforces_cryo():
         ]
     )
 
-    train_x, test_x = lab._build_spaceship_features(train, test)
+    train_x, test_x = spaceship._build_spaceship_features(train, test)
 
     for col in [
         "AgeGroup",
@@ -1031,7 +1051,7 @@ def test_spaceship_best_threshold_can_outperform_default_threshold():
     probabilities = np.array([0.40, 0.45, 0.55, 0.60])
     y_true = np.array([0, 1, 1, 1])
 
-    threshold, score = lab._spaceship_best_threshold(probabilities, y_true)
+    threshold, score = spaceship._spaceship_best_threshold(probabilities, y_true)
 
     assert threshold != 0.5
     assert score == 1.0
@@ -1074,7 +1094,7 @@ def test_house_prepare_features_adds_core_engineering_columns():
     )
     test = train.drop(columns=["SalePrice"]).copy()
 
-    train_x, _test_x = lab._house_prepare_features(train, test)
+    train_x, _test_x = house_prices._house_prepare_features(train, test)
 
     assert train_x.loc[0, "TotalSF"] == 2300
     assert train_x.loc[0, "TotalBath"] == 3.5
@@ -1101,12 +1121,14 @@ def test_house_best_blend_prefers_stronger_weighted_mix():
         ),
     }
 
-    result = lab._house_best_blend(predictions, y)
+    result = house_prices._house_best_blend(predictions, y)
 
     assert result is not None
     weights, score, test_pred = result
     assert abs(sum(weights.values()) - 1.0) < 1e-9
-    assert score < min(lab._house_rmse(y, pred[0]) for pred in predictions.values())
+    assert score < min(
+        house_prices._house_rmse(y, pred[0]) for pred in predictions.values()
+    )
     assert test_pred.shape == (2,)
 
 
@@ -1150,7 +1172,7 @@ def test_store_sales_prediction_frame_produces_complete_predictions():
         ]
     )
 
-    frame = lab._store_sales_prediction_frame(history, target)
+    frame = store_sales._store_sales_prediction_frame(history, target)
 
     assert frame["recent_dow_promo_mean"].notna().all()
     assert frame["recent_28_mean"].notna().all()
@@ -1201,7 +1223,9 @@ def test_store_sales_build_future_frame_uses_direct_lag_when_available():
         [{"date": pd.Timestamp("2024-01-15"), "locale": "National"}]
     )
 
-    history_features = lab._store_sales_make_features(history, oil, stores, holidays)
+    history_features = store_sales._store_sales_make_features(
+        history, oil, stores, holidays
+    )
     category_maps = {
         col: {
             value: idx
@@ -1212,7 +1236,7 @@ def test_store_sales_build_future_frame_uses_direct_lag_when_available():
         for col in ("family", "type")
     }
     lag_lookup, history_summary, family_dow_history, store_dow_history = (
-        lab._store_sales_history_artifacts(history)
+        store_sales._store_sales_history_artifacts(history)
     )
     target = pd.DataFrame(
         [
@@ -1226,7 +1250,7 @@ def test_store_sales_build_future_frame_uses_direct_lag_when_available():
         ]
     )
 
-    future = lab._store_sales_build_future_frame(
+    future = store_sales._store_sales_build_future_frame(
         target,
         oil,
         stores,
@@ -1291,10 +1315,14 @@ def test_store_sales_recursive_predictions_feed_prior_outputs_into_history(monke
             {"signal": np.repeat(float(lag_lookup["sales"].iloc[-1]), len(day_rows))}
         )
 
-    monkeypatch.setattr(lab, "_store_sales_history_artifacts", fake_history_artifacts)
-    monkeypatch.setattr(lab, "_store_sales_build_future_frame", fake_future_frame)
+    monkeypatch.setattr(
+        store_sales, "_store_sales_history_artifacts", fake_history_artifacts
+    )
+    monkeypatch.setattr(
+        store_sales, "_store_sales_build_future_frame", fake_future_frame
+    )
 
-    preds = lab._store_sales_recursive_predictions(
+    preds = store_sales._store_sales_recursive_predictions(
         FakeModel(),
         history,
         target,
@@ -1366,10 +1394,12 @@ def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(
         return 0.12345, np.full(len(validation), 17.0), np.array([42.0, 43.0])
 
     monkeypatch.setattr(
-        lab, "_store_sales_lightgbm_future_result", fake_lightgbm_result
+        store_sales, "_store_sales_lightgbm_future_result", fake_lightgbm_result
     )
 
-    result = lab.benchmark_store_sales(tmp_path, _folds=0, write_submission=True)
+    result = store_sales.benchmark_store_sales(
+        tmp_path, _folds=0, write_submission=True
+    )
 
     assert result.best_model == "lightgbm_future"
     assert any(
