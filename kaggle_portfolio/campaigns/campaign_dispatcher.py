@@ -12,97 +12,37 @@ Capabilities
 from __future__ import annotations
 
 import argparse
-import json
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.campaigns.campaign_queue import (
+    DEFAULT_QUEUE_PATH,
+    claim,
+    complete,
+    PLANNED,
+    action_status,
+    filter_actions,
+    find_by_id,
+    load_payload,
+    now_iso,
+    parse_channels,
+    save_payload,
+)
 from kaggle_portfolio.shared.deps import Deps
 
-DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
 DEFAULT_REPORT_PATH = Path("medal_ops") / "reports" / "latest-campaign-runbook.md"
 
-PLANNED = "planned"
-IN_PROGRESS = "in_progress"
-DONE = "done"
-BLOCKED = "blocked"
-VALID_STATUSES = {PLANNED, IN_PROGRESS, DONE, BLOCKED}
 
+def claim_actions(actions: list[dict[str, Any]]) -> list[str]:
+    """Claim planned actions, returning the ids actually claimed.
 
-def now_iso() -> str:
-    return datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def load_payload(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        raise CommandError(f"Campaign queue not found: {path}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise CommandError(f"Invalid campaign queue payload: {path}")
-    queue = payload.get("queue")
-    if not isinstance(queue, list):
-        raise CommandError(f"Campaign queue missing 'queue' list: {path}")
-    return payload
-
-
-def save_payload(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-
-
-def action_status(action: dict[str, Any]) -> str:
-    value = str(action.get("status", PLANNED)).strip().lower()
-    return value if value in VALID_STATUSES else PLANNED
-
-
-def sorted_queue(queue: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    def key(item: dict[str, Any]) -> tuple[str, str]:
-        return (str(item.get("scheduled_for", "")), str(item.get("id", "")))
-
-    return sorted(queue, key=key)
-
-
-def filter_actions(
-    queue: list[dict[str, Any]],
-    *,
-    statuses: set[str],
-    channels: set[str] | None,
-    limit: int,
-) -> list[dict[str, Any]]:
-    selected: list[dict[str, Any]] = []
-    for item in sorted_queue(queue):
-        status = action_status(item)
-        channel = str(item.get("channel", "")).strip().lower()
-        if status not in statuses:
-            continue
-        if channels and channel not in channels:
-            continue
-        selected.append(item)
-        if len(selected) >= limit:
-            break
-    return selected
-
-
-def parse_channels(raw_channels: list[str]) -> set[str] | None:
-    if not raw_channels:
-        return None
-    values = {value.strip().lower() for value in raw_channels if value.strip()}
-    return values or None
-
-
-def find_by_id(queue: list[dict[str, Any]], action_id: str) -> dict[str, Any] | None:
-    for item in queue:
-        if str(item.get("id", "")) == action_id:
-            return item
-    return None
-
-
-def claim_actions(actions: list[dict[str, Any]]) -> None:
+    This used to claim unconditionally, so it could re-claim work already in
+    flight or finished and bump claim_count — which counts retries and cannot
+    also count "someone ran the command twice". The model refuses; a deliberate
+    re-run is requeue().
+    """
     stamp = now_iso()
-    for item in actions:
-        item["status"] = IN_PROGRESS
-        item["claimed_at"] = stamp
-        item["claim_count"] = int(item.get("claim_count") or 0) + 1
+    return [str(item.get("id", "")) for item in actions if claim(item, stamp=stamp)]
 
 
 def complete_actions(
@@ -117,10 +57,7 @@ def complete_actions(
         item = find_by_id(queue, action_id)
         if item is None:
             continue
-        item["status"] = DONE
-        item["completed_at"] = stamp
-        if note:
-            item["note"] = note
+        complete(item, note=note, stamp=stamp)
         completed.append(action_id)
     return completed
 
