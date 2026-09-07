@@ -2,9 +2,9 @@
 
 > 50K tracks with audio features, popularity, and genre labels
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)  
+**Kaggle:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)
 
 ## Description
 
@@ -16,7 +16,7 @@ Notable properties: genre-aware feature correlations, Zipf-like popularity distr
 
 ## Tags
 
-`music`, `classification`, `regression`, `beginner`, `clustering`
+`music`, `classification`, `regression`, `clustering`, `recommender systems`, `data visualization`
 
 ## Authors
 
@@ -40,28 +40,28 @@ Notable properties: genre-aware feature correlations, Zipf-like popularity distr
 
 ## spotify_tracks.csv
 
-**Rows:** 5,000  |  **Columns:** 21  |  **Size:** 13,032.7 KB
+**Rows:** 50,000  |  **Columns:** 21  |  **Size:** 13,032.7 KB
 
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
-| `track_id` | string | 0.0% | 5,000 | `P3fAbnFbmOHnKYaXRvj7uf`, `M2wleOV911xCZkwPRQeNHp`, `4JSnE2NiiUHUAKw9iEU1jj` |
-| `track_name` | string | 0.0% | 1,908 | `Last Mountain`, `One Dance (Acoustic Version)`, `Forever Song (Remix)` |
+| `track_id` | string | 0.0% | 50,000 | `P3fAbnFbmOHnKYaXRvj7uf`, `M2wleOV911xCZkwPRQeNHp`, `4JSnE2NiiUHUAKw9iEU1jj` |
+| `track_name` | string | 0.0% | 2,400 | `Last Mountain`, `One Dance (Acoustic Version)`, `Forever Song (Remix)` |
 | `artist_name` | string | 0.0% | 415 | `Desert Wind`, `Alex Rodriguez`, `The Midnight` |
-| `album_name` | string | 0.0% | 450 | `The Night Album`, `Volume 1`, `Burning Soul` |
+| `album_name` | string | 0.0% | 481 | `The Night Album`, `Volume 1`, `Burning Soul` |
 | `release_year` | integer | 0.0% | 25 | `2024`, `2019`, `2007` |
 | `genre` | string | 0.0% | 20 | `latin`, `rock`, `electronic` |
 | `popularity` | integer | 0.0% | 106 | `14`, `11`, `23` |
-| `duration_ms` | integer | 0.0% | 4,926 | `189042`, `186805`, `121814` |
+| `duration_ms` | integer | 0.0% | 42,848 | `189042`, `186805`, `121814` |
 | `explicit` | boolean | 0.0% | 2 | `False`, `True` |
-| `danceability` | float | 0.0% | 4,900 | `0.4277226245720831`, `0.4486344722988519`, `0.7079233572097434` |
-| `energy` | float | 0.0% | 4,789 | `1.0`, `0.7309111795456993`, `0.7449967500248068` |
-| `loudness` | float | 0.0% | 4,886 | `-4.702460124170008`, `-7.110031405122221`, `-7.30511983668819` |
-| `speechiness` | float | 0.0% | 4,592 | `0.050634521722032776`, `0.0`, `0.1440911273803575` |
-| `acousticness` | float | 0.0% | 4,367 | `0.23950553786088696`, `0.0444630046890899`, `0.11838033303144793` |
-| `instrumentalness` | float | 0.0% | 3,646 | `0.0`, `0.1813947783322327`, `0.09781763735300866` |
-| `liveness` | float | 0.0% | 4,800 | `0.1330525614065048`, `0.43594880310377926`, `0.2622544912103189` |
-| `valence` | float | 0.0% | 4,931 | `0.43138400653789466`, `0.5591349532819402`, `0.5168734525043466` |
-| `tempo` | float | 0.0% | 4,997 | `141.04873460781306`, `131.8332874783402`, `127.13295392507133` |
+| `danceability` | float | 0.0% | 49,057 | `0.4277226245720831`, `0.4486344722988519`, `0.7079233572097434` |
+| `energy` | float | 0.0% | 47,942 | `1.0`, `0.7309111795456993`, `0.7449967500248068` |
+| `loudness` | float | 0.0% | 48,891 | `-4.702460124170008`, `-7.110031405122221`, `-7.30511983668819` |
+| `speechiness` | float | 0.0% | 45,925 | `0.050634521722032776`, `0.0`, `0.1440911273803575` |
+| `acousticness` | float | 0.0% | 43,473 | `0.23950553786088696`, `0.0444630046890899`, `0.11838033303144793` |
+| `instrumentalness` | float | 0.0% | 36,238 | `0.0`, `0.1813947783322327`, `0.09781763735300866` |
+| `liveness` | float | 0.0% | 48,107 | `0.1330525614065048`, `0.43594880310377926`, `0.2622544912103189` |
+| `valence` | float | 0.0% | 49,345 | `0.43138400653789466`, `0.5591349532819402`, `0.5168734525043466` |
+| `tempo` | float | 0.0% | 49,953 | `141.04873460781306`, `131.8332874783402`, `127.13295392507133` |
 | `key` | integer | 0.0% | 12 | `11`, `7`, `0` |
 | `mode` | integer | 0.0% | 2 | `1`, `0` |
 | `time_signature` | integer | 0.0% | 5 | `4`, `3`, `5` |

@@ -2,9 +2,9 @@
 
 > 36K listings plus company profiles, job-skill edges, and salary benchmarks
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026)  
+**Kaggle:** [lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026)
 
 ## Description
 
@@ -16,7 +16,7 @@ Built for salary prediction, market trend analysis, skill-gap analysis, retrieva
 
 ## Tags
 
-`jobs`, `business`, `regression`, `classification`, `nlp`
+`jobs`, `business`, `nlp`, `data analytics`, `tabular`, `regression`
 
 ## Authors
 
@@ -62,11 +62,11 @@ Built for salary prediction, market trend analysis, skill-gap analysis, retrieva
 
 ## job_skills.csv
 
-**Rows:** 5,000  |  **Columns:** 6  |  **Size:** 14,522.8 KB
+**Rows:** 318,014  |  **Columns:** 6  |  **Size:** 14,522.8 KB
 
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
-| `job_id` | string | 0.0% | 569 | `JOB000001`, `JOB000008`, `JOB000005` |
+| `job_id` | string | 0.0% | 36,000 | `JOB000001`, `JOB000008`, `JOB000005` |
 | `skill` | string | 0.0% | 70 | `Python`, `Azure`, `BigQuery` |
 | `skill_category` | string | 0.0% | 13 | `data-platform`, `cloud`, `analytics` |
 | `importance` | string | 0.0% | 3 | `core`, `strong`, `nice_to_have` |
@@ -75,31 +75,31 @@ Built for salary prediction, market trend analysis, skill-gap analysis, retrieva
 
 ## jobs.csv
 
-**Rows:** 5,000  |  **Columns:** 37  |  **Size:** 19,784.9 KB
+**Rows:** 36,000  |  **Columns:** 37  |  **Size:** 19,784.9 KB
 
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
-| `job_id` | string | 0.0% | 5,000 | `JOB000001`, `JOB000002`, `JOB000003` |
+| `job_id` | string | 0.0% | 36,000 | `JOB000001`, `JOB000002`, `JOB000003` |
 | `company_id` | string | 0.0% | 280 | `COMP0131`, `COMP0189`, `COMP0241` |
 | `company_name` | string | 0.0% | 280 | `Signal Academy`, `Foundry Advisory 189`, `Apex Learning 241` |
-| `posted_date` | string | 0.0% | 817 | `2025-07-22`, `2024-11-08`, `2025-10-27` |
+| `posted_date` | string | 0.0% | 821 | `2025-07-22`, `2024-11-08`, `2025-10-27` |
 | `job_title` | string | 0.0% | 12 | `Data Engineer`, `LLM Engineer`, `MLOps Engineer` |
 | `role_family` | string | 0.0% | 8 | `analytics`, `modeling`, `genai-apps` |
 | `seniority` | string | 0.0% | 5 | `mid`, `senior`, `entry` |
 | `employment_type` | string | 0.0% | 3 | `full_time`, `contract`, `internship` |
-| `remote_type` | string | 0.0% | 3 | `remote`, `hybrid`, `onsite` |
+| `remote_type` | string | 0.0% | 3 | `hybrid`, `remote`, `onsite` |
 | `city` | string | 0.0% | 18 | `New York, NY`, `San Francisco, CA`, `Seattle, WA` |
 | `country` | string | 0.0% | 11 | `United States`, `India`, `United Kingdom` |
 | `region` | string | 0.0% | 3 | `North America`, `Europe`, `APAC` |
 | `industry` | string | 0.0% | 10 | `software`, `consulting`, `finance` |
 | `company_size` | string | 0.0% | 5 | `medium`, `small`, `startup` |
-| `funding_stage` | string | 0.0% | 8 | `series-c`, `series-a`, `late-stage` |
+| `funding_stage` | string | 0.0% | 8 | `late-stage`, `series-c`, `series-a` |
 | `company_type` | string | 0.0% | 27 | `edtech`, `developer-tools`, `consumer` |
 | `salary_currency` | string | 0.0% | 1 | `USD` |
-| `salary_min_usd` | integer | 0.0% | 265 | `139000`, `183000`, `71000` |
-| `salary_max_usd` | integer | 0.0% | 352 | `191000`, `257000`, `91000` |
-| `salary_mid_usd` | integer | 0.0% | 306 | `104000`, `157000`, `212000` |
-| `bonus_target_pct` | float | 0.0% | 127 | `0.093`, `0.079`, `0.077` |
+| `salary_min_usd` | integer | 0.0% | 327 | `139000`, `183000`, `71000` |
+| `salary_max_usd` | integer | 0.0% | 433 | `191000`, `257000`, `91000` |
+| `salary_mid_usd` | integer | 0.0% | 376 | `104000`, `157000`, `212000` |
+| `bonus_target_pct` | float | 0.0% | 146 | `0.093`, `0.079`, `0.077` |
 | `equity_offered` | integer | 0.0% | 2 | `0`, `1` |
 | `experience_min_years` | integer | 0.0% | 10 | `2`, `5`, `3` |
 | `experience_max_years` | integer | 0.0% | 10 | `8`, `9`, `6` |
@@ -107,15 +107,15 @@ Built for salary prediction, market trend analysis, skill-gap analysis, retrieva
 | `visa_sponsorship` | integer | 0.0% | 2 | `0`, `1` |
 | `ai_focus_area` | string | 0.0% | 45 | `batch-pipelines`, `operations`, `governance` |
 | `primary_skill_cluster` | string | 0.0% | 8 | `analytics`, `ml`, `llm` |
-| `cloud_stack` | string | 0.0% | 6 | `Azure|Databricks`, `Azure`, `GCP|BigQuery` |
-| `llm_stack` | string | 76.9% | 4 | `Anthropic API|DSPy|pgvector`, `OpenAI API|vLLM|LLM Evaluation`, `OpenAI API|LangChain|Pinecone` |
-| `required_skills` | string | 0.0% | 4,999 | `SQL|Python|Statistics|Excel|Azure|Pandas|Looker|Tableau`, `SQL|BigQuery|Looker|Data Modeling|dbt|Snowflake|GCP`, `Python|Airflow|Azure|Databricks|Data Modeling|Snowflake|SQL` |
-| `skills_count` | integer | 0.0% | 7 | `8`, `9`, `10` |
-| `applications_30d` | integer | 0.0% | 92 | `53`, `57`, `28` |
-| `days_open` | integer | 0.0% | 62 | `32`, `28`, `38` |
+| `cloud_stack` | string | 0.0% | 6 | `AWS|Snowflake`, `Azure`, `AWS` |
+| `llm_stack` | string | 77.4% | 4 | `Anthropic API|DSPy|pgvector`, `OpenAI API|LangChain|Pinecone`, `OpenAI API|vLLM|LLM Evaluation` |
+| `required_skills` | string | 0.0% | 35,986 | `SQL|Python|Statistics|Excel|Azure|Pandas|Looker|Tableau`, `SQL|BigQuery|Looker|Data Modeling|dbt|Snowflake|GCP`, `Python|Airflow|Azure|Databricks|Data Modeling|Snowflake|SQL` |
+| `skills_count` | integer | 0.0% | 7 | `8`, `9`, `7` |
+| `applications_30d` | integer | 0.0% | 100 | `53`, `57`, `28` |
+| `days_open` | integer | 0.0% | 68 | `32`, `28`, `38` |
 | `is_filled` | integer | 0.0% | 2 | `1`, `0` |
 | `hiring_urgency` | string | 0.0% | 3 | `medium`, `low`, `high` |
-| `description` | string | 0.0% | 5,000 | — |
+| `description` | string | 0.0% | 35,979 | — |
 
 ## salary_benchmarks.csv
 

@@ -2,9 +2,9 @@
 
 > 15K synthetic job listings with salary ranges, skills, and rich NLP features
 
-**License:** GPL-3.0  
+**License:** GPL-3.0
 
-**Kaggle:** [lorenzoscaturchio/job-postings-nlp-salary-prediction](https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp-salary-prediction)  
+**Kaggle:** [lorenzoscaturchio/job-postings-nlp-salary-prediction](https://www.kaggle.com/datasets/lorenzoscaturchio/job-postings-nlp-salary-prediction)
 
 ## Description
 
@@ -16,7 +16,7 @@ Notable features: salary ranges encode realistic correlations (senior > entry, e
 
 ## Tags
 
-`nlp`, `text classification`, `classification`, `regression`, `business`
+`nlp`, `text classification`, `business`, `regression`, `tabular`, `data analytics`
 
 ## Authors
 
@@ -40,26 +40,26 @@ Notable features: salary ranges encode realistic correlations (senior > entry, e
 
 ## job_postings.csv
 
-**Rows:** 5,000  |  **Columns:** 16  |  **Size:** 6,674.6 KB
+**Rows:** 15,000  |  **Columns:** 16  |  **Size:** 6,674.6 KB
 
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
-| `job_id` | string | 0.0% | 5,000 | `JOB13473`, `JOB10866`, `JOB12905` |
+| `job_id` | string | 0.0% | 15,000 | `JOB13473`, `JOB10866`, `JOB12905` |
 | `title` | string | 0.0% | 10 | `Backend Engineer`, `Product Manager`, `Software Engineer` |
 | `company` | string | 0.0% | 192 | `PolicyData Corp`, `LearnEdge Systems`, `Keystone Public Analytics` |
 | `location` | string | 0.0% | 50 | `Albuquerque, NM`, `Pittsburgh, PA`, `Omaha, NE` |
-| `remote_type` | string | 0.0% | 3 | `hybrid`, `onsite`, `remote` |
-| `industry` | string | 0.0% | 8 | `finance`, `government`, `education` |
-| `company_size` | string | 0.0% | 5 | `large`, `medium`, `small` |
+| `remote_type` | string | 0.0% | 3 | `hybrid`, `remote`, `onsite` |
+| `industry` | string | 0.0% | 8 | `government`, `tech`, `finance` |
+| `company_size` | string | 0.0% | 5 | `medium`, `large`, `small` |
 | `experience_level` | string | 0.0% | 5 | `mid`, `senior`, `entry` |
-| `salary_min` | integer | 0.0% | 318 | `138000`, `85000`, `63000` |
-| `salary_max` | integer | 0.0% | 396 | `164000`, `103000`, `77000` |
-| `required_skills` | string | 0.0% | 4,923 | `Jupyter|Deep Learning|Python|Statistics|NLP|SQL|A/B Testing`, `Python|PostgreSQL|BigQuery|Spark`, `User Research|JIRA` |
+| `salary_min` | integer | 0.0% | 371 | `138000`, `85000`, `63000` |
+| `salary_max` | integer | 0.0% | 452 | `164000`, `103000`, `77000` |
+| `required_skills` | string | 0.0% | 14,495 | `Jupyter|Deep Learning|Python|Statistics|NLP|SQL|A/B Testing`, `Python|PostgreSQL|BigQuery|Spark`, `User Research|JIRA` |
 | `education_required` | string | 0.0% | 4 | `bachelor`, `master`, `phd` |
-| `description` | string | 0.0% | 5,000 | — |
-| `posted_date` | string | 0.0% | 368 | `2023-01-04`, `2023-01-09`, `2023-01-05` |
-| `applications` | integer | 0.0% | 240 | `22`, `26`, `75` |
-| `days_to_fill` | integer | 0.0% | 165 | `53`, `61`, `55` |
+| `description` | string | 0.0% | 15,000 | — |
+| `posted_date` | string | 0.0% | 1,095 | `2023-01-04`, `2023-01-09`, `2023-01-05` |
+| `applications` | integer | 0.0% | 253 | `22`, `26`, `75` |
+| `days_to_fill` | integer | 0.0% | 166 | `53`, `61`, `55` |
 
 ## Suggested Use Cases
 
