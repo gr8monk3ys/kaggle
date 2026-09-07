@@ -383,7 +383,7 @@ class KaggleClient(Protocol):
 
     # datasets
     def my_datasets(self) -> list[Dataset]: ...
-    def datasets_by_owner(self, owner: str) -> list[Dataset]: ...
+    def public_datasets_of(self, owner: str) -> list[Dataset]: ...
     def datasets_owned_by(self, owner: str) -> list[Dataset]: ...
     def search_datasets(
         self, *, sort_by: str | None = ..., pages: int = ...
@@ -724,7 +724,7 @@ class CliKaggleClient:
             for row in self._paginated(["datasets", "list", "--mine"])
         ]
 
-    def datasets_by_owner(self, owner: str) -> list[Dataset]:
+    def public_datasets_of(self, owner: str) -> list[Dataset]:
         """List a user's public datasets.
 
         Two spellings existed for this — ``-s <owner>`` and ``--user <owner>``.
@@ -746,7 +746,7 @@ class CliKaggleClient:
         wanted = owner.strip().lower()
         by_ref: dict[str, Dataset] = {}
         errors: list[str] = []
-        for fetch in (self.my_datasets, lambda: self.datasets_by_owner(wanted)):
+        for fetch in (self.my_datasets, lambda: self.public_datasets_of(wanted)):
             try:
                 found = fetch()
             except KaggleError as exc:
@@ -1030,7 +1030,7 @@ class FakeKaggleClient:
         self._maybe_fail()
         return list(self._datasets)
 
-    def datasets_by_owner(self, owner: str) -> list[Dataset]:
+    def public_datasets_of(self, owner: str) -> list[Dataset]:
         self._maybe_fail()
         return [d for d in self._datasets if d.ref.startswith(f"{owner}/")]
 

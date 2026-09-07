@@ -20,13 +20,13 @@ Invoked by: ./manage.sh post-discussion [--dry-run]
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
 from math import ceil
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from kaggle_portfolio.discussions import draft_queue
 from kaggle_portfolio.discussions.draft_queue import (
     DEFAULT_SCHEDULE_WEEKS,
     POST_DAYS,
@@ -225,7 +225,12 @@ def generate_queue(
     if start_date is None:
         start_date = datetime.now(tz=timezone.utc)
 
-    def next_post_day(dt: datetime) -> datetime:
+    def next_posting_slot(dt: datetime) -> datetime:
+        # Deliberately NOT draft_queue.next_post_day: that one advances a day and
+        # keeps the time of day, for topping up a rolling window. This one pins
+        # the posting hour and accepts dt itself, because generating a schedule
+        # from scratch has to place a first slot. Same shape, different job — the
+        # shared name was shadowing and hid that.
         dt = dt.replace(hour=14, minute=0, second=0, microsecond=0)  # 14:00 UTC
         for _ in range(14):  # max 2 weeks lookahead
             if dt.weekday() in POST_DAYS:
@@ -234,7 +239,7 @@ def generate_queue(
         return dt
 
     queue = []
-    current_dt = next_post_day(start_date)
+    current_dt = next_posting_slot(start_date)
     max_scheduled = schedule_weeks * POSTS_PER_WEEK
     scheduled_count = 0
 
@@ -278,7 +283,7 @@ def generate_queue(
         if item_status == "scheduled":
             # Advance to next post day only for scheduled queue entries.
             current_dt += timedelta(days=1)
-            current_dt = next_post_day(current_dt)
+            current_dt = next_posting_slot(current_dt)
 
     return queue
 
@@ -394,14 +399,17 @@ def update_draft(
 
 
 def load_queue() -> list[dict]:
-    if QUEUE_FILE.exists():
-        return json.loads(QUEUE_FILE.read_text(encoding="utf-8"))
-    return []
+    """Read the queue through the shared model.
+
+    This module used to carry its own reader and writer against QUEUE_FILE, with
+    different newline and JSON-error behaviour from draft_queue's — two writers of
+    one file, which is the drift ADR-0003 exists to prevent.
+    """
+    return draft_queue.load_queue(QUEUE_FILE)
 
 
 def save_queue(queue: list[dict]) -> None:
-    QUEUE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    QUEUE_FILE.write_text(json.dumps(queue, indent=2), encoding="utf-8")
+    draft_queue.save_queue(QUEUE_FILE, queue)
 
 
 def show_dry_run(queue: list[dict], n: int = 3) -> None:

@@ -32,11 +32,10 @@ from typing import Any
 
 from kaggle_portfolio.shared.clock import resolve_today
 from kaggle_portfolio.shared.proc import configure_logging
+from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 
 ROOT = Path(__file__).resolve().parents[2]
-REPORTS_DIR = ROOT / "medal_ops" / "reports"
-REPORT_FILE = REPORTS_DIR / "latest-stale-content.md"
 
 LOG = configure_logging("stale_content")
 
@@ -474,10 +473,9 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         )
         print(report_md)
 
-        # Write report to file
-        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-        REPORT_FILE.write_text(report_md, encoding="utf-8")
-        print(f"{GREEN}Report written to {REPORT_FILE.relative_to(ROOT)}{RESET}")
+        # Through the emitter: this wrote a module-global path unconditionally,
+        # so the command ignored both --dry-run and --output-root.
+        deps.emitter.emit(reports.STALE_CONTENT, report_md)
 
     if total == 0:
         print(f"\n{GREEN}All content is fresh.{RESET}")

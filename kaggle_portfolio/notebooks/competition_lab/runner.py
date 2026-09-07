@@ -24,8 +24,28 @@ from kaggle_portfolio.shared.kaggle_client import KaggleError
 from kaggle_portfolio.shared.layout import RepoLayout
 from kaggle_portfolio.shared.errors import CommandError
 
-ROOT = Path(__file__).resolve().parents[2]
-LAB_ROOT = RepoLayout.resolve().lab_root
+# One lab root, set at the CLI edge by set_layout(). A module-level value rather
+# than a parameter because benchmarks are called as
+# BENCHMARKS[slug](data_dir, folds, write_submission) — threading a layout
+# through them would change that documented interface. It was previously worse:
+# _ensure_data read deps.layout while _submission_dir read a separately-resolved
+# global, so data and submissions could land under different roots.
+_LAYOUT: RepoLayout | None = None
+
+
+def layout() -> RepoLayout:
+    global _LAYOUT
+    if _LAYOUT is None:
+        _LAYOUT = RepoLayout.resolve()
+    return _LAYOUT
+
+
+def set_layout(new: RepoLayout | None) -> None:
+    """Point the lab at a different repo root. Called from main(); used by tests."""
+    global _LAYOUT
+    _LAYOUT = new
+
+
 RANDOM_STATE = 42
 GREEN = "\033[0;32m"
 YELLOW = "\033[0;33m"
@@ -45,7 +65,8 @@ class LabResult:
 
 
 def _ensure_data(deps: Deps, slug: str, force_download: bool = False) -> Path:
-    data_dir = deps.layout.lab_root / slug / "data"
+    set_layout(deps.layout)
+    data_dir = layout().lab_root / slug / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     csv_files = list(data_dir.glob("*.csv"))
     if csv_files and not force_download:
@@ -64,13 +85,13 @@ def _ensure_data(deps: Deps, slug: str, force_download: bool = False) -> Path:
 
 
 def _submission_dir(slug: str) -> Path:
-    out = LAB_ROOT / slug / "submissions"
+    out = layout().lab_root / slug / "submissions"
     out.mkdir(parents=True, exist_ok=True)
     return out
 
 
 def _benchmark_dir(slug: str) -> Path:
-    out = LAB_ROOT / slug
+    out = layout().lab_root / slug
     out.mkdir(parents=True, exist_ok=True)
     return out
 

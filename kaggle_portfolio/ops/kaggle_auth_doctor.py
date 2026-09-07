@@ -69,7 +69,7 @@ def dataset_id_owners(root: Path) -> tuple[dict[str, int], list[str]]:
 
 def probe_public_listing(client: KaggleClient, owner: str) -> tuple[bool, str]:
     try:
-        rows = client.datasets_by_owner(owner)
+        rows = client.public_datasets_of(owner)
     except KaggleError as exc:
         return False, str(exc)
     return True, f"retrieved {len(rows)} public dataset rows"

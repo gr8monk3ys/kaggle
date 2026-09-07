@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
+import re
 import subprocess
-import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -216,3 +216,41 @@ def test_dataset_keywords_within_kaggle_limit():
     assert not offenders, (
         f"Datasets exceed Kaggle's {MAX_KEYWORDS}-keyword limit: {offenders}"
     )
+
+
+def test_deps_global_stays_inside_the_cli_edge():
+    """No command module may reach manage_commands' process-wide Deps.
+
+    ADR-0002 permits the edge to hold one constructed Deps; it does not permit
+    command modules to default to it. That line was breached once already —
+    notebook_quality imported is_skipped from manage_commands, and that helper
+    called deps() — so the rule is enforced rather than trusted.
+    """
+    package = ROOT / "kaggle_portfolio"
+    offenders = []
+    for path in package.rglob("*.py"):
+        if path.name == "manage_commands.py":
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "manage_commands.deps(" in text or re.search(
+            r"from kaggle_portfolio\.manage_commands import [^\n]*\bdeps\b", text
+        ):
+            offenders.append(str(path.relative_to(ROOT)))
+    assert offenders == [], (
+        "these modules reach manage_commands' process-wide Deps: "
+        f"{offenders}. Take deps as a parameter instead. Importing a function "
+        "that ACCEPTS deps is fine; calling deps() from outside the edge is not."
+    )
+
+
+def test_benchmarks_registry_stays_callable():
+    """BENCHMARKS[slug](data_dir, folds, write) is the documented contract.
+
+    The package split briefly made the values dotted-path strings, so the
+    subscript returned a str and calling it raised TypeError. Nothing caught it.
+    """
+    from kaggle_portfolio.notebooks.competition_lab import BENCHMARKS
+
+    assert len(BENCHMARKS) >= 8
+    for slug in BENCHMARKS:
+        assert callable(BENCHMARKS[slug]), f"BENCHMARKS[{slug!r}] must be callable"

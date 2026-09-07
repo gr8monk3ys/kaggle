@@ -1946,7 +1946,9 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         original_content = tracker_path.read_text(encoding="utf-8")
         updated_content, changes = apply_tracker_sync(original_content, today, live)
 
-        if not args.dry_run and updated_content != original_content:
+        # deps.effects, not args.dry_run: the dispatcher already resolved the
+        # flag, and a second reading of it is how the two drifted apart before.
+        if deps.effects and updated_content != original_content:
             tracker_path.write_text(updated_content, encoding="utf-8")
 
         report = generate_sync_markdown(
