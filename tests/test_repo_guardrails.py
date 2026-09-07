@@ -367,3 +367,34 @@ def test_notebook_keywords_within_kaggle_limit():
         f"the {MAX_KEYWORDS}th is dropped on push without an error. Keep the "
         f"{MAX_KEYWORDS} most searchable terms: {offenders}"
     )
+
+
+def test_hand_authored_explore_notebooks_are_protected_from_regeneration(repo_root):
+    """A hand-authored explore notebook must survive `dataset_explore_generator --all`.
+
+    This was a hardcoded name list that went stale: it protected spotify-tracks and
+    mental-health-tech, while student-performance and ecommerce-behavior — both
+    hand-authored, both carrying executed outputs — were left exposed to being
+    overwritten by the generic template.
+    """
+    from kaggle_portfolio.datasets.dataset_explore_generator import is_hand_authored
+
+    unprotected = []
+    for ds_dir in sorted((repo_root / "datasets").iterdir()):
+        if not ds_dir.is_dir():
+            continue
+        nb_path = ds_dir / "explore.ipynb"
+        if not nb_path.exists():
+            continue
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+        # Saved outputs mean somebody executed it deliberately; the generator
+        # never produces them.
+        has_outputs = any(cell.get("outputs") for cell in nb.get("cells", []))
+        if has_outputs and not is_hand_authored(ds_dir):
+            unprotected.append(ds_dir.name)
+
+    assert not unprotected, (
+        "these explore notebooks carry executed outputs but would be overwritten by "
+        f"`dataset_explore_generator --all`: {unprotected}. Add a build_notebook.py "
+        'or set `"hand_authored": true` in the notebook metadata.'
+    )

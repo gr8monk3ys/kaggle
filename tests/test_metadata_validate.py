@@ -577,8 +577,14 @@ def test_validate_python_logic_title_too_long():
             "lorenzoscaturchio/credit-card-fraud-eda-detection",
         ),
         (
+            # The live notebook is `job-postings-nlp-salary-eda`; this pinned the
+            # longer `...-salary-prediction-eda`, which exists nowhere on the
+            # account. Pushing that directory would have created a duplicate
+            # rather than updating the real notebook. Verified against the live
+            # kernel list; the sibling ids here were checked at the same time and
+            # are correct.
             "datasets/job-postings",
-            "lorenzoscaturchio/job-postings-nlp-salary-prediction-eda",
+            "lorenzoscaturchio/job-postings-nlp-salary-eda",
         ),
         (
             "datasets/student-performance",
