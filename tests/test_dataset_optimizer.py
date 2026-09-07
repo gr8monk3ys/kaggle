@@ -1,18 +1,8 @@
 from pathlib import Path
 
 from kaggle_portfolio.datasets import dataset_optimizer
-from kaggle_portfolio.shared import kaggle_utils
-
-
-def test_kaggle_command_falls_back_to_module_cli(monkeypatch):
-    monkeypatch.setattr(kaggle_utils, "kaggle_cli_path", lambda: None)
-    monkeypatch.setattr(
-        kaggle_utils.importlib.util,
-        "find_spec",
-        lambda name: object() if name == "kaggle.cli" else None,
-    )
-    cmd = kaggle_utils.kaggle_command()
-    assert cmd[1:] == ["-m", "kaggle.cli"]
+from kaggle_portfolio.shared import proc
+from kaggle_portfolio.shared.kaggle_client import FakeKaggleClient
 
 
 def test_optimize_dataset_fails_on_invalid_metadata_json(tmp_path):
@@ -20,13 +10,13 @@ def test_optimize_dataset_fails_on_invalid_metadata_json(tmp_path):
     ds_dir.mkdir(parents=True)
     (ds_dir / "dataset-metadata.json").write_text("{bad json", encoding="utf-8")
 
-    ok = dataset_optimizer.optimize_dataset(ds_dir, push=False)
+    ok = dataset_optimizer.optimize_dataset(FakeKaggleClient(), ds_dir, push=False)
 
     assert ok is False
 
 
-def test_summarize_subprocess_error_prefers_last_meaningful_line():
-    message = dataset_optimizer.summarize_subprocess_error(
+def test_summarize_output_prefers_last_meaningful_line():
+    message = proc.summarize_output(
         "warning one\nwarning two\n",
         "401 Client Error: Unauthorized for url: https://www.kaggle.com/api/v1/blobs/upload\n"
         "  warnings.warn(\n",
@@ -86,7 +76,7 @@ def test_optimize_dataset_includes_parquet_analysis(tmp_path, monkeypatch):
 
     monkeypatch.setattr(dataset_optimizer, "analyze_parquet", fake_analyze_parquet)
 
-    ok = dataset_optimizer.optimize_dataset(ds_dir, push=False)
+    ok = dataset_optimizer.optimize_dataset(FakeKaggleClient(), ds_dir, push=False)
     readme = (ds_dir / "README.md").read_text(encoding="utf-8")
 
     assert ok

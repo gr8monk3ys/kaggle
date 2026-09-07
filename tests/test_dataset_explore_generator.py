@@ -1,15 +1,16 @@
 """Tests for dataset_explore_generator.py."""
+
 import json
 from pathlib import Path
 
-import pytest
-
 from kaggle_portfolio.datasets import dataset_explore_generator as gen
+from kaggle_portfolio.shared.kaggle_client import FakeKaggleClient
 
 
 # ---------------------------------------------------------------------------
 # Column classification
 # ---------------------------------------------------------------------------
+
 
 class TestClassifyColumns:
     def test_numeric_columns(self):
@@ -87,6 +88,7 @@ class TestClassifyColumns:
 # Cell generators
 # ---------------------------------------------------------------------------
 
+
 class TestCellGenerators:
     def test_title_cell_contains_dataset_name(self):
         meta = {"title": "My Dataset", "subtitle": "100 rows", "id": "user/my-ds"}
@@ -99,16 +101,30 @@ class TestCellGenerators:
         assert "100 rows" in source_text
 
     def test_distributions_empty_when_no_numeric(self):
-        classified = {"numeric": [], "categorical": [], "high_cardinality": [],
-                       "id_like": [], "target": None}
+        classified = {
+            "numeric": [],
+            "categorical": [],
+            "high_cardinality": [],
+            "id_like": [],
+            "target": None,
+        }
         cells = gen._cell_distributions(classified)
-        source_text = "".join(c.get("source", "") if isinstance(c.get("source"), str)
-                              else "".join(c.get("source", [])) for c in cells)
+        source_text = "".join(
+            c.get("source", "")
+            if isinstance(c.get("source"), str)
+            else "".join(c.get("source", []))
+            for c in cells
+        )
         assert "No numeric columns" in source_text
 
     def test_correlations_need_two_numeric(self):
-        classified = {"numeric": ["only_one"], "categorical": [], "high_cardinality": [],
-                       "id_like": [], "target": None}
+        classified = {
+            "numeric": ["only_one"],
+            "categorical": [],
+            "high_cardinality": [],
+            "id_like": [],
+            "target": None,
+        }
         cells = gen._cell_correlations(classified)
         source_text = "".join("".join(c.get("source", [])) for c in cells)
         assert "at least 2" in source_text
@@ -118,6 +134,7 @@ class TestCellGenerators:
 # End-to-end notebook generation
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateExploreNotebook:
     def _make_dataset(self, tmp_path: Path, rows: int = 50):
         """Create a minimal dataset directory with CSV and metadata."""
@@ -126,18 +143,21 @@ class TestGenerateExploreNotebook:
 
         # CSV
         import csv
+
         csv_path = ds_dir / "test_data.csv"
         with csv_path.open("w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["id", "age", "salary", "department", "target"])
             for i in range(rows):
-                writer.writerow([
-                    i,
-                    20 + (i % 40),
-                    30000 + i * 100,
-                    ["Engineering", "Sales", "Marketing"][i % 3],
-                    i % 2,
-                ])
+                writer.writerow(
+                    [
+                        i,
+                        20 + (i % 40),
+                        30000 + i * 100,
+                        ["Engineering", "Sales", "Marketing"][i % 3],
+                        i % 2,
+                    ]
+                )
 
         # dataset-metadata.json
         meta = {
@@ -158,9 +178,7 @@ class TestGenerateExploreNotebook:
             "code_file": "explore.ipynb",
             "dataset_sources": ["testuser/test-dataset"],
         }
-        (ds_dir / "kernel-metadata.json").write_text(
-            json.dumps(km), encoding="utf-8"
-        )
+        (ds_dir / "kernel-metadata.json").write_text(json.dumps(km), encoding="utf-8")
 
         return ds_dir
 
@@ -171,7 +189,7 @@ class TestGenerateExploreNotebook:
 
     def test_generates_valid_ipynb(self, tmp_path):
         ds_dir = self._make_dataset(tmp_path)
-        ok = gen.build_explore(ds_dir, push=False)
+        ok = gen.build_explore(FakeKaggleClient(), ds_dir, push=False)
         assert ok
 
         ipynb_path = ds_dir / "explore.ipynb"

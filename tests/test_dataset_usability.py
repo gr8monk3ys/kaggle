@@ -6,6 +6,13 @@ from datetime import date
 from pathlib import Path
 
 from kaggle_portfolio.datasets import dataset_usability
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import (
+    Dataset,
+    FakeKaggleClient,
+    KaggleError,
+    parse_csv,
+)
 
 
 def _write_dataset_bundle(
@@ -20,7 +27,9 @@ def _write_dataset_bundle(
 ) -> Path:
     ds_dir = root / "datasets" / name
     ds_dir.mkdir(parents=True, exist_ok=True)
-    (ds_dir / "dataset-metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+    (ds_dir / "dataset-metadata.json").write_text(
+        json.dumps(metadata), encoding="utf-8"
+    )
     if readme is not None:
         (ds_dir / "README.md").write_text(readme, encoding="utf-8")
     if include_create:
@@ -29,7 +38,9 @@ def _write_dataset_bundle(
         (ds_dir / "explore.ipynb").write_text("{}", encoding="utf-8")
     if include_kernel_meta:
         (ds_dir / "kernel-metadata.json").write_text(
-            json.dumps({"id": "u/explore", "title": "Explore", "code_file": "explore.ipynb"}),
+            json.dumps(
+                {"id": "u/explore", "title": "Explore", "code_file": "explore.ipynb"}
+            ),
             encoding="utf-8",
         )
     for filename in data_files or []:
@@ -192,8 +203,12 @@ def test_generate_markdown_and_json_include_gap_priorities():
         ),
     ]
 
-    markdown = dataset_usability.generate_markdown(scores, today=date(2026, 2, 24), fail_under=75)
-    payload = dataset_usability.build_json_report(scores, today=date(2026, 2, 24), fail_under=75)
+    markdown = dataset_usability.generate_markdown(
+        scores, today=date(2026, 2, 24), fail_under=75
+    )
+    payload = dataset_usability.build_json_report(
+        scores, today=date(2026, 2, 24), fail_under=75
+    )
 
     assert "## Criteria Averages" in markdown
     assert "`metadata_core`" in markdown
@@ -213,14 +228,14 @@ def test_score_out_of_10_ceiling_behavior():
     assert dataset_usability.score_out_of_10(0) == 0
 
 
-def test_parse_kaggle_datasets_csv_extracts_ratings():
+def test_parse_live_ratings_csv_extracts_ratings():
     raw = (
         "ref,title,size,lastUpdated,downloadCount,voteCount,usabilityRating\n"
         "u/a,A,1,2026-02-24,0,0,0.64\n"
         "u/b,B,1,2026-02-24,0,0,0.58\n"
     )
 
-    parsed = dataset_usability.parse_kaggle_datasets_csv(raw)
+    parsed = dataset_usability.parse_live_ratings_csv(raw)
 
     assert parsed["u/a"] == 0.64
     assert parsed["u/b"] == 0.58
@@ -299,54 +314,51 @@ def test_infer_owner_from_scores_uses_majority_owner():
     assert dataset_usability.infer_owner_from_scores(scores) == "owner-one"
 
 
-def test_fetch_kaggle_live_ratings_combines_mine_and_search(monkeypatch):
-    calls: list[list[str]] = []
+def _datasets(csv_text: str) -> list[Dataset]:
+    return [Dataset.from_row(row) for row in parse_csv(csv_text)]
 
-    def fake_run(args):
-        calls.append(args)
-        if args == ["--mine", "--csv"]:
-            return {"owner/a": 0.61}, None
-        if args == ["-s", "owner", "--csv"]:
-            return {"owner/b": 0.58}, None
-        raise AssertionError(f"unexpected args: {args}")
 
-    monkeypatch.setattr(dataset_usability, "_run_kaggle_dataset_list", fake_run)
-
-    ratings, err = dataset_usability.fetch_kaggle_live_ratings("owner")
-
+def test_fetch_kaggle_live_ratings_unions_private_and_public_listings():
+    client = FakeKaggleClient(
+        datasets=_datasets(
+            "ref,title,usabilityRating\nowner/a,A,0.61\nowner/b,B,0.58\n"
+        )
+    )
+    ratings, err = dataset_usability.fetch_kaggle_live_ratings(client, "owner")
     assert err is None
-    assert ratings["owner/a"] == 0.61
-    assert ratings["owner/b"] == 0.58
-    assert calls == [["--mine", "--csv"], ["-s", "owner", "--csv"]]
+    assert ratings == {"owner/a": 0.61, "owner/b": 0.58}
 
 
-def test_fetch_kaggle_live_ratings_filters_non_owner_refs(monkeypatch):
-    def fake_run(args):
-        if args == ["--mine", "--csv"]:
-            return {"owner/a": 0.71, "someone-else/b": 0.91}, None
-        if args == ["-s", "owner", "--csv"]:
-            return {"owner/c": 0.81, "another/d": 0.44}, None
-        raise AssertionError(f"unexpected args: {args}")
-
-    monkeypatch.setattr(dataset_usability, "_run_kaggle_dataset_list", fake_run)
-
-    ratings, err = dataset_usability.fetch_kaggle_live_ratings("owner")
-
+def test_fetch_kaggle_live_ratings_filters_non_owner_refs():
+    client = FakeKaggleClient(
+        datasets=_datasets(
+            "ref,title,usabilityRating\n"
+            "owner/a,A,0.71\nsomeone-else/b,B,0.91\nowner/c,C,0.81\nanother/d,D,0.44\n"
+        )
+    )
+    ratings, err = dataset_usability.fetch_kaggle_live_ratings(client, "owner")
     assert err is None
     assert ratings == {"owner/a": 0.71, "owner/c": 0.81}
 
 
-def test_parse_kaggle_datasets_csv_ignores_preamble_warning():
+def test_fetch_kaggle_live_ratings_reports_kaggle_failure():
+    client = FakeKaggleClient(fail_with=KaggleError("403 Forbidden"))
+    ratings, err = dataset_usability.fetch_kaggle_live_ratings(client, "owner")
+    assert ratings == {}
+    assert "403 Forbidden" in err
+
+
+def test_parse_live_ratings_csv_ignores_preamble_warning():
     raw = (
         "Warning: Looks like you're using an outdated API Version\n"
         "ref,title,size,lastUpdated,downloadCount,voteCount,usabilityRating\n"
         "u/a,A,1,2026-02-24,0,0,0.81\n"
     )
-    ratings = dataset_usability.parse_kaggle_datasets_csv(raw)
+    ratings = dataset_usability.parse_live_ratings_csv(raw)
     assert ratings == {"u/a": 0.81}
 
 
-def test_main_live_fetch_falls_back_to_csv_snapshot(tmp_path, monkeypatch):
+def test_main_live_fetch_falls_back_to_csv_snapshot(tmp_path):
     description = "Detailed description. " * 40
     readme = "\n".join(
         [
@@ -390,40 +402,40 @@ def test_main_live_fetch_falls_back_to_csv_snapshot(tmp_path, monkeypatch):
     fallback_csv = tmp_path / "live-fallback.csv"
     fallback_csv.write_text("ref,usabilityRating\nu/sample,0.84\n", encoding="utf-8")
 
-    def fake_fetch(_owner: str):
-        return {}, "network down"
-
-    monkeypatch.setattr(dataset_usability, "fetch_kaggle_live_ratings", fake_fetch)
+    # A client that cannot reach Kaggle, so the CSV fallback path runs for real.
+    client = FakeKaggleClient(fail_with=KaggleError("network down"))
 
     out_root = tmp_path / "out"
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "dataset_usability.py",
-            "--root",
-            str(tmp_path),
-            "--output-root",
-            str(out_root),
-            "--today",
-            "2026-02-24",
-            "--live",
-            "--owner",
-            "u",
-            "--fallback-live-ratings-csv",
-            str(fallback_csv),
-            "--daily-tracker",
-            "--alert-under",
-            "0.8",
-            "--target-rating",
-            "1.0",
-        ],
-    )
+    argv = [
+        "--root",
+        str(tmp_path),
+        "--output-root",
+        str(out_root),
+        "--today",
+        "2026-02-24",
+        "--live",
+        "--owner",
+        "u",
+        "--fallback-live-ratings-csv",
+        str(fallback_csv),
+        "--daily-tracker",
+        "--alert-under",
+        "0.8",
+        "--target-rating",
+        "1.0",
+    ]
 
-    rc = dataset_usability.main()
+    deps = Deps.for_test(
+        tmp_path, today="2026-02-24", client=client, output_root=out_root
+    )
+    rc = dataset_usability.main(argv, deps=deps)
 
     assert rc == 0
-    latest_json = json.loads((out_root / "reports" / "latest-dataset-usability.json").read_text(encoding="utf-8"))
+    latest_json = json.loads(
+        (out_root / "reports" / "latest-dataset-usability.json").read_text(
+            encoding="utf-8"
+        )
+    )
     assert latest_json["summary"]["live_kaggle"]["matched_count"] == 1
 
 
@@ -474,7 +486,11 @@ def test_build_live_priority_queue_orders_by_status_then_rating():
     )
     summary = dataset_usability.summarize_live_queue(queue)
 
-    assert [item["dataset_ref"] for item in queue] == ["u/critical", "u/watch", "u/strong"]
+    assert [item["dataset_ref"] for item in queue] == [
+        "u/critical",
+        "u/watch",
+        "u/strong",
+    ]
     assert summary["critical"] == 1
     assert summary["watch"] == 1
     assert summary["strong"] == 1

@@ -9,12 +9,12 @@ import re
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 from kaggle_portfolio.manage_commands import is_skipped
-from kaggle_portfolio.shared.kaggle_utils import parse_iso_date, resolve_today
+from kaggle_portfolio.shared.clock import resolve_today
 
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
@@ -57,7 +57,9 @@ SECTION_PATTERNS = {
     "data": [r"\b(dataset|data overview|eda|exploratory data|feature(s)? overview)\b"],
     "method": [r"\b(method|approach|model(ing)?|training|pipeline|architecture)\b"],
     "evaluation": [r"\b(result(s)?|evaluation|metric(s)?|validation|leaderboard)\b"],
-    "conclusion": [r"\b(conclusion|summary|takeaway(s)?|next step(s)?|final thoughts)\b"],
+    "conclusion": [
+        r"\b(conclusion|summary|takeaway(s)?|next step(s)?|final thoughts)\b"
+    ],
 }
 
 SECTION_PLAYBOOK = {
@@ -130,8 +132,6 @@ class NotebookScore:
     error: str | None = None
 
 
-
-
 def source_to_text(source: Any) -> str:
     if isinstance(source, list):
         return "".join(str(item) for item in source)
@@ -148,7 +148,11 @@ def discover_notebooks(root: Path, scope: str) -> tuple[list[Path], list[str]]:
         if is_skipped(metadata_path, root):
             continue
         rel_metadata = metadata_path.relative_to(root)
-        if scope == "portfolio" and rel_metadata.parts and rel_metadata.parts[0] == "datasets":
+        if (
+            scope == "portfolio"
+            and rel_metadata.parts
+            and rel_metadata.parts[0] == "datasets"
+        ):
             continue
 
         try:
@@ -183,7 +187,10 @@ def compute_section_coverage(markdown_text: str) -> tuple[int, list[str], int]:
     hits = 0
     missing_categories: list[str] = []
     for category, patterns in SECTION_PATTERNS.items():
-        found = any(re.search(pattern, markdown_text, flags=re.IGNORECASE) for pattern in patterns)
+        found = any(
+            re.search(pattern, markdown_text, flags=re.IGNORECASE)
+            for pattern in patterns
+        )
         if found:
             hits += 1
         else:
@@ -273,7 +280,9 @@ def score_notebook(path: Path, root: Path, min_score: int) -> NotebookScore:
     else:
         criteria["markdown_balance"] = 0
 
-    section_score, missing_sections, section_hits = compute_section_coverage(all_markdown_text)
+    section_score, missing_sections, section_hits = compute_section_coverage(
+        all_markdown_text
+    )
     criteria["section_coverage"] = section_score
 
     if contains_any(all_code_text, VISUALIZATION_KEYWORDS):
@@ -290,7 +299,9 @@ def score_notebook(path: Path, root: Path, min_score: int) -> NotebookScore:
     else:
         criteria["reproducibility_signal"] = 0
 
-    insight_hits = sum(1 for word in INSIGHT_KEYWORDS if word in all_markdown_text.lower())
+    insight_hits = sum(
+        1 for word in INSIGHT_KEYWORDS if word in all_markdown_text.lower()
+    )
     if insight_hits >= 4:
         criteria["insight_signal"] = 10
     elif insight_hits >= 2:
@@ -366,7 +377,11 @@ def build_priority_actions(item: NotebookScore, top_n: int) -> list[dict[str, An
             continue
         task = CRITERION_PLAYBOOK[criterion]
         if criterion == "section_coverage" and missing_sections:
-            section_tasks = [SECTION_PLAYBOOK[key] for key in missing_sections if key in SECTION_PLAYBOOK]
+            section_tasks = [
+                SECTION_PLAYBOOK[key]
+                for key in missing_sections
+                if key in SECTION_PLAYBOOK
+            ]
             if section_tasks:
                 task = task + " " + " ".join(section_tasks[:3])
         actions.append({"criterion": criterion, "impact": gap, "task": task})
@@ -395,7 +410,9 @@ def select_fix_candidates(
     max_notebooks: int,
 ) -> list[NotebookScore]:
     candidates = [item for item in scores if item.error or item.score < target_score]
-    return sorted(candidates, key=lambda item: (item.score, item.slug))[: max(1, max_notebooks)]
+    return sorted(candidates, key=lambda item: (item.score, item.slug))[
+        : max(1, max_notebooks)
+    ]
 
 
 def generate_fixer_markdown(
@@ -405,7 +422,9 @@ def generate_fixer_markdown(
     top_actions: int,
     max_notebooks: int,
 ) -> str:
-    candidates = select_fix_candidates(scores, target_score=target_score, max_notebooks=max_notebooks)
+    candidates = select_fix_candidates(
+        scores, target_score=target_score, max_notebooks=max_notebooks
+    )
     gap_totals = aggregate_criterion_gaps(scores)
 
     lines = [
@@ -464,7 +483,9 @@ def build_fixer_json(
     top_actions: int,
     max_notebooks: int,
 ) -> dict[str, Any]:
-    candidates = select_fix_candidates(scores, target_score=target_score, max_notebooks=max_notebooks)
+    candidates = select_fix_candidates(
+        scores, target_score=target_score, max_notebooks=max_notebooks
+    )
     gap_totals = aggregate_criterion_gaps(scores)
     return {
         "generated_on": today.isoformat(),
@@ -553,8 +574,12 @@ def generate_quality_markdown(
     if failed == 0:
         lines.append("- No notebooks are below threshold.")
     else:
-        for item in sorted((s for s in scores if not s.passed), key=lambda s: s.score)[:10]:
-            lines.append(f"- `{item.slug}` ({item.score}): {'; '.join(item.missing[:3])}")
+        for item in sorted((s for s in scores if not s.passed), key=lambda s: s.score)[
+            :10
+        ]:
+            lines.append(
+                f"- `{item.slug}` ({item.score}): {'; '.join(item.missing[:3])}"
+            )
     lines.append("")
 
     lines.append("## Discovery Warnings")
@@ -584,8 +609,12 @@ def build_json_report(
             "count": len(scores),
             "passed": sum(1 for item in scores if item.passed),
             "failed": sum(1 for item in scores if not item.passed),
-            "average_score": round(statistics.mean([item.score for item in scores]), 2) if scores else 0.0,
-            "median_score": round(statistics.median([item.score for item in scores]), 2) if scores else 0.0,
+            "average_score": round(statistics.mean([item.score for item in scores]), 2)
+            if scores
+            else 0.0,
+            "median_score": round(statistics.median([item.score for item in scores]), 2)
+            if scores
+            else 0.0,
         },
         "warnings": warnings,
         "notebooks": [
@@ -614,11 +643,19 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Score Kaggle notebooks against a quality rubric.")
+    parser = argparse.ArgumentParser(
+        description="Score Kaggle notebooks against a quality rubric."
+    )
     parser.add_argument("--root", default=".", help="Repository root path.")
-    parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Report output root.")
-    parser.add_argument("--today", default=None, help="Override date in YYYY-MM-DD format.")
-    parser.add_argument("--min-score", type=int, default=70, help="Minimum passing score (0-100).")
+    parser.add_argument(
+        "--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Report output root."
+    )
+    parser.add_argument(
+        "--today", default=None, help="Override date in YYYY-MM-DD format."
+    )
+    parser.add_argument(
+        "--min-score", type=int, default=70, help="Minimum passing score (0-100)."
+    )
     parser.add_argument(
         "--scope",
         choices=("all", "portfolio"),
@@ -670,9 +707,14 @@ def main() -> int:
     if not notebooks:
         raise SystemExit("No notebooks discovered from kernel-metadata.json files.")
 
-    scores = [score_notebook(path=notebook, root=root, min_score=args.min_score) for notebook in notebooks]
+    scores = [
+        score_notebook(path=notebook, root=root, min_score=args.min_score)
+        for notebook in notebooks
+    ]
 
-    markdown = generate_quality_markdown(scores, warnings, args.min_score, args.scope, today)
+    markdown = generate_quality_markdown(
+        scores, warnings, args.min_score, args.scope, today
+    )
     json_report = build_json_report(scores, warnings, args.min_score, args.scope, today)
     fixer_markdown = generate_fixer_markdown(
         scores,
@@ -696,7 +738,9 @@ def main() -> int:
     latest_json_path = reports_dir / "latest-notebook-quality.json"
     dated_fixer_md_path = reports_dir / f"notebook-quality-fixes-{today.isoformat()}.md"
     latest_fixer_md_path = reports_dir / "latest-notebook-quality-fixes.md"
-    dated_fixer_json_path = reports_dir / f"notebook-quality-fixes-{today.isoformat()}.json"
+    dated_fixer_json_path = (
+        reports_dir / f"notebook-quality-fixes-{today.isoformat()}.json"
+    )
     latest_fixer_json_path = reports_dir / "latest-notebook-quality-fixes.json"
 
     write_text(dated_md_path, markdown)
@@ -720,7 +764,9 @@ def main() -> int:
     )
 
     if args.fail_under_threshold and failed:
-        print(f"Quality gate failed: {len(failed)} notebook(s) below threshold {args.min_score}.")
+        print(
+            f"Quality gate failed: {len(failed)} notebook(s) below threshold {args.min_score}."
+        )
         return 1
     return 0
 

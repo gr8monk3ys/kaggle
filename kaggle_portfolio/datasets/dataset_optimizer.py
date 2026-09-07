@@ -26,11 +26,11 @@ import argparse
 import csv
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient
 
 ROOT = Path(__file__).resolve().parents[2]
 DATASETS_DIR = ROOT / "datasets"
@@ -55,8 +55,6 @@ DEFAULT_COLLECTION_METHODOLOGY = (
     "and rule-based constraints to mimic realistic structure while avoiding "
     "direct personal data."
 )
-
-
 
 
 def infer_temporal_coverage(meta: dict) -> tuple[str, str]:
@@ -106,7 +104,9 @@ def apply_metadata_defaults(meta: dict) -> tuple[dict, bool]:
             bio = str(author.get("bio", "")).strip() or DEFAULT_AUTHOR_BIO
             normalized_authors.append({"name": name, "bio": bio})
         if not normalized_authors:
-            normalized_authors = [{"name": DEFAULT_AUTHOR_NAME, "bio": DEFAULT_AUTHOR_BIO}]
+            normalized_authors = [
+                {"name": DEFAULT_AUTHOR_NAME, "bio": DEFAULT_AUTHOR_BIO}
+            ]
         if normalized_authors != current_authors:
             meta["authors"] = normalized_authors
             changed = True
@@ -143,7 +143,9 @@ def apply_metadata_defaults(meta: dict) -> tuple[dict, bool]:
         meta["doi"] = DEFAULT_DOI
         changed = True
 
-    update_frequency = str(meta.get("updateFrequency", meta.get("update_frequency", ""))).strip()
+    update_frequency = str(
+        meta.get("updateFrequency", meta.get("update_frequency", ""))
+    ).strip()
     if not update_frequency:
         meta["updateFrequency"] = DEFAULT_UPDATE_FREQUENCY
         changed = True
@@ -162,9 +164,14 @@ def apply_metadata_defaults(meta: dict) -> tuple[dict, bool]:
                 "Synthetic data generation scripts in this repository",
                 "Public domain schemas and domain conventions for educational simulation",
             ]
-        methodology = str(
-            current_provenance.get("collection_methodology", DEFAULT_COLLECTION_METHODOLOGY)
-        ).strip() or DEFAULT_COLLECTION_METHODOLOGY
+        methodology = (
+            str(
+                current_provenance.get(
+                    "collection_methodology", DEFAULT_COLLECTION_METHODOLOGY
+                )
+            ).strip()
+            or DEFAULT_COLLECTION_METHODOLOGY
+        )
         normalized_provenance = {
             "sources": sources,
             "collection_methodology": methodology,
@@ -183,7 +190,9 @@ def apply_metadata_defaults(meta: dict) -> tuple[dict, bool]:
 
     citations = meta.get("citations")
     if isinstance(citations, list):
-        normalized_citations = [str(item).strip() for item in citations if str(item).strip()]
+        normalized_citations = [
+            str(item).strip() for item in citations if str(item).strip()
+        ]
     else:
         normalized_citations = []
     if not normalized_citations:
@@ -196,6 +205,7 @@ def apply_metadata_defaults(meta: dict) -> tuple[dict, bool]:
 
 
 # ── CSV Analysis ──────────────────────────────────────────────────────────────
+
 
 def analyze_csv(path: Path, max_rows: int = 5000) -> dict:
     """Read up to max_rows of a CSV and return column stats."""
@@ -245,14 +255,16 @@ def analyze_csv(path: Path, max_rows: int = 5000) -> dict:
         # Sample values (up to 3 unique, short)
         sample = _pick_samples(non_null, n_unique)
 
-        columns.append({
-            "name": col,
-            "dtype": dtype,
-            "null_pct": null_pct,
-            "n_unique": n_unique,
-            "samples": sample,
-            "total": len(values),
-        })
+        columns.append(
+            {
+                "name": col,
+                "dtype": dtype,
+                "null_pct": null_pct,
+                "n_unique": n_unique,
+                "samples": sample,
+                "total": len(values),
+            }
+        )
 
     return {
         "columns": columns,
@@ -301,14 +313,16 @@ def analyze_parquet(path: Path, max_rows: int = 5000) -> dict:
         n_unique = len(unique_vals)
         dtype = _guess_dtype(non_null[:100])
         sample = _pick_samples(non_null, n_unique)
-        columns.append({
-            "name": str(col),
-            "dtype": dtype,
-            "null_pct": null_pct,
-            "n_unique": n_unique,
-            "samples": sample,
-            "total": int(len(series)),
-        })
+        columns.append(
+            {
+                "name": str(col),
+                "dtype": dtype,
+                "null_pct": null_pct,
+                "n_unique": n_unique,
+                "samples": sample,
+                "total": int(len(series)),
+            }
+        )
 
     return {
         "columns": columns,
@@ -355,6 +369,7 @@ def _pick_samples(values: list[str], n_unique: int) -> list[str]:
 
 
 # ── README generation ─────────────────────────────────────────────────────────
+
 
 def generate_readme(ds_dir: Path, meta: dict, file_analyses: list[dict]) -> str:
     """Generate a README.md for a dataset directory."""
@@ -411,7 +426,9 @@ def generate_readme(ds_dir: Path, meta: dict, file_analyses: list[dict]) -> str:
 
     doi = str(meta.get("doi", "")).strip()
     citations = meta.get("citations") if isinstance(meta.get("citations"), list) else []
-    normalized_citations = [str(item).strip() for item in citations if str(item).strip()]
+    normalized_citations = [
+        str(item).strip() for item in citations if str(item).strip()
+    ]
     if doi or normalized_citations:
         lines += ["## DOI and Citations", ""]
         lines.append(f"- DOI: {doi or 'n/a'}")
@@ -419,10 +436,16 @@ def generate_readme(ds_dir: Path, meta: dict, file_analyses: list[dict]) -> str:
             lines.append(f"- {citation}")
         lines.append("")
 
-    provenance = meta.get("provenance") if isinstance(meta.get("provenance"), dict) else {}
+    provenance = (
+        meta.get("provenance") if isinstance(meta.get("provenance"), dict) else {}
+    )
     if provenance:
         lines += ["## Provenance", ""]
-        sources = provenance.get("sources") if isinstance(provenance.get("sources"), list) else []
+        sources = (
+            provenance.get("sources")
+            if isinstance(provenance.get("sources"), list)
+            else []
+        )
         for source in sources:
             source_text = str(source).strip()
             if source_text:
@@ -435,7 +458,12 @@ def generate_readme(ds_dir: Path, meta: dict, file_analyses: list[dict]) -> str:
     for analysis in file_analyses:
         file_name = analysis.get("file", "unknown-file")
         if "error" in analysis:
-            lines += [f"## {file_name}", "", f"*Error reading file: {analysis['error']}*", ""]
+            lines += [
+                f"## {file_name}",
+                "",
+                f"*Error reading file: {analysis['error']}*",
+                "",
+            ]
             continue
 
         lines += [
@@ -479,19 +507,30 @@ def _infer_use_cases(meta: dict, file_analyses: list[dict]) -> list[str]:
     keywords = [k.lower() for k in meta.get("keywords", [])]
 
     if any(w in desc + " ".join(keywords) for w in ["fraud", "anomaly"]):
-        use_cases.append("Binary classification (fraud detection) with severe class imbalance")
+        use_cases.append(
+            "Binary classification (fraud detection) with severe class imbalance"
+        )
         use_cases.append("Anomaly detection (Isolation Forest, Autoencoder)")
         use_cases.append("Threshold optimization (precision-recall tradeoff)")
-    if any(w in desc + " ".join(keywords) for w in ["time series", "forecast", "sales", "price"]):
+    if any(
+        w in desc + " ".join(keywords)
+        for w in ["time series", "forecast", "sales", "price"]
+    ):
         use_cases.append("Time series forecasting with lag/rolling features")
         use_cases.append("Seasonal decomposition (trend, seasonality, residuals)")
-    if any(w in desc + " ".join(keywords) for w in ["nlp", "text", "classification", "sentiment"]):
+    if any(
+        w in desc + " ".join(keywords)
+        for w in ["nlp", "text", "classification", "sentiment"]
+    ):
         use_cases.append("Text classification (TF-IDF, BERT embeddings)")
         use_cases.append("Named entity recognition or topic modeling")
     if any(w in desc + " ".join(keywords) for w in ["salary", "job", "employ"]):
         use_cases.append("Salary prediction (regression)")
         use_cases.append("Job category classification (multi-class)")
-    if any(w in desc + " ".join(keywords) for w in ["student", "academic", "grade", "score"]):
+    if any(
+        w in desc + " ".join(keywords)
+        for w in ["student", "academic", "grade", "score"]
+    ):
         use_cases.append("Academic performance prediction (regression/classification)")
         use_cases.append("Feature importance analysis of student success factors")
     if any(w in desc + " ".join(keywords) for w in ["spotify", "music", "audio"]):
@@ -508,7 +547,8 @@ def _infer_use_cases(meta: dict, file_analyses: list[dict]) -> list[str]:
 
 # ── Main optimizer ─────────────────────────────────────────────────────────────
 
-def optimize_dataset(ds_dir: Path, push: bool = False) -> bool:
+
+def optimize_dataset(client: KaggleClient, ds_dir: Path, push: bool = False) -> bool:
     """Optimize a single dataset directory."""
     meta_path = ds_dir / "dataset-metadata.json"
     if not meta_path.exists():
@@ -518,10 +558,14 @@ def optimize_dataset(ds_dir: Path, push: bool = False) -> bool:
     try:
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"  {RED}FAIL{RESET} {ds_dir.name}: invalid dataset-metadata.json ({exc})")
+        print(
+            f"  {RED}FAIL{RESET} {ds_dir.name}: invalid dataset-metadata.json ({exc})"
+        )
         return False
     if not isinstance(meta, dict):
-        print(f"  {RED}FAIL{RESET} {ds_dir.name}: dataset-metadata.json must be a JSON object")
+        print(
+            f"  {RED}FAIL{RESET} {ds_dir.name}: dataset-metadata.json must be a JSON object"
+        )
         return False
 
     meta, metadata_changed = apply_metadata_defaults(meta)
@@ -541,7 +585,9 @@ def optimize_dataset(ds_dir: Path, push: bool = False) -> bool:
         if "error" in analysis:
             print(f"{RED}error: {analysis['error']}{RESET}")
         else:
-            print(f"{GREEN}{analysis['rows']:,} rows, {len(analysis['columns'])} cols{RESET}")
+            print(
+                f"{GREEN}{analysis['rows']:,} rows, {len(analysis['columns'])} cols{RESET}"
+            )
         file_analyses.append(analysis)
 
     for f in parquet_files:
@@ -550,7 +596,9 @@ def optimize_dataset(ds_dir: Path, push: bool = False) -> bool:
         if "error" in analysis:
             print(f"{RED}error: {analysis['error']}{RESET}")
         else:
-            print(f"{GREEN}{analysis['rows']:,} rows, {len(analysis['columns'])} cols{RESET}")
+            print(
+                f"{GREEN}{analysis['rows']:,} rows, {len(analysis['columns'])} cols{RESET}"
+            )
         file_analyses.append(analysis)
 
     if not file_analyses:
@@ -564,41 +612,31 @@ def optimize_dataset(ds_dir: Path, push: bool = False) -> bool:
 
     if push:
         print(f"    Pushing {ds_dir.name}... ", end="", flush=True)
-        cli = kaggle_command()
-        result = subprocess.run(
-            [*cli, "datasets", "version", "-p", str(ds_dir),
-             "-m", "Add README.md with column summaries and use cases",
-             "--dir-mode", "zip"],
-            capture_output=True, text=True, cwd=str(ROOT),
+        outcome = client.publish_dataset(
+            ds_dir, "Add README.md with column summaries and use cases"
         )
-        if result.returncode == 0:
-            print(f"{GREEN}OK{RESET}")
+        if outcome.ok:
+            print(f"{GREEN}{'skipped (dry run)' if outcome.skipped else 'OK'}{RESET}")
         else:
-            # Try create if version fails
-            result2 = subprocess.run(
-                [*cli, "datasets", "create", "-p", str(ds_dir), "--dir-mode", "zip"],
-                capture_output=True, text=True, cwd=str(ROOT),
-            )
-            if result2.returncode == 0:
-                print(f"{GREEN}created{RESET}")
-            else:
-                msg = summarize_subprocess_error(
-                    result.stdout,
-                    result.stderr,
-                    result2.stdout,
-                    result2.stderr,
-                )
-                print(f"{RED}FAILED{RESET}: {msg}")
-                return False
+            print(f"{RED}FAILED{RESET}: {outcome.detail}")
+            return False
+
     return True
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     parser = argparse.ArgumentParser(description="Dataset usability optimizer.")
-    parser.add_argument("--push", action="store_true", help="Re-upload datasets after optimizing.")
-    parser.add_argument("--dir", type=Path, default=None,
-                        help="Optimize a single dataset directory (e.g. datasets/job-postings).")
+    parser.add_argument(
+        "--push", action="store_true", help="Re-upload datasets after optimizing."
+    )
+    parser.add_argument(
+        "--dir",
+        type=Path,
+        default=None,
+        help="Optimize a single dataset directory (e.g. datasets/job-postings).",
+    )
     args = parser.parse_args(argv)
+    deps = deps or Deps.resolve(effects=bool(getattr(args, "push", False)))
 
     print(f"{BLUE}=== Dataset Optimizer ==={RESET}\n")
 
@@ -611,14 +649,16 @@ def main(argv: list[str] | None = None) -> int:
     success = 0
     failed = 0
     for ds_dir in dirs:
-        ok = optimize_dataset(ds_dir, push=args.push)
+        ok = optimize_dataset(deps.client, ds_dir, push=args.push)
         if ok:
             success += 1
         else:
             failed += 1
         print()
 
-    print(f"{BLUE}=== Done ==={RESET}  Optimized: {GREEN}{success}{RESET}  Failed: {RED}{failed}{RESET}")
+    print(
+        f"{BLUE}=== Done ==={RESET}  Optimized: {GREEN}{success}{RESET}  Failed: {RED}{failed}{RESET}"
+    )
     return 0 if failed == 0 else 1
 
 

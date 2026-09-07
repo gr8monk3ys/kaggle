@@ -10,10 +10,12 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.shared.kaggle_utils import parse_iso_date, resolve_today
+from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
 
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
-DEFAULT_DATASET_REPORT = DEFAULT_OUTPUT_ROOT / "reports" / "latest-dataset-usability.json"
+DEFAULT_DATASET_REPORT = (
+    DEFAULT_OUTPUT_ROOT / "reports" / "latest-dataset-usability.json"
+)
 DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
 DEFAULT_CHANNELS = ["kaggle-discussion", "kaggle-changelog", "x", "linkedin"]
 
@@ -34,7 +36,9 @@ def parse_ref_filter(raw: str | None) -> set[str]:
     return {item for item in refs if item}
 
 
-def filter_rows_by_refs(rows: list[dict[str, Any]], refs: set[str]) -> tuple[list[dict[str, Any]], list[str]]:
+def filter_rows_by_refs(
+    rows: list[dict[str, Any]], refs: set[str]
+) -> tuple[list[dict[str, Any]], list[str]]:
     if not refs:
         return rows, []
 
@@ -49,8 +53,6 @@ def filter_rows_by_refs(rows: list[dict[str, Any]], refs: set[str]) -> tuple[lis
     missing = sorted(ref for ref in refs if ref not in seen)
     warnings = [f"Requested dataset ref not found in report: {ref}" for ref in missing]
     return filtered, warnings
-
-
 
 
 def resolve_start_date(today: date, start_override: str | None) -> date:
@@ -72,7 +74,9 @@ def load_dataset_report(path: Path) -> list[dict[str, Any]]:
     return [row for row in rows if isinstance(row, dict)]
 
 
-def rating_status(rating: float | None, alert_under: float, target_rating: float) -> str:
+def rating_status(
+    rating: float | None, alert_under: float, target_rating: float
+) -> str:
     if rating is None:
         return "unknown"
     if rating < alert_under:
@@ -101,10 +105,14 @@ def prioritize_datasets(
     for row in rows:
         rating_raw = row.get("kaggle_usability_rating")
         rating = float(rating_raw) if isinstance(rating_raw, (int, float)) else None
-        status = rating_status(rating, alert_under=alert_under, target_rating=target_rating)
+        status = rating_status(
+            rating, alert_under=alert_under, target_rating=target_rating
+        )
         ref = str(row.get("dataset_ref") or row.get("path") or "").strip()
         title = str(row.get("title") or ref or "Dataset").strip()
-        gap_to_target = round(max(0.0, target_rating - rating), 4) if rating is not None else None
+        gap_to_target = (
+            round(max(0.0, target_rating - rating), 4) if rating is not None else None
+        )
         gap_to_one = round(max(0.0, 1.0 - rating), 4) if rating is not None else None
 
         if status == "critical":
@@ -114,7 +122,9 @@ def prioritize_datasets(
         elif status == "strong":
             objective = "Keep momentum and optimize toward 1.0 usability."
         else:
-            objective = "Resolve live coverage: verify listing/public state and rerun tracker."
+            objective = (
+                "Resolve live coverage: verify listing/public state and rerun tracker."
+            )
 
         prioritized.append(
             {
@@ -147,7 +157,9 @@ def build_channel_copy(dataset: dict[str, Any], target_rating: float) -> dict[st
     url = dataset.get("dataset_url") or "(add dataset URL)"
     rating = dataset.get("rating")
     rating_text = f"{rating:.3f}" if isinstance(rating, float) else "n/a"
-    objective = str(dataset.get("objective") or "Improve docs, examples, and discoverability.")
+    objective = str(
+        dataset.get("objective") or "Improve docs, examples, and discoverability."
+    )
 
     kaggle_discussion = (
         f"I am planning the next refresh for {title} and want concrete feedback before I publish it.\n"
@@ -243,7 +255,9 @@ def generate_markdown(
     alert_under: float,
     target_rating: float,
 ) -> str:
-    ratings = [item["rating"] for item in datasets if isinstance(item.get("rating"), float)]
+    ratings = [
+        item["rating"] for item in datasets if isinstance(item.get("rating"), float)
+    ]
     lines = [
         "# Dataset Promotion Campaign Pack",
         "",
@@ -255,7 +269,9 @@ def generate_markdown(
         f"- Scheduled actions: {len(queue)}",
     ]
     if ratings:
-        lines.append(f"- Average live rating (priority set): {statistics.mean(ratings):.3f}")
+        lines.append(
+            f"- Average live rating (priority set): {statistics.mean(ratings):.3f}"
+        )
     else:
         lines.append("- Average live rating (priority set): n/a")
 
@@ -273,8 +289,12 @@ def generate_markdown(
         rating_text = f"{rating:.3f}" if isinstance(rating, float) else "n/a"
         gap_to_target = item.get("gap_to_target")
         gap_to_one = item.get("gap_to_one")
-        gap_to_target_text = f"{gap_to_target:.3f}" if isinstance(gap_to_target, float) else "n/a"
-        gap_to_one_text = f"{gap_to_one:.3f}" if isinstance(gap_to_one, float) else "n/a"
+        gap_to_target_text = (
+            f"{gap_to_target:.3f}" if isinstance(gap_to_target, float) else "n/a"
+        )
+        gap_to_one_text = (
+            f"{gap_to_one:.3f}" if isinstance(gap_to_one, float) else "n/a"
+        )
         lines.append(
             f"| {idx} | `{item.get('dataset_ref')}` | {rating_text} | {item.get('status')} | "
             f"{gap_to_target_text} | {gap_to_one_text} | {item.get('objective')} |"
@@ -321,17 +341,59 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate dataset promotion campaign pack + queue.")
-    parser.add_argument("--dataset-report", default=str(DEFAULT_DATASET_REPORT), help="Path to dataset usability JSON report.")
-    parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT), help="Output root for generated reports.")
-    parser.add_argument("--queue-path", default=str(DEFAULT_QUEUE_PATH), help="Where to write JSON campaign queue.")
-    parser.add_argument("--today", default=None, help="Override today date (YYYY-MM-DD).")
-    parser.add_argument("--start-date", default=None, help="Campaign start date (YYYY-MM-DD). Defaults to today.")
-    parser.add_argument("--days", type=int, default=14, help="Campaign duration in days (default 14).")
-    parser.add_argument("--posts-per-day", type=int, default=2, help="Number of scheduled actions per day (default 2).")
-    parser.add_argument("--alert-under", type=float, default=0.7, help="Critical threshold (default 0.7).")
-    parser.add_argument("--target-rating", type=float, default=0.8, help="Target threshold (default 0.8).")
-    parser.add_argument("--max-datasets", type=int, default=12, help="Maximum datasets to include in priority set.")
+    parser = argparse.ArgumentParser(
+        description="Generate dataset promotion campaign pack + queue."
+    )
+    parser.add_argument(
+        "--dataset-report",
+        default=str(DEFAULT_DATASET_REPORT),
+        help="Path to dataset usability JSON report.",
+    )
+    parser.add_argument(
+        "--output-root",
+        default=str(DEFAULT_OUTPUT_ROOT),
+        help="Output root for generated reports.",
+    )
+    parser.add_argument(
+        "--queue-path",
+        default=str(DEFAULT_QUEUE_PATH),
+        help="Where to write JSON campaign queue.",
+    )
+    parser.add_argument(
+        "--today", default=None, help="Override today date (YYYY-MM-DD)."
+    )
+    parser.add_argument(
+        "--start-date",
+        default=None,
+        help="Campaign start date (YYYY-MM-DD). Defaults to today.",
+    )
+    parser.add_argument(
+        "--days", type=int, default=14, help="Campaign duration in days (default 14)."
+    )
+    parser.add_argument(
+        "--posts-per-day",
+        type=int,
+        default=2,
+        help="Number of scheduled actions per day (default 2).",
+    )
+    parser.add_argument(
+        "--alert-under",
+        type=float,
+        default=0.7,
+        help="Critical threshold (default 0.7).",
+    )
+    parser.add_argument(
+        "--target-rating",
+        type=float,
+        default=0.8,
+        help="Target threshold (default 0.8).",
+    )
+    parser.add_argument(
+        "--max-datasets",
+        type=int,
+        default=12,
+        help="Maximum datasets to include in priority set.",
+    )
     parser.add_argument(
         "--refs",
         default=None,

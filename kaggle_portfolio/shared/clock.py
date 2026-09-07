@@ -26,6 +26,22 @@ class InvalidDateOverride(ValueError):
     """Raised when a ``--today`` override is not a valid ``YYYY-MM-DD`` date."""
 
 
+def resolve_today(today_override: str | None) -> date:
+    """Return *today_override* as a date, or today's date when ``None``.
+
+    Kept for modules that do not yet take a :class:`Deps`; it raises
+    ``SystemExit`` as it always has, rather than :class:`InvalidDateOverride`,
+    so their exit codes are unchanged. Callers that take a ``Deps`` should read
+    ``deps.clock.today`` instead.
+    """
+    if not today_override:
+        return date.today()
+    parsed = parse_iso_date(today_override)
+    if not parsed:
+        raise SystemExit(f"Invalid --today value: {today_override}")
+    return parsed
+
+
 @dataclass(frozen=True)
 class Clock:
     """Today's date and the current instant, fixed for the life of a command.

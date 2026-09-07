@@ -4,8 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import io
 import json
 import subprocess
 import sys
@@ -13,7 +11,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from kaggle_portfolio.datasets import dataset_usability
-from kaggle_portfolio.shared.kaggle_utils import kaggle_command, summarize_subprocess_error
+from kaggle_portfolio.shared.deps import Deps
+from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError
+from kaggle_portfolio.shared.proc import summarize_output
 
 
 BLUE = "\033[0;34m"
@@ -37,61 +37,20 @@ class PublishCandidate:
     live_state: str  # draft | live | unknown
     eligible: bool
     blocked_reasons: list[str]
-def parse_live_refs_csv(raw_csv: str) -> set[str]:
-    lines = raw_csv.splitlines()
-    start_idx = None
-    for idx, line in enumerate(lines):
-        if line.strip().lower().startswith("ref,"):
-            start_idx = idx
-            break
-    if start_idx is None:
-        return set()
-
-    refs: set[str] = set()
-    csv_payload = "\n".join(lines[start_idx:]) + "\n"
-    reader = csv.DictReader(io.StringIO(csv_payload))
-    for row in reader:
-        ref = str(row.get("ref", "")).strip().lower()
-        if ref:
-            refs.add(ref)
-    return refs
 
 
-def _run_dataset_list(args: list[str]) -> tuple[set[str] | None, str | None]:
-    result = subprocess.run([*kaggle_command(), "datasets", "list", *args], capture_output=True, text=True)
-    if result.returncode != 0:
-        return None, summarize_subprocess_error(result.stdout, result.stderr)
-    return parse_live_refs_csv(result.stdout), None
-
-
-def fetch_live_refs(owner: str) -> tuple[set[str] | None, str | None]:
+def fetch_live_refs(
+    client: KaggleClient, owner: str
+) -> tuple[set[str] | None, str | None]:
+    """Return the set of dataset refs *owner* already has on Kaggle."""
     owner = owner.strip().lower()
     if not owner:
         return None, "owner is required"
-
-    refs: set[str] = set()
-    errors: list[str] = []
-    lookup_succeeded = False
-
-    mine_refs, mine_err = _run_dataset_list(["--mine", "--csv"])
-    if mine_refs is not None:
-        lookup_succeeded = True
-        refs.update(ref for ref in mine_refs if ref.startswith(f"{owner}/"))
-    elif mine_err:
-        errors.append(f"--mine: {mine_err}")
-
-    search_refs, search_err = _run_dataset_list(["-s", owner, "--csv"])
-    if search_refs is not None:
-        lookup_succeeded = True
-        refs.update(ref for ref in search_refs if ref.startswith(f"{owner}/"))
-    elif search_err:
-        errors.append(f"-s {owner}: {search_err}")
-
-    if lookup_succeeded:
-        return refs, None
-    if errors:
-        return None, "; ".join(errors)
-    return None, "no dataset refs returned"
+    try:
+        datasets = client.datasets_owned_by(owner)
+    except KaggleError as exc:
+        return None, str(exc)
+    return {d.ref.strip().lower() for d in datasets}, None
 
 
 def classify_live_state(dataset_ref: str | None, live_refs: set[str] | None) -> str:
@@ -165,42 +124,14 @@ def select_targets(
     return selected
 
 
-def publish_dataset(candidate: PublishCandidate) -> tuple[bool, str]:
-    cli = kaggle_command()
-    version = subprocess.run(
-        [
-            *cli,
-            "datasets",
-            "version",
-            "-p",
-            str(candidate.dir_path),
-            "-m",
-            "publish pipeline update",
-            "--dir-mode",
-            "zip",
-        ],
-        capture_output=True,
-        text=True,
-        cwd=str(ROOT),
-    )
-    if version.returncode == 0:
-        return True, "updated"
-
-    create = subprocess.run(
-        [*cli, "datasets", "create", "-p", str(candidate.dir_path), "--dir-mode", "zip"],
-        capture_output=True,
-        text=True,
-        cwd=str(ROOT),
-    )
-    if create.returncode == 0:
-        return True, "created"
-
-    return False, summarize_subprocess_error(
-        version.stdout,
-        version.stderr,
-        create.stdout,
-        create.stderr,
-    )
+def publish_dataset(
+    client: KaggleClient, candidate: PublishCandidate
+) -> tuple[bool, str]:
+    """Version the dataset, creating it when it does not exist yet."""
+    outcome = client.publish_dataset(candidate.dir_path, "publish pipeline update")
+    if outcome.skipped:
+        return True, "skipped (dry run)"
+    return outcome.ok, (outcome.detail or ("updated" if outcome.ok else "failed"))
 
 
 def build_ui_sync_command(
@@ -242,7 +173,7 @@ def run_ui_metadata_sync(
     )
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
     ok = result.returncode == 0
-    detail = "updated" if ok else summarize_subprocess_error(result.stdout, result.stderr)
+    detail = "updated" if ok else summarize_output(result.stdout, result.stderr)
     return ok, detail, result.stdout, result.stderr
 
 
@@ -293,13 +224,15 @@ def build_report_payload(
     return payload
 
 
-def run_publish_targets(targets: list[PublishCandidate]) -> tuple[int, int, list[dict]]:
+def run_publish_targets(
+    client: KaggleClient, targets: list[PublishCandidate]
+) -> tuple[int, int, list[dict]]:
     success = 0
     failed = 0
     results: list[dict] = []
     for item in targets:
         print(f"Publishing {item.rel_path}... ", end="", flush=True)
-        ok, detail = publish_dataset(item)
+        ok, detail = publish_dataset(client, item)
         if ok:
             success += 1
             print(f"{GREEN}{detail}{RESET}")
@@ -317,33 +250,65 @@ def run_publish_targets(targets: list[PublishCandidate]) -> tuple[int, int, list
     return success, failed, results
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Publish local datasets with score and draft gates.")
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Publish local datasets with score and draft gates."
+    )
     parser.add_argument("--root", default=".", help="Repository root.")
-    parser.add_argument("--owner", default=None, help="Kaggle owner for draft/live lookup.")
-    parser.add_argument("--min-score", type=int, default=DEFAULT_MIN_SCORE, help="Minimum local usability score.")
-    parser.add_argument("--all", action="store_true", help="Include both live and draft datasets.")
-    parser.add_argument("--max-items", type=int, default=0, help="Maximum items to process (0 means all).")
-    parser.add_argument("--apply", action="store_true", help="Actually publish selected datasets.")
+    parser.add_argument(
+        "--owner", default=None, help="Kaggle owner for draft/live lookup."
+    )
+    parser.add_argument(
+        "--min-score",
+        type=int,
+        default=DEFAULT_MIN_SCORE,
+        help="Minimum local usability score.",
+    )
+    parser.add_argument(
+        "--all", action="store_true", help="Include both live and draft datasets."
+    )
+    parser.add_argument(
+        "--max-items",
+        type=int,
+        default=0,
+        help="Maximum items to process (0 means all).",
+    )
+    parser.add_argument(
+        "--apply", action="store_true", help="Actually publish selected datasets."
+    )
     parser.add_argument(
         "--sync-ui-metadata",
         action="store_true",
         help="After successful --apply publish, sync UI-only metadata fields via Playwright.",
     )
-    parser.add_argument("--ui-sync-headed", action="store_true", help="Run UI sync browser in headed mode.")
-    parser.add_argument("--ui-sync-timeout-ms", type=int, default=20000, help="Playwright timeout for UI sync.")
+    parser.add_argument(
+        "--ui-sync-headed",
+        action="store_true",
+        help="Run UI sync browser in headed mode.",
+    )
+    parser.add_argument(
+        "--ui-sync-timeout-ms",
+        type=int,
+        default=20000,
+        help="Playwright timeout for UI sync.",
+    )
     parser.add_argument(
         "--ui-sync-manual-login",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Allow interactive Kaggle login during UI sync.",
     )
-    parser.add_argument("--report-json", default=None, help="Optional output path for publish report JSON.")
-    return parser.parse_args()
+    parser.add_argument(
+        "--report-json",
+        default=None,
+        help="Optional output path for publish report JSON.",
+    )
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
+    args = parse_args(argv)
+    deps = deps or Deps.resolve(effects=bool(getattr(args, "apply", False)))
     if args.min_score < 0 or args.min_score > 100:
         raise SystemExit("--min-score must be between 0 and 100")
     if args.max_items < 0:
@@ -366,14 +331,18 @@ def main() -> int:
 
     live_refs: set[str] | None = None
     if owner:
-        live_refs, live_error = fetch_live_refs(owner)
+        live_refs, live_error = fetch_live_refs(deps.client, owner)
         if live_error:
-            print(f"{YELLOW}Warning:{RESET} live listing lookup failed for '{owner}': {live_error}")
+            print(
+                f"{YELLOW}Warning:{RESET} live listing lookup failed for '{owner}': {live_error}"
+            )
             live_refs = None
         else:
             print(f"Live lookup: {len(live_refs)} refs for owner '{owner}'")
     elif draft_only:
-        print(f"{YELLOW}Warning:{RESET} unable to infer owner; draft/live state unavailable.")
+        print(
+            f"{YELLOW}Warning:{RESET} unable to infer owner; draft/live state unavailable."
+        )
 
     candidates = build_candidates(root, min_score=args.min_score, live_refs=live_refs)
 
@@ -390,11 +359,15 @@ def main() -> int:
     for item in candidates:
         eligible = "yes" if item.eligible else "no"
         ref = item.dataset_ref or "n/a"
-        print(f"{item.rel_path[:34]:<34} {item.score:>5} {item.live_state:<8} {eligible:<8} {ref}")
+        print(
+            f"{item.rel_path[:34]:<34} {item.score:>5} {item.live_state:<8} {eligible:<8} {ref}"
+        )
         if item.blocked_reasons:
             print(f"  {YELLOW}blocked:{RESET} {'; '.join(item.blocked_reasons)}")
 
-    targets = select_targets(candidates, draft_only=draft_only, max_items=args.max_items)
+    targets = select_targets(
+        candidates, draft_only=draft_only, max_items=args.max_items
+    )
     print("")
     print(
         f"Selected targets: {len(targets)} "
@@ -402,7 +375,9 @@ def main() -> int:
     )
 
     if not args.apply:
-        print(f"{YELLOW}Dry run only.{RESET} Re-run with --apply to publish selected datasets.")
+        print(
+            f"{YELLOW}Dry run only.{RESET} Re-run with --apply to publish selected datasets."
+        )
         if args.report_json:
             report_path = Path(args.report_json).resolve()
             write_json(
@@ -416,7 +391,10 @@ def main() -> int:
                     targets=targets,
                     candidates=candidates,
                     results=[],
-                    ui_sync={"requested": bool(args.sync_ui_metadata), "status": "skipped"},
+                    ui_sync={
+                        "requested": bool(args.sync_ui_metadata),
+                        "status": "skipped",
+                    },
                 ),
             )
             print(f"Report written: {report_path}")
@@ -447,12 +425,17 @@ def main() -> int:
             print(f"Report written: {report_path}")
         return 0
 
-    success, failed, results = run_publish_targets(targets)
+    success, failed, results = run_publish_targets(deps.client, targets)
 
     print("")
-    print(f"Publish results: {GREEN}{success} succeeded{RESET}, {RED}{failed} failed{RESET}")
+    print(
+        f"Publish results: {GREEN}{success} succeeded{RESET}, {RED}{failed} failed{RESET}"
+    )
 
-    ui_sync_payload: dict = {"requested": bool(args.sync_ui_metadata), "status": "skipped"}
+    ui_sync_payload: dict = {
+        "requested": bool(args.sync_ui_metadata),
+        "status": "skipped",
+    }
     ui_sync_failed = False
     if args.sync_ui_metadata:
         refs = sorted(
@@ -464,7 +447,11 @@ def main() -> int:
         )
         if not refs:
             print("UI metadata sync skipped: no successful dataset refs to sync.")
-            ui_sync_payload = {"requested": True, "status": "skipped", "reason": "no successful refs"}
+            ui_sync_payload = {
+                "requested": True,
+                "status": "skipped",
+                "reason": "no successful refs",
+            }
         else:
             print(f"Running UI metadata sync for {len(refs)} dataset(s)...")
             ok, detail, sync_stdout, sync_stderr = run_ui_metadata_sync(

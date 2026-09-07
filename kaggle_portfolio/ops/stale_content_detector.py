@@ -18,6 +18,7 @@ Usage
 
 Invoked by: ./manage.sh stale-content [--max-nb-age N] [--max-ds-age N]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,7 +30,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.shared.kaggle_utils import configure_logging, parse_iso_date, resolve_today
+from kaggle_portfolio.shared.clock import resolve_today
+from kaggle_portfolio.shared.proc import configure_logging
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORTS_DIR = ROOT / "medal_ops" / "reports"
@@ -44,7 +46,7 @@ LOG = configure_logging("stale_content")
 KNOWN_RECENT_VERSIONS: dict[str, tuple[int, ...]] = {
     "torch": (2, 5),
     "transformers": (4, 46),
-    "sklearn": (1, 5),           # scikit-learn
+    "sklearn": (1, 5),  # scikit-learn
     "scikit-learn": (1, 5),
     "tensorflow": (2, 18),
     "pandas": (2, 2),
@@ -59,6 +61,7 @@ MAX_MAJOR_BEHIND = 2
 # ---------------------------------------------------------------------------
 # Notebook scanning
 # ---------------------------------------------------------------------------
+
 
 def discover_notebooks(root: Path) -> list[dict]:
     """Find all kernel-metadata.json files and resolve notebook paths.
@@ -84,11 +87,13 @@ def discover_notebooks(root: Path) -> list[dict]:
             continue
         nb_path = meta_path.parent / code_file
         rel_dir = str(meta_path.parent.relative_to(root))
-        results.append({
-            "meta_path": meta_path,
-            "nb_path": nb_path,
-            "rel_dir": rel_dir,
-        })
+        results.append(
+            {
+                "meta_path": meta_path,
+                "nb_path": nb_path,
+                "rel_dir": rel_dir,
+            }
+        )
     return results
 
 
@@ -109,12 +114,14 @@ def find_stale_notebooks(
         mtime = datetime.fromtimestamp(os.path.getmtime(nb_path)).date()
         age = (today - mtime).days
         if age >= max_age_days:
-            stale.append({
-                "rel_dir": entry["rel_dir"],
-                "nb_path": str(nb_path),
-                "last_modified": mtime.isoformat(),
-                "days_stale": age,
-            })
+            stale.append(
+                {
+                    "rel_dir": entry["rel_dir"],
+                    "nb_path": str(nb_path),
+                    "last_modified": mtime.isoformat(),
+                    "days_stale": age,
+                }
+            )
     # Sort most stale first
     stale.sort(key=lambda x: -x["days_stale"])
     return stale
@@ -123,6 +130,7 @@ def find_stale_notebooks(
 # ---------------------------------------------------------------------------
 # Dataset scanning
 # ---------------------------------------------------------------------------
+
 
 def discover_datasets(root: Path) -> list[dict]:
     """Find all dataset-metadata.json files.
@@ -137,11 +145,13 @@ def discover_datasets(root: Path) -> list[dict]:
             continue
         if len(rel.parts) > 4:
             continue
-        results.append({
-            "meta_path": meta_path,
-            "dir_path": meta_path.parent,
-            "rel_dir": str(meta_path.parent.relative_to(root)),
-        })
+        results.append(
+            {
+                "meta_path": meta_path,
+                "dir_path": meta_path.parent,
+                "rel_dir": str(meta_path.parent.relative_to(root)),
+            }
+        )
     return results
 
 
@@ -162,17 +172,18 @@ def find_stale_datasets(
             continue
         # Use the most recently modified data file
         newest_mtime = max(
-            datetime.fromtimestamp(os.path.getmtime(f)).date()
-            for f in data_files
+            datetime.fromtimestamp(os.path.getmtime(f)).date() for f in data_files
         )
         age = (today - newest_mtime).days
         if age >= max_age_days:
-            stale.append({
-                "rel_dir": entry["rel_dir"],
-                "oldest_file": str(max(data_files, key=os.path.getmtime)),
-                "last_modified": newest_mtime.isoformat(),
-                "days_stale": age,
-            })
+            stale.append(
+                {
+                    "rel_dir": entry["rel_dir"],
+                    "oldest_file": str(max(data_files, key=os.path.getmtime)),
+                    "last_modified": newest_mtime.isoformat(),
+                    "days_stale": age,
+                }
+            )
     stale.sort(key=lambda x: -x["days_stale"])
     return stale
 
@@ -180,6 +191,7 @@ def find_stale_datasets(
 # ---------------------------------------------------------------------------
 # Outdated library version detection
 # ---------------------------------------------------------------------------
+
 
 def parse_version_tuple(version_str: str) -> tuple[int, ...] | None:
     """Parse '2.0.1' into (2, 0, 1).  Returns None on failure."""
@@ -245,19 +257,22 @@ def find_outdated_libraries(root: Path) -> list[dict]:
                 if pinned is None:
                     continue
                 if is_outdated(pinned, known):
-                    outdated.append({
-                        "rel_dir": entry["rel_dir"],
-                        "nb_path": str(nb_path),
-                        "library": pkg,
-                        "pinned_version": ver_str,
-                        "recent_version": ".".join(str(v) for v in known),
-                    })
+                    outdated.append(
+                        {
+                            "rel_dir": entry["rel_dir"],
+                            "nb_path": str(nb_path),
+                            "library": pkg,
+                            "pinned_version": ver_str,
+                            "recent_version": ".".join(str(v) for v in known),
+                        }
+                    )
     return outdated
 
 
 # ---------------------------------------------------------------------------
 # Report generation
 # ---------------------------------------------------------------------------
+
 
 def build_markdown_report(
     stale_notebooks: list[dict],
@@ -338,8 +353,7 @@ def build_markdown_report(
             (item["days_stale"], "notebook", item["rel_dir"])
             for item in stale_notebooks
         ] + [
-            (item["days_stale"], "dataset", item["rel_dir"])
-            for item in stale_datasets
+            (item["days_stale"], "dataset", item["rel_dir"]) for item in stale_datasets
         ]
         all_stale.sort(key=lambda x: -x[0])
         for days, kind, rel_dir in all_stale[:5]:
@@ -390,23 +404,33 @@ def main(argv: list[str] | None = None) -> int:
         description="Detect stale notebooks, datasets, and outdated library versions."
     )
     parser.add_argument(
-        "--max-nb-age", type=int, default=60,
+        "--max-nb-age",
+        type=int,
+        default=60,
         help="Flag notebooks not modified in this many days (default: 60)",
     )
     parser.add_argument(
-        "--max-ds-age", type=int, default=90,
+        "--max-ds-age",
+        type=int,
+        default=90,
         help="Flag datasets not modified in this many days (default: 90)",
     )
     parser.add_argument(
-        "--today", type=str, default=None,
+        "--today",
+        type=str,
+        default=None,
         help="Override today's date (YYYY-MM-DD) for testing",
     )
     parser.add_argument(
-        "--json", action="store_true", dest="output_json",
+        "--json",
+        action="store_true",
+        dest="output_json",
         help="Output JSON instead of markdown",
     )
     parser.add_argument(
-        "--root", type=str, default=None,
+        "--root",
+        type=str,
+        default=None,
         help="Root directory to scan (default: repo root)",
     )
     args = parser.parse_args(argv)
@@ -415,9 +439,11 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.root) if args.root else ROOT
 
     print(f"{BLUE}=== Stale Content Detector ==={RESET}\n")
-    print(f"Today: {today.isoformat()}  |  "
-          f"Notebook threshold: {args.max_nb_age}d  |  "
-          f"Dataset threshold: {args.max_ds_age}d\n")
+    print(
+        f"Today: {today.isoformat()}  |  "
+        f"Notebook threshold: {args.max_nb_age}d  |  "
+        f"Dataset threshold: {args.max_ds_age}d\n"
+    )
 
     stale_notebooks = find_stale_notebooks(root, today, args.max_nb_age)
     stale_datasets = find_stale_datasets(root, today, args.max_ds_age)
@@ -427,14 +453,22 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.output_json:
         report = build_json_report(
-            stale_notebooks, stale_datasets, outdated_libs,
-            today, args.max_nb_age, args.max_ds_age,
+            stale_notebooks,
+            stale_datasets,
+            outdated_libs,
+            today,
+            args.max_nb_age,
+            args.max_ds_age,
         )
         print(json.dumps(report, indent=2))
     else:
         report_md = build_markdown_report(
-            stale_notebooks, stale_datasets, outdated_libs,
-            today, args.max_nb_age, args.max_ds_age,
+            stale_notebooks,
+            stale_datasets,
+            outdated_libs,
+            today,
+            args.max_nb_age,
+            args.max_ds_age,
         )
         print(report_md)
 

@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Protocol, Sequence
 
+from kaggle_portfolio.shared.proc import summarize_output
+
 # ---------------------------------------------------------------------------
 # Errors
 # ---------------------------------------------------------------------------
@@ -70,27 +72,6 @@ class KaggleFieldMissing(KaggleError):
 
 #: Line prefixes Kaggle writes to stdout that are not part of the CSV payload.
 NOISE_PREFIXES = ("Warning:", "Next Page Token", "/")
-
-
-def summarize_output(*chunks: str) -> str:
-    """Return a compact, human-meaningful summary of command output."""
-    import re
-
-    lines = [
-        line.strip() for chunk in chunks for line in chunk.splitlines() if line.strip()
-    ]
-    if not lines:
-        return "unknown error"
-    preferred = [
-        line
-        for line in lines
-        if re.search(
-            r"(error|unauthorized|forbidden|denied|failed|exception|traceback)",
-            line,
-            re.IGNORECASE,
-        )
-    ]
-    return (preferred[-1] if preferred else lines[-1])[:220]
 
 
 def strip_noise(text: str) -> str:
@@ -403,6 +384,7 @@ class KaggleClient(Protocol):
     # datasets
     def my_datasets(self) -> list[Dataset]: ...
     def datasets_by_owner(self, owner: str) -> list[Dataset]: ...
+    def datasets_owned_by(self, owner: str) -> list[Dataset]: ...
     def search_datasets(
         self, *, sort_by: str | None = ..., pages: int = ...
     ) -> list[Dataset]: ...
@@ -715,6 +697,30 @@ class CliKaggleClient:
             for row in self._rows(["datasets", "list", "--user", owner])
         ]
 
+    def datasets_owned_by(self, owner: str) -> list[Dataset]:
+        """Every dataset *owner* has, public and private.
+
+        Two listings are needed and neither alone is enough: ``--mine`` includes
+        private datasets but is scoped to the authenticated user, while the
+        owner listing is public-only. Two modules used to union these by hand,
+        one spelling the second call ``-s owner`` and the other ``--user owner``.
+        """
+        wanted = owner.strip().lower()
+        by_ref: dict[str, Dataset] = {}
+        errors: list[str] = []
+        for fetch in (self.my_datasets, lambda: self.datasets_by_owner(wanted)):
+            try:
+                found = fetch()
+            except KaggleError as exc:
+                errors.append(str(exc))
+                continue
+            for dataset in found:
+                if dataset.ref.strip().lower().startswith(f"{wanted}/"):
+                    by_ref[dataset.ref.strip().lower()] = dataset
+        if not by_ref and errors:
+            raise KaggleError("; ".join(errors))
+        return list(by_ref.values())
+
     def search_datasets(
         self, *, sort_by: str | None = None, pages: int = 1
     ) -> list[Dataset]:
@@ -989,6 +995,13 @@ class FakeKaggleClient:
     def datasets_by_owner(self, owner: str) -> list[Dataset]:
         self._maybe_fail()
         return [d for d in self._datasets if d.ref.startswith(f"{owner}/")]
+
+    def datasets_owned_by(self, owner: str) -> list[Dataset]:
+        self._maybe_fail()
+        wanted = owner.strip().lower()
+        return [
+            d for d in self._datasets if d.ref.strip().lower().startswith(f"{wanted}/")
+        ]
 
     def search_datasets(
         self, *, sort_by: str | None = None, pages: int = 1
