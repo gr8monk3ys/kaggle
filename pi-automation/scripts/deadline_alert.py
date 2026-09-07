@@ -15,7 +15,7 @@ _repo = Path(os.environ.get("REPO_PATH", "/repo"))
 sys.path.insert(0, str(_repo))
 
 import notify  # noqa: E402
-from kaggle_portfolio.ops.medal_ops import (  # noqa: E402
+from kaggle_portfolio.ops.tracker import (  # noqa: E402
     ParsedDeadline,
     parse_active_competitions,
 )
