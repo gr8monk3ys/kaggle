@@ -254,3 +254,116 @@ def test_benchmarks_registry_stays_callable():
     assert len(BENCHMARKS) >= 8
     for slug in BENCHMARKS:
         assert callable(BENCHMARKS[slug]), f"BENCHMARKS[{slug!r}] must be callable"
+
+
+# Verified public on 2026-09-07 by fetching each notebook page anonymously:
+#   curl -sL -o /dev/null -w '%{http_code}' \
+#     https://www.kaggle.com/code/lorenzoscaturchio/<slug>
+# 200 == live and visible logged out; 404 == private (or absent). The
+# authenticated `kaggle kernels list --user` is NOT a privacy signal: it returns
+# private kernels with full refs alongside public ones, which is what let
+# is_private:true sit unnoticed on a medal-bearing notebook. Re-run the sweep
+# before adding a slug here.
+KNOWN_PUBLIC_KERNEL_SLUGS = frozenset(
+    {
+        "5-ways-your-cross-validation-lies-to-you",
+        "adversarial-validation-trust-your-cv",
+        "ai-data-jobs-market-explorer",
+        "ai-data-jobs-skills-salaries-analysis",
+        "ai-research-trends-explorer-v2",
+        "competition-masterclass-full-ml-pipeline",
+        "complete-guide-to-attention-mechanisms",
+        "credit-card-fraud-detection-complete-ml-pipeline",
+        "credit-card-fraud-eda-detection",
+        "digit-recognizer-cnn-to-99-percent",
+        "duckdb-on-kaggle-sql-analytics-without-a-database",
+        "ecommerce-behavior-explorer-v2",
+        "end-to-end-ml-pipeline-house-price-prediction",
+        "ensemble-stacking-guide-win-kaggle-competitions",
+        "feature-engineering-cookbook-50-techniques",
+        "github-repo-metrics-explorer-v2",
+        "gnn-guide-2026",
+        "house-prices-complete-eda-feature-engineering",
+        "image-segmentation-masterclass-u-net-to-segformer",
+        "llm-fine-tuning-cookbook-lora-qlora",
+        "med-gemma-challenge-medical-ai-eda-baseline",
+        "mental-health-in-tech-policy-report-in-r-markdown",
+        "mental-health-tech-explorer-v2",
+        "ml-interview-qa-explorer-v2",
+        "nlp-classification-pipeline-tf-idf-to-bert",
+        "nlp-disaster-tweets-bert-guide",
+        "optuna-tuning-a-practical-kaggle-guide",
+        "playground-s6e6-stellar-classification",
+        "polars-on-kaggle-the-complete-speed-guide",
+        "programming-language-benchmarks-eda-v2",
+        "rag-from-scratch",
+        "shap-explainability-xai-masterclass",
+        "spaceship-titanic-complete-ml-guide",
+        "spotify-tracks-eda-popularity-prediction",
+        "stock-market-analysis-prediction-with-python",
+        "store-sales-time-series-forecasting-with-lightgbm",
+        "student-performance-academic-eda",
+        "student-performance-in-r-gpa-drivers",
+        "tabular-eda-utilities-for-kaggle-projects",
+        "time-series-forecasting-with-transformers",
+        "titanic-ml-guide-zero-to-top-5-accuracy",
+        "vesuvius-challenge-3d-surface-detection-eda",
+    }
+)
+
+
+def _kernel_metadata_files():
+    return sorted(ROOT.rglob("kernel-metadata.json"))
+
+
+def test_public_notebooks_are_not_declared_private():
+    """A public notebook must never carry is_private:true in this repo.
+
+    `is_private` is pushed, not merely recorded: `manage.sh push` sends whatever
+    the file says, so is_private:true on a live notebook unpublishes it. The
+    notebook disappears from search, its votes stop counting toward medals, and
+    nothing in the push output says so.
+
+    store-sales-time-series-forecasting-with-lightgbm is the reason this test
+    exists — it sat at is_private:true while live with 9 votes and a bronze
+    medal, one `push` away from being silently delisted.
+    """
+    offenders = []
+    for meta_path in _kernel_metadata_files():
+        payload = json.loads(meta_path.read_text(encoding="utf-8"))
+        slug = str(payload.get("id", "")).split("/")[-1]
+        if slug in KNOWN_PUBLIC_KERNEL_SLUGS and payload.get("is_private") is True:
+            offenders.append(f"{meta_path.relative_to(ROOT)} ({slug})")
+
+    assert not offenders, (
+        "These notebooks are live and PUBLIC on Kaggle but declare "
+        '"is_private": true. Pushing one unpublishes it — removing it from '
+        "search and forfeiting its votes and any medal it earned. Set "
+        '"is_private": false, or drop the slug from '
+        f"KNOWN_PUBLIC_KERNEL_SLUGS if it was deliberately made private: {offenders}"
+    )
+
+
+def test_notebook_keywords_within_kaggle_limit():
+    """Kaggle silently drops notebook keywords past MAX_KEYWORDS.
+
+    Same 6-keyword cap the dataset test enforces, but notebooks fail quietly
+    rather than loudly: `validate_dataset` rejects an over-cap dataset, while
+    `validate_kernel` has no keyword check, so an over-cap notebook pushes
+    "successfully" and simply loses every keyword after the sixth. The lost
+    tags are the ones that would have made the notebook findable.
+    """
+    from kaggle_portfolio.manage_commands import MAX_KEYWORDS
+
+    offenders = []
+    for meta_path in _kernel_metadata_files():
+        payload = json.loads(meta_path.read_text(encoding="utf-8"))
+        keywords = payload.get("keywords") or []
+        if len(keywords) > MAX_KEYWORDS:
+            offenders.append(f"{meta_path.relative_to(ROOT)}: {len(keywords)}")
+
+    assert not offenders, (
+        f"Notebooks exceed Kaggle's {MAX_KEYWORDS}-keyword cap; everything past "
+        f"the {MAX_KEYWORDS}th is dropped on push without an error. Keep the "
+        f"{MAX_KEYWORDS} most searchable terms: {offenders}"
+    )

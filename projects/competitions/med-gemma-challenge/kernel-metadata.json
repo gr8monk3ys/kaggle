@@ -10,14 +10,10 @@
   "keywords": [
     "medical ai",
     "healthcare",
-    "deep learning",
-    "computer vision",
     "chest x-ray",
     "radiology",
     "gemma",
-    "eda",
-    "competition",
-    "education"
+    "computer vision"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

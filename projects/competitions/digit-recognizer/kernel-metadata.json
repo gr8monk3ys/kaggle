@@ -5,17 +5,15 @@
   "language": "python",
   "kernel_type": "notebook",
   "is_private": false,
-  "enable_gpu": false,
+  "enable_gpu": true,
   "enable_internet": true,
   "keywords": [
     "mnist",
     "cnn",
     "pytorch",
     "computer vision",
-    "digit recognizer",
-    "deep learning",
-    "tutorial",
-    "image classification"
+    "image classification",
+    "digit recognizer"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

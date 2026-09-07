@@ -9,15 +9,11 @@
   "enable_internet": true,
   "keywords": [
     "fraud detection",
-    "classification",
     "imbalanced data",
     "smote",
-    "machine learning",
-    "xgboost",
-    "random forest",
     "anomaly detection",
-    "tutorial",
-    "education"
+    "xgboost",
+    "random forest"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

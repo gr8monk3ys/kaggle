@@ -8,19 +8,12 @@
   "enable_gpu": true,
   "enable_internet": true,
   "keywords": [
-    "nlp",
-    "transformers",
-    "llm",
-    "fine-tuning",
     "lora",
     "qlora",
     "peft",
-    "huggingface",
-    "llama",
-    "mistral",
-    "deep learning",
-    "tutorial",
-    "education"
+    "fine-tuning",
+    "llm",
+    "huggingface"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

@@ -9,16 +9,11 @@
   "enable_internet": true,
   "keywords": [
     "feature engineering",
-    "machine learning",
     "data preprocessing",
     "encoding",
-    "scaling",
     "feature selection",
     "pandas",
-    "scikit-learn",
-    "kaggle",
-    "tutorial",
-    "education"
+    "scikit-learn"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

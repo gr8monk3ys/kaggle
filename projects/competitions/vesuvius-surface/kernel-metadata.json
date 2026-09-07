@@ -8,15 +8,12 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "computer vision",
-    "3d segmentation",
-    "image segmentation",
-    "deep learning",
     "vesuvius",
     "ancient scrolls",
-    "eda",
-    "competition",
-    "education"
+    "3d segmentation",
+    "image segmentation",
+    "computer vision",
+    "eda"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

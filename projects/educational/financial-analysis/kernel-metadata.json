@@ -8,16 +8,12 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "finance",
     "stock market",
     "time series",
-    "prediction",
+    "finance",
     "trading",
     "technical analysis",
-    "lstm",
-    "machine learning",
-    "tutorial",
-    "education"
+    "lstm"
   ],
   "dataset_sources": [],
   "kernel_sources": [],
