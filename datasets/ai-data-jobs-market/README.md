@@ -2,9 +2,9 @@
 
 > 36K listings plus company profiles, job-skill edges, and salary benchmarks
 
-**License:** GPL-3.0
+**License:** GPL-3.0  
 
-**Kaggle:** [lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026)
+**Kaggle:** [lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026](https://www.kaggle.com/datasets/lorenzoscaturchio/ai-data-jobs-skills-salaries-2024-2026)  
 
 ## Description
 

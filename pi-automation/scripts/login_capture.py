@@ -22,9 +22,7 @@ import kaggle_browser as kb
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Capture Kaggle login into Playwright storage state."
-    )
+    parser = argparse.ArgumentParser(description="Capture Kaggle login into Playwright storage state.")
     kb.add_common_browser_args(parser)
     return parser.parse_args()
 
@@ -32,9 +30,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     if args.dry_run:
-        print(
-            f"[dry-run] Would authenticate and save storage state to {args.storage_state}"
-        )
+        print(f"[dry-run] Would authenticate and save storage state to {args.storage_state}")
         return 0
 
     try:

@@ -37,12 +37,12 @@ OUTPUT_DIR = Path(__file__).parent
 # For legit: standard normal (near-zero means)
 # For fraud: shift certain components to create realistic PCA separation
 FRAUD_SHIFTS = {
-    "V1": -3.0,
-    "V3": -3.0,
-    "V4": 2.5,
-    "V7": -2.0,
+    "V1":  -3.0,
+    "V3":  -3.0,
+    "V4":   2.5,
+    "V7":  -2.0,
     "V10": -2.5,
-    "V11": 2.0,
+    "V11":  2.0,
     "V12": -3.0,
     "V14": -3.5,
     "V16": -1.5,
@@ -54,26 +54,20 @@ FRAUD_SHIFTS = {
 # Merchant categories
 # ---------------------------------------------------------------------------
 MERCHANT_CATEGORIES = [
-    "grocery",
-    "electronics",
-    "gas_station",
-    "restaurant",
-    "online",
-    "travel",
-    "entertainment",
-    "healthcare",
+    "grocery", "electronics", "gas_station", "restaurant",
+    "online", "travel", "entertainment", "healthcare",
 ]
 
 # Relative fraud risk per category (multipliers; normalized when sampling)
 CATEGORY_FRAUD_RISK = {
-    "grocery": 0.3,
-    "electronics": 2.5,
-    "gas_station": 1.5,
-    "restaurant": 0.5,
-    "online": 3.0,
-    "travel": 2.0,
+    "grocery":       0.3,
+    "electronics":   2.5,
+    "gas_station":   1.5,
+    "restaurant":    0.5,
+    "online":        3.0,
+    "travel":        2.0,
     "entertainment": 0.8,
-    "healthcare": 0.6,
+    "healthcare":    0.6,
 }
 
 
@@ -119,13 +113,9 @@ def make_amounts(n, is_fraud=False):
     else:
         n_small = int(n * 0.70)
         n_large = n - n_small
-        small = rng.lognormal(
-            mean=2.0, sigma=0.9, size=n_small
-        )  # peak ~$7, up to ~$100
+        small = rng.lognormal(mean=2.0, sigma=0.9, size=n_small)   # peak ~$7, up to ~$100
         small = np.clip(small, 0.50, 100.0)
-        large = rng.lognormal(
-            mean=5.5, sigma=0.8, size=n_large
-        )  # peak ~$245, up to ~$5k
+        large = rng.lognormal(mean=5.5, sigma=0.8, size=n_large)   # peak ~$245, up to ~$5k
         large = np.clip(large, 100.0, 5_000.0)
         amounts = np.concatenate([small, large])
         rng.shuffle(amounts)
@@ -223,7 +213,7 @@ def add_temporal_features(df):
     """Derive hour_of_day, day_of_week, is_weekend from Time column."""
     seconds_in_day = 86_400
     df["hour_of_day"] = (df["Time"] % seconds_in_day) // 3600
-    df["day_of_week"] = (df["Time"] // seconds_in_day) % 7  # 0=Monday ... 6=Sunday
+    df["day_of_week"] = (df["Time"] // seconds_in_day) % 7   # 0=Monday ... 6=Sunday
     df["is_weekend"] = (df["day_of_week"] >= 5).astype(int)
     return df
 
@@ -243,9 +233,7 @@ def main():
     combined = combined.sample(frac=1, random_state=SEED).reset_index(drop=True)
 
     # Add transaction IDs
-    combined.insert(
-        0, "transaction_id", [f"TXN{str(i).zfill(6)}" for i in range(N_TOTAL)]
-    )
+    combined.insert(0, "transaction_id", [f"TXN{str(i).zfill(6)}" for i in range(N_TOTAL)])
 
     # Derive temporal features
     combined = add_temporal_features(combined)
@@ -256,14 +244,7 @@ def main():
     col_order = (
         ["transaction_id", "Time"]
         + v_cols
-        + [
-            "Amount",
-            "merchant_category",
-            "hour_of_day",
-            "day_of_week",
-            "is_weekend",
-            "Class",
-        ]
+        + ["Amount", "merchant_category", "hour_of_day", "day_of_week", "is_weekend", "Class"]
     )
     combined = combined[col_order]
 
@@ -297,15 +278,11 @@ def main():
     cat_stats = combined.groupby("merchant_category")["Class"].agg(
         total="count", fraud_count="sum"
     )
-    cat_stats["fraud_rate_%"] = (
-        cat_stats["fraud_count"] / cat_stats["total"] * 100
-    ).round(2)
+    cat_stats["fraud_rate_%"] = (cat_stats["fraud_count"] / cat_stats["total"] * 100).round(2)
     print(cat_stats.sort_values("fraud_rate_%", ascending=False))
 
     print("\nFraud rate by hour (top 5 highest):")
-    hour_fraud = (
-        combined.groupby("hour_of_day")["Class"].mean().sort_values(ascending=False)
-    )
+    hour_fraud = combined.groupby("hour_of_day")["Class"].mean().sort_values(ascending=False)
     print(hour_fraud.head())
 
 

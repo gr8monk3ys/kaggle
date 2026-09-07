@@ -1,5 +1,4 @@
 """Alert via Telegram when a competition deadline is within the threshold."""
-
 from __future__ import annotations
 
 import os
@@ -24,13 +23,10 @@ def parse_deadlines(content: str, today: date) -> list[ParsedDeadline]:
     return parse_active_competitions(content, today)
 
 
-def filter_urgent(
-    deadlines: list[ParsedDeadline], hours: int = 72
-) -> list[ParsedDeadline]:
+def filter_urgent(deadlines: list[ParsedDeadline], hours: int = 72) -> list[ParsedDeadline]:
     threshold_days = hours / 24
     return [
-        d
-        for d in deadlines
+        d for d in deadlines
         if d.days_to_deadline is not None and 0 <= d.days_to_deadline <= threshold_days
     ]
 

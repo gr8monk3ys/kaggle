@@ -40,14 +40,7 @@ OUTPUT_DIR = Path(__file__).parent
 # ---------------------------------------------------------------------------
 # Lookup tables / encodings
 # ---------------------------------------------------------------------------
-PARENTAL_EDU_LEVELS = [
-    "none",
-    "high_school",
-    "some_college",
-    "bachelor",
-    "master",
-    "phd",
-]
+PARENTAL_EDU_LEVELS = ["none", "high_school", "some_college", "bachelor", "master", "phd"]
 PARENTAL_EDU_WEIGHTS = [0.05, 0.30, 0.25, 0.25, 0.10, 0.05]
 PARENTAL_EDU_NUMERIC = {lvl: i for i, lvl in enumerate(PARENTAL_EDU_LEVELS)}  # 0-5
 
@@ -94,9 +87,7 @@ def generate_students() -> pd.DataFrame:
         size=N_STUDENTS,
         p=PARENTAL_EDU_WEIGHTS,
     )
-    parental_edu_numeric = np.array(
-        [PARENTAL_EDU_NUMERIC[e] for e in parental_education]
-    )
+    parental_edu_numeric = np.array([PARENTAL_EDU_NUMERIC[e] for e in parental_education])
 
     family_income = rng.choice(
         INCOME_LEVELS,
@@ -122,12 +113,16 @@ def generate_students() -> pd.DataFrame:
     # --- Study habits ---
     # Higher-income/higher-parental-edu students study slightly more
     study_base = 10 + parental_edu_numeric * 0.5 + income_bonus_arr * 0.3
-    study_hours_per_week = np.clip(rng.normal(study_base, 6), 0, 40).round(1)
+    study_hours_per_week = np.clip(
+        rng.normal(study_base, 6), 0, 40
+    ).round(1)
 
     # Attendance: higher-motivation students attend more
     motivation_score = np.clip(rng.normal(5.5, 2.0, N_STUDENTS), 1, 10).round(1)
     attendance_base = 75 + motivation_score * 1.5
-    attendance_rate = np.clip(rng.normal(attendance_base, 8), 50, 100).round(1)
+    attendance_rate = np.clip(
+        rng.normal(attendance_base, 8), 50, 100
+    ).round(1)
 
     extracurricular_activities = rng.integers(0, 6, N_STUDENTS)  # 0-5
 
@@ -144,20 +139,16 @@ def generate_students() -> pd.DataFrame:
         size=N_STUDENTS,
         p=[0.25, 0.45, 0.30],
     )
-    involvement_bonus_arr = np.array(
-        [PARENTAL_INVOLVEMENT_BONUS[p] for p in parental_involvement]
-    )
+    involvement_bonus_arr = np.array([PARENTAL_INVOLVEMENT_BONUS[p] for p in parental_involvement])
 
     # --- Resources ---
     # Higher income -> more likely to have internet and laptop
-    internet_prob = np.where(
-        family_income == "high", 0.97, np.where(family_income == "middle", 0.85, 0.65)
-    )
+    internet_prob = np.where(family_income == "high", 0.97,
+                    np.where(family_income == "middle", 0.85, 0.65))
     internet_access = (rng.random(N_STUDENTS) < internet_prob).astype(int)
 
-    laptop_prob = np.where(
-        family_income == "high", 0.95, np.where(family_income == "middle", 0.80, 0.55)
-    )
+    laptop_prob = np.where(family_income == "high", 0.95,
+                  np.where(family_income == "middle", 0.80, 0.55))
     has_laptop = (rng.random(N_STUDENTS) < laptop_prob).astype(int)
 
     resource_bonus = internet_access * 1.5 + has_laptop * 1.5
@@ -168,20 +159,23 @@ def generate_students() -> pd.DataFrame:
 
     # Stress: negatively correlated with sleep and positively with study hours
     stress_base = 5.0 - sleep_bonus_arr * 0.3 + study_hours_per_week * 0.04
-    stress_level = np.clip(rng.normal(stress_base, 1.5), 1, 10).round(1)
+    stress_level = np.clip(
+        rng.normal(stress_base, 1.5), 1, 10
+    ).round(1)
 
     # Motivation: positively correlated with parental involvement and income
     motivation_score = np.clip(
-        motivation_score + involvement_bonus_arr * 0.3 + income_bonus_arr * 0.1,
-        1,
-        10,
+        motivation_score
+        + involvement_bonus_arr * 0.3
+        + income_bonus_arr * 0.1,
+        1, 10,
     ).round(1)
 
     # ---------------------------------------------------------------------------
     # Score generation
     # ---------------------------------------------------------------------------
     # Shared base score (captures overall academic tendency)
-    tutoring_effect = tutoring_sessions * 1.0 - tutoring_sessions**2 * 0.05
+    tutoring_effect = tutoring_sessions * 1.0 - tutoring_sessions ** 2 * 0.05
 
     base_score = (
         40
@@ -206,46 +200,35 @@ def generate_students() -> pd.DataFrame:
 
     reading_score = np.clip(
         base_score + common_noise + rng.normal(0, subject_noise_std, N_STUDENTS),
-        0,
-        100,
+        0, 100,
     ).round(1)
 
     writing_score = np.clip(
         base_score + common_noise * 0.85 + rng.normal(0, subject_noise_std, N_STUDENTS),
-        0,
-        100,
+        0, 100,
     ).round(1)
 
     # Math and science have a slight additional boost from study hours
     math_score = np.clip(
-        base_score
-        + study_hours_per_week * 0.3
+        base_score + study_hours_per_week * 0.3
         + common_noise * 0.70
         + rng.normal(0, subject_noise_std, N_STUDENTS),
-        0,
-        100,
+        0, 100,
     ).round(1)
 
     science_score = np.clip(
-        base_score
-        + study_hours_per_week * 0.2
+        base_score + study_hours_per_week * 0.2
         + common_noise * 0.75
         + rng.normal(0, subject_noise_std, N_STUDENTS),
-        0,
-        100,
+        0, 100,
     ).round(1)
 
     # GPA: weighted average of all four subjects mapped to 0-4 scale, plus small noise
-    avg_score = (
-        reading_score * 0.25
-        + writing_score * 0.25
-        + math_score * 0.25
-        + science_score * 0.25
-    )
+    avg_score = (reading_score * 0.25 + writing_score * 0.25
+                 + math_score * 0.25 + science_score * 0.25)
     overall_gpa = np.clip(
         avg_score / 25.0 + rng.normal(0, 0.15, N_STUDENTS),
-        0.0,
-        4.0,
+        0.0, 4.0,
     ).round(2)
 
     # Binary pass/fail: GPA >= 2.0
@@ -254,35 +237,33 @@ def generate_students() -> pd.DataFrame:
     # ---------------------------------------------------------------------------
     # Assemble DataFrame
     # ---------------------------------------------------------------------------
-    df = pd.DataFrame(
-        {
-            "student_id": [f"STU{str(i).zfill(5)}" for i in range(N_STUDENTS)],
-            "age": ages,
-            "gender": genders,
-            "ethnicity": ethnicities,
-            "parental_education": parental_education,
-            "family_income": family_income,
-            "school_type": school_type,
-            "school_region": school_region,
-            "study_hours_per_week": study_hours_per_week,
-            "attendance_rate": attendance_rate,
-            "extracurricular_activities": extracurricular_activities,
-            "sports_participation": sports_participation,
-            "tutoring_sessions": tutoring_sessions,
-            "parental_involvement": parental_involvement,
-            "internet_access": np.where(internet_access == 1, "yes", "no"),
-            "has_laptop": np.where(has_laptop == 1, "yes", "no"),
-            "sleep_hours": sleep_hours,
-            "stress_level": stress_level,
-            "motivation_score": motivation_score,
-            "reading_score": reading_score,
-            "writing_score": writing_score,
-            "math_score": math_score,
-            "science_score": science_score,
-            "overall_gpa": overall_gpa,
-            "passed": passed,
-        }
-    )
+    df = pd.DataFrame({
+        "student_id":               [f"STU{str(i).zfill(5)}" for i in range(N_STUDENTS)],
+        "age":                      ages,
+        "gender":                   genders,
+        "ethnicity":                ethnicities,
+        "parental_education":       parental_education,
+        "family_income":            family_income,
+        "school_type":              school_type,
+        "school_region":            school_region,
+        "study_hours_per_week":     study_hours_per_week,
+        "attendance_rate":          attendance_rate,
+        "extracurricular_activities": extracurricular_activities,
+        "sports_participation":     sports_participation,
+        "tutoring_sessions":        tutoring_sessions,
+        "parental_involvement":     parental_involvement,
+        "internet_access":          np.where(internet_access == 1, "yes", "no"),
+        "has_laptop":               np.where(has_laptop == 1, "yes", "no"),
+        "sleep_hours":              sleep_hours,
+        "stress_level":             stress_level,
+        "motivation_score":         motivation_score,
+        "reading_score":            reading_score,
+        "writing_score":            writing_score,
+        "math_score":               math_score,
+        "science_score":            science_score,
+        "overall_gpa":              overall_gpa,
+        "passed":                   passed,
+    })
 
     return df
 

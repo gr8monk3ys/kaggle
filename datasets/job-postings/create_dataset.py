@@ -55,16 +55,7 @@ JOB_TITLES = [
     "Backend Engineer",
 ]
 
-INDUSTRIES = [
-    "tech",
-    "finance",
-    "healthcare",
-    "retail",
-    "media",
-    "education",
-    "manufacturing",
-    "government",
-]
+INDUSTRIES = ["tech", "finance", "healthcare", "retail", "media", "education", "manufacturing", "government"]
 
 COMPANY_SIZES = ["startup", "small", "medium", "large", "enterprise"]
 COMPANY_SIZE_WEIGHTS = [0.15, 0.20, 0.25, 0.25, 0.15]
@@ -79,10 +70,10 @@ EDUCATION_OPTIONS = ["none", "bachelor", "master", "phd"]
 
 # Education distribution per experience level
 EDUCATION_DIST = {
-    "entry": [0.05, 0.65, 0.25, 0.05],
-    "mid": [0.05, 0.55, 0.30, 0.10],
-    "senior": [0.05, 0.45, 0.35, 0.15],
-    "lead": [0.05, 0.40, 0.35, 0.20],
+    "entry":    [0.05, 0.65, 0.25, 0.05],
+    "mid":      [0.05, 0.55, 0.30, 0.10],
+    "senior":   [0.05, 0.45, 0.35, 0.15],
+    "lead":     [0.05, 0.40, 0.35, 0.20],
     "director": [0.05, 0.35, 0.35, 0.25],
 }
 
@@ -91,212 +82,68 @@ EDUCATION_DIST = {
 # ---------------------------------------------------------------------------
 COMPANIES = {
     "tech": [
-        "Axiom Technologies",
-        "Cloudify Labs",
-        "NexGen Systems",
-        "ByteForge Inc",
-        "Aether Computing",
-        "Luminary AI",
-        "StackEdge Corp",
-        "Polarity Networks",
-        "Pinnacle Software",
-        "Circadian Tech",
-        "Quantum Leap Digital",
-        "Orion Dev Studios",
-        "Codex Innovations",
-        "SynapticIO",
-        "TerraBytes Inc",
-        "NovaStream Tech",
-        "DataBridge Systems",
-        "VectorLogic",
-        "Meridian Cloud",
-        "Apex AI Labs",
-        "Prism Solutions",
-        "ZeroPoint Systems",
-        "Helix Platforms",
-        "Crestline Software",
+        "Axiom Technologies", "Cloudify Labs", "NexGen Systems", "ByteForge Inc",
+        "Aether Computing", "Luminary AI", "StackEdge Corp", "Polarity Networks",
+        "Pinnacle Software", "Circadian Tech", "Quantum Leap Digital", "Orion Dev Studios",
+        "Codex Innovations", "SynapticIO", "TerraBytes Inc", "NovaStream Tech",
+        "DataBridge Systems", "VectorLogic", "Meridian Cloud", "Apex AI Labs",
+        "Prism Solutions", "ZeroPoint Systems", "Helix Platforms", "Crestline Software",
     ],
     "finance": [
-        "Meridian Capital Group",
-        "Vanguard Analytics",
-        "Pinnacle Financial",
-        "Summit Wealth Partners",
-        "Atlas Investment Group",
-        "Ironclad Fintech",
-        "Sterling Data Finance",
-        "Harbor Capital",
-        "Crestview Asset Management",
-        "Acme Financial AI",
-        "Keystone Payments",
-        "Northgate Capital",
-        "Eclipse Trading Systems",
-        "Apex Risk Analytics",
-        "FinEdge Corp",
-        "Broadfield Investments",
-        "Horizon Fintech",
-        "Cerberus Analytics",
-        "Lighthouse Capital",
-        "Trident Finance",
-        "Cobalt Banking Tech",
-        "Zenith Asset Advisors",
-        "Redwood Financial",
-        "Clearwater Markets",
+        "Meridian Capital Group", "Vanguard Analytics", "Pinnacle Financial", "Summit Wealth Partners",
+        "Atlas Investment Group", "Ironclad Fintech", "Sterling Data Finance", "Harbor Capital",
+        "Crestview Asset Management", "Acme Financial AI", "Keystone Payments", "Northgate Capital",
+        "Eclipse Trading Systems", "Apex Risk Analytics", "FinEdge Corp", "Broadfield Investments",
+        "Horizon Fintech", "Cerberus Analytics", "Lighthouse Capital", "Trident Finance",
+        "Cobalt Banking Tech", "Zenith Asset Advisors", "Redwood Financial", "Clearwater Markets",
     ],
     "healthcare": [
-        "Helix Health Systems",
-        "MedVault Technologies",
-        "CureAI Labs",
-        "Asclepius Analytics",
-        "Nexus Medical AI",
-        "BioPath Solutions",
-        "ClinIQ Technologies",
-        "Genome Insight",
-        "Pulse Health Data",
-        "Vital Analytics Inc",
-        "CareEdge Systems",
-        "Medi-Stream Corp",
-        "Omega Health Tech",
-        "Synapse Medical",
-        "MedBridge Analytics",
-        "Aurora Health Data",
-        "Heartcore Systems",
-        "Apex Clinical AI",
-        "LifeLine Analytics",
-        "DataCure Corp",
-        "Orion Health Labs",
-        "Vertex Medical Tech",
-        "Radiant Health AI",
-        "ZenHealth Solutions",
+        "Helix Health Systems", "MedVault Technologies", "CureAI Labs", "Asclepius Analytics",
+        "Nexus Medical AI", "BioPath Solutions", "ClinIQ Technologies", "Genome Insight",
+        "Pulse Health Data", "Vital Analytics Inc", "CareEdge Systems", "Medi-Stream Corp",
+        "Omega Health Tech", "Synapse Medical", "MedBridge Analytics", "Aurora Health Data",
+        "Heartcore Systems", "Apex Clinical AI", "LifeLine Analytics", "DataCure Corp",
+        "Orion Health Labs", "Vertex Medical Tech", "Radiant Health AI", "ZenHealth Solutions",
     ],
     "retail": [
-        "Apex Commerce Solutions",
-        "MomentumRetail AI",
-        "Spectrum Consumer Tech",
-        "GreenShelf Analytics",
-        "PricePoint Systems",
-        "Compass Retail Data",
-        "Grid Commerce Corp",
-        "Mercury Retail AI",
-        "Trilliant Consumer Insights",
-        "SkyLine Shopping Tech",
-        "Urban Commerce Labs",
-        "TrueCart Solutions",
-        "Catalyst Retail Analytics",
-        "Ember Commerce",
-        "Flare Consumer Data",
-        "Vortex Retail Systems",
-        "Nimbus Commerce AI",
-        "ClearPath Retail",
-        "Stellar Shopping Tech",
-        "ProximaRetail Corp",
-        "Outreach Commerce",
-        "Gravity Consumer Analytics",
-        "ShopEdge Technologies",
-        "Nexus Retail Insights",
+        "Apex Commerce Solutions", "MomentumRetail AI", "Spectrum Consumer Tech", "GreenShelf Analytics",
+        "PricePoint Systems", "Compass Retail Data", "Grid Commerce Corp", "Mercury Retail AI",
+        "Trilliant Consumer Insights", "SkyLine Shopping Tech", "Urban Commerce Labs", "TrueCart Solutions",
+        "Catalyst Retail Analytics", "Ember Commerce", "Flare Consumer Data", "Vortex Retail Systems",
+        "Nimbus Commerce AI", "ClearPath Retail", "Stellar Shopping Tech", "ProximaRetail Corp",
+        "Outreach Commerce", "Gravity Consumer Analytics", "ShopEdge Technologies", "Nexus Retail Insights",
     ],
     "media": [
-        "Luminary Media AI",
-        "WaveForm Analytics",
-        "Prism Content Labs",
-        "Signal Media Corp",
-        "Vistas Content Tech",
-        "Echo Analytics Group",
-        "Frequency Media Systems",
-        "Radiant Broadcasting AI",
-        "Spectrum Content Corp",
-        "Horizon Media Labs",
-        "Pulse Digital Media",
-        "Canvas Content Solutions",
-        "Starstream Analytics",
-        "Frame Media Tech",
-        "Clarity Content Systems",
-        "Vivid Analytics Corp",
-        "Conduit Media AI",
-        "Aria Content Labs",
-        "SoundWave Analytics",
-        "Strata Media Solutions",
-        "Beacon Digital Corp",
-        "Praxis Media AI",
-        "Vox Content Tech",
-        "Blueprint Media Labs",
+        "Luminary Media AI", "WaveForm Analytics", "Prism Content Labs", "Signal Media Corp",
+        "Vistas Content Tech", "Echo Analytics Group", "Frequency Media Systems", "Radiant Broadcasting AI",
+        "Spectrum Content Corp", "Horizon Media Labs", "Pulse Digital Media", "Canvas Content Solutions",
+        "Starstream Analytics", "Frame Media Tech", "Clarity Content Systems", "Vivid Analytics Corp",
+        "Conduit Media AI", "Aria Content Labs", "SoundWave Analytics", "Strata Media Solutions",
+        "Beacon Digital Corp", "Praxis Media AI", "Vox Content Tech", "Blueprint Media Labs",
     ],
     "education": [
-        "Akademia AI",
-        "EduBridge Technologies",
-        "Scholar Analytics",
-        "LearnEdge Systems",
-        "CampusAI Corp",
-        "MindPath Learning Tech",
-        "AcademIQ Analytics",
-        "TeachFlow Solutions",
-        "Beacon Learning Labs",
-        "Insight Education AI",
-        "Skillify Technologies",
-        "Cognify Corp",
-        "Pathway Learning Analytics",
-        "Edu-Pulse Systems",
-        "OpenMind Technologies",
-        "SkillBridge AI",
-        "Atlas Education Corp",
-        "Vertex Learning Labs",
-        "Enlighten Analytics",
-        "Cascade Education Tech",
-        "Turing Learning Systems",
-        "Compass Education AI",
-        "Apex Edtech",
-        "Mosaic Learning Corp",
+        "Akademia AI", "EduBridge Technologies", "Scholar Analytics", "LearnEdge Systems",
+        "CampusAI Corp", "MindPath Learning Tech", "AcademIQ Analytics", "TeachFlow Solutions",
+        "Beacon Learning Labs", "Insight Education AI", "Skillify Technologies", "Cognify Corp",
+        "Pathway Learning Analytics", "Edu-Pulse Systems", "OpenMind Technologies", "SkillBridge AI",
+        "Atlas Education Corp", "Vertex Learning Labs", "Enlighten Analytics", "Cascade Education Tech",
+        "Turing Learning Systems", "Compass Education AI", "Apex Edtech", "Mosaic Learning Corp",
     ],
     "manufacturing": [
-        "IronCore Analytics",
-        "Fabricate AI",
-        "Precision Data Systems",
-        "Alloy Intelligence Corp",
-        "Foundry Analytics Group",
-        "MachineEdge AI",
-        "Torque Data Systems",
-        "MetaForge Analytics",
-        "Steelpath Solutions",
-        "Circadian Manufacturing AI",
-        "ProCast Analytics",
-        "Nexus Fabrication Tech",
-        "Apex Industrial AI",
-        "Delta Manufacturing Systems",
-        "GearShift Analytics",
-        "Tensile Data Corp",
-        "Forge AI Solutions",
-        "Catalyst Industrial Tech",
-        "Vertex Manufacturing Analytics",
-        "Iron Summit AI",
-        "Calibrate Systems",
-        "Precision Works Analytics",
-        "Atlas Industrial Corp",
-        "Crest Manufacturing AI",
+        "IronCore Analytics", "Fabricate AI", "Precision Data Systems", "Alloy Intelligence Corp",
+        "Foundry Analytics Group", "MachineEdge AI", "Torque Data Systems", "MetaForge Analytics",
+        "Steelpath Solutions", "Circadian Manufacturing AI", "ProCast Analytics", "Nexus Fabrication Tech",
+        "Apex Industrial AI", "Delta Manufacturing Systems", "GearShift Analytics", "Tensile Data Corp",
+        "Forge AI Solutions", "Catalyst Industrial Tech", "Vertex Manufacturing Analytics", "Iron Summit AI",
+        "Calibrate Systems", "Precision Works Analytics", "Atlas Industrial Corp", "Crest Manufacturing AI",
     ],
     "government": [
-        "Civic Analytics Corp",
-        "PublicData Systems",
-        "NationAI Labs",
-        "GovEdge Solutions",
-        "Infrastructure Analytics Group",
-        "CivilIQ Technologies",
-        "PolicyData Corp",
-        "Apex Civic AI",
-        "Meridian Public Tech",
-        "Urban Analytics Group",
-        "Compass Government AI",
-        "Strata Policy Systems",
-        "Atlas Civic Data",
-        "Federal Analytics Corp",
-        "Horizon Public Solutions",
-        "DataGov Systems",
-        "Insight Policy Tech",
-        "Nexus Civic Analytics",
-        "Civic Pulse Systems",
-        "BenchmarkGov AI",
-        "Pioneer Policy Corp",
-        "Keystone Public Analytics",
-        "Prism Government Tech",
-        "Orion Civic Solutions",
+        "Civic Analytics Corp", "PublicData Systems", "NationAI Labs", "GovEdge Solutions",
+        "Infrastructure Analytics Group", "CivilIQ Technologies", "PolicyData Corp", "Apex Civic AI",
+        "Meridian Public Tech", "Urban Analytics Group", "Compass Government AI", "Strata Policy Systems",
+        "Atlas Civic Data", "Federal Analytics Corp", "Horizon Public Solutions", "DataGov Systems",
+        "Insight Policy Tech", "Nexus Civic Analytics", "Civic Pulse Systems", "BenchmarkGov AI",
+        "Pioneer Policy Corp", "Keystone Public Analytics", "Prism Government Tech", "Orion Civic Solutions",
     ],
 }
 
@@ -307,56 +154,16 @@ ALL_COMPANIES_BY_INDUSTRY = COMPANIES  # industry -> list of company names
 # US cities (50)
 # ---------------------------------------------------------------------------
 US_CITIES = [
-    "San Francisco, CA",
-    "New York, NY",
-    "Seattle, WA",
-    "Austin, TX",
-    "Boston, MA",
-    "Chicago, IL",
-    "Los Angeles, CA",
-    "Denver, CO",
-    "Atlanta, GA",
-    "Washington, DC",
-    "Dallas, TX",
-    "San Jose, CA",
-    "Portland, OR",
-    "Miami, FL",
-    "Minneapolis, MN",
-    "San Diego, CA",
-    "Philadelphia, PA",
-    "Phoenix, AZ",
-    "Nashville, TN",
-    "Detroit, MI",
-    "Raleigh, NC",
-    "Salt Lake City, UT",
-    "Charlotte, NC",
-    "Columbus, OH",
-    "Indianapolis, IN",
-    "Pittsburgh, PA",
-    "Baltimore, MD",
-    "Kansas City, MO",
-    "Tampa, FL",
-    "St. Louis, MO",
-    "Sacramento, CA",
-    "Oakland, CA",
-    "Louisville, KY",
-    "Richmond, VA",
-    "Cincinnati, OH",
-    "Orlando, FL",
-    "San Antonio, TX",
-    "Houston, TX",
-    "Cleveland, OH",
-    "Memphis, TN",
-    "New Orleans, LA",
-    "Buffalo, NY",
-    "Hartford, CT",
-    "Providence, RI",
-    "Albany, NY",
-    "Boise, ID",
-    "Madison, WI",
-    "Des Moines, IA",
-    "Omaha, NE",
-    "Albuquerque, NM",
+    "San Francisco, CA", "New York, NY", "Seattle, WA", "Austin, TX", "Boston, MA",
+    "Chicago, IL", "Los Angeles, CA", "Denver, CO", "Atlanta, GA", "Washington, DC",
+    "Dallas, TX", "San Jose, CA", "Portland, OR", "Miami, FL", "Minneapolis, MN",
+    "San Diego, CA", "Philadelphia, PA", "Phoenix, AZ", "Nashville, TN", "Detroit, MI",
+    "Raleigh, NC", "Salt Lake City, UT", "Charlotte, NC", "Columbus, OH", "Indianapolis, IN",
+    "Pittsburgh, PA", "Baltimore, MD", "Kansas City, MO", "Tampa, FL", "St. Louis, MO",
+    "Sacramento, CA", "Oakland, CA", "Louisville, KY", "Richmond, VA", "Cincinnati, OH",
+    "Orlando, FL", "San Antonio, TX", "Houston, TX", "Cleveland, OH", "Memphis, TN",
+    "New Orleans, LA", "Buffalo, NY", "Hartford, CT", "Providence, RI", "Albany, NY",
+    "Boise, ID", "Madison, WI", "Des Moines, IA", "Omaha, NE", "Albuquerque, NM",
 ]
 
 # ---------------------------------------------------------------------------
@@ -364,141 +171,44 @@ US_CITIES = [
 # ---------------------------------------------------------------------------
 ROLE_SKILLS = {
     "Data Scientist": [
-        "Python",
-        "R",
-        "SQL",
-        "Machine Learning",
-        "Statistics",
-        "TensorFlow",
-        "PyTorch",
-        "Spark",
-        "Tableau",
-        "scikit-learn",
-        "Deep Learning",
-        "NLP",
-        "A/B Testing",
-        "Jupyter",
+        "Python", "R", "SQL", "Machine Learning", "Statistics", "TensorFlow", "PyTorch",
+        "Spark", "Tableau", "scikit-learn", "Deep Learning", "NLP", "A/B Testing", "Jupyter",
     ],
     "Software Engineer": [
-        "Python",
-        "Java",
-        "JavaScript",
-        "TypeScript",
-        "Go",
-        "Rust",
-        "C++",
-        "Docker",
-        "Kubernetes",
-        "AWS",
-        "REST APIs",
-        "Git",
-        "SQL",
-        "Redis",
-        "PostgreSQL",
+        "Python", "Java", "JavaScript", "TypeScript", "Go", "Rust", "C++", "Docker",
+        "Kubernetes", "AWS", "REST APIs", "Git", "SQL", "Redis", "PostgreSQL",
     ],
     "ML Engineer": [
-        "Python",
-        "TensorFlow",
-        "PyTorch",
-        "MLflow",
-        "Airflow",
-        "Kubernetes",
-        "Docker",
-        "AWS SageMaker",
-        "Spark",
-        "Feature Stores",
-        "CI/CD",
-        "Databricks",
+        "Python", "TensorFlow", "PyTorch", "MLflow", "Airflow", "Kubernetes", "Docker",
+        "AWS SageMaker", "Spark", "Feature Stores", "CI/CD", "Databricks",
     ],
     "Data Engineer": [
-        "Python",
-        "SQL",
-        "Spark",
-        "Airflow",
-        "dbt",
-        "Kafka",
-        "Snowflake",
-        "BigQuery",
-        "Redshift",
-        "AWS",
-        "Azure",
-        "Terraform",
-        "PostgreSQL",
+        "Python", "SQL", "Spark", "Airflow", "dbt", "Kafka", "Snowflake", "BigQuery",
+        "Redshift", "AWS", "Azure", "Terraform", "PostgreSQL",
     ],
     "Product Manager": [
-        "Product Strategy",
-        "Roadmapping",
-        "SQL",
-        "A/B Testing",
-        "User Research",
-        "Agile",
-        "Stakeholder Management",
-        "Data Analysis",
-        "JIRA",
-        "Figma",
+        "Product Strategy", "Roadmapping", "SQL", "A/B Testing", "User Research",
+        "Agile", "Stakeholder Management", "Data Analysis", "JIRA", "Figma",
     ],
     "UX Designer": [
-        "Figma",
-        "User Research",
-        "Prototyping",
-        "Wireframing",
-        "Usability Testing",
-        "Design Systems",
-        "Sketch",
-        "Adobe XD",
-        "HTML/CSS",
+        "Figma", "User Research", "Prototyping", "Wireframing", "Usability Testing",
+        "Design Systems", "Sketch", "Adobe XD", "HTML/CSS",
     ],
     "DevOps Engineer": [
-        "Kubernetes",
-        "Docker",
-        "Terraform",
-        "AWS",
-        "Azure",
-        "GCP",
-        "CI/CD",
-        "Jenkins",
-        "Prometheus",
-        "Grafana",
-        "Linux",
-        "Python",
-        "Ansible",
+        "Kubernetes", "Docker", "Terraform", "AWS", "Azure", "GCP", "CI/CD",
+        "Jenkins", "Prometheus", "Grafana", "Linux", "Python", "Ansible",
     ],
     "Data Analyst": [
-        "SQL",
-        "Python",
-        "Tableau",
-        "Power BI",
-        "Excel",
-        "Statistics",
-        "Google Analytics",
-        "A/B Testing",
-        "Looker",
-        "dbt",
+        "SQL", "Python", "Tableau", "Power BI", "Excel", "Statistics",
+        "Google Analytics", "A/B Testing", "Looker", "dbt",
     ],
     "Research Scientist": [
-        "Python",
-        "PyTorch",
-        "TensorFlow",
-        "Machine Learning",
-        "Deep Learning",
-        "Statistics",
-        "LaTeX",
-        "Experimentation",
-        "Publication Record",
+        "Python", "PyTorch", "TensorFlow", "Machine Learning", "Deep Learning",
+        "Statistics", "LaTeX", "Experimentation", "Publication Record",
     ],
     "Backend Engineer": [
-        "Python",
-        "Java",
-        "Go",
-        "SQL",
-        "PostgreSQL",
-        "Redis",
-        "Kafka",
-        "Docker",
-        "Kubernetes",
-        "REST APIs",
-        "gRPC",
-        "AWS",
+        "Python", "Java", "Go", "SQL", "PostgreSQL", "Redis", "Kafka",
+        "Docker", "Kubernetes", "REST APIs", "gRPC", "AWS",
     ],
 }
 
@@ -506,32 +216,32 @@ ROLE_SKILLS = {
 # Salary base ranges (min, max) per experience level
 # ---------------------------------------------------------------------------
 SALARY_BASE = {
-    "entry": (55_000, 90_000),
-    "mid": (85_000, 130_000),
-    "senior": (120_000, 180_000),
-    "lead": (150_000, 220_000),
+    "entry":    (55_000,  90_000),
+    "mid":      (85_000, 130_000),
+    "senior":   (120_000, 180_000),
+    "lead":     (150_000, 220_000),
     "director": (180_000, 300_000),
 }
 
 # Company-size salary multipliers
 COMPANY_SIZE_MULT = {
-    "startup": 0.85,
-    "small": 0.92,
-    "medium": 1.00,
-    "large": 1.10,
+    "startup":    0.85,
+    "small":      0.92,
+    "medium":     1.00,
+    "large":      1.10,
     "enterprise": 1.20,
 }
 
 # Industry salary multipliers
 INDUSTRY_MULT = {
-    "tech": 1.10,
-    "finance": 1.15,
-    "healthcare": 1.08,
-    "retail": 0.95,
-    "media": 0.92,
-    "education": 0.88,
+    "tech":          1.10,
+    "finance":       1.15,
+    "healthcare":    1.08,
+    "retail":        0.95,
+    "media":         0.92,
+    "education":     0.88,
     "manufacturing": 0.97,
-    "government": 0.93,
+    "government":    0.93,
 }
 
 # High-paying role multipliers
@@ -609,22 +319,21 @@ CULTURE_SENTENCE_TEMPLATES = [
 # Days-to-fill distributions per experience level
 # ---------------------------------------------------------------------------
 DAYS_TO_FILL_PARAMS = {
-    "entry": (15, 45),
-    "mid": (20, 60),
-    "senior": (30, 90),
-    "lead": (45, 120),
+    "entry":    (15, 45),
+    "mid":      (20, 60),
+    "senior":   (30, 90),
+    "lead":     (45, 120),
     "director": (60, 180),
 }
 
 # Poisson lambda for applications per company size
 APPLICATIONS_LAMBDA = {
-    "startup": 25,
-    "small": 45,
-    "medium": 80,
-    "large": 140,
+    "startup":    25,
+    "small":      45,
+    "medium":     80,
+    "large":      140,
     "enterprise": 220,
 }
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -641,10 +350,10 @@ def pick_skills(title: str, exp_level: str) -> str:
     """Return a pipe-separated skills string appropriate for experience level."""
     pool = ROLE_SKILLS[title]
     skill_count_range = {
-        "entry": (2, 4),
-        "mid": (4, 6),
-        "senior": (6, 8),
-        "lead": (7, 9),
+        "entry":    (2, 4),
+        "mid":      (4, 6),
+        "senior":   (6, 8),
+        "lead":     (7, 9),
         "director": (6, 10),
     }
     lo, hi = skill_count_range[exp_level]
@@ -654,9 +363,8 @@ def pick_skills(title: str, exp_level: str) -> str:
     return "|".join(chosen)
 
 
-def compute_salary(
-    title: str, exp_level: str, company_size: str, industry: str, remote_type: str
-) -> tuple:
+def compute_salary(title: str, exp_level: str, company_size: str,
+                   industry: str, remote_type: str) -> tuple:
     """Return (salary_min, salary_max) after applying all multipliers."""
     base_lo, base_hi = SALARY_BASE[exp_level]
 
@@ -679,9 +387,8 @@ def compute_salary(
     return salary_min, salary_max
 
 
-def build_description(
-    title: str, exp_level: str, company: str, industry: str, skills_str: str
-) -> str:
+def build_description(title: str, exp_level: str, company: str,
+                       industry: str, skills_str: str) -> str:
     """Generate a 2-4 sentence job description from templates."""
     template = rng.choice(DESCRIPTION_TEMPLATES)
     skills_list = skills_str.split("|")
@@ -747,11 +454,8 @@ def generate_job_postings() -> pd.DataFrame:
     salary_maxs = []
     for i in range(N_JOBS):
         s_min, s_max = compute_salary(
-            str(titles[i]),
-            str(exp_levels[i]),
-            str(company_sizes[i]),
-            str(industries[i]),
-            str(remote_types[i]),
+            str(titles[i]), str(exp_levels[i]), str(company_sizes[i]),
+            str(industries[i]), str(remote_types[i])
         )
         salary_mins.append(s_min)
         salary_maxs.append(s_max)
@@ -767,11 +471,8 @@ def generate_job_postings() -> pd.DataFrame:
     print("Generating job descriptions...")
     descriptions = [
         build_description(
-            str(titles[i]),
-            str(exp_levels[i]),
-            companies[i],
-            str(industries[i]),
-            required_skills_list[i],
+            str(titles[i]), str(exp_levels[i]), companies[i],
+            str(industries[i]), required_skills_list[i]
         )
         for i in range(N_JOBS)
     ]
@@ -787,26 +488,24 @@ def generate_job_postings() -> pd.DataFrame:
         days_to_fill.append(int(rng.integers(lo, hi + 1)))
 
     print("Assembling DataFrame...")
-    df = pd.DataFrame(
-        {
-            "job_id": [f"JOB{str(i).zfill(5)}" for i in range(N_JOBS)],
-            "title": titles,
-            "company": companies,
-            "location": locations,
-            "remote_type": remote_types,
-            "industry": industries,
-            "company_size": company_sizes,
-            "experience_level": exp_levels,
-            "salary_min": salary_mins,
-            "salary_max": salary_maxs,
-            "required_skills": required_skills_list,
-            "education_required": education_list,
-            "description": descriptions,
-            "posted_date": posted_dates,
-            "applications": applications,
-            "days_to_fill": days_to_fill,
-        }
-    )
+    df = pd.DataFrame({
+        "job_id":            [f"JOB{str(i).zfill(5)}" for i in range(N_JOBS)],
+        "title":             titles,
+        "company":           companies,
+        "location":          locations,
+        "remote_type":       remote_types,
+        "industry":          industries,
+        "company_size":      company_sizes,
+        "experience_level":  exp_levels,
+        "salary_min":        salary_mins,
+        "salary_max":        salary_maxs,
+        "required_skills":   required_skills_list,
+        "education_required": education_list,
+        "description":       descriptions,
+        "posted_date":       posted_dates,
+        "applications":      applications,
+        "days_to_fill":      days_to_fill,
+    })
 
     # Sort chronologically
     df = df.sort_values("posted_date").reset_index(drop=True)
@@ -822,24 +521,20 @@ def print_summary(df: pd.DataFrame) -> None:
     print("=" * 60)
     print(f"  Total job postings : {len(df):>8,}")
     print(f"  Columns            : {df.shape[1]}")
-    print(
-        f"  Date range         : {df['posted_date'].min()} to {df['posted_date'].max()}"
-    )
-    print(
-        f"  Salary range       : ${df['salary_min'].min():,.0f} — ${df['salary_max'].max():,.0f}"
-    )
+    print(f"  Date range         : {df['posted_date'].min()} to {df['posted_date'].max()}")
+    print(f"  Salary range       : ${df['salary_min'].min():,.0f} — ${df['salary_max'].max():,.0f}")
     print()
     print("Title distribution:")
     for title, cnt in df["title"].value_counts().items():
-        print(f"  {title:<22s}: {cnt:>5,} ({cnt / len(df) * 100:.1f}%)")
+        print(f"  {title:<22s}: {cnt:>5,} ({cnt/len(df)*100:.1f}%)")
     print()
     print("Experience level distribution:")
     for lvl, cnt in df["experience_level"].value_counts().items():
-        print(f"  {lvl:<12s}: {cnt:>5,} ({cnt / len(df) * 100:.1f}%)")
+        print(f"  {lvl:<12s}: {cnt:>5,} ({cnt/len(df)*100:.1f}%)")
     print()
     print("Remote type distribution:")
     for rt, cnt in df["remote_type"].value_counts().items():
-        print(f"  {rt:<10s}: {cnt:>5,} ({cnt / len(df) * 100:.1f}%)")
+        print(f"  {rt:<10s}: {cnt:>5,} ({cnt/len(df)*100:.1f}%)")
     print()
     print("Median salary_min by experience level:")
     medians = df.groupby("experience_level")["salary_min"].median()

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Build the playground_s6e3_telco_pseudo.ipynb notebook."""
-
 import os as _os
 import sys as _sys
 

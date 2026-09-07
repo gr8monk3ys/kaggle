@@ -1,5 +1,4 @@
 """Shared test fixtures for pi-automation tests."""
-
 import sys
 from pathlib import Path
 

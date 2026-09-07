@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Build store_sales_forecasting_guide.ipynb"""
-
 import sys as _sys
 import os as _os
 
@@ -8,9 +7,7 @@ import os as _os
 def _find_repo_root(start_dir):
     current = _os.path.abspath(start_dir)
     while True:
-        if _os.path.exists(_os.path.join(current, "manage.sh")) and _os.path.isdir(
-            _os.path.join(current, "kaggle_portfolio")
-        ):
+        if _os.path.exists(_os.path.join(current, "manage.sh")) and _os.path.isdir(_os.path.join(current, "kaggle_portfolio")):
             return current
         parent = _os.path.dirname(current)
         if parent == current:
@@ -22,8 +19,7 @@ _sys.path.insert(0, _find_repo_root(_os.path.dirname(_os.path.abspath(__file__))
 from kaggle_portfolio.shared.build_utils import md, code, write_notebook
 
 cells = []
-cells.append(
-    md("""# Store Sales Time Series Forecasting with LightGBM
+cells.append(md("""# Store Sales Time Series Forecasting with LightGBM
 **Competition:** [Store Sales - Time Series Forecasting](https://www.kaggle.com/competitions/store-sales-time-series-forecasting)
 **Task:** Predict 15 days of store sales across 54 stores and 33 product families
 **Metric:** RMSLE (Root Mean Squared Log Error)
@@ -38,22 +34,18 @@ cells.append(
 3. LightGBM for multi-step forecasting
 4. Oil price as an exogenous feature
 5. Full submission pipeline with RMSLE evaluation
-""")
-)
+"""))
 
-cells.append(
-    md("""## Objective & Evaluation Strategy
+cells.append(md("""## Objective & Evaluation Strategy
 
 **Objective:** forecast 15 days of store-family sales with a validation setup that mirrors the temporal structure of the Kaggle competition.
 
 **Evaluation:** optimize RMSLE on a held-out validation window and inspect residuals by store, family, and holiday regime before trusting leaderboard gains.
 
 **Hypothesis:** lagged demand, holiday context, and exogenous oil signals should explain most forecast lift because they capture recurring seasonal behavior.
-""")
-)
+"""))
 
-cells.append(
-    md("""## Leaderboard Playbook
+cells.append(md("""## Leaderboard Playbook
 
 | Lever | Why it matters for RMSLE | Used here |
 |---|---|---|
@@ -64,13 +56,11 @@ cells.append(
 | Temporal validation | Keeps local gains closer to what the Kaggle leaderboard rewards | Yes |
 
 **Competition discussion:** [Store Sales forum](https://www.kaggle.com/competitions/store-sales-time-series-forecasting/discussion)
-""")
-)
+"""))
 
 cells.append(md("## 1. Setup & Data Loading"))
 
-cells.append(
-    code("""import os, warnings, numpy as np, pandas as pd
+cells.append(code("""import os, warnings, numpy as np, pandas as pd
 import matplotlib.pyplot as plt, seaborn as sns
 from sklearn.metrics import mean_squared_log_error
 warnings.filterwarnings('ignore')
@@ -78,11 +68,9 @@ plt.rcParams.update({'figure.figsize': (14, 5), 'font.size': 11})
 sns.set_style('whitegrid')
 SEED = 42
 np.random.seed(SEED)
-print('Libraries loaded.')""")
-)
+print('Libraries loaded.')"""))
 
-cells.append(
-    code("""# ── Paths ────────────────────────────────────────────────────────────────────
+cells.append(code("""# ── Paths ────────────────────────────────────────────────────────────────────
 from pathlib import Path
 
 
@@ -169,13 +157,11 @@ else:
 train['date'] = pd.to_datetime(train['date'])
 test['date']  = pd.to_datetime(test['date'])
 print(f'Train: {train.shape}  |  Test: {test.shape}')
-print(f'Date range: {train.date.min().date()} → {train.date.max().date()}')""")
-)
+print(f'Date range: {train.date.min().date()} → {train.date.max().date()}')"""))
 
 cells.append(md("## 2. Exploratory Data Analysis"))
 
-cells.append(
-    code("""# Total sales over time
+cells.append(code("""# Total sales over time
 daily_sales = train.groupby('date')['sales'].sum().reset_index()
 
 fig, axes = plt.subplots(2, 2, figsize=(16, 10))
@@ -207,11 +193,9 @@ axes[1,1].barh(fam_sales.index, fam_sales.values, color=sns.color_palette('virid
 axes[1,1].set_title('Top 10 Product Families by Mean Sales')
 
 plt.tight_layout()
-plt.show()""")
-)
+plt.show()"""))
 
-cells.append(
-    code("""# Oil price effect
+cells.append(code("""# Oil price effect
 oil_clean = oil.set_index('date')['dcoilwtico'].resample('W').mean().fillna(method='ffill')
 daily_sales_idx = daily_sales.set_index('date')['sales'].resample('W').mean()
 
@@ -230,11 +214,9 @@ if len(oil_clean) > 0 and len(daily_sales_idx) > 0:
     common = oil_clean.index.intersection(daily_sales_idx.index)
     if len(common) > 10:
         corr = np.corrcoef(oil_clean[common].values, daily_sales_idx[common].values)[0,1]
-        print(f'Correlation (oil price vs sales): {corr:.3f}')""")
-)
+        print(f'Correlation (oil price vs sales): {corr:.3f}')"""))
 
-cells.append(
-    code("""# Holiday effects
+cells.append(code("""# Holiday effects
 if len(holidays) > 0:
     national_holidays = holidays[holidays['locale'] == 'National']['date'].unique()
     train['is_holiday'] = train['date'].isin(national_holidays).astype(int)
@@ -249,13 +231,11 @@ if len(holidays) > 0:
         plt.text(1, holiday_impact.iloc[1]*0.95, f'+{lift:.1f}%', ha='center',
                  fontsize=12, fontweight='bold', color='white')
     plt.tight_layout()
-    plt.show()""")
-)
+    plt.show()"""))
 
 cells.append(md("## 3. Feature Engineering"))
 
-cells.append(
-    code("""def make_features(df, oil_df, stores_df, holidays_df, lags=[7,14,28], windows=[7,14,28]):
+cells.append(code("""def make_features(df, oil_df, stores_df, holidays_df, lags=[7,14,28], windows=[7,14,28]):
     df = df.copy().sort_values(['store_nbr','family','date'])
 
     # Date features
@@ -325,11 +305,9 @@ for col in ['family', 'type']:
 train_fe = train_fe.fillna(0)
 test_fe = test_fe.fillna(0)
 print(f'Features: {[c for c in train_fe.columns if c not in ["id","date","sales"]]}')
-print(f'Shape after feature engineering: {train_fe.shape}')""")
-)
+print(f'Shape after feature engineering: {train_fe.shape}')"""))
 
-cells.append(
-    code("""history_base = train.sort_values(['store_nbr', 'family', 'date']).copy()
+cells.append(code("""history_base = train.sort_values(['store_nbr', 'family', 'date']).copy()
 lag_lookup = history_base[['store_nbr', 'family', 'date', 'sales']].copy()
 
 history_summary = (
@@ -416,13 +394,11 @@ def build_future_features(test_df):
 
 
 print('Built history summary for future-horizon features.')
-history_summary.head()""")
-)
+history_summary.head()"""))
 
 cells.append(md("## 4. Baseline: Naive & Seasonal Naive"))
 
-cells.append(
-    code("""# Naive forecast = last known value
+cells.append(code("""# Naive forecast = last known value
 # Seasonal naive = same day last week
 
 def rmsle(y_true, y_pred):
@@ -451,13 +427,11 @@ if len(va_naive) > 0 and va_naive['naive_pred'].notna().sum() > 0:
 
 if len(va_snaive) > 0:
     score_snaive = rmsle(va_snaive['sales'], va_snaive['seasonal_naive'])
-    print(f'Seasonal Naive RMSLE: {score_snaive:.4f}')""")
-)
+    print(f'Seasonal Naive RMSLE: {score_snaive:.4f}')"""))
 
 cells.append(md("## 5. LightGBM Model"))
 
-cells.append(
-    code("""try:
+cells.append(code("""try:
     import lightgbm as lgb
     LGB_AVAILABLE = True
 except ImportError:
@@ -488,11 +462,9 @@ if LGB_AVAILABLE:
 
     va_pred = np.expm1(model.predict(X_va))
     score = rmsle(va['sales'].clip(0).values, va_pred)
-    print(f'LightGBM RMSLE (28-day holdout): {score:.4f}')""")
-)
+    print(f'LightGBM RMSLE (28-day holdout): {score:.4f}')"""))
 
-cells.append(
-    code("""if LGB_AVAILABLE:
+cells.append(code("""if LGB_AVAILABLE:
     imp = pd.Series(model.feature_importances_, index=FEATURE_COLS)
     top20 = imp.nlargest(20).sort_values()
 
@@ -501,22 +473,18 @@ cells.append(
     plt.title('Top 20 Feature Importances (LightGBM)')
     plt.xlabel('Importance')
     plt.tight_layout()
-    plt.show()""")
-)
+    plt.show()"""))
 
-cells.append(
-    md("""## 6. Multi-Step Forecasting Strategy
+cells.append(md("""## 6. Multi-Step Forecasting Strategy
 
 For 15-day-ahead forecasting, two approaches:
 
 **Recursive (Direct Rollout):** Generate day 1 prediction, append to history, generate day 2, etc. Simple but error accumulates.
 
 **Direct Multi-Output:** Train a separate model for each horizon h=1..15. More models, less error accumulation. Used in most top solutions.
-""")
-)
+"""))
 
-cells.append(
-    code("""# Demonstrate recursive forecasting concept
+cells.append(code("""# Demonstrate recursive forecasting concept
 def recursive_forecast(model, recent_data, feature_cols, n_steps=15):
     \"\"\"
     Roll forward one step at a time, using model predictions as inputs for lags.
@@ -541,13 +509,11 @@ if LGB_AVAILABLE:
         preds_15 = recursive_forecast(model, sample, FEATURE_COLS, n_steps=15)
         print(f'15-step recursive forecast for store 1:')
         for i, p in enumerate(preds_15, 1):
-            print(f'  Day {i:2d}: {p:,.1f}')""")
-)
+            print(f'  Day {i:2d}: {p:,.1f}')"""))
 
 cells.append(md("## 7. Submission"))
 
-cells.append(
-    code("""if LGB_AVAILABLE and TEST_PATH is not None:
+cells.append(code("""if LGB_AVAILABLE and TEST_PATH is not None:
     test_fe = build_future_features(test)
     X_test_cols = [c for c in FEATURE_COLS if c in test_fe.columns]
     test_preds = np.expm1(model.predict(test_fe[X_test_cols].fillna(0)))
@@ -559,11 +525,9 @@ cells.append(
     print(submission.head())
 else:
     print('Submission skipped (no Kaggle test data or LightGBM unavailable).')
-    print('In a real run: test_preds → submission.csv with id + sales columns.')""")
-)
+    print('In a real run: test_preds → submission.csv with id + sales columns.')"""))
 
-cells.append(
-    md("""## Key Takeaways
+cells.append(md("""## Key Takeaways
 
 | Technique | RMSLE Improvement |
 |-----------|-------------------|
@@ -581,18 +545,15 @@ cells.append(
 - Keep **categorical encoding consistent** between train and test; silent remapping can cost leaderboard points
 - Add **promotion × lag interactions** and history-summary features instead of zero-filling unknown test lags
 - Consider **Prophet** for trend decomposition as an ensemble component
-""")
-)
+"""))
 
-cells.append(
-    md("""## Interpretation, Trade-offs, and Limitations
+cells.append(md("""## Interpretation, Trade-offs, and Limitations
 
 - **Observation:** most forecast gains come from disciplined temporal features rather than from exotic model architecture changes.
 - **Interpretation:** holiday flags improve edge cases, but only when they are aligned with local store behavior instead of treated as generic shocks.
 - **Trade-off:** richer lag stacks increase accuracy, yet they also make recursive forecasts more brittle when recent history is sparse.
 - **Limitation:** synthetic fallback data preserves workflow structure, but production conclusions should come from time-aware validation on the real competition files.
-""")
-)
+"""))
 
 
 write_notebook(cells, __file__, "store_sales_forecasting_guide.ipynb")

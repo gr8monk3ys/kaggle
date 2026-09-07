@@ -23,7 +23,6 @@ Usage on Kaggle (inside the submission notebook):
   2. Implement `predict(test_row)` -> float allocation in [0, 2].
   3. Hand `predict` to the gateway server and start it.
 """
-
 from __future__ import annotations
 
 import os

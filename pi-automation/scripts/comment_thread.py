@@ -34,11 +34,7 @@ def load_comment_queue(queue_path: Path) -> list[dict]:
         data = json.loads(queue_path.read_text(encoding="utf-8"))
         comments = data.get("comments", [])
         if isinstance(comments, list):
-            return [
-                c
-                for c in comments
-                if isinstance(c, dict) and c.get("url") and c.get("body")
-            ]
+            return [c for c in comments if isinstance(c, dict) and c.get("url") and c.get("body")]
     except (json.JSONDecodeError, OSError):
         pass
     return []
@@ -68,9 +64,7 @@ def post_comment(page, url: str, body: str, *, timeout_ms: int) -> str:
 
     # Find reply/comment input area
     reply_box = kb.first_available(
-        page.get_by_role(
-            "textbox", name=re.compile(r"reply|comment|response", re.IGNORECASE)
-        ).first,
+        page.get_by_role("textbox", name=re.compile(r"reply|comment|response", re.IGNORECASE)).first,
         page.locator('[contenteditable="true"]').first,
         page.locator('textarea[placeholder*="reply" i]').first,
         page.locator('textarea[placeholder*="comment" i]').first,
@@ -79,23 +73,15 @@ def post_comment(page, url: str, body: str, *, timeout_ms: int) -> str:
     if reply_box is None:
         # Try clicking a "Reply" button first to reveal the input
         reply_trigger = kb.first_available(
-            page.get_by_role(
-                "button", name=re.compile(r"^reply$", re.IGNORECASE)
-            ).first,
-            page.get_by_role(
-                "button", name=re.compile(r"^add comment$", re.IGNORECASE)
-            ).first,
-            page.get_by_role(
-                "button", name=re.compile(r"^comment$", re.IGNORECASE)
-            ).first,
+            page.get_by_role("button", name=re.compile(r"^reply$", re.IGNORECASE)).first,
+            page.get_by_role("button", name=re.compile(r"^add comment$", re.IGNORECASE)).first,
+            page.get_by_role("button", name=re.compile(r"^comment$", re.IGNORECASE)).first,
         )
         if reply_trigger is not None:
             reply_trigger.click(timeout=timeout_ms)
             page.wait_for_timeout(800)
             reply_box = kb.first_available(
-                page.get_by_role(
-                    "textbox", name=re.compile(r"reply|comment|response", re.IGNORECASE)
-                ).first,
+                page.get_by_role("textbox", name=re.compile(r"reply|comment|response", re.IGNORECASE)).first,
                 page.locator('[contenteditable="true"]').first,
                 page.locator('textarea[placeholder*="reply" i]').first,
                 page.locator('textarea[placeholder*="comment" i]').first,
@@ -112,12 +98,8 @@ def post_comment(page, url: str, body: str, *, timeout_ms: int) -> str:
     submit_btn = kb.first_available(
         page.get_by_role("button", name=re.compile(r"^post$", re.IGNORECASE)).first,
         page.get_by_role("button", name=re.compile(r"^submit$", re.IGNORECASE)).first,
-        page.get_by_role(
-            "button", name=re.compile(r"^post comment$", re.IGNORECASE)
-        ).first,
-        page.get_by_role(
-            "button", name=re.compile(r"^post reply$", re.IGNORECASE)
-        ).first,
+        page.get_by_role("button", name=re.compile(r"^post comment$", re.IGNORECASE)).first,
+        page.get_by_role("button", name=re.compile(r"^post reply$", re.IGNORECASE)).first,
     )
     if submit_btn is None:
         raise RuntimeError(f"Submit button not found on {url}")
@@ -128,25 +110,13 @@ def post_comment(page, url: str, body: str, *, timeout_ms: int) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Post comments on Kaggle discussion threads."
-    )
+    parser = argparse.ArgumentParser(description="Post comments on Kaggle discussion threads.")
     kb.add_common_browser_args(parser)
-    parser.add_argument(
-        "--url", default=None, help="Thread URL to comment on (with --body)."
-    )
-    parser.add_argument(
-        "--body", default=None, help="Comment text (required with --url)."
-    )
-    parser.add_argument(
-        "--queue", type=Path, default=QUEUE_PATH, help="Comment queue JSON path."
-    )
-    parser.add_argument(
-        "--limit", type=int, default=3, help="Max comments per session (default 3)."
-    )
-    parser.add_argument(
-        "--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path."
-    )
+    parser.add_argument("--url", default=None, help="Thread URL to comment on (with --body).")
+    parser.add_argument("--body", default=None, help="Comment text (required with --url).")
+    parser.add_argument("--queue", type=Path, default=QUEUE_PATH, help="Comment queue JSON path.")
+    parser.add_argument("--limit", type=int, default=3, help="Max comments per session (default 3).")
+    parser.add_argument("--tracker", type=Path, default=TRACKER_PATH, help="Tracker JSON path.")
     return parser.parse_args()
 
 
@@ -173,7 +143,7 @@ def main() -> int:
 
     tracker = kb.TrackerFile(args.tracker)
     pending = [item for item in items if not tracker.has(comment_key(item))]
-    pending = pending[: args.limit]
+    pending = pending[:args.limit]
 
     if not pending:
         print(f"All {len(items)} comments already posted.")
@@ -192,9 +162,7 @@ def main() -> int:
     with kb.open_kaggle_browser(args) as page:
         for idx, item in enumerate(pending):
             try:
-                result = post_comment(
-                    page, item["url"], item["body"], timeout_ms=args.timeout_ms
-                )
+                result = post_comment(page, item["url"], item["body"], timeout_ms=args.timeout_ms)
                 tracker.mark(comment_key(item), result)
                 tracker.save()
                 success += 1

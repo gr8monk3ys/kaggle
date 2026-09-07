@@ -42,9 +42,7 @@ class _EditableLocator(_FakeLocator):
 
 
 class _FieldScope:
-    def __init__(
-        self, label_locator: _EditableLocator, textbox_locator: _EditableLocator
-    ):
+    def __init__(self, label_locator: _EditableLocator, textbox_locator: _EditableLocator):
         self._label_locator = label_locator
         self._textbox_locator = textbox_locator
 
@@ -228,9 +226,7 @@ def test_is_authenticated_false_when_sign_in_prompt_visible():
 
 
 def test_is_authenticated_true_for_signed_in_page():
-    page = _FakePage(
-        url="https://www.kaggle.com/datasets/owner/ds/settings", signed_out=False
-    )
+    page = _FakePage(url="https://www.kaggle.com/datasets/owner/ds/settings", signed_out=False)
     assert dms.is_authenticated(page) is True
 
 
@@ -252,10 +248,7 @@ def test_storage_state_has_kaggle_cookie_true(tmp_path: Path):
 
 def test_storage_state_has_kaggle_cookie_false(tmp_path: Path):
     state = tmp_path / "state.json"
-    state.write_text(
-        json.dumps({"cookies": [{"name": "foo", "domain": ".example.com"}]}),
-        encoding="utf-8",
-    )
+    state.write_text(json.dumps({"cookies": [{"name": "foo", "domain": ".example.com"}]}), encoding="utf-8")
     assert dms.storage_state_has_kaggle_cookie(state) is False
 
 
@@ -270,9 +263,7 @@ def test_fill_field_skips_non_editable_label_and_falls_back_to_textbox():
 
 def test_fill_file_description_editor_handles_create_then_textarea():
     page = _FileDescriptionPage()
-    assert (
-        dms.fill_file_description_editor(page, "Generated file summary", 1000) is True
-    )
+    assert dms.fill_file_description_editor(page, "Generated file summary", 1000) is True
     assert page.editor.filled_value == "Generated file summary"
 
 

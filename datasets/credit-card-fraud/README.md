@@ -2,9 +2,9 @@
 
 > 200K transactions, 0.5% fraud rate, 30 features
 
-**License:** GPL-3.0
+**License:** GPL-3.0  
 
-**Kaggle:** [lorenzoscaturchio/credit-card-fraud-detection-synthetic](https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud-detection-synthetic)
+**Kaggle:** [lorenzoscaturchio/credit-card-fraud-detection-synthetic](https://www.kaggle.com/datasets/lorenzoscaturchio/credit-card-fraud-detection-synthetic)  
 
 ## Description
 

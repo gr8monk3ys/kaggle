@@ -1,28 +1,17 @@
 #!/usr/bin/env python3
 """Build the timeseries_transformers.ipynb notebook programmatically."""
-
 import json, os
-
 
 def md(source):
     return {"cell_type": "markdown", "metadata": {}, "source": source.split("\n")}
 
-
 def code(source):
-    return {
-        "cell_type": "code",
-        "metadata": {"trusted": True},
-        "source": source.split("\n"),
-        "outputs": [],
-        "execution_count": None,
-    }
-
+    return {"cell_type": "code", "metadata": {"trusted": True}, "source": source.split("\n"), "outputs": [], "execution_count": None}
 
 cells = []
 
 # ── Cell 1: Title Banner ─────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 # <center>Time Series Forecasting with Transformers</center>
 
 <center>
@@ -45,12 +34,10 @@ A deep-dive, from-scratch guide to applying Transformer architectures for time s
 > - [Hull Tactical Short-Term Market Prediction](https://www.kaggle.com/competitions/hull-tactical-asset-allocation)
 > - [Store Sales -- Time Series Forecasting](https://www.kaggle.com/competitions/store-sales-time-series-forecasting)
 > - [G-Research Crypto Forecasting](https://www.kaggle.com/competitions/g-research-crypto-forecasting)
-""")
-)
+"""))
 
 # ── Cell 2: TL;DR ────────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ## TL;DR
 
 | What | Detail |
@@ -60,12 +47,10 @@ cells.append(
 | **Methods Covered** | Vanilla Transformer, PatchTST, Informer, Autoformer, HuggingFace `TimeSeriesTransformerModel` |
 | **Stack** | PyTorch, HuggingFace Transformers, scikit-learn, pandas, matplotlib |
 | **Takeaway** | Transformers are now state-of-the-art for many forecasting tasks when properly configured |
-""")
-)
+"""))
 
 # ── Cell 3: Table of Contents ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ## Table of Contents
 
 1. [Setup & Imports](#1)
@@ -79,23 +64,19 @@ cells.append(
 9. [Evaluation](#9)
 10. [Production Tips](#10)
 11. [Further Reading](#11)
-""")
-)
+"""))
 
 # ── Cell 4: Section 1 Header ─────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="1"></a>
 ## 1. Setup & Imports
 
 We install and import everything we need. GPU is recommended for the training sections.
-""")
-)
+"""))
 
 # ── Cell 5: Imports ───────────────────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 1. Setup & Imports
 # ============================================================
@@ -130,22 +111,18 @@ print(f"Using device: {DEVICE}")
 print(f"PyTorch version: {torch.__version__}")
 print(f"NumPy version: {np.__version__}")
 print(f"Pandas version: {pd.__version__}")
-""")
-)
+"""))
 
 # ── Cell 6: Callout ──────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- Device Setup**
 >
 > Always set seeds for reproducibility and check for GPU availability early.
 > Time series Transformers benefit significantly from GPU acceleration during training.
-""")
-)
+"""))
 
 # ── Cell 7: Section 2 Header ─────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="2"></a>
 ## 2. Why Transformers for Time Series?
@@ -166,12 +143,10 @@ In an LSTM, information from time step $t_0$ must propagate through every hidden
 $$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right) V$$
 
 This means step $t_0$ can directly attend to $t_N$ regardless of sequence length -- a game-changer for seasonal patterns with long periods.
-""")
-)
+"""))
 
 # ── Cell 8: Section 2 Code -- quick comparison illustration ──────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 2. Visual: Information Flow -- LSTM vs Transformer
 # ============================================================
@@ -208,23 +183,19 @@ ax.axis("off")
 
 plt.tight_layout()
 plt.show()
-""")
-)
+"""))
 
 # ── Cell 9: Callout ──────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- Why Transformers?**
 >
 > Transformers overcome the sequential bottleneck of RNNs by computing all pairwise
 > relationships in parallel. For time series with long seasonal cycles (e.g., yearly
 > patterns in daily data = 365 steps), this is a major advantage.
-""")
-)
+"""))
 
 # ── Cell 10: Section 3 Header ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="3"></a>
 ## 3. Time Series Fundamentals
@@ -235,12 +206,10 @@ We generate a **synthetic** time series with:
 - **Noise**: Gaussian random noise
 
 This controlled setup lets us verify our model captures each component.
-""")
-)
+"""))
 
 # ── Cell 11: Generate Synthetic Data ─────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 3. Generate Synthetic Time Series Data
 # ============================================================
@@ -264,12 +233,10 @@ df.set_index("date", inplace=True)
 print(f"Dataset shape: {df.shape}")
 print(f"Date range: {df.index.min()} to {df.index.max()}")
 df.head()
-""")
-)
+"""))
 
 # ── Cell 12: Visualize Synthetic Data ────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # Visualization: Components + Composite
 # ============================================================
@@ -294,12 +261,10 @@ axes[3].set_xlabel("Date")
 
 plt.tight_layout()
 plt.show()
-""")
-)
+"""))
 
 # ── Cell 13: Train/Test Split ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ### Train/Test Split Strategy for Time Series
 
 **CRITICAL:** Never use random splits for time series!  Random splits cause **data leakage** -- the model sees future data during training.
@@ -312,12 +277,10 @@ cells.append(
 | **Time Series Cross-Validation** | For robust metric estimation |
 
 We use a fixed cutoff at 80/20.
-""")
-)
+"""))
 
 # ── Cell 14: Split Code ──────────────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # Train/Test Split -- Fixed Cutoff (NO random split!)
 # ============================================================
@@ -341,23 +304,19 @@ ax.legend()
 ax.set_title("Scaled Train / Test Split", fontweight="bold")
 plt.tight_layout()
 plt.show()
-""")
-)
+"""))
 
 # ── Cell 15: Callout ─────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- No Random Splits!**
 >
 > Time series data has temporal ordering. Always split chronologically and fit
 > scalers on **training data only**, then transform test data with those same
 > parameters. This prevents data leakage.
-""")
-)
+"""))
 
 # ── Cell 16: Section 4 Header ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="4"></a>
 ## 4. Positional Encoding for Time
@@ -367,12 +326,10 @@ Transformers have **no inherent notion of order**. We must inject positional inf
 ### Two Approaches:
 1. **Sinusoidal Positional Encoding** -- the classic approach from "Attention Is All You Need"
 2. **Temporal Embeddings** -- learnable embeddings for hour-of-day, day-of-week, month-of-year, etc.
-""")
-)
+"""))
 
 # ── Cell 17: Positional Encoding Implementation ──────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 4. Positional Encoding -- Sinusoidal
 # ============================================================
@@ -430,12 +387,10 @@ class TemporalEmbedding(nn.Module):
 
 
 print("Positional encoding classes defined.")
-""")
-)
+"""))
 
 # ── Cell 18: Visualize Positional Encoding ───────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # Visualize Sinusoidal Positional Encoding
 # ============================================================
@@ -464,12 +419,10 @@ axes[1].legend(ncol=2, fontsize=9)
 
 plt.tight_layout()
 plt.show()
-""")
-)
+"""))
 
 # ── Cell 19: Callout ─────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- Positional Encoding**
 >
 > The sinusoidal encoding creates a unique "fingerprint" for each position, and nearby
@@ -477,12 +430,10 @@ cells.append(
 > model reason about both short-range and long-range relative positions. For time series,
 > adding **calendar embeddings** (day-of-week, month, etc.) further helps the model
 > recognize cyclical patterns.
-""")
-)
+"""))
 
 # ── Cell 20: Section 5 Header ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="5"></a>
 ## 5. Building a Transformer from Scratch
@@ -494,12 +445,10 @@ We implement a complete Time Series Transformer in PyTorch, building up from:
 4. **Full TimeSeriesTransformer** model
 
 All code is heavily commented for educational clarity.
-""")
-)
+"""))
 
 # ── Cell 21: Transformer Implementation ──────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 5. Time Series Transformer -- Built from Scratch
 # ============================================================
@@ -742,24 +691,20 @@ dummy_input = torch.randn(8, SEQ_LEN, 1).to(DEVICE)
 dummy_output = model(dummy_input)
 print(f"Input shape:  {dummy_input.shape}")
 print(f"Output shape: {dummy_output.shape}")
-""")
-)
+"""))
 
 # ── Cell 22: Callout ─────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- Architecture Decisions**
 >
 > - **Pre-LayerNorm** is more stable for training than Post-LayerNorm.
 > - **GELU** activation in the feed-forward network outperforms ReLU for most tasks.
 > - The output projection flattens the entire encoder output and maps to the forecast horizon.
 >   An alternative is to use only the last token's representation, or a decoder cross-attention mechanism.
-""")
-)
+"""))
 
 # ── Cell 23: Section 6 Header ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="6"></a>
 ## 6. Training Pipeline
@@ -769,12 +714,10 @@ Components:
 2. **DataLoader** -- batches and shuffles (shuffling is OK within windows, not across time for split)
 3. **Training Loop** with early stopping
 4. **Loss Curves** visualization
-""")
-)
+"""))
 
 # ── Cell 24: Dataset & DataLoader ────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 6a. Sliding Window Dataset
 # ============================================================
@@ -817,12 +760,10 @@ test_loader  = DataLoader(test_dataset,  batch_size=BATCH_SIZE, shuffle=False)
 x_batch, y_batch = next(iter(train_loader))
 print(f"Input batch shape:  {x_batch.shape}")   # (32, 96, 1)
 print(f"Target batch shape: {y_batch.shape}")    # (32, 24)
-""")
-)
+"""))
 
 # ── Cell 25: Training Loop ───────────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 6b. Training Loop with Early Stopping
 # ============================================================
@@ -901,12 +842,10 @@ def train_model(
 
 # Train!
 train_losses, val_losses = train_model(model, train_loader, test_loader, n_epochs=50, lr=1e-3, patience=10)
-""")
-)
+"""))
 
 # ── Cell 26: Loss Curves ─────────────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 6c. Training / Validation Loss Curves
 # ============================================================
@@ -920,24 +859,20 @@ ax.legend(fontsize=11)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
-""")
-)
+"""))
 
 # ── Cell 27: Callout ─────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- Training Best Practices**
 >
 > - **AdamW** with weight decay provides better generalization than vanilla Adam.
 > - **Cosine annealing** scheduler smoothly decays the learning rate.
 > - **Gradient clipping** (max_norm=1.0) prevents exploding gradients.
 > - **Early stopping** saves the best model and prevents overfitting.
-""")
-)
+"""))
 
 # ── Cell 28: Section 7 Header ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="7"></a>
 ## 7. Modern Approaches
@@ -980,12 +915,10 @@ Input -> Series Decomposition -> Auto-Correlation Mechanism -> Forecast
 ```
 
 **Key Idea:** Replace attention with an **auto-correlation mechanism** that discovers period-based dependencies by operating in the frequency domain. Built-in series decomposition separates trend from seasonal components.
-""")
-)
+"""))
 
 # ── Cell 29: Callout ─────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- Modern Transformer Variants**
 >
 > | Model | Key Innovation | Complexity | Best For |
@@ -995,23 +928,19 @@ cells.append(
 > | **Autoformer** | Auto-correlation in frequency domain | O(L log L) | Strong seasonal patterns |
 >
 > For competitions like Store Sales Forecasting, PatchTST is often the strongest starting point.
-""")
-)
+"""))
 
 # ── Cell 30: Section 8 Header ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="8"></a>
 ## 8. Using HuggingFace TimeSeriesTransformer
 
 HuggingFace provides a ready-to-use `TimeSeriesTransformerModel` with a probabilistic forecast head. This is the fastest path to strong results.
-""")
-)
+"""))
 
 # ── Cell 31: HuggingFace Code ────────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 8. HuggingFace TimeSeriesTransformer
 # ============================================================
@@ -1057,12 +986,10 @@ if HF_AVAILABLE:
     print(f"Distribution: {config.distribution_output}")
     print("\\nNote: The HF model outputs a probability distribution (Student-t by default),")
     print("enabling probabilistic forecasting with confidence intervals.")
-""")
-)
+"""))
 
 # ── Cell 32: HF Note ─────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- HuggingFace TST**
 >
 > The HuggingFace implementation adds a **probabilistic forecast head** (Student-t or
@@ -1071,12 +998,10 @@ cells.append(
 >
 > For production use, the [GluonTS](https://ts.gluon.ai/) library (which HF integrates with) provides
 > data loading utilities, evaluation metrics, and backtesting pipelines.
-""")
-)
+"""))
 
 # ── Cell 33: Section 9 Header ────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="9"></a>
 ## 9. Evaluation
@@ -1087,12 +1012,10 @@ We evaluate our scratch Transformer using:
 - **MAPE** (Mean Absolute Percentage Error) -- scale-independent
 
 We also compare against simple baselines.
-""")
-)
+"""))
 
 # ── Cell 34: Evaluation Code ─────────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 9a. Generate Forecasts from Scratch Transformer
 # ============================================================
@@ -1112,12 +1035,10 @@ all_targets = np.concatenate(all_targets, axis=0)
 
 print(f"Predictions shape: {all_preds.shape}")
 print(f"Targets shape:     {all_targets.shape}")
-""")
-)
+"""))
 
 # ── Cell 35: Metrics ──────────────────────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 9b. Compute Metrics
 # ============================================================
@@ -1174,12 +1095,10 @@ for name, m in [("Transformer", transformer_metrics),
                 ("Seasonal Naive", seasonal_metrics)]:
     print(f"{name:<25} {m['mae']:>8.4f} {m['rmse']:>8.4f} {m['mape']:>7.2f}%")
 print("=" * 55)
-""")
-)
+"""))
 
 # ── Cell 36: Forecast Visualization ──────────────────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 9c. Forecast vs Actual Visualization
 # ============================================================
@@ -1204,23 +1123,19 @@ for ax, idx in zip(axes, sample_indices):
 
 plt.tight_layout()
 plt.show()
-""")
-)
+"""))
 
 # ── Cell 37: Callout ─────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 > **Key Takeaway -- Evaluation**
 >
 > Always compare against **naive baselines** (last value, seasonal lag). If your fancy model
 > cannot beat a naive baseline, something is wrong with your pipeline. For competition scoring,
 > check which metric is used (e.g., RMSLE for Store Sales, weighted RMSE for Hull Tactical).
-""")
-)
+"""))
 
 # ── Cell 38: Section 10 Header ───────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="10"></a>
 ## 10. Production Tips
@@ -1275,12 +1190,10 @@ upper = y_test_pred + q
 - [ ] Monitoring: track forecast error over time for concept drift
 - [ ] Fallback: if model fails, use seasonal naive as backup
 - [ ] Latency: for real-time forecasting, use ONNX or TorchScript export
-""")
-)
+"""))
 
 # ── Cell 39: Quick demo of conformal prediction ─────────────────────────────
-cells.append(
-    code("""\
+cells.append(code("""\
 # ============================================================
 # 10. Quick Demo: Conformal Prediction Intervals
 # ============================================================
@@ -1316,12 +1229,10 @@ ax.legend()
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
-""")
-)
+"""))
 
 # ── Cell 40: Further Reading ─────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 <a id="11"></a>
 ## 11. Further Reading
@@ -1348,12 +1259,10 @@ cells.append(
 - [Hull Tactical Short-Term Market Prediction](https://www.kaggle.com/competitions/hull-tactical-asset-allocation)
 - [Web Traffic Time Series Forecasting](https://www.kaggle.com/competitions/web-traffic-time-series-forecasting)
 - [M5 Forecasting - Accuracy](https://www.kaggle.com/competitions/m5-forecasting-accuracy)
-""")
-)
+"""))
 
 # ── Cell 41: CTA ─────────────────────────────────────────────────────────────
-cells.append(
-    md("""\
+cells.append(md("""\
 ---
 
 ## Thank You for Reading!
@@ -1376,8 +1285,7 @@ If you found this notebook helpful, please consider **upvoting** it -- it helps 
 - [Kaggle](https://www.kaggle.com/lorenzoscaturchio)
 
 Happy forecasting!
-""")
-)
+"""))
 
 # ── Assemble notebook ────────────────────────────────────────────────────────
 notebook = {
@@ -1385,7 +1293,7 @@ notebook = {
         "kernelspec": {
             "display_name": "Python 3",
             "language": "python",
-            "name": "python3",
+            "name": "python3"
         },
         "language_info": {
             "name": "python",
@@ -1394,19 +1302,19 @@ notebook = {
             "file_extension": ".py",
             "codemirror_mode": {"name": "ipython", "version": 3},
             "pygments_lexer": "ipython3",
-            "nbconvert_exporter": "python",
+            "nbconvert_exporter": "python"
         },
         "kaggle": {
             "accelerator": "gpu",
             "dataSources": [],
             "isInternetEnabled": True,
             "language": "python",
-            "sourceType": "notebook",
-        },
+            "sourceType": "notebook"
+        }
     },
     "nbformat": 4,
     "nbformat_minor": 4,
-    "cells": [],
+    "cells": []
 }
 
 # Fix cells: ensure source is a list of lines (each ending with \n except last)
@@ -1423,15 +1331,13 @@ for cell in cells:
     cell["source"] = formatted
     notebook["cells"].append(cell)
 
-out_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "timeseries_transformers.ipynb"
-)
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "timeseries_transformers.ipynb")
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(notebook, f, indent=1)
 
 print(f"Notebook written to {out_path}")
 print(f"Total cells: {len(notebook['cells'])}")
-md_count = sum(1 for c in notebook["cells"] if c["cell_type"] == "markdown")
-code_count = sum(1 for c in notebook["cells"] if c["cell_type"] == "code")
+md_count = sum(1 for c in notebook['cells'] if c['cell_type'] == 'markdown')
+code_count = sum(1 for c in notebook['cells'] if c['cell_type'] == 'code')
 print(f"  Markdown: {md_count}")
 print(f"  Code:     {code_count}")
