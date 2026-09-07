@@ -12,6 +12,12 @@ from typing import Any
 
 from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
 from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.campaigns.campaign_queue import (
+    DEFAULT_QUEUE_PATH,
+    load_payload,
+    merge_regenerated,
+    save_payload,
+)
 from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 
@@ -21,7 +27,6 @@ DEFAULT_DATASET_REPORT = (
     / "reports"
     / reports.latest_name(reports.DATASET_USABILITY, "json")
 )
-DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
 DEFAULT_CHANNELS = ["kaggle-discussion", "kaggle-changelog", "x", "linkedin"]
 
 
@@ -481,7 +486,18 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     deps.emitter.emit(reports.PROMOTION_CAMPAIGN, markdown)
     deps.emitter.emit(reports.PROMOTION_CAMPAIGN, payload, ext="json")
-    write_json(queue_path, {"generated_on": today.isoformat(), "queue": queue})
+    # Regeneration changes the PLAN, never what the run recorded. Writing the
+    # fresh queue wholesale reset completed actions to planned, which on the x
+    # and linkedin channels means re-posting published promotion.
+    try:
+        existing = load_payload(queue_path)["queue"]
+    except CommandError:
+        existing = []
+    merged = merge_regenerated(existing, queue)
+    kept = sum(1 for item in merged if item.get("status") in {"done", "blocked"})
+    save_payload(queue_path, {"generated_on": today.isoformat(), "queue": merged})
+    if kept:
+        print(f"Preserved {kept} already-completed or blocked action(s)")
 
     print(f"Campaign queue written: {queue_path}")
     for warning in ref_warnings:

@@ -103,8 +103,8 @@ def test_claim_action_only_claims_planned():
     planned = _action("a", status="planned")
     in_progress = _action("b", status="in_progress")
 
-    campaign_execute.claim_action(planned, stamp="2026-03-02T12:00:00Z")
-    campaign_execute.claim_action(in_progress, stamp="2026-03-02T12:00:00Z")
+    campaign_execute.claim(planned, stamp="2026-03-02T12:00:00Z")
+    campaign_execute.claim(in_progress, stamp="2026-03-02T12:00:00Z")
 
     assert planned["status"] == "in_progress"
     assert planned["claimed_at"] == "2026-03-02T12:00:00Z"
@@ -116,9 +116,9 @@ def test_mark_done_and_mark_error_update_expected_fields():
     action = _action("a", status="in_progress")
     action["last_error"] = "previous failure"
 
-    campaign_execute.mark_done(
+    campaign_execute.complete(
         action,
-        post_url="https://www.kaggle.com/discussion/123",
+        note="posted: https://www.kaggle.com/discussion/123",
         stamp="2026-03-02T12:01:00Z",
     )
     assert action["status"] == "done"

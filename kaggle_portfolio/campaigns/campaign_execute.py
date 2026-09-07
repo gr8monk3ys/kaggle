@@ -12,7 +12,6 @@ dataset discussion board. Queue state is updated in-place:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import random
 import re
@@ -27,23 +26,25 @@ sys.path.insert(
 )
 import kaggle_browser as kb
 from kaggle_portfolio.shared.errors import CommandError
+from kaggle_portfolio.campaigns.campaign_queue import (
+    DEFAULT_QUEUE_PATH,
+    IN_PROGRESS,
+    PLANNED,
+    claim,
+    complete,
+    load_payload,
+    now_iso,
+    save_payload,
+)
 from kaggle_portfolio.shared.deps import Deps
 
 
-DEFAULT_QUEUE_PATH = Path("pi-automation") / "data" / "promotion_campaign_queue.json"
 DEFAULT_STORAGE_STATE = Path("pi-automation") / "data" / "kaggle_storage_state.json"
 SUPPORTED_CHANNELS = {"kaggle-discussion", "kaggle-changelog"}
-PLANNED = "planned"
-IN_PROGRESS = "in_progress"
-DONE = "done"
 
 
 def now_utc() -> datetime:
     return datetime.now(tz=timezone.utc)
-
-
-def now_iso() -> str:
-    return now_utc().isoformat().replace("+00:00", "Z")
 
 
 def parse_iso_utc(value: str | None) -> datetime | None:
@@ -59,23 +60,6 @@ def parse_iso_utc(value: str | None) -> datetime | None:
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
-
-
-def load_payload(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        raise CommandError(f"Campaign queue not found: {path}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise CommandError(f"Invalid queue payload: {path}")
-    queue = payload.get("queue")
-    if not isinstance(queue, list):
-        raise CommandError(f"Queue payload missing list: {path}")
-    return payload
-
-
-def save_payload(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 def normalized_status(action: dict[str, Any]) -> str:
@@ -134,20 +118,6 @@ def due_supported_actions(
     if limit > 0:
         return filtered[:limit]
     return filtered
-
-
-def claim_action(action: dict[str, Any], stamp: str) -> None:
-    if normalized_status(action) == PLANNED:
-        action["status"] = IN_PROGRESS
-        action["claimed_at"] = stamp
-        action["claim_count"] = int(action.get("claim_count") or 0) + 1
-
-
-def mark_done(action: dict[str, Any], post_url: str, stamp: str) -> None:
-    action["status"] = DONE
-    action["completed_at"] = stamp
-    action["note"] = f"posted: {post_url}"
-    action.pop("last_error", None)
 
 
 def mark_error(action: dict[str, Any], error_text: str) -> None:
@@ -509,7 +479,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
 
     stamp = now_iso()
     for action in selected:
-        claim_action(action, stamp=stamp)
+        claim(action, stamp=stamp)
 
     sync_playwright = require_playwright()
     success = 0
@@ -555,7 +525,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
                         timeout_ms=args.timeout_ms,
                         manual_login=args.manual_login,
                     )
-                    mark_done(action, post_url=post_url, stamp=now_iso())
+                    complete(action, note=f"posted: {post_url}", stamp=now_iso())
                     success += 1
                     print(f"[done] {action_id}: {post_url}")
                 except Exception as exc:
