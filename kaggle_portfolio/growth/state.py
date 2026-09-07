@@ -10,6 +10,7 @@ from pathlib import Path
 
 from kaggle_portfolio.ops import medal_ops
 from kaggle_portfolio.ops import metadata_tracker
+from kaggle_portfolio.shared.deps import Deps
 
 ROOT = Path(__file__).resolve().parents[2]
 TRACKER_PATH = ROOT / "docs" / "reports" / "grandmaster-tracker.md"
@@ -60,13 +61,14 @@ def _read_followers() -> int:
         return 0
 
 
-def build(today: date | None = None) -> GrowthState:
+def build(today: date | None = None, deps: Deps | None = None) -> GrowthState:
     today = today or date.today()
+    deps = deps or Deps.resolve()
     snapshot = medal_ops.build_snapshot(_read_tracker(), today)
     cats = snapshot.get("categories", {})
     discussion = cats.get("discussion", {})
 
-    votes = metadata_tracker.fetch_vote_counts() or {}
+    votes = metadata_tracker.fetch_vote_counts(deps.client) or {}
     items = [
         ItemState(slug=slug, kind="notebook", votes=int(v), title=slug)
         for slug, v in sorted(votes.items())

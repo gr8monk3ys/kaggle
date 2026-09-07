@@ -1,4 +1,5 @@
 """Post the next queued discussion to Kaggle using Playwright."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,11 +10,32 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-import notify
-import discussion_queue as dq
+# The repo root has to be importable before the shared Draft Queue model can be.
+# Default to /repo, not a __file__-relative walk: inside the container this file
+# is /scripts/discussion_post.py, so parents[2] resolves to "/" and every
+# repo-relative path below silently points at the filesystem root.
+REPO = Path(os.environ.get("REPO_PATH", "/repo"))
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
-REPO = Path(os.environ.get("REPO_PATH", str(Path(__file__).parent.parent.parent)))
-QUEUE_PATH = Path(os.environ.get("QUEUE_PATH", str(Path(__file__).parent.parent / "data" / "discussion_queue.json")))
+import notify  # noqa: E402
+from kaggle_portfolio.discussions import draft_queue as dq  # noqa: E402
+
+QUEUE_PATH = Path(
+    os.environ.get(
+        "QUEUE_PATH",
+        str(Path(__file__).parent.parent / "data" / "discussion_queue.json"),
+    )
+)
+#: Publishing is off unless explicitly enabled. See
+#: docs/adr/0004-posting-stays-off-by-default.md — the unified selector changes
+#: which drafts are eligible, and publishing is the one irreversible effect here.
+POSTING_ENABLED = os.environ.get("DISCUSSION_POSTING_ENABLED", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 EMAIL = os.environ.get("KAGGLE_EMAIL", "")
 PASSWORD = os.environ.get("KAGGLE_PASSWORD", "")
 BROWSER_CHALLENGE_MESSAGE = (
@@ -98,7 +120,7 @@ def load_queue() -> list[dict]:
 
 
 def select_smoke_item(queue: list[dict], now: datetime) -> dict | None:
-    item = dq.next_pending(queue, now=now)
+    item = dq.select_next_post(queue, now=now)
     if item is not None:
         return item
     for candidate in queue:
@@ -111,7 +133,9 @@ def load_item_body(item: dict) -> str:
     required_keys = ("id", "title", "forum_url", "body_file", "body_section")
     missing_keys = [key for key in required_keys if not item.get(key)]
     if missing_keys:
-        raise ValueError(f"Queue item missing required key(s): {', '.join(missing_keys)}")
+        raise ValueError(
+            f"Queue item missing required key(s): {', '.join(missing_keys)}"
+        )
     body_file = str(item["body_file"])
     candidates = [REPO / body_file]
     # Queues written before the layout reorg store a bare filename, which
@@ -120,7 +144,12 @@ def load_item_body(item: dict) -> str:
         candidates.append(REPO / "docs" / "discussions" / body_file)
     drafts_path = next((p for p in candidates if p.is_file()), candidates[0])
     try:
-        return dq.extract_body(drafts_path.read_text(encoding="utf-8"), str(item["body_section"]))
+        return dq.extract_body(
+            drafts_path.read_text(encoding="utf-8"),
+            str(item["body_section"]),
+            strict=True,
+            strip_heading=True,
+        )
     except (FileNotFoundError, ValueError) as exc:
         raise ValueError(f"Cannot extract draft body: {exc}") from exc
 
@@ -168,8 +197,14 @@ def smoke_test(*, check_login: bool = False) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Post the next queued Kaggle discussion or run a smoke test.")
-    parser.add_argument("--smoke-test", action="store_true", help="Validate posting prerequisites without creating a post.")
+    parser = argparse.ArgumentParser(
+        description="Post the next queued Kaggle discussion or run a smoke test."
+    )
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Validate posting prerequisites without creating a post.",
+    )
     parser.add_argument(
         "--check-login",
         action="store_true",
@@ -187,10 +222,29 @@ def main(argv: list[str] | None = None) -> None:
     if args.smoke_test:
         try:
             raise SystemExit(smoke_test(check_login=args.check_login))
-        except (EnvironmentError, FileNotFoundError, ValueError, RuntimeError, Exception) as exc:
+        except (
+            EnvironmentError,
+            FileNotFoundError,
+            ValueError,
+            RuntimeError,
+            Exception,
+        ) as exc:
             print(str(exc), file=sys.stderr)
             notify_safe(f"❌ Discussion smoke test failed: {exc}")
             sys.exit(1)
+
+    if not POSTING_ENABLED:
+        # Deliberate, not a leftover: unifying the selector changed which drafts
+        # are eligible, and the queue holds drafts whose measured claims have not
+        # been checked against the tracker. Publishing is the one irreversible
+        # effect in this system, so it is enabled by a decision, not by a merge.
+        # Set DISCUSSION_POSTING_ENABLED=1 to turn it on.
+        print(
+            "Posting is disabled (DISCUSSION_POSTING_ENABLED is not set). "
+            "See docs/adr/0004-posting-stays-off-by-default.md",
+            file=sys.stderr,
+        )
+        return
 
     try:
         require_kaggle_login_env()
@@ -206,7 +260,7 @@ def main(argv: list[str] | None = None) -> None:
         notify_safe(f"❌ {exc}")
         sys.exit(1)
     now = datetime.now(tz=timezone.utc)
-    item = dq.next_pending(queue, now=now)
+    item = dq.select_next_post(queue, now=now)
 
     if item is None:
         print("No pending posts ready.")
@@ -234,19 +288,14 @@ def main(argv: list[str] | None = None) -> None:
     dq.mark_posted(QUEUE_PATH, item["id"], post_url=post_url)
 
     updated = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
-    next_item = dq.next_pending(updated, now=now)
+    next_item = dq.select_next_post(updated, now=now)
     next_info = (
         f"Next: {next_item['title']} ({next_item['scheduled_after'][:10]})"
         if next_item
         else "Queue empty."
     )
 
-    notify_safe(
-        f"✅ *Discussion posted*\n"
-        f"\"{item['title']}\"\n"
-        f"{post_url}\n\n"
-        f"{next_info}"
-    )
+    notify_safe(f'✅ *Discussion posted*\n"{item["title"]}"\n{post_url}\n\n{next_info}')
     print(f"Posted: {post_url}")
 
 

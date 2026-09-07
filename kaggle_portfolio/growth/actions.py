@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from kaggle_portfolio.notebooks import notebook_promoter
-from kaggle_portfolio.ops import discussion_scheduler
+from kaggle_portfolio.discussions import draft_queue
 from .state import GrowthState
 
 # Only kinds with a real generator AND a safety.gate rate-cap branch belong here.
@@ -40,10 +40,10 @@ def _discussion_actions(queue_path: Path) -> list[Action]:
     if not isinstance(entries, list):
         return []
     # Emit ONE action for the draft the live poster will actually post next
-    # (discussion_scheduler.do_post -> select_next_post). Enumerating one action
+    # (draft_queue.select_next_post). Enumerating one action
     # per draft would let the flywheel mark a different draft 'done' than the one
     # do_post posts, permanently starving the flywheel-selected draft.
-    nxt = discussion_scheduler.select_next_post(entries)
+    nxt = draft_queue.select_next_post(entries)
     if not nxt:
         return []
     did = str(nxt.get("id", ""))

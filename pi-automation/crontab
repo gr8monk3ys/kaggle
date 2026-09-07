@@ -1,5 +1,9 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# cron gives jobs only SHELL/PATH/HOME/LOGNAME, never the container environment.
+# entrypoint.sh renders it to /etc/cron-env.sh; cron runs each job as
+# `$SHELL -c <cmd>`, and a non-interactive bash sources BASH_ENV first.
+BASH_ENV=/etc/cron-env.sh
 
 # Daily health check + quality -- 9:10 UTC
 10 9 * * *   /scripts/health_check.sh >> /var/log/cron.log 2>&1

@@ -44,6 +44,7 @@ def _load_discussion_post_module(monkeypatch):
 def test_require_kaggle_login_env_raises_when_missing(monkeypatch):
     monkeypatch.delenv("KAGGLE_EMAIL", raising=False)
     monkeypatch.delenv("KAGGLE_PASSWORD", raising=False)
+    monkeypatch.setenv("DISCUSSION_POSTING_ENABLED", "1")
     module = _load_discussion_post_module(monkeypatch)
 
     with pytest.raises(EnvironmentError, match="KAGGLE_EMAIL"):
@@ -53,6 +54,7 @@ def test_require_kaggle_login_env_raises_when_missing(monkeypatch):
 def test_main_exits_fast_when_login_env_missing(monkeypatch):
     monkeypatch.delenv("KAGGLE_EMAIL", raising=False)
     monkeypatch.delenv("KAGGLE_PASSWORD", raising=False)
+    monkeypatch.setenv("DISCUSSION_POSTING_ENABLED", "1")
     module = _load_discussion_post_module(monkeypatch)
 
     messages = []
@@ -66,9 +68,12 @@ def test_main_exits_fast_when_login_env_missing(monkeypatch):
     assert "KAGGLE_EMAIL" in messages[0]
 
 
-def test_smoke_test_validates_postable_item_without_posting(monkeypatch, tmp_path, capsys):
+def test_smoke_test_validates_postable_item_without_posting(
+    monkeypatch, tmp_path, capsys
+):
     monkeypatch.delenv("KAGGLE_EMAIL", raising=False)
     monkeypatch.delenv("KAGGLE_PASSWORD", raising=False)
+    monkeypatch.setenv("DISCUSSION_POSTING_ENABLED", "1")
     module = _load_discussion_post_module(monkeypatch)
 
     drafts = tmp_path / "discussion-drafts.md"
@@ -114,9 +119,12 @@ def test_smoke_test_validates_postable_item_without_posting(monkeypatch, tmp_pat
     assert "Discussion smoke test passed" in captured.out
 
 
-def test_main_smoke_test_queue_only_does_not_require_login_env(monkeypatch, tmp_path, capsys):
+def test_main_smoke_test_queue_only_does_not_require_login_env(
+    monkeypatch, tmp_path, capsys
+):
     monkeypatch.delenv("KAGGLE_EMAIL", raising=False)
     monkeypatch.delenv("KAGGLE_PASSWORD", raising=False)
+    monkeypatch.setenv("DISCUSSION_POSTING_ENABLED", "1")
     module = _load_discussion_post_module(monkeypatch)
 
     drafts = tmp_path / "discussion-drafts.md"
@@ -162,13 +170,18 @@ def test_main_smoke_test_queue_only_does_not_require_login_env(monkeypatch, tmp_
     assert "Discussion smoke test passed" in captured.out
 
 
-def test_smoke_test_succeeds_when_queue_has_no_postable_items(monkeypatch, tmp_path, capsys):
+def test_smoke_test_succeeds_when_queue_has_no_postable_items(
+    monkeypatch, tmp_path, capsys
+):
     monkeypatch.delenv("KAGGLE_EMAIL", raising=False)
     monkeypatch.delenv("KAGGLE_PASSWORD", raising=False)
+    monkeypatch.setenv("DISCUSSION_POSTING_ENABLED", "1")
     module = _load_discussion_post_module(monkeypatch)
 
     queue_path = tmp_path / "discussion_queue.json"
-    queue_path.write_text(json.dumps([{"id": "done", "status": "posted"}]), encoding="utf-8")
+    queue_path.write_text(
+        json.dumps([{"id": "done", "status": "posted"}]), encoding="utf-8"
+    )
 
     monkeypatch.setattr(module, "REPO", tmp_path)
     monkeypatch.setattr(module, "QUEUE_PATH", queue_path)
@@ -181,6 +194,7 @@ def test_smoke_test_succeeds_when_queue_has_no_postable_items(monkeypatch, tmp_p
 
 
 def test_is_browser_challenge_detects_cloudflare_page(monkeypatch):
+    monkeypatch.setenv("DISCUSSION_POSTING_ENABLED", "1")
     module = _load_discussion_post_module(monkeypatch)
 
     class FakeBody:

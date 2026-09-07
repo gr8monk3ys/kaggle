@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from kaggle_portfolio.growth import config as cfgmod
 from kaggle_portfolio.growth import scorer
@@ -93,8 +92,8 @@ def test_load_config_overrides_from_json(tmp_path):
 
 
 # --- Task 2: state -----------------------------------------------------------
-from datetime import date
-from kaggle_portfolio.growth import state as stmod
+from datetime import date  # noqa: E402 - imported after env setup above
+from kaggle_portfolio.growth import state as stmod  # noqa: E402 - imported after env setup above
 
 
 def test_build_assembles_state_from_snapshot_and_votes(tmp_path, monkeypatch):
@@ -109,13 +108,17 @@ def test_build_assembles_state_from_snapshot_and_votes(tmp_path, monkeypatch):
         stmod.medal_ops, "build_snapshot", lambda content, today: fake_snapshot
     )
     monkeypatch.setattr(stmod, "_read_tracker", lambda: "ignored")
-    monkeypatch.setattr(
-        stmod.metadata_tracker, "fetch_vote_counts", lambda: {"nb-a": 18, "nb-b": 2}
-    )
     monkeypatch.setattr(stmod, "GROWTH_DIR", tmp_path)
     (tmp_path / "followers.json").write_text('{"followers": 12}', encoding="utf-8")
 
-    gs = stmod.build(today=date(2026, 6, 17))
+    # Votes come from a seeded Kaggle rather than a patched private helper.
+    deps = Deps.for_test(
+        tmp_path,
+        client=FakeKaggleClient(
+            kernels=[Kernel("me/nb-a", "A", 18), Kernel("me/nb-b", "B", 2)]
+        ),
+    )
+    gs = stmod.build(today=date(2026, 6, 17), deps=deps)
     assert gs.followers == 12
     assert gs.discussion_medals == 4
     assert gs.discussion_total_posts == 9
@@ -131,9 +134,9 @@ def test_build_defaults_followers_to_zero_when_file_missing(tmp_path, monkeypatc
         lambda content, today: {"categories": {"discussion": {}}},
     )
     monkeypatch.setattr(stmod, "_read_tracker", lambda: "ignored")
-    monkeypatch.setattr(stmod.metadata_tracker, "fetch_vote_counts", lambda: {})
     monkeypatch.setattr(stmod, "GROWTH_DIR", tmp_path)  # no followers.json inside
-    gs = stmod.build(today=date(2026, 6, 17))
+    deps = Deps.for_test(tmp_path, client=FakeKaggleClient(kernels=[]))
+    gs = stmod.build(today=date(2026, 6, 17), deps=deps)
     assert gs.followers == 0
     assert gs.items == []
 
@@ -145,17 +148,18 @@ def test_build_tolerates_vote_fetch_failure(tmp_path, monkeypatch):
         lambda content, today: {"categories": {"discussion": {}}},
     )
     monkeypatch.setattr(stmod, "_read_tracker", lambda: "ignored")
-    monkeypatch.setattr(
-        stmod.metadata_tracker, "fetch_vote_counts", lambda: None
-    )  # CLI failed
     monkeypatch.setattr(stmod, "GROWTH_DIR", tmp_path)
-    gs = stmod.build(today=date(2026, 6, 17))
+    # Kaggle unreachable: build must yield no items rather than crash.
+    deps = Deps.for_test(
+        tmp_path, client=FakeKaggleClient(fail_with=KaggleError("cli down"))
+    )
+    gs = stmod.build(today=date(2026, 6, 17), deps=deps)
     assert gs.items == []  # no items rather than a crash
 
 
 # --- Task 3: actions ---------------------------------------------------------
-from kaggle_portfolio.growth import actions as actmod
-from kaggle_portfolio.growth.state import GrowthState, ItemState
+from kaggle_portfolio.growth import actions as actmod  # noqa: E402 - imported after env setup above
+from kaggle_portfolio.growth.state import GrowthState, ItemState  # noqa: E402 - imported after env setup above
 
 
 def _state(items=()):
@@ -229,8 +233,8 @@ def test_enumerate_never_emits_disallowed_kinds(tmp_path, monkeypatch):
 
 
 # --- Task 4: safety ----------------------------------------------------------
-from datetime import datetime, timezone
-from kaggle_portfolio.growth import safety as safetymod
+from datetime import datetime, timezone  # noqa: E402 - imported after env setup above
+from kaggle_portfolio.growth import safety as safetymod  # noqa: E402 - imported after env setup above
 
 
 def _now(hour=15):
@@ -302,7 +306,7 @@ def test_failed_history_rows_do_not_consume_caps():
 
 
 # --- Task 5: feedback --------------------------------------------------------
-from kaggle_portfolio.growth import feedback as fbmod
+from kaggle_portfolio.growth import feedback as fbmod  # noqa: E402 - imported after env setup above
 
 
 def _snap(notebook_votes):
@@ -348,7 +352,7 @@ def test_attribute_decays_toward_one_when_no_gain():
 
 
 # --- Task 6: conductor -------------------------------------------------------
-from kaggle_portfolio.growth import flywheel as fw
+from kaggle_portfolio.growth import flywheel as fw  # noqa: E402 - imported after env setup above
 
 
 def test_tick_dispatches_highest_scored_safe_action(tmp_path, monkeypatch):
@@ -492,7 +496,13 @@ def test_main_status_runs_offline(monkeypatch, capsys):
 
 
 # --- Task 7: command registration --------------------------------------------
-from kaggle_portfolio import manage_commands
+from kaggle_portfolio import manage_commands  # noqa: E402 - imported after env setup above
+from kaggle_portfolio.shared.deps import Deps  # noqa: E402 - imported after env setup above
+from kaggle_portfolio.shared.kaggle_client import (  # noqa: E402 - imported after env setup above
+    FakeKaggleClient,
+    KaggleError,
+    Kernel,
+)
 
 
 def test_flywheel_commands_registered():

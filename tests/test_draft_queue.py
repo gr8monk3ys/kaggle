@@ -1,9 +1,15 @@
+"""Tests for the shared Draft Queue model.
+
+Moved here from pi-automation/tests when the poster's duplicate model was
+deleted: the tests belong beside the model, not beside one of its two callers.
+"""
+
 import json
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-import discussion_queue as dq
+from kaggle_portfolio.discussions import draft_queue as dq
 
 SAMPLE_QUEUE = [
     {
@@ -37,27 +43,27 @@ SAMPLE_QUEUE = [
 NOW = datetime(2026, 2, 22, 10, 0, tzinfo=timezone.utc)
 
 
-def test_next_pending_returns_first_eligible():
-    item = dq.next_pending(SAMPLE_QUEUE, now=NOW)
+def test_select_next_post_returns_first_eligible():
+    item = dq.select_next_post(SAMPLE_QUEUE, now=NOW)
     assert item is not None
     assert item["id"] == "d1"
 
 
-def test_next_pending_skips_posted():
-    item = dq.next_pending(SAMPLE_QUEUE, now=NOW)
+def test_select_next_post_skips_posted():
+    item = dq.select_next_post(SAMPLE_QUEUE, now=NOW)
     assert item["id"] != "d2"
 
 
-def test_next_pending_skips_future_scheduled():
-    item = dq.next_pending(SAMPLE_QUEUE, now=NOW)
+def test_select_next_post_skips_future_scheduled():
+    item = dq.select_next_post(SAMPLE_QUEUE, now=NOW)
     assert item["id"] != "d3"
 
 
-def test_next_pending_returns_none_when_nothing_ready():
-    assert dq.next_pending([], now=NOW) is None
+def test_select_next_post_returns_none_when_nothing_ready():
+    assert dq.select_next_post([], now=NOW) is None
 
 
-def test_next_pending_accepts_scheduled_status():
+def test_select_next_post_accepts_scheduled_status():
     queue = [
         {
             "id": "s1",
@@ -65,12 +71,12 @@ def test_next_pending_accepts_scheduled_status():
             "scheduled_after": "2026-02-20T00:00:00Z",
         }
     ]
-    item = dq.next_pending(queue, now=NOW)
+    item = dq.select_next_post(queue, now=NOW)
     assert item is not None
     assert item["id"] == "s1"
 
 
-def test_next_pending_skips_idea_status():
+def test_select_next_post_skips_idea_status():
     queue = [
         {
             "id": "i1",
@@ -83,12 +89,12 @@ def test_next_pending_skips_idea_status():
             "scheduled_after": "2026-02-20T00:00:00Z",
         },
     ]
-    item = dq.next_pending(queue, now=NOW)
+    item = dq.select_next_post(queue, now=NOW)
     assert item is not None
     assert item["id"] == "s1"
 
 
-def test_next_pending_ready_without_schedule_is_postable():
+def test_select_next_post_ready_without_schedule_is_postable():
     queue = [
         {
             "id": "r1",
@@ -96,25 +102,28 @@ def test_next_pending_ready_without_schedule_is_postable():
             "scheduled_after": None,
         }
     ]
-    item = dq.next_pending(queue, now=NOW)
+    item = dq.select_next_post(queue, now=NOW)
     assert item is not None
     assert item["id"] == "r1"
 
 
-def test_next_pending_does_not_bypass_future_schedule_with_ready_backlog():
+def test_an_unscheduled_ready_draft_is_due_even_behind_a_future_schedule():
+    """A deliberate behaviour change — see docs/adr/0003-one-draft-queue-model.md.
+
+    The poster's old selector returned None here, so a ready draft could be
+    starved indefinitely by an unrelated future-scheduled one. The scheduler's
+    selector — now the only one — treats an unscheduled ready draft as due, which
+    is also what the flywheel has always predicted.
+    """
     queue = [
         {
             "id": "s-future",
             "status": "scheduled",
             "scheduled_after": "2026-03-01T00:00:00Z",
         },
-        {
-            "id": "r1",
-            "status": "ready",
-            "scheduled_after": None,
-        },
+        {"id": "r1", "status": "ready", "scheduled_after": None},
     ]
-    assert dq.next_pending(queue, now=NOW) is None
+    assert dq.select_next_post(queue, now=NOW)["id"] == "r1"
 
 
 def test_mark_posted_updates_queue_file():
@@ -163,7 +172,7 @@ def test_extract_body_finds_section():
         "### Feature Engineering\n\nBody content here.\n\n---\n\n"
         "## Draft 2: Other\n\nOther content.\n"
     )
-    body = dq.extract_body(content, "Draft 1")
+    body = dq.extract_body(content, "Draft 1", strip_heading=True)
     assert "Body content here" in body
     assert "Draft 2" not in body
     assert "Target forum" not in body
@@ -176,7 +185,7 @@ def test_extract_body_accepts_title_for_backward_compatibility():
         "### Feature Engineering\n\nBody content here.\n\n---\n\n"
         "## Draft 2: Other\n\nOther content.\n"
     )
-    body = dq.extract_body(content, "Feature Engineering")
+    body = dq.extract_body(content, "Feature Engineering", strip_heading=True)
     assert "Body content here" in body
 
 
@@ -193,7 +202,7 @@ def test_extract_body_strips_ops_metadata_lines():
         "Actual body content.\n"
     )
 
-    body = dq.extract_body(content, "Draft 7")
+    body = dq.extract_body(content, "Draft 7", strip_heading=True)
 
     assert "Actual body content." in body
     assert "Priority" not in body
