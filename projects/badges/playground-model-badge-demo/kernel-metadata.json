@@ -17,9 +17,7 @@
     "lorenzoscaturchio/iris-logistic-regression-badge-demo/ScikitLearn/scikit-baseline/2"
   ],
   "keywords": [
-    "model hub",
-    "playground",
-    "scikit-learn",
-    "badge automation"
+    "sklearn",
+    "classification"
   ]
 }

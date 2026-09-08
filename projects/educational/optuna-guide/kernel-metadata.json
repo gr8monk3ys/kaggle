@@ -7,7 +7,13 @@
   "is_private": false,
   "enable_gpu": false,
   "enable_internet": true,
-  "keywords": ["optuna", "optimization", "xgboost", "lightgbm"],
+  "keywords": [
+    "optimization",
+    "xgboost",
+    "lightgbm",
+    "tabular",
+    "sklearn"
+  ],
   "dataset_sources": [],
   "kernel_sources": [],
   "competition_sources": []

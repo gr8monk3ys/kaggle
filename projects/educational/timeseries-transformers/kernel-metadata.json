@@ -8,12 +8,11 @@
   "enable_gpu": true,
   "enable_internet": true,
   "keywords": [
-    "time series",
-    "forecasting",
     "transformers",
-    "temporal fusion transformer",
-    "informer",
-    "autoformer"
+    "time series analysis",
+    "deep learning",
+    "pytorch",
+    "neural networks"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

@@ -8,12 +8,11 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "competitions",
-    "pipeline",
     "feature engineering",
-    "model selection",
-    "cross validation",
-    "eda"
+    "eda",
+    "tabular",
+    "beginner",
+    "xgboost"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

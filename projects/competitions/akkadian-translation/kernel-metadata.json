@@ -9,13 +9,14 @@
   "enable_internet": false,
   "keywords": [
     "nlp",
-    "machine translation",
-    "akkadian",
-    "ancient languages",
-    "retrieval",
-    "sentence alignment"
+    "transformers",
+    "text",
+    "deep learning",
+    "sentence similarity"
   ],
   "dataset_sources": [],
   "kernel_sources": [],
-  "competition_sources": ["deep-past-initiative-machine-translation"]
+  "competition_sources": [
+    "deep-past-initiative-machine-translation"
+  ]
 }

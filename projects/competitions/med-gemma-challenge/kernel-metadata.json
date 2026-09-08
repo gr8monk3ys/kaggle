@@ -8,12 +8,11 @@
   "enable_gpu": true,
   "enable_internet": true,
   "keywords": [
-    "medical ai",
     "healthcare",
-    "chest x-ray",
-    "radiology",
-    "gemma",
-    "computer vision"
+    "computer vision",
+    "deep learning",
+    "image classification",
+    "health"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

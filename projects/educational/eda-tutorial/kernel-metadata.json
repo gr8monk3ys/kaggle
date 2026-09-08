@@ -11,9 +11,8 @@
     "eda",
     "regression",
     "feature engineering",
-    "house prices",
-    "scikit-learn",
-    "xgboost"
+    "xgboost",
+    "sklearn"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

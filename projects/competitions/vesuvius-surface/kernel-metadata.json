@@ -8,12 +8,11 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "vesuvius",
-    "ancient scrolls",
-    "3d segmentation",
     "image segmentation",
     "computer vision",
-    "eda"
+    "eda",
+    "deep learning",
+    "pytorch"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

@@ -8,14 +8,17 @@
   "enable_gpu": false,
   "enable_internet": false,
   "keywords": [
-    "house prices",
-    "ames housing",
     "regression",
     "feature engineering",
     "xgboost",
-    "lightgbm"
+    "lightgbm",
+    "eda"
   ],
-  "dataset_sources": ["competitions/house-prices-advanced-regression-techniques"],
+  "dataset_sources": [
+    "competitions/house-prices-advanced-regression-techniques"
+  ],
   "kernel_sources": [],
-  "competition_sources": ["house-prices-advanced-regression-techniques"]
+  "competition_sources": [
+    "house-prices-advanced-regression-techniques"
+  ]
 }

@@ -11,10 +11,12 @@
     "nlp",
     "bert",
     "text classification",
-    "disaster tweets",
-    "transformers"
+    "transformers",
+    "deep learning"
   ],
   "dataset_sources": [],
   "kernel_sources": [],
-  "competition_sources": ["nlp-getting-started"]
+  "competition_sources": [
+    "nlp-getting-started"
+  ]
 }

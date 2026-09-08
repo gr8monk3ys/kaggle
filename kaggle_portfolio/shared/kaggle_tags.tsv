@@ -1,0 +1,838 @@
+# Kaggle's tag vocabulary, from Meta Kaggle (kaggle/meta-kaggle, Tags.csv).
+# A keyword outside this list is silently dropped at push time: the CLI prints
+# 'not valid tags and could not be added' and the upload otherwise succeeds.
+# Refresh: kaggle datasets download kaggle/meta-kaggle -f Tags.csv --unzip
+name	slug	kernel_count	dataset_count
+gpu	gpu	8224761	376
+competition gateway	competition-gateway	1194435	0
+pandas	pandas	93231	1917
+personal benchmark	personal-benchmark	87626	0
+docker proxy	docker-proxy	86408	0
+programming	programming	83253	14276
+tpu	tpu	78455	105
+matplotlib	matplotlib	65555	572
+numpy	numpy	61391	592
+utility script	util-script	56939	0
+beginner	beginner	45536	11809
+data visualization	data-visualization	40120	10982
+seaborn	seaborn	37278	295
+exploratory data analysis	eda	36835	7673
+games	games-and-toys	34461	10935
+exercise	exercise	33461	19381
+business	business	26013	115146
+arts and entertainment	arts-and-entertainment	22828	72090
+scheduled	scheduled	22507	1
+classification	classification	22324	59745
+deep learning	deep-learning	19250	6571
+investing	investing	18628	12912
+data analytics	marketing-analytics	17681	13503
+music	music	16802	21283
+tensorflow	tensorflow	16357	750
+sklearn	sklearn	16327	522
+data cleaning	data-cleaning	15887	6864
+education	education	15597	36423
+python	python	15356	2974
+alcohol	alcohol	12716	3253
+software	software	11253	19782
+art	visual-arts	10943	4159
+competition metric	competition-metric	10702	0
+nlp	nlp	10253	7963
+feature engineering	feature-engineering	10181	1394
+regression	regression	9216	3081
+xgboost	xgboost	9116	307
+package	package	8688	0
+health	health	8616	23893
+keras	keras	8519	376
+binary classification	binary-classification	8354	2133
+tabular	tabular-data	8323	17843
+random forest	random-forest	8254	572
+plotly	plotly	8128	147
+intermediate	intermediate	7642	6880
+cnn	architecture > cnn	7193	1673
+image	image-data	7103	63190
+lightgbm	lightgbm	6867	141
+computer vision	image-processing	6500	7540
+neural networks	neural-networks	6431	1026
+linear regression	linear-regression	6328	1032
+cv2	cv2	6200	294
+logistic regression	logistic-regression	5692	488
+pytorch	torch	5250	1095
+biology	biology	5178	18097
+text	text-data	5105	11230
+finance	finance	5102	15298
+jobs and career	jobs	4865	2237
+social networks	social-networks	4539	7500
+time series analysis	time-series-analysis	4457	5103
+model comparison	model-comparison	4251	386
+artificial intelligence	artificial-intelligence	4239	5369
+decision tree	decision-tree	4223	497
+multiclass classification	multiclass-classification	4151	1826
+video games	video-games	3984	8882
+ensembling	ensembling	3933	198
+sports	sports	3859	11973
+nltk	nltk	3648	240
+cancer	cancer	3553	67571
+statistical analysis	statistical-analysis	3462	1403
+golf	golf	3334	380
+clustering	clustering	3320	1214
+scipy	scipy	3305	52
+transformers	transformers	3208	651
+news	news	3099	17059
+PIL	PIL	3074	23
+gradient boosting	gradient-boosting	2916	169
+advanced	advanced	2883	2540
+automl	automl	2737	952
+svm	svm	2697	184
+healthcare	healthcare	2689	3358
+internet	internet	2666	29974
+lstm	lstm	2573	639
+categorical	categorical-data	2568	3791
+covid19	covid19	2560	2010
+geology	geology	2426	1587
+transfer learning	transfer-learning	2426	635
+movies and tv shows	film	2392	23173
+model explainability	model-explainability	2363	160
+accelerators	accelerators	2359	71
+image classification	image-classification	2334	3002
+data storytelling	data-storytelling	2286	1659
+heart conditions	heart-and-hypertension	2237	6016
+health conditions	health-conditions	2064	11221
+currencies and foreign exchange	currencies-and-foreign-exchange	2026	7185
+automobiles and vehicles	automobiles	1981	14905
+torchvision	torchvision	1964	77
+k-means	k-means	1903	237
+optimization	optimization	1756	322
+science and technology	technology-and-applied-sciences	1670	4770
+pca	pca	1597	137
+english	english	1585	5652
+medicine	medicine	1582	1600
+ggplot2	ggplot2	1524	306
+recommender systems	recommender-systems	1508	1029
+naive bayes	naive-bayes	1494	123
+banking	banking	1488	6010
+travel	travel	1424	9072
+text mining	text-mining	1373	1364
+dailychallenge	dailychallenge	1355	3
+tidyverse	tidyverse	1342	316
+randomForest	randomForest	1296	73
+physics	physics	1275	1613
+online communities	online-communities	1261	14880
+r	r	1258	384
+benchmark	benchmark	1226	943
+catboost	catboost	1194	67
+animals	animals	1187	2989
+football	association-football	1165	5655
+astronomy	astronomy	1121	2021
+geospatial analysis	geospatial-analysis	1103	1614
+economics	economics	1102	5615
+housing	housing	1086	1181
+india	india	1084	3460
+text classification	text-classification	1014	1253
+computer science	computer-science	1010	58073
+rnn	architecture > rnn	989	225
+real estate	real-estate	983	4495
+health and fitness	health-and-fitness	978	708
+sql	sql	967	936
+IPython	IPython	955	161
+spaCy	spacy	946	85
+neuroscience	neuroscience	945	1726
+public health	public-health	936	2610
+gan	architecture > gan	923	334
+cycling	cycling	918	1712
+research	research	906	3135
+knn	knn	880	80
+marketing	marketing	877	939
+earth science	earth-sciences	874	3637
+diabetes	diabetes	869	6505
+object detection	object-detection	849	1630
+social science	social-sciences	841	9775
+reinforcement learning	reinforcement-learning	832	238
+dimensionality reduction	dimensionality-reduction	820	117
+weather and climate	weather	813	1874
+agriculture	agriculture	810	2191
+food	food	799	13383
+anime and manga	anime-and-manga	799	3581
+outlier analysis	outlier-analysis	790	122
+restaurants	restaurants	778	3088
+baseball	baseball	769	1894
+united states	united-states	769	3281
+crime	crime	769	3885
+politics	politics	753	5219
+ml ethics	ml-ethics	749	660
+multilabel classification	multilabel-classification	748	372
+bigquery	bigquery	739	593
+e-commerce services	e-commerce-services	735	3916
+global	countries	734	2237
+basketball	basketball	725	2521
+datetime	datetime	719	369
+audio	audio-data	718	2507
+diseases	diseases	718	1271
+public safety	public-safety	718	3593
+environment	environment	716	2124
+retail and shopping	shopping	710	12652
+energy	energy	701	7034
+chinese	chinese	672	222
+transportation	transport	662	12314
+text generation	text-generation	658	614
+feature extraction	feature-extraction	637	438
+religion and belief systems	religion-and-belief-systems	618	10047
+survey analysis	survey-analysis	607	465
+hugging face	hugging-face	574	137
+insurance	insurance	569	3951
+segmentation	segmentation	569	463
+text pre-processing	text-pre-processing	567	361
+universities and colleges	universities-and-colleges	548	13431
+bert	bert	548	224
+clothing and accessories	clothing	520	35945
+image segmentation	image-segmentation	517	1023
+transformer	transformer	509	189
+literature	literature	499	6091
+tqdm	tqdm	488	7
+bayesian statistics	bayesian-statistics	487	159
+other	other	486	137
+earth and nature	natural-and-physical-sciences	478	79354
+mental health	mental-health	455	2622
+graph	graph-data	453	813
+standardized testing	standardized-and-admissions-tests	453	11987
+dplyr	dplyr	451	169
+mathematics	mathematics	448	384
+image generator	image-generator	444	302
+cricket	cricket	442	3554
+atmospheric science	atmospheric-sciences	424	2051
+yolo	yolo	418	654
+chemistry	chemistry	410	1122
+psychology	psychology	409	3588
+sampling	sampling	394	129
+hotels and accommodations	hotels-and-accommodations	388	3024
+unet	unet	386	92
+languages	languages	384	1095
+lending	lending	377	2552
+geography	geography	373	1156
+history	history	371	3039
+dnn	dnn	370	117
+evaluation	evaluation	368	231
+resnet	resnet	366	45
+demographics	demographics	363	1258
+learn	learn	360	13
+europe	europe	352	1878
+drugs and medications	drugs-and-medications	350	1926
+ratings and reviews	product-reviews-and-price-comparisons	350	6491
+eyes and vision	vision-care	350	3369
+multimodal	multimodal-data	348	1023
+websites	web-sites	338	596
+genetics	human-genetics	333	500
+employment	employment	330	1027
+simulations	simulation-games	326	902
+video	video-data	317	1517
+brazil	brazil	316	944
+signal processing	signal-processing	312	430
+tabular classification	tabular-classification	309	200
+law	law	302	15478
+pre-trained model	pre-trained-model	301	519726
+electronics	electronics	295	12786
+engineering	engineering	289	745
+natural disasters	natural-disasters	281	412
+renewable energy	renewable-energy	275	2519
+government	government	274	4927
+image augmentation	image-augmentation	271	248
+biotechnology	biotechnology	262	555
+pollution	pollution	256	561
+social issues and advocacy	social-issues-and-advocacy	253	5849
+cities and urban areas	cities	247	1177
+asia	asia	243	1769
+cyber security	cyber-security	242	793
+spanish	spanish	241	320
+synthetic	synthetic-data	236	2118
+electricity	electricity	235	2263
+yolov8	yolov8	234	342
+people and society	society-and-social-sciences	229	1098
+audio classification	audio-classification	226	366
+corrplot	corrplot	226	24
+translation	translation	220	265
+efficientnet	efficientnet	220	51
+arabic	arabic	216	373
+adversarial learning	adversarial-learning	216	165
+income	income	215	461
+comics and animation	comics-and-animation	213	1819
+primary and secondary schools	primary-and-secondary-schooling-(k-12)	213	2302
+linguistics	linguistics	210	1027
+mobile and wireless	mobile-web	209	1736
+question answering	question-answering	209	374
+json	json	208	454
+math	math	207	90
+email and messaging	email-and-messaging	203	5897
+cooking and recipes	cooking-and-recipes	203	2448
+nutrition	nutrition	199	2225
+lubridate	lubridate	196	49
+portuguese	portuguese	194	268
+caret	caret	190	17
+gambling	gambling	186	1036
+plants	plants	182	545
+gender	gender	181	343
+board games	board-games	172	431
+retrieval/ranking	retrieval-ranking	170	156
+auto racing	auto-racing	168	1061
+people	people	167	1019
+oil and gas	oil-and-gas	165	1846
+text-to-text generation	text-to-text-generation	155	188
+japan	japan	154	232
+summarization	summarization	153	138
+holidays and cultural events	holidays-and-seasonal-events	152	1255
+gpt2	gpt2	149	44
+aviation	aviation	146	499
+robotics	robotics	146	702
+china	china	142	381
+retrieval question answering	retrieval-question-answering	141	143
+puzzles	puzzles	140	903
+indonesian	indonesian	139	474
+os	os	138	33
+japanese	japanese	138	99
+whisper	whisper	138	29
+vgg-style	vgg-style	135	26
+culture and humanities	culture-and-humanities	128	699
+turkish	turkish	127	248
+sentence similarity	sentence-similarity	126	79
+africa	africa	125	623
+convolution	convolution	123	49
+coding	coding	122	145
+search engines	search-engines	119	149
+russian	russian	118	240
+manufacturing	manufacturing	115	2740
+canada	canada	113	325
+military	military	110	2685
+russia	russia	109	355
+hospitals and treatment centers	hospitals-and-treatment-centers	108	1075
+vision transformer	vision-transformer	108	53
+graph neural network	graph-neural-network	107	133
+distance	distance	103	35
+water bodies	bodies-of-water	102	272
+tidyr	tidyr	101	21
+australia	australia	99	292
+mobilenet v2	mobilenet-v2	99	25
+korea	south-korea	96	118
+popular culture	popular-culture	93	497
+vietnamese	vietnamese	93	195
+vit	vit	91	25
+forcats	forcats	89	47
+dentistry	dentistry	89	1616
+distilbert	distilbert	88	18
+estonian	estonian	86	12
+efficientnet-b0	efficientnet-b0	82	21
+forestry	forestry	81	569
+automatic speech recognition	automatic-speech-recognition	80	242
+wandb	wandb	80	10
+north america	north-america	78	394
+general knowledge and reasoning	general-knowledge-and-reasoning	77	133
+word2vec skip-gram	word2vec-skip-gram	77	17
+mortality	mortality	74	192
+french	french	74	185
+multi-head attention	multi-head-attention	72	7
+text-to-image	text-to-image	71	84
+german	german	70	127
+image text recognition	image-text-recognition	68	179
+bengali	bengali	68	268
+roberta	roberta	66	16
+batch normalization	batch-normalization	66	22
+video generation	video-generation	64	52
+convnext	convnext	64	25
+fish and aquaria	fish-and-aquaria	63	529
+image-to-text	image-to-text	63	201
+retinanet	retinanet	62	3
+resnet50-v2	resnet50-v2	62	8
+readr	readr	61	18
+inception v3	inception-v3	61	7
+token classification	token-classification	61	66
+physical science	physical-sciences	60	100
+speech-to-text	speech-to-text	58	137
+card games	card-games	57	301
+text-to-speech	text-to-speech	56	105
+densenet	densenet	56	20
+image-to-image	image-to-image	56	95
+uzbek	uzbek	56	31
+water transport	water-transport	55	466
+celebrities	celebrity	55	933
+re	re	54	27
+vae	vae	54	24
+philosophy	philosophy	52	249
+south america	south-america	52	290
+faster r-cnn	faster-r-cnn	51	14
+martial arts	martial-arts	50	580
+text conversation	text-conversation	50	119
+video classification	video-classification	49	214
+denoising	denoising	49	67
+relu	relu	48	3
+personal benchmark published	personal-benchmark-published	48	0
+urban planning	urban-planning	48	282
+hockey	ice-hockey	47	946
+crowdfunding	crowdfunding	47	49
+multilingual	multilingual	46	143
+human rights	human-rights-and-liberties	46	215
+yolov5	yolov5	45	93
+middle east	middle-east	44	283
+doParallel	doParallel	43	25
+mit	mit	43	5
+t5	t5	41	12
+scaled dot-product attention	scaled-dot-product-attention	40	9
+chinese (taiwan)	chinese-taiwan	39	41
+image feature vector	image-feature-vector	39	42
+leaflet	leaflet	38	8
+resnet v1 50	resnet-v1-50	38	2
+audio synthesis	audio-synthesis	38	74
+running	running	37	118
+gridExtra	gridExtra	36	5
+aesthetic quality	aesthetic-quality	36	43
+softmax	softmax	35	2
+mexico	mexico	34	155
+efficientnet-b3	efficientnet-b3	34	7
+oceania	oceania	34	59
+image style transfer	image-style-transfer	34	50
+hmm	hmm	33	8
+1x1 convolution	1x1-convolution	33	11
+multitask classification	multitask-classification	32	39
+pathlib	pathlib	32	3
+korean	korean	32	56
+d3js	d3js	31	12
+audio-to-audio	audio-to-audio	31	35
+mobilenet	mobilenet	31	8
+tennis	tennis	31	97
+ggthemes	ggthemes	30	7
+rail transport	rail-transport	30	892
+kazakh	kazakh	30	20
+international relations	international-relations	29	232
+make-up and cosmetics	make-up-and-cosmetics	29	667
+mlp-mixer	mlp-mixer	28	8
+attention dropout	attention-dropout	28	18
+audio event classification	audio-event-classification	28	67
+text segmentation	text-segmentation	28	49
+racial equity	racial-equality	27	56
+deberta-v3	deberta-v3	27	9
+efficientnet v2	efficientnet-v2	27	8
+mobilenet v3	mobilenet-v3	27	5
+image text detection	image-text-detection	27	101
+glob	glob	27	4
+hindi	hindi	25	143
+zero-shot text classification	zero-shot-text-classification	25	26
+ukrainian	ukrainian	24	80
+bart	bart	24	6
+dropout	dropout	24	9
+persian	persian	23	104
+image super resolution	image-super-resolution	23	70
+resnet cifar	resnet-cifar	23	6
+urdu	urdu	23	68
+tibble	tibble	22	5
+mask r-cnn	mask-r-cnn	22	16
+pose detection	pose-detection	22	88
+speech synthesis	speech-synthesis	21	69
+italian	italian	20	70
+bit	bit	20	5
+hungarian	hungarian	20	11
+sam	sam	20	12
+albert	albert	19	8
+telugu	telugu	19	27
+knitr	knitr	19	3
+swin transformer	swin-transformer	18	4
+wav2vec2	wav2vec2	18	8
+sys	sys	18	3
+tigrinya	tigrinya	18	19
+image depth estimation	image-depth-estimation	18	47
+rpart	rpart	18	0
+gymnastics	gymnastics	18	37
+audio command detection	audio-command-detection	17	12
+average pooling	average-pooling	17	6
+polish	polish	17	47
+resnet v2 50	resnet-v2-50	16	4
+efficientnetv2	efficientnetv2	16	5
+auxiliary classifier	auxiliary-classifier	16	7
+efficientnet-b7	efficientnet-b7	16	4
+biggan-deep	biggan-deep	15	6
+layer normalization	layer-normalization	15	2
+image extrapolation	image-extrapolation	15	17
+max pooling	max-pooling	15	0
+tamil	tamil	15	52
+deeplabv3plus	deeplabv3plus	14	9
+volleyball	volleyball	14	140
+water sports	water-sports	14	63
+leaky relu	leaky-relu	14	3
+subject	topic	14	3
+anti-alias downsampling	anti-alias-downsampling	13	3
+stringr	stringr	13	5
+video text	video-text	13	37
+amoebanet-a (n=18, f=448)	amoebanet-a-n18-f448	13	7
+dense connections	dense-connections	12	2
+text fill-mask	text-fill-mask	12	12
+dance	dance	12	284
+xlm-roberta	xlm-roberta	12	6
+gc	gc	12	1
+reshape2	reshape2	12	1
+inception v1	inception-v1	11	1
+tanh activation	tanh-activation	11	0
+global average pooling	global-average-pooling	11	6
+nepali	nepali	11	72
+foreach	foreach	11	2
+text sequence alignment	text-sequence-alignment	11	19
+thai	thai	11	42
+museums	museums	11	251
+multiple	multiple	10	11
+amharic	amharic	10	34
+TabPFN	tabpfn	10	0
+plyr	plyr	10	6
+antarctica	antarctica	10	38
+big transfer	big-transfer	10	2
+jsonlite	jsonlite	10	17
+inception resnet v2	inception-resnet-v2	10	1
+deeplab (mobilenetv2_dm05_coco_voc_trainval)	deeplab-mobilenetv2-dm05-coco-voc-trainval	9	5
+segformer	segformer	9	6
+RColorBrewer	RColorBrewer	9	3
+selective kernel	selective-kernel	9	1
+deblurring	deblurring	9	11
+irish	irish	9	8
+biggan	biggan	9	7
+armenian	armenian	9	16
+residual block	residual-block	8	2
+efficientnet-b4	efficientnet-b4	8	2
+auto-updating data	auto-updating-data	8	5
+squeeze-and-excitation block	squeeze-and-excitation-block	8	0
+deit	deit	8	3
+residual connection	residual-connection	8	0
+ssd	ssd	7	2
+kannada	kannada	7	26
+admin	kaggle	7	4
+rapids	rapids-ai	7	4
+czech	czech	7	13
+weight standardization	weight-standardization	7	5
+assamese	assamese	7	11
+azerbaijani	azerbaijani	7	17
+malay	malay	6	14
+finnish	finnish	6	12
+group normalization	group-normalization	6	1
+regnety	regnety	6	0
+frame interpolation	frame-interpolation	6	5
+image classification logits	image-classification-logits	6	17
+sinhala	sinhala	6	23
+deserts	deserts	6	29
+video audio text	video-audio-text	6	22
+progressive gan	progressive-gan	5	1
+mountains	mountains	5	45
+dutch	dutch	5	29
+norwegian	norwegian	5	9
+afrikaans	afrikaans	5	11
+mish	mish	5	0
+one-shot aggregation	one-shot-aggregation	5	2
+latin	latin	5	3
+dehazing	dehazing	5	13
+greek	greek	5	9
+javanese	javanese	5	3
+nasnet-a (mobile)	nasnet-a-mobile	5	1
+resnext block	resnext-block	5	0
+resnet152x4-v2	resnet152x4-v2	5	0
+efficientnet-b2	efficientnet-b2	5	1
+blur pooling	blur-pooling	5	2
+pashto, pushto	pashto-pushto	5	13
+packages	packages	4	4
+resnet v1 101	resnet-v1-101	4	2
+mobilebert	mobilebert	4	0
+albanian	albanian	4	13
+keywordspottingnet	keywordspottingnet	4	3
+text-to-mel	text-to-mel	4	3
+aragonese	aragonese	4	4
+resnet101-v2	resnet101-v2	4	0
+factuality and grounding	factuality-and-grounding	4	11
+resnet v2 152	resnet-v2-152	4	0
+condconv	condconv	4	2
+punjabi	punjabi	4	7
+croatian	croatian	4	6
+burmese	burmese	4	20
+deeplab (mobilenetv3_large_cityscapes_trainfine)	deeplab-mobilenetv3-large-cityscapes-trainfine	4	4
+gelu	gelu	4	0
+mobilenetv3	mobilenetv3	4	3
+malayalam	malayalam	4	14
+transformer xl	transformer-xl	4	0
+akan	akan	4	1
+efficient channel attention	efficient-channel-attention	4	0
+greenland	greenland	4	15
+danish	danish	4	12
+deeplab (mobilenetv2_ade20k_train)	deeplab-mobilenetv2-ade20k-train	3	3
+elmo	elmo	3	1
+mongolian	mongolian	3	4
+split attention	split-attention	3	0
+efficientnet-b5	efficientnet-b5	3	0
+efficientnet-b1	efficientnet-b1	3	0
+inception-v3 module	inception-v3-module	3	0
+serbian	serbian	3	13
+sanskrit	sanskrit	3	18
+resnet-152	resnet-152	3	1
+central khmer	central-khmer	3	3
+centernet	centernet	3	2
+deeplab (xception65_coco_voc_trainaug)	deeplab-xception65-coco-voc-trainaug	3	0
+tagalog	tagalog	3	9
+depthwise separable convolution	depthwise-separable-convolution	3	2
+reduction-a	reduction-a	3	0
+mobilenet v1	mobilenet-v1	3	0
+ears and hearing	eyes-and-vision	3	7
+opt	opt	3	1
+imagenet 2012 classification	imagenet-2012-classification	3	8
+socrata	socrata	3	1105
+ssd spaghettinet edgetpu large	ssd-spaghettinet-edgetpu-large	2	0
+relu6	relu6	2	0
+fijian	fijian	2	0
+oromo	oromo	2	20
+fastdepth	fastdepth	2	2
+multilingual and cross-lingual capabilities	multilingual-and-cross-lingual-capabilities	2	21
+abkhazian	abkhazian	2	3
+afar	afar	2	4
+deeplab (xception65_ade20k_train)	deeplab-xception65-ade20k-train	2	1
+flemish	flemish	2	0
+transformer in transformer	transformer-in-transformer	2	0
+marathi	marathi	2	20
+belarusian	belarusian	2	6
+deeplab (xception65_cityscapes_trainfine)	deeplab-xception65-cityscapes-trainfine	2	0
+romanian	romanian	2	39
+resnet v2 101	resnet-v2-101	2	1
+resnet v1 152	resnet-v1-152	2	1
+dense block	dense-block	2	0
+i3d	i3d	2	7
+swedish	swedish	2	11
+bigan	bigan	2	4
+pitch extraction	pitch-extraction	2	2
+bigbigan	bigbigan	2	1
+nnlm	nnlm	2	0
+tsm resnet50	tsm-resnet50	2	0
+resnet50x3-v2	resnet50x3-v2	2	0
+mobilebert edgetpu small	mobilebert-edgetpu-small	2	2
+hebrew	hebrew	2	15
+bottleneck residual block	bottleneck-residual-block	1	1
+efficientdet	efficientdet	1	2
+delf	delf	1	0
+basque	basque	1	0
+movinet	movinet	1	13
+pnasnet-5 (large)	pnasnet-5-large	1	0
+welsh	welsh	1	0
+sindhi	sindhi	1	11
+quechua	quechua	1	4
+dla bottleneck residual block	dla-bottleneck-residual-block	1	0
+yiddish	yiddish	1	0
+venda	venda	1	0
+avaric	avaric	1	0
+wrn-106	wrn-106	1	0
+video-swin-transformer	video-swin-transformer	1	3
+regnetx	regnetx	1	0
+wide-resnet-40-8	wide-resnet-40-8	1	0
+videoflow	videoflow	1	1
+xcit	xcit	1	1
+fcos	fcos	1	0
+swahili	swahili	1	12
+castilian	castilian	1	5
+ssd mobilenet v2 fpn	ssd-mobilenet-v2-fpn	1	0
+tnt	tnt	1	0
+mosaic	mosaic	1	1
+efficientnet-b6	efficientnet-b6	1	0
+ulmfit	ulmfit	1	3
+mobilevit	mobilevit	1	0
+multi-band melgan	multi-band-melgan	1	0
+resnet19	resnet19	1	1
+midas	midas	1	0
+ewe	ewe	1	20
+fnet	fnet	1	0
+latvian	latvian	1	0
+cspdarknet	cspdarknet	1	0
+convmixer	convmixer	1	0
+mixconv	mixconv	1	0
+reduction-b	reduction-b	1	0
+lithuanian	lithuanian	1	4
+dan	dan	1	1
+silero-stt	silero-stt	1	1
+deeplab (mobilenetv2_coco_voc_trainval)	deeplab-mobilenetv2-coco-voc-trainval	1	1
+malagasy	malagasy	1	18
+language	language	1	6
+conformer	conformer	1	4
+cornish	cornish	1	0
+s3d-g	s3d-g	1	1
+Two Sigma x Kaggle Finance Data Repo	two-sigma-x-kaggle-finance-data-repo	1	489
+kashmiri	kashmiri	1	1
+georgian	georgian	1	8
+hard swish	hard-swish	1	0
+igbo	igbo	1	27
+s3d	s3d	1	0
+gujarati	gujarati	1	14
+cait	cait	1	0
+paralinguistic classification	paralinguistic-classification	0	3
+mobilebert uncased_l-24_h-128_b-512_a-4_f-4_opt	mobilebert-uncased-l-24-h-128-b-512-a-4-f-4-opt	0	0
+swish	swish	0	0
+game arena	game-arena	0	38
+hrnet-v2-w48	hrnet-v2-w48	0	0
+maxim	maxim	0	0
+architecture	architecture	0	1
+synced dataset	synced-dataset	0	0
+geography and places	geography-and-places	0	89
+res2next block	res2next-block	0	0
+res2net block	res2net-block	0	0
+task	task	0	0
+zulu	zulu	0	18
+inception v2	inception-v2	0	1
+inception v4	inception-v4	0	1
+selecsls block	selecsls-block	0	0
+task needs description	task-needs-description	0	0
+fsaf	fsaf	0	0
+inception-a	inception-a	0	0
+task needs evaluation criteria	task-needs-evaluation-criteria	0	0
+fbnet block	fbnet-block	0	0
+dpn block	dpn-block	0	0
+benchmark dataset	benchmark-dataset	0	59
+dla residual block	dla-residual-block	0	0
+task under construction	task-under-construction	0	0
+task reviewed	task-reviewed	0	0
+task curation	curation-tasks	0	0
+vitdet	vitdet	0	0
+grouped convolution	grouped-convolution	0	0
+inplace-abn	inplace-abn	0	0
+initiatives	initiatives	0	0
+task needs submission format	task-needs-submission-format	0	0
+inception-b	inception-b	0	0
+inception-c	inception-c	0	0
+inception-resnet-v2-a	inception-resnet-v2-a	0	1
+inception-resnet-v2-b	inception-resnet-v2-b	0	0
+data type	data-type	0	40
+technique	analysis	0	2
+audience	audience	0	3
+inception-resnet-v2-c	inception-resnet-v2-c	0	0
+resnetv2	resnetv2	0	1
+resnetv1	resnetv1	0	0
+inverted residual block	inverted-residual-block	0	0
+wide residual block	wide-residual-block	0	0
+tvn-2	tvn-2	0	0
+chuang	chuang	0	0
+kalaallisut	kalaallisut	0	0
+herero	herero	0	0
+hausa	hausa	0	27
+haitian creole	haitian-creole	0	0
+haitian	haitian	0	0
+guarani	guarani	0	3
+greenlandic	greenlandic	0	0
+ganda	ganda	0	1
+zhuang	zhuang	0	0
+galician	galician	0	2
+scottish gaelic	scottish-gaelic	0	1
+gaelic	gaelic	0	0
+fulah	fulah	0	0
+western frisian	western-frisian	0	0
+faroese	faroese	0	0
+hiri motu	hiri-motu	0	0
+icelandic	icelandic	0	1
+ido	ido	0	1
+interlingua	interlingua	0	1
+interlingue, occidental	interlingue-occidental	0	3
+inuktitut	inuktitut	0	0
+inupiaq	inupiaq	0	0
+resnet101x3-v2	resnet101x3-v2	0	0
+kanuri	kanuri	0	0
+kikuyu	kikuyu	0	0
+gikuyu	gikuyu	0	0
+kinyarwanda	kinyarwanda	0	15
+kirghiz	kirghiz	0	3
+kyrgyz	kyrgyz	0	2
+komi	komi	0	0
+kongo	kongo	0	0
+kuanyama	kuanyama	0	0
+esperanto	esperanto	0	0
+dzongkha	dzongkha	0	1
+maldivian	maldivian	0	0
+breton	breton	0	0
+tvn-mobile-1	tvn-mobile-1	0	1
+tvn-1	tvn-1	0	1
+tsm resnet50x2	tsm-resnet50x2	0	0
+tridentnet	tridentnet	0	0
+wae	wae	0	0
+tacotron 2	tacotron-2	0	2
+swivel	swivel	0	0
+avestan	avestan	0	0
+aymara	aymara	0	3
+bambara	bambara	0	16
+bashkir	bashkir	0	0
+ssd mobilenet v2	ssd-mobilenet-v2	0	1
+bislama	bislama	0	0
+bosnian	bosnian	0	3
+bulgarian	bulgarian	0	15
+dhivehi	dhivehi	0	0
+catalan	catalan	0	3
+valencian	valencian	0	0
+chamorro	chamorro	0	0
+chechen	chechen	0	1
+chichewa	chichewa	0	20
+chewa	chewa	0	0
+nyanja	nyanja	0	0
+ssd mobilenet v1	ssd-mobilenet-v1	0	0
+church slavic	church-slavic	0	0
+old bulgarian	old-bulgarian	0	0
+chuvash	chuvash	0	0
+corsican	corsican	0	0
+cree	cree	0	0
+divehi	divehi	0	1
+kwanyama	kwanyama	0	0
+kurdish	kurdish	0	7
+lao	lao	0	3
+tatar	tatar	0	3
+northern sami	northern-sami	0	0
+samoan	samoan	0	0
+sango	sango	0	0
+sardinian	sardinian	0	0
+tvn-3	tvn-3	0	0
+sinhalese	sinhalese	0	4
+slovak	slovak	0	4
+slovenian	slovenian	0	3
+somali	somali	0	22
+southern sotho	southern-sotho	0	0
+sundanese	sundanese	0	3
+swati	swati	0	0
+tahitian	tahitian	0	0
+tajik	tajik	0	0
+tibetan	tibetan	0	2
+rundi	rundi	0	0
+tonga	tonga	0	0
+tsonga	tsonga	0	18
+tswana	tswana	0	1
+nnclr	nnclr	0	0
+turkmen	turkmen	0	0
+twi	twi	0	27
+uighur	uighur	0	0
+uyghur	uyghur	0	1
+nasnet-a (large)	nasnet-a-large	0	2
+volapük	volapük	0	0
+walloon	walloon	0	0
+wolof	wolof	0	4
+xhosa	xhosa	0	17
+yoruba	yoruba	0	27
+reqa	reqa	0	0
+romansh	romansh	0	0
+limburgan	limburgan	0	0
+north ndebele	north-ndebele	0	0
+limburgish	limburgish	0	0
+limburger	limburger	0	0
+lingala	lingala	0	17
+luba-katanga	luba-katanga	0	0
+luxembourgish	luxembourgish	0	4
+letzeburgesch	letzeburgesch	0	0
+macedonian	macedonian	0	0
+maltese	maltese	0	0
+manx	manx	0	0
+maori	maori	0	0
+marshallese	marshallese	0	0
+nauru	nauru	0	1
+navajo	navajo	0	0
+navaho	navaho	0	0
+south ndebele	south-ndebele	0	0
+moldavian	moldavian	0	1
+ndonga	ndonga	0	0
+norwegian bokmål	norwegian-bokmål	0	1
+norwegian nynorsk	norwegian-nynorsk	0	1
+sichuan yi	sichuan-yi	0	0
+nuosu	nuosu	0	0
+occitan	occitan	0	0
+ojibwa	ojibwa	0	0
+oriya	oriya	0	3
+ossetian	ossetian	0	0
+ossetic	ossetic	0	0
+pali	pali	0	1
+resnet v1 200	resnet-v1-200	0	0
+panjabi	panjabi	0	3
+moldovan	moldovan	0	2
+shona	shona	0	18

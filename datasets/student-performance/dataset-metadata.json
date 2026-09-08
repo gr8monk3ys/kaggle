@@ -14,8 +14,7 @@
     "classification",
     "regression",
     "tabular",
-    "beginner",
-    "clustering"
+    "beginner"
   ],
   "resources": [
     {
