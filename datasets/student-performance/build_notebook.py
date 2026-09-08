@@ -165,22 +165,37 @@ ACCENT = '#e74c3c'
 BLUE = '#2980b9'
 GREY = '#95a5a6'
 
+MOUNT_GUESS = '/kaggle/input/student-academic-performance-dataset'
+MARKER = 'students.csv'
+
+
 def _find_data_dir(marker):
-    # Locate the dataset wherever Kaggle mounted it. The expected mount is
-    # /kaggle/input/<slug>, but the attached directory name is not guaranteed to
-    # match: this notebook failed on Kaggle with FileNotFoundError because the
-    # exact-path guess missed and the bare '.' fallback then looked in the kernel
-    # working dir. Search the mounts for the file we need instead of assuming.
-    candidates = ['/kaggle/input/student-academic-performance-dataset', *sorted(glob.glob('/kaggle/input/*')), '.']
-    for candidate in candidates:
-        if os.path.exists(os.path.join(candidate, marker)):
-            return candidate
+    # Locate the dataset wherever Kaggle mounted it. Two earlier guesses failed:
+    # the exact path /kaggle/input/<slug> did not exist, and a one-level glob of
+    # /kaggle/input/* missed it too, because the files mount NESTED (the run that
+    # taught us this found only /kaggle/input/datasets). Walk the mount tree, and
+    # if the file is absent say what was there so the next failure is
+    # diagnosable rather than another guess.
+    exact = os.path.join(MOUNT_GUESS, marker)
+    if os.path.exists(exact):
+        return MOUNT_GUESS
+    if os.path.isdir('/kaggle/input'):
+        for root, _dirs, files in os.walk('/kaggle/input'):
+            if marker in files:
+                return root
+    if os.path.exists(marker):
+        return '.'
+    seen = []
+    if os.path.isdir('/kaggle/input'):
+        for root, _dirs, files in os.walk('/kaggle/input'):
+            seen.append(f'{root}: {sorted(files)[:6]}')
     raise FileNotFoundError(
-        f'{marker} not found in {candidates}. '
+        f'{marker} not found. Searched /kaggle/input and the working dir. '
+        f'Mounted: {seen or "nothing under /kaggle/input"}. '
         'Attach the dataset to this notebook (Add Input) and re-run.'
     )
 
-DATA_DIR = _find_data_dir('students.csv')
+DATA_DIR = _find_data_dir(MARKER)
 
 df = pd.read_csv(f'{DATA_DIR}/students.csv')
 SUBJECTS = ['reading_score', 'writing_score', 'math_score', 'science_score']
