@@ -24,7 +24,6 @@ from __future__ import annotations
 import argparse
 import base64
 import io
-import glob
 import os
 import sys
 import traceback
@@ -145,7 +144,8 @@ print("so any subject score is a near-copy of the target.")""")
 cells.append(md("## 2. Setup & Data Loading <a id='setup'></a>"))
 
 cells.append(
-    code("""import os
+    code("""import glob
+import os
 
 import numpy as np
 import pandas as pd
