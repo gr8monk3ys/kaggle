@@ -44,6 +44,11 @@ DEFAULT_CREDENTIALS = Path.home() / ".kaggle" / "kaggle.json"
 # Kaggle rejects dataset uploads carrying more than this many keywords with
 # "You have exceeded the max category limit". Measured 2026-08-19: 7 fails, 6 succeeds.
 MAX_KEYWORDS = 6
+# Kaggle's dataset settings form caps these. The API silently ignores a title it
+# will not accept, so an over-length one looks applied in the repo and never
+# reaches the site: two shipped that way (52 and 54 chars) before this check.
+MAX_TITLE_CHARS = 50
+MAX_SUBTITLE_CHARS = 80
 SUSPICIOUS_PATTERN = re.compile(
     r"(password|secret|api_key|kgat_|kaggle_token)", re.IGNORECASE
 )
@@ -285,6 +290,17 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
 
     ident = str(payload.get("id", "")).strip()
     title = str(payload.get("title", "")).strip()
+    if len(title) > MAX_TITLE_CHARS:
+        errors.append(
+            f"title is {len(title)} chars, over Kaggle's {MAX_TITLE_CHARS}-char "
+            "limit; it cannot be applied and the API does not report the failure"
+        )
+    subtitle = str(payload.get("subtitle", "")).strip()
+    if len(subtitle) > MAX_SUBTITLE_CHARS:
+        errors.append(
+            f"subtitle is {len(subtitle)} chars, over Kaggle's "
+            f"{MAX_SUBTITLE_CHARS}-char limit"
+        )
     licenses = payload.get("licenses")
     resources = payload.get("resources")
     authors = payload.get("authors")
