@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from kaggle_portfolio import manage_commands
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MANAGE = ROOT / "manage.sh"
@@ -652,3 +654,80 @@ def test_manage_auto_discovery_finds_all_notebooks():
         if "datasets" not in p.parts[len(ROOT.parts) :]
     )
     assert count >= 24, f"Expected >= 24 notebook dirs, found {count}"
+
+
+class TestDatasetTitleLimits:
+    """Kaggle caps the title at 50 chars and the subtitle at 80.
+
+    The API silently ignores a title it will not accept, so an over-length one
+    sits in the repo looking applied while the live dataset keeps its old name.
+    Two shipped that way — 52 and 54 chars — and were only caught by reading the
+    character counter in the web form.
+    """
+
+    def _dataset(self, title: str, subtitle: str = "A subtitle.") -> dict:
+        return {
+            "title": title,
+            "subtitle": subtitle,
+            "id": "u/demo",
+            "description": "A description.",
+            "licenses": [{"name": "CC0-1.0"}],
+            "keywords": ["tabular"],
+            "resources": [
+                {
+                    "path": "d.csv",
+                    "description": "Rows.",
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "a",
+                                "title": "A",
+                                "description": "A.",
+                                "type": "integer",
+                            }
+                        ]
+                    },
+                }
+            ],
+            "authors": [{"name": "T", "role": "author"}],
+            "coverage": {
+                "temporal_start_date": "2024-01-01",
+                "temporal_end_date": "2024-12-31",
+                "geospatial_coverage": "Global",
+            },
+            "provenance": {
+                "sources": ["generated"],
+                "collection_methodology": "Synthetic.",
+            },
+        }
+
+    def test_an_over_length_title_is_rejected(self, tmp_path: Path):
+        too_long = "E-Commerce Behavior: 5 Relational Tables (236K Rows)"  # 52
+        assert len(too_long) > manage_commands.MAX_TITLE_CHARS
+        payload = self._dataset(too_long)
+        raw = json.dumps(payload)
+        path = tmp_path / "dataset-metadata.json"
+        path.write_text(raw, encoding="utf-8")
+
+        errors = manage_commands.validate_dataset(path, payload, raw)
+
+        assert any("over Kaggle's 50-char" in e for e in errors), errors
+
+    def test_an_over_length_subtitle_is_rejected(self, tmp_path: Path):
+        payload = self._dataset("Fine title", "x" * 81)
+        raw = json.dumps(payload)
+        path = tmp_path / "dataset-metadata.json"
+        path.write_text(raw, encoding="utf-8")
+
+        errors = manage_commands.validate_dataset(path, payload, raw)
+
+        assert any("over Kaggle's 80-char" in e for e in errors), errors
+
+    def test_titles_at_the_limit_pass(self, tmp_path: Path):
+        payload = self._dataset("x" * 50, "y" * 80)
+        raw = json.dumps(payload)
+        path = tmp_path / "dataset-metadata.json"
+        path.write_text(raw, encoding="utf-8")
+        (tmp_path / "d.csv").write_text("a\n1\n", encoding="utf-8")
+
+        assert manage_commands.validate_dataset(path, payload, raw) == []
