@@ -114,9 +114,11 @@ class Deps:
         """Return a copy with effects toggled, rebuilding the client to match."""
         if effects == self.effects:
             return self
-        client = self.client
-        if isinstance(client, CliKaggleClient):
-            client = CliKaggleClient(effects=effects)
+        # Delegated rather than rebuilt by isinstance: the old form only knew how
+        # to toggle a CliKaggleClient and passed every other adapter through
+        # untouched, so a fake never saw --dry-run and the gate that stops a live
+        # push could not be tested through the seam that enforces it.
+        client = self.client.with_effects(effects)
         return Deps(
             layout=self.layout, clock=self.clock, client=client, effects=effects
         )

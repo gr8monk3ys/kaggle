@@ -501,7 +501,10 @@ def cmd_status(_: list[str]) -> int:
 
 
 def push_dataset(path: Path) -> int:
-    return 0 if deps().client.publish_dataset(path, "Updated content").ok else 1
+    outcome = deps().client.publish_dataset(path, "Updated content")
+    if outcome.skipped:
+        print(f"{YELLOW}  skipped (--dry-run): nothing was published{RESET}")
+    return 0 if outcome.ok else 1
 
 
 def cmd_push(args: list[str]) -> int:
@@ -522,7 +525,10 @@ def cmd_push(args: list[str]) -> int:
         return push_dataset(path)
     if (path / "kernel-metadata.json").exists():
         print(f"Pushing notebook: {target}")
-        return 0 if deps().client.push_kernel(path).ok else 1
+        outcome = deps().client.push_kernel(path)
+        if outcome.skipped:
+            print(f"{YELLOW}  skipped (--dry-run): nothing was pushed{RESET}")
+        return 0 if outcome.ok else 1
     raise CommandError(f"Error: No metadata found in {path}")
 
 
@@ -816,7 +822,19 @@ class Command:
 
     def run(self, argv: list[str], deps: Deps) -> int:
         if self.handler is not None:
-            return self.handler(argv)
+            # Local handlers reach for the process-wide deps rather than taking
+            # them as an argument, so the effects-gated Deps the dispatcher built
+            # has to be installed globally for the duration of the call.
+            # Without this, `run()` accepted `deps` and dropped it: --dry-run was
+            # honoured for `module` commands and silently ignored for every
+            # handler — including `push`, which published a live dataset during a
+            # run that had asked for a preview.
+            previous = _DEPS
+            set_deps(deps)
+            try:
+                return self.handler(argv)
+            finally:
+                set_deps(previous)
         if self.script is not None:
             return run_script(self.script, argv)
         if self.module is None:

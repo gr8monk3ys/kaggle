@@ -113,3 +113,99 @@ class TestKaggleCommands:
         # This command previously discarded the return code and always returned 0.
         assert manage_commands.cmd_competitions([]) == 1
         assert "unavailable" in capsys.readouterr().out
+
+
+class TestDryRunReachesLocalHandlers:
+    """--dry-run must gate handler commands, not just delegated modules.
+
+    `Command.run` accepted the effects-gated Deps and dropped it for local
+    handlers, which reach for the process-wide deps instead. So --dry-run worked
+    for `module` commands and silently did nothing for every handler — including
+    `push`. A `push <dataset> --dry-run` published a live dataset because of it.
+    """
+
+    def _dataset(self, root: Path) -> Path:
+        d = root / "datasets" / "demo"
+        d.mkdir(parents=True)
+        (d / "dataset-metadata.json").write_text(
+            json.dumps(
+                {
+                    "title": "Demo Dataset For Tests",
+                    "id": "u/demo",
+                    "subtitle": "A minimal fixture used to pin the --dry-run gate",
+                    "description": "A minimal fixture used to pin the --dry-run gate.",
+                    "licenses": [{"name": "CC0-1.0"}],
+                    "keywords": ["tabular"],
+                    "resources": [
+                        {
+                            "path": "data.csv",
+                            "description": "Two rows.",
+                            "schema": {
+                                "fields": [
+                                    {
+                                        "name": "a",
+                                        "title": "A",
+                                        "description": "First column.",
+                                        "type": "integer",
+                                    },
+                                    {
+                                        "name": "b",
+                                        "title": "B",
+                                        "description": "Second column.",
+                                        "type": "integer",
+                                    },
+                                ]
+                            },
+                        }
+                    ],
+                    "authors": [{"name": "Test", "role": "author"}],
+                    "coverage": {
+                        "temporal_start_date": "2024-01-01",
+                        "temporal_end_date": "2024-12-31",
+                        "geospatial_coverage": "Global",
+                    },
+                    "provenance": {
+                        "sources": ["generated"],
+                        "collection_methodology": "Synthetic, generated for tests.",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        (d / "data.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+        return d
+
+    def test_push_with_dry_run_records_instead_of_publishing(self, tmp_path: Path):
+        self._dataset(tmp_path)
+        client = FakeKaggleClient()
+        manage_commands.set_deps(Deps.for_test(tmp_path, client=client))
+
+        rc = manage_commands.main(["push", "datasets/demo", "--dry-run"])
+
+        assert rc == 0
+        assert client.skipped_effects == ["publish_dataset"], (
+            "--dry-run must reach the client and skip the publish; a real run of "
+            f"this published a live dataset. skipped={client.skipped_effects}"
+        )
+
+    def test_push_without_dry_run_still_publishes(self, tmp_path: Path):
+        self._dataset(tmp_path)
+        client = FakeKaggleClient()
+        manage_commands.set_deps(Deps.for_test(tmp_path, client=client))
+
+        manage_commands.main(["push", "datasets/demo"])
+
+        assert [name for name, _ in client.calls if name == "publish_dataset"], (
+            "a normal push must still publish"
+        )
+
+    def test_the_global_deps_are_restored_afterwards(self, tmp_path: Path):
+        self._dataset(tmp_path)
+        original = Deps.for_test(tmp_path, client=FakeKaggleClient())
+        manage_commands.set_deps(original)
+
+        manage_commands.main(["push", "datasets/demo", "--dry-run"])
+
+        assert manage_commands.deps() is original, (
+            "the effects-gated Deps must not leak past the command that used it"
+        )

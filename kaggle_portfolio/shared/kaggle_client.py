@@ -21,6 +21,7 @@ import io
 import json
 import os
 import shutil
+import copy
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -372,6 +373,16 @@ class KaggleClient(Protocol):
     a new need in terms of an existing noun.
     """
 
+    def with_effects(self, effects: bool) -> "KaggleClient":
+        """Return this client with mutating calls enabled or disabled.
+
+        Each adapter owns its own effects variant: `Deps.with_effects` used to
+        rebuild a `CliKaggleClient` by isinstance and pass anything else through
+        untouched, so a fake never saw --dry-run and the gate could not be tested
+        through the seam that enforces it.
+        """
+        ...
+
     # discovery / auth
     def available(self) -> bool: ...
     def credentials(self) -> CredentialState: ...
@@ -429,6 +440,13 @@ class CliKaggleClient:
         self._timeout = timeout
         self._page_size_ok: bool | None = None
         self.skipped_effects: list[str] = []
+
+    def with_effects(self, effects: bool) -> "CliKaggleClient":
+        if effects == self._effects:
+            return self
+        return CliKaggleClient(
+            effects=effects, retries=self._retries, timeout=self._timeout
+        )
 
     # -- plumbing -----------------------------------------------------------
 
@@ -969,6 +987,22 @@ class FakeKaggleClient:
         #: Every mutating call, in order. Assert on this instead of on argv.
         self.calls: list[tuple[str, tuple[Any, ...]]] = []
         self.skipped_effects: list[str] = []
+
+    def with_effects(self, effects: bool) -> "FakeKaggleClient":
+        """A view of this fake with effects toggled, sharing its seeded state.
+
+        The recording lists are shared deliberately: a test holds the original
+        handle, and the CLI dispatcher hands the command an effects-gated copy.
+        If the copy recorded elsewhere, the test could not see what the command
+        under test actually did.
+        """
+        if effects == self._effects:
+            return self
+        twin = copy.copy(self)
+        twin._effects = effects
+        twin.calls = self.calls
+        twin.skipped_effects = self.skipped_effects
+        return twin
 
     # -- seeding helpers ----------------------------------------------------
 
