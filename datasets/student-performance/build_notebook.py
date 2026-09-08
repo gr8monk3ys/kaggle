@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import base64
 import io
+import glob
 import os
 import sys
 import traceback
@@ -164,9 +165,22 @@ ACCENT = '#e74c3c'
 BLUE = '#2980b9'
 GREY = '#95a5a6'
 
-DATA_DIR = '/kaggle/input/student-academic-performance-dataset'
-if not os.path.exists(DATA_DIR):
-    DATA_DIR = '.'
+def _find_data_dir(marker):
+    # Locate the dataset wherever Kaggle mounted it. The expected mount is
+    # /kaggle/input/<slug>, but the attached directory name is not guaranteed to
+    # match: this notebook failed on Kaggle with FileNotFoundError because the
+    # exact-path guess missed and the bare '.' fallback then looked in the kernel
+    # working dir. Search the mounts for the file we need instead of assuming.
+    candidates = ['/kaggle/input/student-academic-performance-dataset', *sorted(glob.glob('/kaggle/input/*')), '.']
+    for candidate in candidates:
+        if os.path.exists(os.path.join(candidate, marker)):
+            return candidate
+    raise FileNotFoundError(
+        f'{marker} not found in {candidates}. '
+        'Attach the dataset to this notebook (Add Input) and re-run.'
+    )
+
+DATA_DIR = _find_data_dir('students.csv')
 
 df = pd.read_csv(f'{DATA_DIR}/students.csv')
 SUBJECTS = ['reading_score', 'writing_score', 'math_score', 'science_score']

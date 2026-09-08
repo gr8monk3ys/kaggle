@@ -587,8 +587,11 @@ def test_validate_python_logic_title_too_long():
             "lorenzoscaturchio/job-postings-nlp-salary-eda",
         ),
         (
+            # Kaggle renamed this slug when the notebook was retitled to name its
+            # finding ("The 7.4-Hour Sleep Optimum"); the old slug 302-redirects.
+            # Verified against the live kernel list.
             "datasets/student-performance",
-            "lorenzoscaturchio/student-performance-academic-eda",
+            "lorenzoscaturchio/student-performance-the-7-4-hour-sleep-optimum",
         ),
     ],
 )
