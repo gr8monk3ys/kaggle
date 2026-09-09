@@ -579,14 +579,14 @@ def test_validate_python_logic_title_too_long():
             "lorenzoscaturchio/credit-card-fraud-eda-detection",
         ),
         (
-            # The live notebook is `job-postings-nlp-salary-eda`; this pinned the
-            # longer `...-salary-prediction-eda`, which exists nowhere on the
-            # account. Pushing that directory would have created a duplicate
-            # rather than updating the real notebook. Verified against the live
-            # kernel list; the sibling ids here were checked at the same time and
-            # are correct.
+            # This one has moved twice. It was pinned to `...-salary-prediction-eda`,
+            # which at the time existed nowhere on the account, so it was corrected
+            # to the live `job-postings-nlp-salary-eda`. Pushing then moved the live
+            # kernel BACK to `...-salary-prediction-eda` — which is exactly what the
+            # title "Job Postings NLP Salary Prediction EDA" slugifies to. The old
+            # slug now 302-redirects. Re-verified live (200) after that push.
             "datasets/job-postings",
-            "lorenzoscaturchio/job-postings-nlp-salary-eda",
+            "lorenzoscaturchio/job-postings-nlp-salary-prediction-eda",
         ),
         (
             # Kaggle renamed this slug when the notebook was retitled to name its

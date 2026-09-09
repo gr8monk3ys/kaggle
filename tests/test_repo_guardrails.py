@@ -398,3 +398,58 @@ def test_hand_authored_explore_notebooks_are_protected_from_regeneration(repo_ro
         f"`dataset_explore_generator --all`: {unprotected}. Add a build_notebook.py "
         'or set `"hand_authored": true` in the notebook metadata.'
     )
+
+
+def test_kernel_ids_that_diverge_from_their_title_are_known(repo_root):
+    """A push can move a kernel's slug to match its title. Keep that list explicit.
+
+    Observed twice on 2026-09-08, both times landing on exactly slugify(title):
+
+      student-performance-academic-eda
+        -> student-performance-the-7-4-hour-sleep-optimum
+      job-postings-nlp-salary-eda
+        -> job-postings-nlp-salary-prediction-eda
+
+    The old slugs 302-redirect and the votes carried, so this is not destructive —
+    but every link shared elsewhere points at the old URL, and the repo's `id`
+    silently goes stale, which is the drift #83 and #97 each had to repair.
+
+    The mechanism is NOT established. `ecommerce-behavior` also diverges and did
+    NOT move when pushed the same day, so "the slug always follows the title" is
+    not a rule this repo has earned the right to assert. What is actionable is the
+    exposure: these are the notebooks where a push MIGHT rename, and several carry
+    votes. Adding one here is a decision to accept that risk, not a formality.
+    """
+    import re
+
+    def slugify(title: str) -> str:
+        return re.sub(
+            r"-{2,}", "-", re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+        )
+
+    known_divergent = {
+        "ecommerce-behavior-explorer-v2",  # 2 votes; pushed, did not move
+        "playground-s6e6-stellar-classification",  # 2 votes
+        "complete-guide-to-attention-mechanisms",  # 1 vote
+        "competition-masterclass-full-ml-pipeline",
+        "end-to-end-ml-pipeline-house-price-prediction",
+        "feature-engineering-cookbook-50-techniques",
+        "llm-fine-tuning-cookbook-lora-qlora",  # 2 votes
+        "rag-from-scratch",  # 5 votes -- the most exposed
+        "time-series-forecasting-with-transformers",  # 2 votes
+    }
+
+    surprises = []
+    for meta_path in sorted(repo_root.glob("**/kernel-metadata.json")):
+        if ".venv" in str(meta_path):
+            continue
+        payload = json.loads(meta_path.read_text(encoding="utf-8"))
+        slug = payload["id"].split("/")[-1]
+        if slug != slugify(payload.get("title", "")) and slug not in known_divergent:
+            surprises.append(f"{slug} (title: {payload.get('title')!r})")
+
+    assert not surprises, (
+        "these kernels' ids diverge from their slugified title and are not in the "
+        f"known list, so a push may rename them and strand their URLs: {surprises}. "
+        "Either align the title and id, or add the slug above with its vote count."
+    )
