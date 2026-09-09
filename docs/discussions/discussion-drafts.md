@@ -15,7 +15,7 @@
 
 ### 5 Feature Engineering Tricks That Move Tabular Scores
 
-After grinding through several tabular competitions, I distilled the **five feature engineering techniques** I reach for first — the ones that most reliably move my local CV and public score out of the bottom half. Each one is dead simple to implement but surprisingly powerful.
+After grinding through several tabular competitions, I distilled the **five feature engineering techniques** I reach for first: the ones that most reliably move my local CV and public score out of the bottom half. Each one is dead simple to implement but surprisingly powerful.
 
 #### 1. Target Encoding with Smoothing
 
@@ -242,7 +242,7 @@ Several patterns emerged that are relevant for modeling:
 
 1. Determinatives: Certain signs act as semantic classifiers, marking the following word as a god, city, or person. They appear as prefixes in our data (not superscript as in academic texts). Recognizing them could help with proper noun handling.
 
-2. Logograms vs. syllabic writing: Akkadian mixes logographic and syllabic writing. The same word can be written phonetically or with a single logogram, creating a many-to-one mapping that confuses standard tokenizers.
+2. Logograms vs. syllabic writing: Akkadian mixes logographic and syllabic writing. The same word can be written phonetically or with a single logogram, and that many-to-one mapping is what confuses standard tokenizers.
 
 3. Broken tablets: Some entries contain `[...]` where sections are damaged or missing. These account for about 8% of training samples.
 
@@ -979,7 +979,7 @@ The best practical introduction to stacking I've found. Clear diagrams, sensible
 
 #### 3. "Feature Engineering Cookbook" by Lorenzo Scaturchio (me)
 
-I wrote this as the reference I wished I had when I started. Target encoding, frequency encoding, interaction features, cyclical encoding, lag features — everything with working code. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook-50-techniques)**
+I wrote this as the reference I wished I had when I started. Target encoding, frequency encoding, interaction features, cyclical encoding, lag features. All with working code. **[Link](https://www.kaggle.com/code/lorenzoscaturchio/feature-engineering-cookbook-50-techniques)**
 
 #### 4. "A Data Science Framework: To Achieve 99% Accuracy" by LD Freeman
 
@@ -987,7 +987,7 @@ A clean, explicit end-to-end pipeline from raw Titanic data to final submission.
 
 #### 5. "EDA & Feature Engineering for House Prices" by Serigne
 
-Feature engineering for house prices, driven by actual domain knowledge about what makes houses valuable. Serigne validates that each feature actually improves the model — that validation step is the part most tutorials skip, and it's worth stealing.
+Feature engineering for house prices, driven by actual domain knowledge about what makes houses valuable. Serigne validates that each feature actually improves the model. That validation step is the part most tutorials skip, and it's worth stealing.
 
 #### 6. "Attention Mechanisms Visualized" by Lorenzo Scaturchio (me)
 
@@ -995,11 +995,11 @@ Self-attention, multi-head attention, and cross-attention from scratch, with int
 
 #### 7. "Hitchhiker's Guide to Feature Extraction" by Chris Deotte
 
-Chris Deotte is a Kaggle Grandmaster and his notebooks are consistently worth reading. This one covers feature extraction across competition types. The adversarial validation approach to feature selection is particularly worth understanding — it's a technique that transfers to almost any tabular competition.
+Chris Deotte is a Kaggle Grandmaster and his notebooks are consistently worth reading. This one covers feature extraction across competition types. The adversarial validation approach to feature selection is particularly worth understanding; it's a technique that transfers to almost any tabular competition.
 
 #### 8. "How to Not Overfit" by Heads or Tails
 
-Regularization, cross-validation, bias-variance tradeoff — the fundamentals that separate beginners from people who actually understand why their models generalize. Read this before your first real submission. Your CV score tells you more than the public leaderboard does, and this notebook explains why.
+Regularization, cross-validation, bias-variance tradeoff: the fundamentals that separate beginners from people who actually understand why their models generalize. Read this before your first real submission. Your CV score tells you more than the public leaderboard does, and this notebook explains why.
 
 #### 9. "RAG From Scratch" by Lorenzo Scaturchio (me)
 
@@ -1016,7 +1016,7 @@ Time series shows up everywhere on Kaggle but most tabular workflows break on it
 Do not just read passively. For each notebook:
 
 1. **Fork it** and run every cell yourself.
-2. **Modify one thing** — change a parameter, add a feature, try a different model.
+2. **Modify one thing**: change a parameter, add a feature, try a different model.
 3. **Write a comment** on the notebook explaining what you learned. Teaching forces understanding.
 4. **Apply one technique** from the notebook to a competition you are currently working on.
 
@@ -1036,7 +1036,7 @@ If there's a notebook you think should be on this list, drop it in the comments.
 
 Cross-validation is the backbone of reliable model evaluation, yet I see people reach for `StratifiedKFold` by default even when it's the wrong tool. Let me walk through the three strategies that actually matter and when to use each one.
 
-#### StratifiedKFold — Classification Default
+#### StratifiedKFold: Classification Default
 
 Use this when your target is categorical and you want each fold to preserve the class distribution. Without stratification, a fold might contain no minority class examples at all.
 
@@ -1053,7 +1053,7 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y)):
 
 Rule of thumb: if any class has fewer than `n_splits * 5` examples, stratification becomes critical.
 
-#### GroupKFold — When Rows Are Not Independent
+#### GroupKFold: When Rows Are Not Independent
 
 Use this whenever multiple rows share a group identity (same patient, same user, same store) and you cannot let the same group appear in both train and validation.
 
@@ -1070,7 +1070,7 @@ for fold, (train_idx, val_idx) in enumerate(gkf.split(X, y, groups)):
 
 Failing to use GroupKFold when groups exist is the most common source of overly optimistic CV scores. If your CV is 0.92 but your LB is 0.79, check for group leakage first.
 
-#### TimeSeriesSplit — Temporal Data
+#### TimeSeriesSplit: Temporal Data
 
 Use this when rows have a temporal order and future data must never appear in training. Each fold expands the training window and keeps the validation window strictly after it.
 
@@ -1142,7 +1142,7 @@ results_df = pd.DataFrame(results)
 print(results_df.sort_values('cv', ascending=False))
 ```
 
-If your CV improves but LB does not move, trust the CV. If your LB improves but CV does not, be suspicious — you might be getting lucky or have a leaky feature.
+If your CV improves but LB does not move, trust the CV. If your LB improves but CV does not, be suspicious; you might be getting lucky or have a leaky feature.
 
 #### The Two-Submission Rule
 
@@ -1159,7 +1159,7 @@ Having one submission optimized for CV and one for LB hedges against LB overfitt
 
 #### Monitoring CV/LB Correlation
 
-Early in a competition, plot your CV vs LB scores. If they correlate well (CV up means LB up), your CV setup is healthy. If they drift, something is wrong with your validation — fix that before optimizing further.
+Early in a competition, plot your CV vs LB scores. If they correlate well (CV up means LB up), your CV setup is healthy. If they drift, something is wrong with your validation. Fix that before optimizing further.
 
 ```python
 import matplotlib.pyplot as plt
@@ -1189,7 +1189,7 @@ Nothing feels worse than a 0.99 CV score that collapses to 0.61 on the leaderboa
 
 #### Type 1: Target Leakage
 
-A feature is computed using information that would not be available at prediction time — usually because it implicitly contains or correlates with the target.
+A feature is computed using information that would not be available at prediction time, usually because it implicitly contains or correlates with the target.
 
 Classic example: predicting loan default using a "days_past_due" feature that is only populated for defaulted loans.
 
@@ -1276,7 +1276,7 @@ def leakage_audit(X_train, X_test, y_train):
 leakage_audit(X_train, X_test, y_train)
 ```
 
-Have you caught a nasty leakage bug in a competition? Drop it in the comments — the war stories are always educational.
+Have you caught a nasty leakage bug in a competition? Drop it in the comments. The war stories are always educational.
 
 ---
 
@@ -1375,7 +1375,7 @@ final_model = lgb.LGBMClassifier(
 
 Interaction effects to watch: `num_leaves` and `min_child_samples` interact strongly. Very high `num_leaves` with very low `min_child_samples` = extreme overfitting. Keep their ratio reasonable.
 
-What is your go-to parameter to tune first? I know some people start with regularization — curious if that's worked better for you.
+What is your go-to parameter to tune first? I know some people start with regularization. Curious if that's worked better for you.
 
 ---
 
@@ -1685,7 +1685,7 @@ My typical workflow: Variance threshold first, SHAP importance second, then opti
 
 ### Outlier Detection Without Dropping Data
 
-Most tutorials tell you to "remove outliers" and then do nothing to explain what to do instead. Dropping rows is often the wrong move in competitions — you lose signal. Here are four detection methods and smarter handling strategies.
+Most tutorials tell you to "remove outliers" and then do nothing to explain what to do instead. Dropping rows is often the wrong move in competitions; you lose signal. Here are four detection methods and smarter handling strategies.
 
 #### Method 1: IQR (Univariate)
 
@@ -1732,7 +1732,7 @@ print(f"Isolation Forest flagged: {n_outliers} outliers")
 
 #### Method 4: Local Outlier Factor
 
-Good for detecting local outliers — points that are anomalous in their neighborhood even if they look normal globally.
+Good for detecting local outliers: points that are anomalous in their neighborhood even if they look normal globally.
 
 ```python
 from sklearn.neighbors import LocalOutlierFactor
@@ -1918,11 +1918,11 @@ def target_encode(train, val, col, target, alpha=10):
     return train, val
 ```
 
-Critical: always compute target encoding on training folds only. Never fit on the full dataset — that is target leakage.
+Critical: always compute target encoding on training folds only. Never fit on the full dataset. That is target leakage.
 
 #### Method 3: Leave-One-Out Encoding
 
-Like target encoding but each row uses the target statistics of all other rows in its group — prevents the row from encoding itself.
+Like target encoding but each row uses the target statistics of all other rows in its group, which prevents the row from encoding itself.
 
 ```python
 def loo_encode(train, col, target):
@@ -1979,7 +1979,7 @@ Team merges can double your final score or completely derail your competition ex
 
 #### When to Team Up
 
-The right time to merge is roughly 2-3 weeks before the competition deadline — early enough to have time to combine approaches, late enough that each person has a proven independent model. If you merge on day 1, you lose the diversity that makes ensembling valuable.
+The right time to merge is roughly 2-3 weeks before the competition deadline: early enough to have time to combine approaches, late enough that each person has a proven independent model. If you merge on day 1, you lose the diversity that makes ensembling valuable.
 
 Good reasons to team up:
 - You have a strong model in one domain (e.g., GBM) and they have a strong model in another (e.g., neural net)
@@ -2042,7 +2042,7 @@ Before you merge, have this conversation explicitly:
 
 Teams that skip this conversation often dissolve badly. Have it early and the rest is much smoother.
 
-What's your teaming strategy — solo or team? Share your experience in the comments.
+What's your teaming strategy, solo or team? Share your experience in the comments.
 
 ---
 
@@ -2134,7 +2134,7 @@ The delta from reading 10 gold solutions carefully and implementing one new thin
 
 ### The Notebook Competitor's Playbook
 
-Notebook competitions are underrated for building your Kaggle profile. You are not competing for rank on a leaderboard — you are competing for upvotes on quality. The rules are different, and most people play them wrong. Here is the playbook.
+Notebook competitions are underrated for building your Kaggle profile. You are not competing for rank on a leaderboard; you are competing for upvotes on quality. The rules are different, and most people play them wrong. Here is the playbook.
 
 #### What Earns Gold Medals in Notebook Competitions
 
@@ -2198,7 +2198,7 @@ The first 48 hours after publishing are critical. Strategies that work:
 
 1. Post a link in the competition discussion with a brief description of what the notebook covers
 2. Comment on related discussions mentioning your notebook when relevant
-3. Upvote other quality work — the community notices reciprocity
+3. Upvote other quality work; the community notices reciprocity
 4. Share in the relevant forum (Getting Started for tutorials, competition forum for competition-specific)
 
 #### Quality Checklist Before Publishing
@@ -2286,10 +2286,10 @@ def pseudo_label_pipeline(X_train, y_train, X_test,
 
 #### When Pseudo-Labeling Works
 
-- **Small training set** (fewer than 10K samples): more data helps significantly
-- **Large test set**: more pseudo-label candidates
-- **Test distribution similar to train**: adversarial validation AUC close to 0.5
-- **High confidence predictions**: use only predictions above 0.9 or 0.95
+- Small training set, fewer than 10K samples (more data still helps a lot)
+- Large test set (more pseudo-label candidates to draw from)
+- Test distribution close to train (adversarial validation AUC near 0.5)
+- High-confidence predictions only (above 0.9 or 0.95)
 
 #### When It Hurts
 
@@ -2318,7 +2318,7 @@ Stochastic Weight Averaging (SWA) is one of the most underused tricks in competi
 
 #### The Intuition
 
-Standard training finds one point in weight space. SWA averages the weights from multiple checkpoints taken near the end of training. The averaged weights tend to land in a flatter, wider region of the loss landscape — which generalizes better.
+Standard training finds one point in weight space. SWA averages the weights from multiple checkpoints taken near the end of training. The averaged weights tend to land in a flatter, wider region of the loss landscape, which generalizes better.
 
 Think of it as a cheap ensemble of snapshots of your model during the final phase of training.
 
@@ -2414,7 +2414,7 @@ The learning rate is the most important hyperparameter in deep learning and also
 
 #### What Is the LR Range Test?
 
-Run a short training loop where the learning rate increases exponentially from a very small value to a large one. Track the loss. The best LR is just before the loss starts rising sharply — where the improvement rate is steepest.
+Run a short training loop where the learning rate increases exponentially from a very small value to a large one. Track the loss. The best LR is just before the loss starts rising sharply, where the improvement rate is steepest.
 
 #### PyTorch Implementation
 
@@ -2489,7 +2489,7 @@ The plot will typically show three phases:
 2. **Steep decline** (optimal zone): maximum learning efficiency
 3. **Rise** (LR too large): training is unstable, loss explodes
 
-**Pick your LR at the point of steepest descent** — or 5-10x lower if you want to be conservative.
+**Pick your LR at the point of steepest descent**, or 5-10x lower if you want to be conservative.
 
 #### Using `torch-lr-finder`
 
@@ -2521,7 +2521,7 @@ Most tutorials treat batch size as a memory constraint: "use the largest batch s
 
 #### The Basic Relationship
 
-Small batches introduce noise into gradient estimates. That noise is actually helpful — it acts as implicit regularization and helps models escape sharp local minima that generalize poorly.
+Small batches introduce noise into gradient estimates. That noise is actually helpful; it acts as implicit regularization and helps models escape sharp local minima that generalize poorly.
 
 Large batches produce more accurate gradients but tend to converge to sharper minima with worse generalization (the "sharp minima" problem).
 
@@ -3004,7 +3004,7 @@ This reduces overfitting dramatically on small datasets. What BERT fine-tuning t
 
 ### Text Preprocessing: What to Keep and What to Throw Away
 
-Text preprocessing advice is all over the place — "always lowercase" and "never lowercase" can both be correct depending on your task. Here is a benchmarked guide.
+Text preprocessing advice is all over the place; "always lowercase" and "never lowercase" can both be correct depending on your task. Here is a benchmarked guide.
 
 #### What I Tested
 
@@ -3016,7 +3016,7 @@ Three NLP classification datasets: sentiment analysis, topic classification, and
 text = text.lower()
 ```
 
-**Sentiment / Topic**: +0.3% (slight improvement — reduces vocabulary, helps generalization)
+**Sentiment / Topic**: +0.3% (slight improvement: reduces vocabulary, helps generalization)
 **Toxic comments**: -0.8% (casing carries sentiment signal: "YOU IDIOT" vs "you idiot")
 
 **Rule**: lowercase for general NLP tasks unless casing carries meaning.
@@ -3201,11 +3201,11 @@ Multi-label classification (where each sample can belong to multiple classes sim
 The fundamental difference:
 
 ```python
-# Softmax (multi-CLASS) — probabilities sum to 1, classes are mutually exclusive
+# Softmax (multi-CLASS): probabilities sum to 1, classes are mutually exclusive
 outputs = torch.nn.functional.softmax(logits, dim=-1)
 loss = torch.nn.CrossEntropyLoss()(logits, labels)  # one-hot labels
 
-# Sigmoid (multi-LABEL) — each label is independent, probabilities don't sum to 1
+# Sigmoid (multi-LABEL): each label is independent, probabilities don't sum to 1
 outputs = torch.sigmoid(logits)
 loss = torch.nn.BCEWithLogitsLoss()(logits, labels.float())  # binary label per class
 ```
@@ -3298,7 +3298,7 @@ What multi-label tricks have worked best for you? Especially curious about rare 
 
 ### How I Built a RAG System in 50 Lines of Python
 
-Most RAG tutorials use LangChain and pile abstraction on top of abstraction until the core concept disappears. Here is a minimal working RAG system in under 50 lines — no LangChain, no vector databases, just numpy and a language model API.
+Most RAG tutorials use LangChain and pile abstraction on top of abstraction until the core concept disappears. Here is a minimal working RAG system in under 50 lines: no LangChain, no vector databases, just numpy and a language model API.
 
 #### The Minimal RAG Stack
 
@@ -3355,7 +3355,7 @@ result = answer("How does gradient boosting work?")
 print(result)
 ```
 
-That is the complete system. Retrieval, context assembly, generation — under 50 lines.
+That is the complete system. Retrieval, context assembly, generation, all in under 50 lines.
 
 #### Why This Beats Just Prompting the LLM
 
@@ -3476,7 +3476,7 @@ Predict experience level from the job description alone. A clean multi-class NLP
 
 The dataset has some interesting skews worth exploring: senior roles in ML pay 40% more than equivalent roles in traditional software. Remote roles cluster heavily in certain skill categories. Certain company name patterns are strongly predictive of salary (without being explicit).
 
-Drop your notebooks in the comments — I will review and upvote the most insightful analyses.
+Drop your notebooks in the comments; I will review and upvote the most insightful analyses.
 
 ---
 
@@ -3620,7 +3620,7 @@ def find_similar_questions(new_question, top_k=5):
 
 **Task 2: Difficulty Classification**
 
-Predict question difficulty (Junior/Senior/Staff) from the question text alone. Interesting because the signal is subtle — hard questions are not just "longer" questions.
+Predict question difficulty (Junior/Senior/Staff) from the question text alone. Interesting because the signal is subtle; hard questions are not just "longer" questions.
 
 **Task 3: Answer Quality Prediction**
 
@@ -3736,7 +3736,7 @@ df['salary_vs_dept_mean'] = df['salary'] / df['dept_mean_salary']
 #### Trick 7: Efficient `merge()` with Validation
 
 ```python
-# Always validate merges — detect unexpected duplicates
+# Always validate merges: detect unexpected duplicates
 merged = df1.merge(df2, on='id', how='left', validate='1:1')
 # validate options: '1:1', '1:m', 'm:1', 'm:m'
 # raises ValueError if the cardinality assumption is violated
@@ -3926,7 +3926,7 @@ What OOM fix has worked best for you? Share your go-to trick below.
 
 ### The Perfect Kaggle Notebook Template
 
-After dozens of competition notebooks, I have converged on a template that handles all the boilerplate and lets me focus on the actual problem from the first cell. Here is the full thing — fork it and make it your own.
+After dozens of competition notebooks, I have converged on a template that handles all the boilerplate and lets me focus on the actual problem from the first cell. Here is the full thing. Fork it and make it your own.
 
 #### Cell 1: Configuration (Everything Tunable in One Place)
 
@@ -4092,7 +4092,7 @@ This template is available in my **[Competition Masterclass notebook](https://ww
 
 Nothing is more frustrating than rerunning your best notebook and getting a different score. Reproducibility issues waste time, cause incorrect A/B comparisons, and can invalidate your best submission. Here is my complete checklist.
 
-#### Part 1: Random Seeds — All of Them
+#### Part 1: Random Seeds (All of Them)
 
 Most people set `np.random.seed` and think they are done. There are actually six sources of randomness to control:
 
@@ -4328,7 +4328,7 @@ for batch in train_loader:
 
 4. **First step is slow**: TPU JIT compilation happens on the first batch. Subsequent batches are fast. Do not benchmark on the first step.
 
-For NLP fine-tuning with HuggingFace, the `accelerate` library handles TPU complexity automatically — strongly recommended as the entry point.
+For NLP fine-tuning with HuggingFace, the `accelerate` library handles TPU complexity automatically, and it is where I would start.
 
 What workloads have you found work best on Kaggle TPUs? Share your experience below.
 
@@ -4342,7 +4342,7 @@ What workloads have you found work best on Kaggle TPUs? Share your experience be
 
 ### The Underrated Power of Kaggle Discussions
 
-Most people treat the Kaggle discussion forum as a place to ask for help. I think that is underusing it by a wide margin. Here is why discussions are one of the most valuable tools on the platform — for learning, for medals, and for building reputation.
+Most people treat the Kaggle discussion forum as a place to ask for help. I think that is underusing it by a wide margin. Here is why discussions are one of the most valuable tools on the platform: for learning, for medals, and for building reputation.
 
 #### Why Discussions Matter Beyond Medals
 
@@ -4350,7 +4350,7 @@ The obvious reason people post discussions is medal hunting. But there are less 
 
 **Learning acceleration**: When you write up a technique clearly enough for others to understand it, you discover gaps in your own understanding. I have caught several conceptual errors by trying to write clear explanations.
 
-**Collaborative debugging**: Competition discussions often contain critical data insights shared by participants. The best insights — class imbalance that invalidated baselines, temporal leakage that invalidated naive CV — often appear in discussions days before they become common knowledge.
+**Collaborative debugging**: Competition discussions often contain critical data insights shared by participants. The best insights (class imbalance that invalidated baselines, temporal leakage that invalidated naive CV) often appear in discussions days before they become common knowledge.
 
 **Network effects**: Thoughtful discussion contributions lead to people following your work, reading your notebooks, and later considering team merges with you.
 
@@ -4392,7 +4392,7 @@ bad_topics = [
 ]
 ```
 
-#### The Discussion-Notebook Synergy
+#### How Discussions and Notebooks Feed Each Other
 
 Discussion posts and notebooks amplify each other. A discussion post that says "I found X, see my notebook for full analysis" drives notebook upvotes. A notebook with a link to a discussion thread in the description drives discussion engagement.
 
@@ -4410,7 +4410,7 @@ How often do you post in discussions vs. just lurking? What keeps you from posti
 
 ### Building ML Tools for Competition Automation
 
-I want to share an idea I have been developing: automating the operational side of competition participation so I can focus more time on the actual modeling. Not automation of the ML itself — that is a path toward generic mediocre submissions — but automation of the logistics.
+I want to share an idea I have been developing: automating the operational side of competition participation so I can focus more time on the actual modeling. Not automation of the ML itself (that is a path toward generic mediocre submissions) but automation of the logistics.
 
 #### What I Mean by Operational Automation
 
@@ -4419,7 +4419,7 @@ There are two kinds of tasks in a Kaggle competition:
 1. **High-value, judgment-required**: Feature engineering decisions, model architecture, hyperparameter search direction, ensemble strategy
 2. **Low-value, rule-based**: Checking submission status, monitoring leaderboard position, verifying dataset freshness, ensuring notebooks are correctly published
 
-Type 2 tasks take real time. Checking whether your notebook published successfully, verifying your submission registered correctly, tracking which of your 15 notebooks are still pending review — these are mechanical and distracting.
+Type 2 tasks take real time. Checking whether your notebook published successfully, verifying your submission registered correctly, tracking which of your 15 notebooks are still pending review: these are mechanical and distracting.
 
 #### The Architecture I Built
 
@@ -4493,7 +4493,7 @@ Has anyone else built tools like this around their Kaggle workflow? I am curious
 
 ### How I Organize My Kaggle Workflow
 
-Organization is not glamorous but poor organization has cost me more competition time than any technical mistake. Here is my full workflow setup — folder structure, versioning, model tracking, and the tools that actually stick.
+Organization is not glamorous but poor organization has cost me more competition time than any technical mistake. Here is my full workflow setup: folder structure, versioning, model tracking, and the tools that actually stick.
 
 #### Folder Structure
 
@@ -4566,7 +4566,7 @@ print(f"Description: {DESCRIPTION}")
 print(f"Started: {datetime.now()}")
 ```
 
-When you save a Kaggle notebook version, write a meaningful version note — not "updated" but "switched to GroupKFold, CV jumped from 0.86 to 0.88."
+When you save a Kaggle notebook version, write a meaningful version note, not "updated" but "switched to GroupKFold, CV jumped from 0.86 to 0.88."
 
 #### Model Checkpointing
 
@@ -4599,8 +4599,8 @@ if val_score > best_score:
 
 Every Sunday, 15 minutes:
 
-1. Read `experiments.csv` — what was the trajectory this week?
-2. Check CV vs LB correlation — is validation still trustworthy?
+1. Read `experiments.csv`: what was the trajectory this week?
+2. Check CV vs LB correlation: is validation still trustworthy?
 3. Update `NOTES.md` with what I plan to try next week
 4. Check competition deadline and adjust daily goals
 
@@ -5077,13 +5077,13 @@ There is a companion EDA + detection notebook here: https://www.kaggle.com/code/
 
 If you build something with it or spot a column you wish it had, let me know and I will fold it into the next version.
 
-## Draft 64: Synthetic e-commerce customer behavior — sessions, carts & conversions
+## Draft 64: Synthetic e-commerce customer behavior (sessions, carts & conversions)
 
 **Target forum:** Datasets
 **Category:** Dataset Release
 **Expected medal:** Bronze
 
-### Synthetic e-commerce customer behavior — sessions, carts & conversions
+### Synthetic e-commerce customer behavior (sessions, carts & conversions)
 
 A synthetic e-commerce behavior dataset built for funnel and conversion modeling: customer sessions, product interactions, cart events, and purchase outcomes, with realistic drop-off between stages.
 
@@ -5096,7 +5096,7 @@ Use it for conversion modeling, customer segmentation, recommendation, or just p
 
 Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/ecommerce-behavior
 
-If you've modeled conversion funnels before — do you treat each funnel stage as a separate target or one multi-class outcome? Would love takes.
+If you've modeled conversion funnels before, do you treat each funnel stage as a separate target or one multi-class outcome? Would love takes.
 
 ## Draft 65: 5K+ GitHub repositories with stars, forks, issues & activity
 
@@ -5106,7 +5106,7 @@ If you've modeled conversion funnels before — do you treat each funnel stage a
 
 ### 5K+ GitHub repositories with stars, forks, issues & activity
 
-A dataset of 5,000+ GitHub repositories with their popularity and health signals — stars, forks, open/closed issues, contributors, language, and activity recency.
+A dataset of 5,000+ GitHub repositories with their popularity and health signals: stars, forks, open/closed issues, contributors, language, and activity recency.
 
 Fun angles:
 - **Predict stars** from repo characteristics (a nice log-scaled regression target).
@@ -5138,21 +5138,21 @@ A solid teaching dataset for intro ML, feature importance, and fairness-aware mo
 
 Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/student-academic-performance-dataset
 
-Which factor do you think dominates — study hours, attendance, or prior performance? Curious before you peek at the SHAP plot.
+Which factor do you think dominates: study hours, attendance, or prior performance? Curious before you peek at the SHAP plot.
 
-## Draft 68: Mental health in tech — a 5K-response survey dataset
+## Draft 68: Mental health in tech (a 5K-response survey dataset)
 
 **Target forum:** Datasets
 **Category:** Dataset Release
 **Expected medal:** Bronze
 
-### Mental health in tech — a 5K-response survey dataset
+### Mental health in tech (a 5K-response survey dataset)
 
 A 5,000-response survey dataset on mental health in the tech workplace: attitudes, employer support, openness, and demographic context.
 
 Why it's worth a look:
 - A meaningful, human-centered classification/EDA subject.
-- Mixed categorical + numeric features — good for **survey-analysis** and encoding practice.
+- Mixed categorical + numeric features, good for **survey-analysis** and encoding practice.
 - Clean and ready for notebook work.
 
 Use it for attitude prediction, support-gap analysis, or thoughtful EDA. Starter notebook included.
@@ -5160,4 +5160,3 @@ Use it for attitude prediction, support-gap analysis, or thoughtful EDA. Starter
 Dataset: https://www.kaggle.com/datasets/lorenzoscaturchio/mental-health-in-tech-survey-5k
 
 If you've worked survey data: do you one-hot the Likert scales or treat them as ordinal? Genuinely split on this.
-

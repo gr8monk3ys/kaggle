@@ -92,10 +92,21 @@ MEASUREMENT_CLAIM = re.compile(
     r"|compared|comparing|evaluated|evaluating|tried|trying)\b",
     re.IGNORECASE,
 )
+# The metric need not open the cell: draft_005 shipped a fabricated benchmark
+# under "| Retrieval Accuracy (Top-5) |", where the anchored form saw "Retrieval"
+# and passed the draft.
 RESULT_TABLE = re.compile(
-    r"\|\s*(?:AUC|RMSE|RMSLE|MAE|Accuracy|F1|Score|LB|CV)\b", re.IGNORECASE
+    r"\|[^|\n]{0,40}\b(?:AUC|RMSE|RMSLE|MAE|Accuracy|F1|Score|LB|CV|Recall|Precision)\b",
+    re.IGNORECASE,
 )
-METRIC_NUMBER = re.compile(r"\b0\.\d{3,5}\b")
+# Percentages count as metrics. Matching only 0.xxx let two drafts through that
+# reported whole experiments in percent: "71.3% / 76.8% / 82.1%" retrieval
+# accuracy, and "+0.3% / -0.8%" preprocessing deltas. Neither number exists
+# anywhere in this repo.
+METRIC_NUMBER = re.compile(
+    r"\b0\.\d{3,5}\b"  # 0.847
+    r"|[+-]?\b\d{1,3}\.\d{1,2}\s?%"  # 82.1%, +0.3%, -0.8%
+)
 # Anchored to line start: an evidence pointer is its own line. Matching it
 # mid-sentence let a draft clear the check merely by *mentioning* evidence.
 EVIDENCE_LINE = re.compile(r"^\*\*Evidence:\*\*\s*\S+", re.MULTILINE)
@@ -779,7 +790,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--status",
-        choices=["idea", "ready", "scheduled", "posted", "won-medal"],
+        # Every status the queue accepts, not a subset. `unverified` was missing,
+        # which is the one the integrity workflow actually needs: a draft found to
+        # report results the repo cannot back has to be takeable out of the
+        # postable set, and the tool could not express that.
+        choices=sorted(draft_queue.VALID_STATUSES),
         help="Set draft status for --set-id.",
     )
     parser.add_argument(

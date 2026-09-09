@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 from kaggle_portfolio.ops import discussion_scheduler
 
 
@@ -571,17 +573,23 @@ class TestDatasetAnnouncementsMatchTheData:
         """Every language a benchmarks draft names must appear in the CSV."""
         import csv
         import re
-        from pathlib import Path
 
         from kaggle_portfolio.discussions import draft_queue as dq
 
         csv_path = (
-            repo_root / "datasets" / "programming-benchmarks" / "language_benchmarks.csv"
+            repo_root
+            / "datasets"
+            / "programming-benchmarks"
+            / "language_benchmarks.csv"
         )
         if not csv_path.exists():  # dataset removed: nothing to contradict
             pytest.skip("programming-benchmarks CSV not present")
         with csv_path.open(encoding="utf-8") as fh:
-            actual = {row["language"].strip() for row in csv.DictReader(fh) if row.get("language")}
+            actual = {
+                row["language"].strip()
+                for row in csv.DictReader(fh)
+                if row.get("language")
+            }
 
         problems = []
         for draft in self._postable_announcements(repo_root):
@@ -606,4 +614,87 @@ class TestDatasetAnnouncementsMatchTheData:
         assert not problems, (
             "dataset announcements must describe the data that actually shipped: "
             + "; ".join(problems)
+        )
+
+
+class TestMeasurementDetectorCatchesPercentages:
+    """Two drafts reported whole fabricated experiments and passed the check.
+
+    `asserts_unbacked_results` needed a first-person measurement claim AND a
+    metric-shaped number, but `METRIC_NUMBER` only matched `0.xxx`. Both drafts
+    stated their results in percent, so the AND never fired:
+
+      draft_005  "I tested three chunking strategies on the same corpus"
+                 | Fixed-size | 512 tokens | 71.3% |  ... 76.8% ... 82.1%
+      draft_032  "For each, I tested preprocessing combinations and measured
+                 accuracy delta"  ->  +0.3%, -0.8%, -0.5% to -1.2%
+
+    None of those numbers exist anywhere in this repo. `RESULT_TABLE` missed
+    draft_005 separately, because it required the metric to open the cell and the
+    header read "| Retrieval Accuracy (Top-5) |".
+    """
+
+    def test_a_first_person_claim_with_percentages_is_flagged(self):
+        from kaggle_portfolio.ops.discussion_scheduler import asserts_unbacked_results
+
+        body = (
+            "#### What I Tested\n\n"
+            "Three NLP datasets. For each, I tested preprocessing combinations "
+            "and measured accuracy delta vs. raw text.\n\n"
+            "**Sentiment / Topic**: +0.3% (slight improvement)\n"
+            "**Toxic comments**: -0.8% (casing carries signal)\n"
+        )
+        assert asserts_unbacked_results(body)
+
+    def test_a_metric_table_is_flagged_even_when_the_metric_is_not_first(self):
+        from kaggle_portfolio.ops.discussion_scheduler import asserts_unbacked_results
+
+        body = (
+            "| Strategy | Chunk Size | Retrieval Accuracy (Top-5) |\n"
+            "|---|---|---|\n"
+            "| Fixed-size | 512 tokens | 71.3% |\n"
+        )
+        assert asserts_unbacked_results(body)
+
+    def test_an_evidence_line_still_clears_a_draft(self):
+        from kaggle_portfolio.ops.discussion_scheduler import asserts_unbacked_results
+
+        body = (
+            "I tested three chunking strategies and got 82.1% top-5 accuracy.\n"
+            "**Evidence:** projects/educational/rag-from-scratch/rag.ipynb\n"
+        )
+        assert not asserts_unbacked_results(body)
+
+    def test_ordinary_prose_with_a_percentage_is_not_flagged(self):
+        """A percentage alone must not trip it, or every draft becomes unpostable."""
+        from kaggle_portfolio.ops.discussion_scheduler import asserts_unbacked_results
+
+        body = "Roughly 30.5% of Kaggle notebooks never get a single vote.\n"
+        assert not asserts_unbacked_results(body)
+
+    def test_no_postable_draft_asserts_unbacked_results(self, repo_root):
+        """The live queue must stay clean: this is what gates publication."""
+        import json
+
+        from kaggle_portfolio.discussions import draft_queue as dq
+        from kaggle_portfolio.ops.discussion_scheduler import asserts_unbacked_results
+
+        rows = json.loads(
+            (repo_root / "pi-automation" / "data" / "discussion_queue.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        rows = rows if isinstance(rows, list) else rows.get("drafts", [])
+        offenders = []
+        for draft in rows:
+            if draft.get("status") not in dq.POSTABLE_STATUSES:
+                continue
+            body = dq.extract_post_body(
+                repo_root / draft["body_file"], draft["body_section"]
+            )
+            if asserts_unbacked_results(body):
+                offenders.append(draft["id"])
+        assert not offenders, (
+            "these drafts report results the repo cannot back and are postable: "
+            f"{offenders}. Mark them `unverified` or add an **Evidence:** line."
         )

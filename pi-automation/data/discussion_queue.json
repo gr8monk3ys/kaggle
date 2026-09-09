@@ -250,7 +250,7 @@
     "category": "Technique Tutorial",
     "expected_medal": "Silver",
     "scheduled_after": "2026-08-28T14:00:00+00:00",
-    "status": "scheduled",
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
@@ -655,7 +655,7 @@
     "category": "Tips & Tricks",
     "expected_medal": "Bronze",
     "scheduled_after": null,
-    "status": "ready",
+    "status": "unverified",
     "post_url": null,
     "posted_at": null
   },
@@ -826,7 +826,7 @@
   },
   {
     "id": "draft_064",
-    "title": "Synthetic e-commerce customer behavior \u2014 sessions, carts & conversions",
+    "title": "Synthetic e-commerce customer behavior (sessions, carts & conversions)",
     "forum_url": "https://www.kaggle.com/discussions/datasets",
     "body_section": "Draft 64",
     "body_file": "docs/discussions/discussion-drafts.md",
@@ -871,7 +871,7 @@
   },
   {
     "id": "draft_068",
-    "title": "Mental health in tech \u2014 a 5K-response survey dataset",
+    "title": "Mental health in tech (a 5K-response survey dataset)",
     "forum_url": "https://www.kaggle.com/discussions/datasets",
     "body_section": "Draft 68",
     "body_file": "docs/discussions/discussion-drafts.md",
