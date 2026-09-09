@@ -3488,11 +3488,11 @@ Drop your notebooks in the comments — I will review and upvote the most insigh
 
 ### New Dataset: Programming Language Benchmarks (2200+ Benchmarks)
 
-I just released a programming benchmarks dataset covering 2,200+ benchmarks across 12 programming languages. It is useful for LLM evaluation, code analysis, and language comparison tasks.
+I just released a programming benchmarks dataset covering 2,200 benchmarks across 16 programming languages. It is useful for LLM evaluation, code analysis, and language comparison tasks.
 
 #### Dataset Overview
 
-- **2,200+ benchmark tasks** spanning 12 languages (Python, JavaScript, TypeScript, Java, C++, C, Rust, Go, Ruby, PHP, Swift, Kotlin)
+- **2,200 benchmark tasks** spanning 16 languages (C#, C++, Elixir, Go, Haskell, Java, JavaScript, Julia, Kotlin, Python, R, Ruby, Rust, Scala, Swift, TypeScript)
 - **Fields**: language, task category, benchmark name, description, input/output specification, difficulty level, time complexity class
 - **Difficulty labels**: Easy / Medium / Hard / Expert (aligned with LeetCode-style ratings)
 - **Category labels**: Arrays, Strings, Trees, Graphs, Dynamic Programming, Math, System Design, etc.
