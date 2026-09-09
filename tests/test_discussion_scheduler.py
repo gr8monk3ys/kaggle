@@ -538,3 +538,72 @@ def test_measurement_claim_allows_auxiliaries_but_not_code():
         "I am new to Kaggle",
     ):
         assert not MEASUREMENT_CLAIM.search(benign), benign
+
+
+class TestDatasetAnnouncementsMatchTheData:
+    """A draft may not state dataset facts the shipped CSVs contradict.
+
+    `asserts_unbacked_results` catches unbacked *performance* claims. It does not
+    check whether a draft's description of a dataset is true, and one slipped
+    through: draft_038 announced "2,200+ benchmarks across 12 programming
+    languages (… C … PHP …)". The data has 16 languages and contains neither C
+    nor PHP. That is the kind of claim a reader can check in one download.
+    """
+
+    def _postable_announcements(self, repo_root):
+        import json
+        from kaggle_portfolio.discussions import draft_queue as dq
+
+        rows = json.loads(
+            (repo_root / "pi-automation" / "data" / "discussion_queue.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        rows = rows if isinstance(rows, list) else rows.get("drafts", [])
+        return [
+            r
+            for r in rows
+            if r.get("category") == "Dataset Announcement"
+            and r.get("status") in dq.POSTABLE_STATUSES
+        ]
+
+    def test_named_categorical_values_exist_in_the_data(self, repo_root):
+        """Every language a benchmarks draft names must appear in the CSV."""
+        import csv
+        import re
+        from pathlib import Path
+
+        from kaggle_portfolio.discussions import draft_queue as dq
+
+        csv_path = (
+            repo_root / "datasets" / "programming-benchmarks" / "language_benchmarks.csv"
+        )
+        if not csv_path.exists():  # dataset removed: nothing to contradict
+            pytest.skip("programming-benchmarks CSV not present")
+        with csv_path.open(encoding="utf-8") as fh:
+            actual = {row["language"].strip() for row in csv.DictReader(fh) if row.get("language")}
+
+        problems = []
+        for draft in self._postable_announcements(repo_root):
+            if "benchmark" not in (draft.get("title") or "").lower():
+                continue
+            body = dq.extract_post_body(Path(draft["body_file"]), draft["body_section"])
+            match = re.search(r"spanning\s+(\d+)\s+languages\s+\(([^)]+)\)", body)
+            if not match:
+                continue
+            claimed_count = int(match.group(1))
+            claimed = [name.strip() for name in match.group(2).split(",")]
+            if claimed_count != len(actual):
+                problems.append(
+                    f"{draft['id']} claims {claimed_count} languages; data has {len(actual)}"
+                )
+            for name in claimed:
+                if name not in actual:
+                    problems.append(
+                        f"{draft['id']} names {name!r}, which is not in the dataset"
+                    )
+
+        assert not problems, (
+            "dataset announcements must describe the data that actually shipped: "
+            + "; ".join(problems)
+        )
