@@ -14,6 +14,7 @@ from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleError
 from kaggle_portfolio.shared.layout import METADATA_NAMES
+from kaggle_portfolio.shared import kaggle_tags
 from kaggle_portfolio.shared.errors import CommandError
 
 _DEPS: Deps | None = None
@@ -43,6 +44,10 @@ PI_SCRIPTS = PACKAGE_ROOT / "pi-automation" / "scripts"
 DEFAULT_CREDENTIALS = Path.home() / ".kaggle" / "kaggle.json"
 # Kaggle rejects dataset uploads carrying more than this many keywords with
 # "You have exceeded the max category limit". Measured 2026-08-19: 7 fails, 6 succeeds.
+# The upload limit, measured against the live API on 2026-08-19: 7 is rejected,
+# 6 succeeds. Distinct from what Kaggle then APPLIES, which is 5 — see
+# kaggle_tags.MAX_APPLIED_KEYWORDS. A 6th keyword uploads fine and never
+# appears, so it is waste rather than an error, and is not failed here.
 MAX_KEYWORDS = 6
 # Kaggle's dataset settings form caps these. The API silently ignores a title it
 # will not accept, so an over-length one looks applied in the repo and never
@@ -282,6 +287,14 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
             errors.append(f"missing '{field}'")
 
     keywords = payload.get("keywords")
+    if isinstance(keywords, list):
+        unknown = kaggle_tags.invalid_tags(keywords)
+        if unknown:
+            errors.append(
+                f"keywords outside Kaggle's tag vocabulary, silently dropped at "
+                f"push time: {unknown}. `kaggle_tags.suggest()` offers real "
+                "alternatives; put specific terms in the title instead"
+            )
     if isinstance(keywords, list) and len(keywords) > MAX_KEYWORDS:
         errors.append(
             f"{len(keywords)} keywords exceeds Kaggle's limit of {MAX_KEYWORDS}; "

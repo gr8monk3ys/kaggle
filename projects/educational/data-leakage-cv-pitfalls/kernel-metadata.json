@@ -7,7 +7,13 @@
   "is_private": false,
   "enable_gpu": false,
   "enable_internet": true,
-  "keywords": ["data leakage", "cross validation", "model validation", "tabular", "intermediate"],
+  "keywords": [
+    "tabular",
+    "intermediate",
+    "classification",
+    "sklearn",
+    "feature engineering"
+  ],
   "dataset_sources": [],
   "kernel_sources": [],
   "competition_sources": []

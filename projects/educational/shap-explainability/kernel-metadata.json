@@ -8,12 +8,11 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "shap",
-    "explainability",
-    "xai",
-    "feature importance",
-    "interpretable ml",
-    "machine learning"
+    "model explainability",
+    "feature engineering",
+    "classification",
+    "tabular",
+    "sklearn"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

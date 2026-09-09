@@ -8,12 +8,11 @@
   "enable_gpu": true,
   "enable_internet": true,
   "keywords": [
-    "mnist",
     "cnn",
     "pytorch",
     "computer vision",
     "image classification",
-    "digit recognizer"
+    "deep learning"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

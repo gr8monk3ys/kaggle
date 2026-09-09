@@ -9,11 +9,10 @@
   "enable_internet": true,
   "keywords": [
     "feature engineering",
-    "data preprocessing",
-    "encoding",
-    "feature selection",
     "pandas",
-    "scikit-learn"
+    "sklearn",
+    "tabular",
+    "eda"
   ],
   "dataset_sources": [],
   "kernel_sources": [],

@@ -7,7 +7,13 @@
   "is_private": false,
   "enable_gpu": false,
   "enable_internet": true,
-  "keywords": ["duckdb", "sql", "data analytics", "tabular", "beginner"],
+  "keywords": [
+    "sql",
+    "data analytics",
+    "tabular",
+    "beginner",
+    "data visualization"
+  ],
   "dataset_sources": [],
   "kernel_sources": [],
   "competition_sources": []

@@ -8,12 +8,11 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "ensemble",
-    "stacking",
-    "blending",
     "xgboost",
     "lightgbm",
-    "catboost"
+    "catboost",
+    "classification",
+    "tabular"
   ],
   "dataset_sources": [
     "lorenzoscaturchio/spotify-tracks-audio-features-50k"

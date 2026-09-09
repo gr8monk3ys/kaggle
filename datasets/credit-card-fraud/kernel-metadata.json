@@ -13,10 +13,10 @@
   "kernel_sources": [],
   "competition_sources": [],
   "keywords": [
-    "fraud detection",
     "classification",
-    "anomaly detection",
     "finance",
-    "eda"
+    "eda",
+    "binary classification",
+    "tabular"
   ]
 }

@@ -8,12 +8,11 @@
   "enable_gpu": false,
   "enable_internet": true,
   "keywords": [
-    "stock market",
-    "time series",
     "finance",
-    "trading",
-    "technical analysis",
-    "lstm"
+    "lstm",
+    "time series analysis",
+    "deep learning",
+    "data visualization"
   ],
   "dataset_sources": [],
   "kernel_sources": [],
