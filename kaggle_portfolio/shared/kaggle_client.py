@@ -438,7 +438,10 @@ class CliKaggleClient:
         self._effects = effects
         self._retries = max(1, retries)
         self._timeout = timeout
-        self._page_size_ok: bool | None = None
+        # Keyed by listing command ("kernels list", "datasets list", ...): the
+        # CLI accepts --page-size on some listings and rejects it on others, so
+        # one client-wide answer is wrong for whichever command is probed second.
+        self._page_size_ok: dict[str, bool] = {}
         self.skipped_effects: list[str] = []
 
     def with_effects(self, effects: bool) -> "CliKaggleClient":
@@ -529,16 +532,22 @@ class CliKaggleClient:
         return "--page-size" in blob and "unrecognized arguments" in blob
 
     def _paginated(self, args: Sequence[str]) -> list[dict[str, str]]:
-        """Page through a listing, probing ``--page-size`` support once per client.
+        """Page through a listing, probing ``--page-size`` support once per command.
 
         Three incompatible policies used to exist: send it and retry without on
         rejection, accept the argument and unconditionally discard it, or send it
-        with no fallback. This is the first, generalised.
+        with no fallback. This is the first, generalised. The probe is per
+        listing command, not per client: kaggle 1.8 takes ``--page-size`` on
+        ``kernels list`` and ``competitions list`` but rejects it on
+        ``datasets list``, and a client-wide answer learned from the first
+        listing made the second one raise instead of falling back.
         """
+        command = " ".join(args[:2])
         rows: list[dict[str, str]] = []
         page = 1
         while True:
-            use_page_size = self._page_size_ok is not False
+            known = self._page_size_ok.get(command)
+            use_page_size = known is not False
             page_args = list(args)
             if use_page_size:
                 page_args += ["--page-size", str(PREFERRED_PAGE_SIZE)]
@@ -546,17 +555,17 @@ class CliKaggleClient:
             try:
                 batch = self._rows(page_args)
             except KaggleCommandFailed as exc:
-                if (
-                    use_page_size
-                    and self._page_size_ok is None
-                    and self._rejects_page_size(exc)
-                ):
-                    self._page_size_ok = False
+                if use_page_size and known is None and self._rejects_page_size(exc):
+                    self._page_size_ok[command] = False
                     continue
                 raise
-            if self._page_size_ok is None:
-                self._page_size_ok = use_page_size
-            expected = PREFERRED_PAGE_SIZE if self._page_size_ok else FALLBACK_PAGE_SIZE
+            if known is None:
+                self._page_size_ok[command] = use_page_size
+            expected = (
+                PREFERRED_PAGE_SIZE
+                if self._page_size_ok[command]
+                else FALLBACK_PAGE_SIZE
+            )
             rows.extend(batch)
             if len(batch) < expected:
                 return rows

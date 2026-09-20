@@ -124,11 +124,41 @@ class TestPageSizeCapability:
         rows = "ref,title,votes\n" + "".join(f"me/{i},T{i},1\n" for i in range(3))
         client, calls = self._client_rejecting_page_size(monkeypatch, rows)
         assert len(client.my_kernels()) == 3
-        assert client._page_size_ok is False
+        assert client._page_size_ok == {"kernels list": False}
         # Second call must not retry the rejected flag.
         before = len(calls)
         client.my_kernels()
         assert all("--page-size" not in argv for argv in calls[before:])
+
+    def test_probe_is_per_listing_command(self, monkeypatch):
+        """kaggle 1.8 takes --page-size on `kernels list` and rejects it on
+        `datasets list`; what one listing taught us must not decide the other."""
+        calls: list[list[str]] = []
+        rows = "ref,title,votes\n" + "".join(f"me/{i},T{i},1\n" for i in range(3))
+
+        def fake_run(argv, **kwargs):
+            calls.append(argv)
+            if argv[1] == "datasets" and "--page-size" in argv:
+                return subprocess.CompletedProcess(
+                    argv, 2, "", "kaggle: error: unrecognized arguments: --page-size 100"
+                )
+            return subprocess.CompletedProcess(argv, 0, rows, "")
+
+        monkeypatch.setattr(kc.subprocess, "run", fake_run)
+        client = CliKaggleClient()
+        monkeypatch.setattr(client, "_prefix", lambda: ["kaggle"])
+
+        assert len(client.my_kernels()) == 3
+        assert len(client.my_datasets()) == 3
+        assert client._page_size_ok == {"kernels list": True, "datasets list": False}
+
+        before = len(calls)
+        client.my_kernels()
+        client.my_datasets()
+        kernel_calls = [a for a in calls[before:] if a[1] == "kernels"]
+        dataset_calls = [a for a in calls[before:] if a[1] == "datasets"]
+        assert all("--page-size" in a for a in kernel_calls)
+        assert all("--page-size" not in a for a in dataset_calls)
 
     def test_a_real_failure_still_raises(self, monkeypatch):
         def fake_run(argv, **kwargs):

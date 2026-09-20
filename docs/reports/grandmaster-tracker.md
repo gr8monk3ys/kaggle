@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-08-19
+**Last Updated:** 2026-09-20
 
 ---
 
@@ -54,11 +54,11 @@
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 77 via CLI — but only 38 are public |
+| Total notebooks | 30+ | 77 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
-| Bronze medals (5+ votes) | — | 3 |
-| Total votes | — | 80 |
+| Bronze medals (5+ votes) | — | 4 |
+| Total votes | — | 83 |
 
 **Public vs total:** `kaggle kernels list` reports 77 because it includes the
 owner's private notebooks (10 are unsaved `[Private Notebook]` drafts). The
@@ -119,8 +119,8 @@ on the same topic are **not** duplicates — they serve different readers.
 | Gold medals (50+ votes) | 5 | 0 |
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
-| Total votes | — | 55 |
-| Total downloads | — | 2198 |
+| Total votes | — | 57 |
+| Total downloads | — | 2779 |
 
 **Datasets on Kaggle:**
 | # | Dataset | Votes | Downloads | Usability |
