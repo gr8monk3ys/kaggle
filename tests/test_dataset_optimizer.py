@@ -212,11 +212,19 @@ def test_infer_use_cases_skips_text_classification_without_a_text_column(tmp_pat
 
 
 def test_infer_use_cases_keeps_text_classification_with_a_real_text_column(tmp_path):
+    """Regression: a genuinely long text column must not be invisible to the check.
+
+    `_pick_samples()` drops any value of 60 characters or more, so reading
+    `avg_len` from `samples` (rather than a value computed over every row)
+    silently failed on real prose columns like this one -- each abstract
+    below is ~90 characters, comfortably past that cutoff.
+    """
     csv_path = tmp_path / "papers.csv"
     rows = ["id,abstract"]
     for i in range(50):
         rows.append(
-            f'{i},"This paper studies problem number {i} in considerable detail"'
+            f'{i},"This paper studies problem number {i} in considerable detail, '
+            f'covering methodology and results at length"'
         )
     csv_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
     analysis = dataset_optimizer.analyze_csv(csv_path)

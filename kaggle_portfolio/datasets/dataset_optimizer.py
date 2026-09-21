@@ -283,6 +283,7 @@ def analyze_csv(path: Path, distinct_cap: int = DEFAULT_DISTINCT_CAP) -> dict:
     distinct_capped: dict[str, bool] = {}
     dtype_scans: dict[str, _DtypeScan] = {}
     prefix_values: dict[str, list[str]] = {}
+    len_totals: dict[str, int] = {}
 
     try:
         with path.open(encoding="utf-8", errors="replace", newline="") as f:
@@ -302,6 +303,7 @@ def analyze_csv(path: Path, distinct_cap: int = DEFAULT_DISTINCT_CAP) -> dict:
                 distinct_capped[fn] = False
                 dtype_scans[fn] = _DtypeScan()
                 prefix_values[fn] = []
+                len_totals[fn] = 0
             for row in reader:
                 rows += 1
                 for fn in fieldnames:
@@ -316,6 +318,7 @@ def analyze_csv(path: Path, distinct_cap: int = DEFAULT_DISTINCT_CAP) -> dict:
                     elif value not in seen:
                         distinct_capped[fn] = True
                     dtype_scans[fn].observe(value)
+                    len_totals[fn] += len(value)
                     bucket = prefix_values[fn]
                     if len(bucket) < SAMPLE_SCAN_ROWS:
                         bucket.append(value)
@@ -332,6 +335,7 @@ def analyze_csv(path: Path, distinct_cap: int = DEFAULT_DISTINCT_CAP) -> dict:
     for fn in fieldnames:
         null_pct = round(100 * null_counts[fn] / rows, 1) if rows else 0.0
         n_unique = len(distinct[fn])
+        non_null = rows - null_counts[fn]
         columns.append(
             {
                 "name": fn,
@@ -340,6 +344,7 @@ def analyze_csv(path: Path, distinct_cap: int = DEFAULT_DISTINCT_CAP) -> dict:
                 "n_unique": n_unique,
                 "n_unique_capped": distinct_capped[fn],
                 "samples": _pick_samples(prefix_values[fn], n_unique),
+                "avg_len": round(len_totals[fn] / non_null, 1) if non_null else 0.0,
                 "total": rows,
             }
         )
@@ -393,6 +398,11 @@ def analyze_parquet(path: Path) -> dict:
                 "n_unique": n_unique,
                 "n_unique_capped": False,
                 "samples": _pick_samples(non_null[:SAMPLE_SCAN_ROWS], n_unique),
+                "avg_len": (
+                    round(sum(len(v) for v in non_null) / len(non_null), 1)
+                    if non_null
+                    else 0.0
+                ),
                 "total": int(len(series)),
             }
         )
@@ -593,6 +603,14 @@ def _has_free_text_column(file_analyses: list[dict]) -> bool:
     ("server framework for building authentication") that repeats phrasing
     across rows, landing at 42.5% unique over 5,500 rows -- real enough to
     support topic modelling, unlike the 0.24% case above.
+
+    Reads `avg_len`, not `samples`: `_pick_samples()` drops any value of 60
+    characters or more (so the table stays readable), which left an actual
+    `answer`/`abstract`/`description` column reporting `samples: []` and
+    silently failing this check -- a dataset whose only real text runs long
+    lost the suggestion, while short accidental columns (`title`,
+    `question`, a pipe-joined `required_skills` list) were the only reason
+    the datasets that do have long text still passed.
     """
     for analysis in file_analyses:
         total = analysis.get("rows", 0)
@@ -601,10 +619,7 @@ def _has_free_text_column(file_analyses: list[dict]) -> bool:
         for col in analysis.get("columns", []):
             if col.get("dtype") != "string":
                 continue
-            samples = col.get("samples", [])
-            if not samples:
-                continue
-            avg_len = sum(len(s) for s in samples) / len(samples)
+            avg_len = col.get("avg_len", 0)
             unique_ratio = col.get("n_unique", 0) / total
             if avg_len > 30 and unique_ratio > 0.3:
                 return True
