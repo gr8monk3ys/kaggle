@@ -576,6 +576,58 @@ def generate_readme(ds_dir: Path, meta: dict, file_analyses: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _has_free_text_column(file_analyses: list[dict]) -> bool:
+    """Whether any file has a column of real free text, not just short/canned strings.
+
+    Distinguishes a genuine `description`/`abstract`/`answer` column from a
+    handful of canned strings reused across rows -- `mental-health-tech.comments`
+    repeats 12 values across thousands of rows, a 0.24% unique ratio -- or a
+    short categorical string. Without this check, the word "classification"
+    anywhere in the description (e.g. "binary classification") was enough to
+    suggest "Text classification (TF-IDF, BERT embeddings)" on datasets with
+    no text to classify at all, such as credit-card-fraud,
+    programming-benchmarks and spotify-tracks.
+
+    The 0.3 unique-ratio floor is deliberately below "almost every row
+    differs": `github-repo-metrics.description` is template-generated prose
+    ("server framework for building authentication") that repeats phrasing
+    across rows, landing at 42.5% unique over 5,500 rows -- real enough to
+    support topic modelling, unlike the 0.24% case above.
+    """
+    for analysis in file_analyses:
+        total = analysis.get("rows", 0)
+        if not total:
+            continue
+        for col in analysis.get("columns", []):
+            if col.get("dtype") != "string":
+                continue
+            samples = col.get("samples", [])
+            if not samples:
+                continue
+            avg_len = sum(len(s) for s in samples) / len(samples)
+            unique_ratio = col.get("n_unique", 0) / total
+            if avg_len > 30 and unique_ratio > 0.3:
+                return True
+    return False
+
+
+def _has_salary_or_job_column(file_analyses: list[dict]) -> bool:
+    """Whether any file actually has a salary or job-title column.
+
+    The description-only check this replaces matched "employ" as a substring
+    of "employer" — so a workplace *survey* about employer benefits (no
+    salary or job-title field anywhere) inherited "Salary prediction
+    (regression)" and "Job category classification (multi-class)" from
+    datasets that legitimately have them (job-postings, ai-data-jobs-market).
+    """
+    for analysis in file_analyses:
+        for col in analysis.get("columns", []):
+            name = str(col.get("name", "")).lower()
+            if "salary" in name or "job_title" in name:
+                return True
+    return False
+
+
 def _infer_use_cases(meta: dict, file_analyses: list[dict]) -> list[str]:
     """Infer likely ML tasks from dataset metadata."""
     use_cases = []
@@ -597,10 +649,12 @@ def _infer_use_cases(meta: dict, file_analyses: list[dict]) -> list[str]:
     if any(
         w in desc + " ".join(keywords)
         for w in ["nlp", "text", "classification", "sentiment"]
-    ):
+    ) and _has_free_text_column(file_analyses):
         use_cases.append("Text classification (TF-IDF, BERT embeddings)")
         use_cases.append("Named entity recognition or topic modeling")
-    if any(w in desc + " ".join(keywords) for w in ["salary", "job", "employ"]):
+    if any(
+        w in desc + " ".join(keywords) for w in ["salary", "job", "employ"]
+    ) and _has_salary_or_job_column(file_analyses):
         use_cases.append("Salary prediction (regression)")
         use_cases.append("Job category classification (multi-class)")
     if any(

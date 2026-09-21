@@ -190,6 +190,81 @@ def test_analyze_csv_counts_nulls_over_the_whole_file(tmp_path):
     assert note["null_pct"] == 50.0
 
 
+def test_infer_use_cases_skips_text_classification_without_a_text_column(tmp_path):
+    """ "Binary classification" in a description must not imply free text.
+
+    Reproduces the bug that put "Text classification (TF-IDF, BERT
+    embeddings)" in credit-card-fraud, programming-benchmarks and
+    spotify-tracks' READMEs: the keyword match fired on the generic word
+    "classification", not on any column actually containing prose.
+    """
+    csv_path = tmp_path / "transactions.csv"
+    csv_path.write_text(
+        "amount,is_fraud\n" + "\n".join(f"{i}.0,{i % 2}" for i in range(50)) + "\n",
+        encoding="utf-8",
+    )
+    analysis = dataset_optimizer.analyze_csv(csv_path)
+    meta = {"description": "Binary classification of fraudulent transactions."}
+
+    use_cases = dataset_optimizer._infer_use_cases(meta, [analysis])
+
+    assert not any("Text classification" in uc for uc in use_cases)
+
+
+def test_infer_use_cases_keeps_text_classification_with_a_real_text_column(tmp_path):
+    csv_path = tmp_path / "papers.csv"
+    rows = ["id,abstract"]
+    for i in range(50):
+        rows.append(
+            f'{i},"This paper studies problem number {i} in considerable detail"'
+        )
+    csv_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    analysis = dataset_optimizer.analyze_csv(csv_path)
+    meta = {"description": "A classification and NLP research corpus."}
+
+    use_cases = dataset_optimizer._infer_use_cases(meta, [analysis])
+
+    assert any("Text classification" in uc for uc in use_cases)
+
+
+def test_infer_use_cases_skips_salary_prediction_without_a_salary_column(tmp_path):
+    """ "Employer" must not match the "employ" substring check.
+
+    Reproduces the mental-health-tech bug: a workplace survey that mentions
+    "employer" benefits, with no salary or job-title column anywhere,
+    inherited "Salary prediction (regression)" and "Job category
+    classification (multi-class)" from datasets that actually have them.
+    """
+    csv_path = tmp_path / "survey.csv"
+    csv_path.write_text(
+        "respondent_id,treatment\n" + "\n".join(f"{i},No" for i in range(50)) + "\n",
+        encoding="utf-8",
+    )
+    analysis = dataset_optimizer.analyze_csv(csv_path)
+    meta = {"description": "Employer mental health benefits and policies."}
+
+    use_cases = dataset_optimizer._infer_use_cases(meta, [analysis])
+
+    assert not any("Salary prediction" in uc for uc in use_cases)
+    assert not any("Job category classification" in uc for uc in use_cases)
+
+
+def test_infer_use_cases_keeps_salary_prediction_with_a_salary_column(tmp_path):
+    csv_path = tmp_path / "jobs.csv"
+    csv_path.write_text(
+        "job_title,salary_min\n"
+        + "\n".join(f"role{i},{50000 + i}" for i in range(50))
+        + "\n",
+        encoding="utf-8",
+    )
+    analysis = dataset_optimizer.analyze_csv(csv_path)
+    meta = {"description": "Job postings with employer-reported salary ranges."}
+
+    use_cases = dataset_optimizer._infer_use_cases(meta, [analysis])
+
+    assert any("Salary prediction" in uc for uc in use_cases)
+
+
 def test_analyze_csv_marks_distinct_counts_that_hit_the_cap(tmp_path):
     csv_path = tmp_path / "ids.csv"
     csv_path.write_text(

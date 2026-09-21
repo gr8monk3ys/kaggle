@@ -16,7 +16,7 @@ Notable features: 'treatment' flag enables direct binary classification; 'work_i
 
 ## Tags
 
-`mental health`, `classification`, `regression`, `clustering`, `education`
+`health`, `classification`, `tabular`, `exploratory data analysis`, `clustering`
 
 ## Authors
 
@@ -45,14 +45,14 @@ Notable features: 'treatment' flag enables direct binary classification; 'work_i
 | Column | Type | Null% | Unique | Sample values |
 |--------|------|-------|--------|---------------|
 | `respondent_id` | integer | 0.0% | 5,000 | `1`, `2`, `3` |
-| `survey_year` | integer | 0.0% | 6 | `2023`, `2024`, `2022` |
+| `survey_year` | integer | 0.0% | 6 | `2024`, `2022`, `2023` |
 | `age` | integer | 0.0% | 40 | `21`, `32`, `25` |
 | `gender` | string | 0.0% | 4 | `Male`, `Female`, `Non-binary` |
 | `country` | string | 0.0% | 12 | `United States`, `Other`, `Canada` |
 | `self_employed` | boolean | 0.0% | 2 | `No`, `Yes` |
 | `family_history` | boolean | 0.0% | 2 | `No`, `Yes` |
 | `treatment` | boolean | 0.0% | 2 | `No`, `Yes` |
-| `work_interfere` | string | 0.0% | 4 | `Sometimes`, `Rarely`, `Never` |
+| `work_interfere` | string | 0.0% | 4 | `Sometimes`, `Never`, `Rarely` |
 | `no_employees` | string | 0.0% | 6 | `100-500`, `26-100`, `More than 1000` |
 | `remote_work` | boolean | 0.0% | 2 | `Yes`, `No` |
 | `tech_company` | boolean | 0.0% | 2 | `Yes`, `No` |
@@ -68,16 +68,12 @@ Notable features: 'treatment' flag enables direct binary classification; 'work_i
 | `supervisor` | string | 0.0% | 3 | `No`, `Yes`, `Some of them` |
 | `mental_health_interview` | string | 0.0% | 3 | `No`, `Maybe`, `Yes` |
 | `phys_health_interview` | string | 0.0% | 3 | `No`, `Maybe`, `Yes` |
-| `mental_vs_physical` | string | 0.0% | 3 | `Don't know`, `Yes`, `No` |
+| `mental_vs_physical` | string | 0.0% | 3 | `Yes`, `Don't know`, `No` |
 | `obs_consequence` | boolean | 0.0% | 2 | `No`, `Yes` |
 | `comments` | string | 40.8% | 12 | `We have EAP but nobody talks about it.`, `Remote work has been a double-edged sword.`, `Better awareness programs needed.` |
 
 ## Suggested Use Cases
 
-- Text classification (TF-IDF, BERT embeddings)
-- Named entity recognition or topic modeling
-- Salary prediction (regression)
-- Job category classification (multi-class)
 - Mental health treatment prediction (classification)
 - Workplace sentiment analysis
 

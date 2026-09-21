@@ -2,9 +2,9 @@
 
 > 50K tracks with audio features, popularity, and genre labels
 
-**License:** GPL-3.0
+**License:** GPL-3.0  
 
-**Kaggle:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)
+**Kaggle:** [lorenzoscaturchio/spotify-tracks-audio-features-50k](https://www.kaggle.com/datasets/lorenzoscaturchio/spotify-tracks-audio-features-50k)  
 
 ## Description
 
@@ -16,7 +16,7 @@ Notable properties: genre-aware feature correlations, Zipf-like popularity distr
 
 ## Tags
 
-`music`, `classification`, `regression`, `clustering`, `recommender systems`, `data visualization`
+`music`, `classification`, `regression`, `clustering`, `data visualization`
 
 ## Authors
 
@@ -68,8 +68,6 @@ Notable properties: genre-aware feature correlations, Zipf-like popularity distr
 
 ## Suggested Use Cases
 
-- Text classification (TF-IDF, BERT embeddings)
-- Named entity recognition or topic modeling
 - Music popularity prediction (regression)
 - Genre clustering with audio features (k-means, UMAP)
 
