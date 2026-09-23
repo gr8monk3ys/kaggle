@@ -59,10 +59,15 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set -euo pipefail
+          if [[ -n "${KAGGLE_API_TOKEN:-}" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
+            echo "No legacy key; KAGGLE_API_TOKEN is read from the environment."
+            exit 0
+          fi
           if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
-            echo "KAGGLE_USERNAME and KAGGLE_KEY secrets are required for live smoke checks." >&2
+            echo "KAGGLE_API_TOKEN, or KAGGLE_USERNAME and KAGGLE_KEY, secrets are required for live smoke checks." >&2
             exit 1
           fi
           mkdir -p ~/.kaggle
@@ -81,6 +86,7 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           KAGGLE_EMAIL: ${{ secrets.KAGGLE_EMAIL }}
           KAGGLE_PASSWORD: ${{ secrets.KAGGLE_PASSWORD }}
         run: |

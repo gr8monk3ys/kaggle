@@ -18,6 +18,7 @@ from kaggle_portfolio.shared.kaggle_client import (
     Competition,
     Dataset,
     FakeKaggleClient,
+    KaggleAuthRejected,
     KaggleClient,
     KaggleCommandFailed,
     KaggleFieldMissing,
@@ -140,6 +141,50 @@ class TestPageSizeCapability:
         with pytest.raises(KaggleCommandFailed) as excinfo:
             client.my_kernels()
         assert "403 Forbidden" in str(excinfo.value)
+        assert not isinstance(excinfo.value, KaggleAuthRejected)
+
+
+class TestAuthRejected:
+    """A 401 names the fix; it used to surface as an HTTP status in a traceback."""
+
+    def _client_failing_with(self, monkeypatch, stdout, stderr):
+        def fake_run(argv, **kwargs):
+            return subprocess.CompletedProcess(argv, 1, stdout, stderr)
+
+        monkeypatch.setattr(kc.subprocess, "run", fake_run)
+        client = CliKaggleClient(retries=1)
+        monkeypatch.setattr(client, "_prefix", lambda: ["kaggle"])
+        return client
+
+    @pytest.mark.parametrize(
+        "stdout,stderr",
+        [
+            # kaggle 1.8.x, verbatim from the 2026-09-21 telemetry run.
+            (
+                "",
+                "401 Client Error: Unauthorized for url: "
+                "https://api.kaggle.com/v1/kernels.KernelsApiService/ListKernels",
+            ),
+            # kaggle 2.x prints its banner to stdout and exits 1.
+            ("Authentication required to call the Kaggle API.\n", ""),
+        ],
+    )
+    def test_a_401_raises_auth_rejected_with_the_rotate_step(
+        self, monkeypatch, stdout, stderr
+    ):
+        client = self._client_failing_with(monkeypatch, stdout, stderr)
+        with pytest.raises(KaggleAuthRejected) as excinfo:
+            client.my_kernels()
+        message = str(excinfo.value)
+        assert message.startswith("Kaggle credentials rejected (401) — rotate the key")
+        assert "KAGGLE_API_TOKEN" in message
+        # The original command and output stay in the message for debugging.
+        assert "kernels list --mine" in message
+
+    def test_auth_rejected_is_still_a_command_failure(self, monkeypatch):
+        client = self._client_failing_with(monkeypatch, "", "401 Unauthorized")
+        with pytest.raises(KaggleCommandFailed):
+            client.my_kernels()
 
 
 class TestEffectsGate:

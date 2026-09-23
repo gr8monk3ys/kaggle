@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,12 @@ from typing import Any
 from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
 from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
-from kaggle_portfolio.shared.kaggle_client import KaggleClient
+from kaggle_portfolio.shared.kaggle_client import (
+    AUTH_REJECTED_HINT,
+    KaggleAuthRejected,
+    KaggleClient,
+    KaggleError,
+)
 from kaggle_portfolio.shared.errors import CommandError
 from kaggle_portfolio.ops.tracker import (
     apply_tracker_sync,
@@ -1218,6 +1224,18 @@ def run_preflight_checks(
         else:
             warnings.append("Kaggle credentials not found for live sync.")
 
+    # Present is not the same as accepted: an expired key passed every check
+    # above while the live sync behind it failed with a 401 for weeks. When
+    # the caller requires Kaggle, ask Kaggle, using the call sync makes first.
+    if require_kaggle and kaggle_cli_available and creds_ok and not offline_mode:
+        try:
+            client.my_kernels()
+            infos.append("Kaggle accepted the credentials (kernels list --mine).")
+        except KaggleAuthRejected as exc:
+            errors.append(str(exc))
+        except KaggleError as exc:
+            warnings.append(f"Kaggle credential check could not complete: {exc}")
+
     if offline_mode:
         if not kernels_csv or not datasets_csv:
             errors.append(
@@ -1337,6 +1355,8 @@ def generate_doctor_markdown(
         recommended.append(
             "Add Kaggle credentials to `~/.kaggle/kaggle.json` (chmod 600)."
         )
+    if any(item.startswith(AUTH_REJECTED_HINT) for item in errors):
+        recommended.append(AUTH_REJECTED_HINT)
 
     if not recommended and status == "READY":
         recommended.append("Preflight passed. Run `./manage.sh sync --dry-run`.")
@@ -1531,6 +1551,12 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         errors = checks["errors"]
         warnings = checks["warnings"]
         print(f"Summary: {len(errors)} error(s), {len(warnings)} warning(s)")
+        # The report file is not always kept (CI redirects stdout to a log and
+        # uploads only that), so the reasons go to stderr as well as the report.
+        for item in errors:
+            print(f"doctor error: {item}", file=sys.stderr)
+        for item in warnings:
+            print(f"doctor warning: {item}", file=sys.stderr)
 
         if errors:
             print("Preflight status: BLOCKED")

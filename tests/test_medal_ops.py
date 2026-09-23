@@ -7,6 +7,8 @@ from kaggle_portfolio.shared.kaggle_client import (
     Competition,
     Dataset,
     FakeKaggleClient,
+    KaggleAuthRejected,
+    KaggleCommandFailed,
     Kernel,
 )
 import pytest
@@ -507,6 +509,105 @@ def test_run_preflight_checks_respects_max_stale_days(tmp_path):
     )
 
     assert not any("Tracker is stale" in item for item in checks["warnings"])
+
+
+def _live_preflight(tmp_path, client):
+    tracker_path = tmp_path / "tracker.md"
+    tracker_path.write_text(SAMPLE_TRACKER, encoding="utf-8")
+    return medal_ops.run_preflight_checks(
+        client=client,
+        tracker_path=tracker_path,
+        output_root=tmp_path / "out",
+        today=date(2026, 1, 25),
+        kernels_csv=None,
+        datasets_csv=None,
+        competitions_csv=None,
+        require_kaggle=True,
+        max_stale_days=30,
+    )
+
+
+def test_run_preflight_checks_blocks_on_rejected_credentials(tmp_path):
+    # Credentials that are present but expired used to pass the doctor; the
+    # 401 only surfaced later, as a traceback from sync.
+    rejected = KaggleAuthRejected(
+        ["kaggle", "kernels", "list", "--mine"],
+        "",
+        "401 Client Error: Unauthorized for url: https://api.kaggle.com/v1/...",
+    )
+    checks = _live_preflight(tmp_path, FakeKaggleClient(fail_with=rejected))
+
+    assert len(checks["errors"]) == 1
+    assert checks["errors"][0].startswith(
+        "Kaggle credentials rejected (401) — rotate the key"
+    )
+
+
+def test_run_preflight_checks_confirms_accepted_credentials(tmp_path):
+    checks = _live_preflight(tmp_path, FakeKaggleClient())
+
+    assert checks["errors"] == []
+    assert any("Kaggle accepted the credentials" in i for i in checks["infos"])
+
+
+def test_run_preflight_checks_warns_when_the_credential_check_cannot_run(tmp_path):
+    flake = KaggleCommandFailed(["kaggle", "kernels", "list"], "", "503 Service Unavailable")
+    checks = _live_preflight(tmp_path, FakeKaggleClient(fail_with=flake))
+
+    assert checks["errors"] == []
+    assert any("could not complete" in w for w in checks["warnings"])
+
+
+def test_run_preflight_checks_skips_the_live_check_unless_required(tmp_path):
+    rejected = KaggleAuthRejected(["kaggle"], "", "401 Unauthorized")
+    tracker_path = tmp_path / "tracker.md"
+    tracker_path.write_text(SAMPLE_TRACKER, encoding="utf-8")
+    checks = medal_ops.run_preflight_checks(
+        client=FakeKaggleClient(fail_with=rejected),
+        tracker_path=tracker_path,
+        output_root=tmp_path / "out",
+        today=date(2026, 1, 25),
+        kernels_csv=None,
+        datasets_csv=None,
+        competitions_csv=None,
+        require_kaggle=False,
+        max_stale_days=30,
+    )
+
+    assert checks["errors"] == []
+
+
+def test_doctor_prints_blocking_issues_to_stderr(tmp_path, capsys):
+    # CI keeps doctor's stdout, not its report file; the reason for a failure
+    # has to reach the job log.
+    tracker_path = tmp_path / "tracker.md"
+    tracker_path.write_text(SAMPLE_TRACKER, encoding="utf-8")
+    rejected = KaggleAuthRejected(["kaggle"], "", "401 Unauthorized")
+    deps = medal_ops.Deps.for_test(
+        tmp_path,
+        today="2026-01-25",
+        client=FakeKaggleClient(fail_with=rejected),
+        output_root=tmp_path / "out",
+    )
+
+    code = medal_ops.main(
+        [
+            "doctor",
+            "--tracker",
+            str(tracker_path),
+            "--output-root",
+            str(tmp_path / "out"),
+            "--today",
+            "2026-01-25",
+            "--require-kaggle",
+            "--strict",
+        ],
+        deps=deps,
+    )
+
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "doctor error: Kaggle credentials rejected (401) — rotate the key" in err
 
 
 class TestDigest:

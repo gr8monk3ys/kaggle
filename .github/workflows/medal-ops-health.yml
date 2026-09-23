@@ -81,8 +81,12 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
-          if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
+          # A KAGGLE_API_TOKEN (the kind kaggle.com/settings/api now issues)
+          # or the legacy KAGGLE_USERNAME + KAGGLE_KEY pair; the CLI tries the
+          # token first.
+          if [[ -z "${KAGGLE_API_TOKEN:-}" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
             echo "Skipping Kaggle CLI install (credentials not configured)."
             exit 0
           fi
@@ -93,10 +97,11 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set -euo pipefail
           if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
-            echo "Skipping Kaggle credential setup (credentials not configured)."
+            echo "Skipping kaggle.json setup (no legacy key; KAGGLE_API_TOKEN, if set, is read from the environment)."
             exit 0
           fi
           mkdir -p ~/.kaggle
@@ -111,6 +116,7 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           FORCE_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'auto' }}
           MAX_STALE_DAYS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_stale_days || '30' }}
           MIN_QUALITY_SCORE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.min_quality_score || '95' }}
@@ -124,7 +130,7 @@ jobs:
           MODE="${FORCE_MODE}"
           if [[ "${MODE}" == "auto" ]]; then
             MODE="offline-fixture"
-            if [[ -n "${KAGGLE_USERNAME:-}" && -n "${KAGGLE_KEY:-}" ]]; then
+            if [[ -n "${KAGGLE_API_TOKEN:-}" || ( -n "${KAGGLE_USERNAME:-}" && -n "${KAGGLE_KEY:-}" ) ]]; then
               MODE="live"
             fi
           fi
@@ -181,8 +187,14 @@ jobs:
             exit 1
           fi
 
-          if [[ "${MODE}" == "live" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
-            echo "Live mode requested but KAGGLE_USERNAME/KAGGLE_KEY secrets are not configured." >&2
+          if [[ "${MODE}" == "live" && -z "${KAGGLE_API_TOKEN:-}" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
+            echo "Live mode requested but neither KAGGLE_API_TOKEN nor KAGGLE_USERNAME/KAGGLE_KEY secrets are configured." >&2
+            exit 1
+          fi
+          # The live usability tracker needs the owner name whichever
+          # credential is used.
+          if [[ "${MODE}" == "live" && -z "${KAGGLE_USERNAME:-}" ]]; then
+            echo "Live mode requires the KAGGLE_USERNAME secret (the dataset owner)." >&2
             exit 1
           fi
 
