@@ -29,9 +29,13 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set -euo pipefail
-          if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
+          # A KAGGLE_API_TOKEN (the kind kaggle.com/settings/api now issues)
+          # or the legacy KAGGLE_USERNAME + KAGGLE_KEY pair; the CLI tries the
+          # token first.
+          if [[ -z "${KAGGLE_API_TOKEN:-}" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
             echo "No Kaggle credentials configured; telemetry needs live data. Exiting cleanly."
             echo "SKIP=1" >> "$GITHUB_ENV"
             exit 0
@@ -44,8 +48,13 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set -euo pipefail
+          if [[ -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ]]; then
+            echo "No legacy key; KAGGLE_API_TOKEN is read from the environment."
+            exit 0
+          fi
           mkdir -p ~/.kaggle
           printf '{"username":"%s","key":"%s"}' "${KAGGLE_USERNAME}" "${KAGGLE_KEY}" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
@@ -55,6 +64,7 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
         run: |
           set -euo pipefail
           python -m kaggle_portfolio.ops.medal_ops sync
