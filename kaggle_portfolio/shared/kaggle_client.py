@@ -20,6 +20,7 @@ import csv
 import io
 import json
 import os
+import re
 import shutil
 import copy
 import subprocess
@@ -56,6 +57,43 @@ class KaggleCommandFailed(KaggleError):
         self.stdout = stdout
         self.stderr = stderr
         super().__init__(f"{' '.join(self.argv)}: {summarize_output(stdout, stderr)}")
+
+
+#: What to do when Kaggle refuses the credentials. It leads the exception
+#: message so it is the last line of a traceback in a scheduled job's log.
+AUTH_REJECTED_HINT = (
+    "Kaggle credentials rejected (401) — rotate the key: generate a new API "
+    "token at https://www.kaggle.com/settings/api and store it as "
+    "KAGGLE_API_TOKEN (the repo secret for CI, ~/.kaggle/access_token locally)."
+)
+
+# 403 is deliberately absent: Kaggle also answers 403 for a competition whose
+# rules were never accepted, which is about the resource, not the credentials.
+_AUTH_REJECTED = re.compile(
+    r"\b401\b|unauthori[sz]ed|unauthenticated|authentication required"
+    r"|must authenticate",
+    re.IGNORECASE,
+)
+
+
+def is_auth_rejection(stdout: str, stderr: str) -> bool:
+    """Whether a failed Kaggle CLI call failed because of the credentials."""
+    return bool(_AUTH_REJECTED.search(f"{stdout}\n{stderr}"))
+
+
+class KaggleAuthRejected(KaggleCommandFailed):
+    """Kaggle refused the credentials: expired, revoked, or never valid.
+
+    A subclass, so every ``except KaggleCommandFailed`` keeps working; the only
+    difference is a message that names the fix instead of an HTTP status.
+    """
+
+    def __init__(self, argv: Sequence[str], stdout: str, stderr: str) -> None:
+        super().__init__(argv, stdout, stderr)
+        self.args = (
+            f"{AUTH_REJECTED_HINT} [{' '.join(self.argv)}: "
+            f"{summarize_output(stdout, stderr)}]",
+        )
 
 
 class KaggleFieldMissing(KaggleError):
@@ -516,6 +554,8 @@ class CliKaggleClient:
                     raise KaggleError(f"{' '.join(argv)}: {exc}") from exc
                 continue
             if check and result.returncode != 0:
+                if is_auth_rejection(result.stdout, result.stderr):
+                    raise KaggleAuthRejected(argv, result.stdout, result.stderr)
                 raise KaggleCommandFailed(argv, result.stdout, result.stderr)
             return result
         raise KaggleError(f"{' '.join(argv)}: {last}")
