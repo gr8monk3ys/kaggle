@@ -109,6 +109,7 @@ chmod +x manage.sh
 | [nlp-disaster-tweets](./projects/competitions/nlp-disaster-tweets) | NLP Disaster Tweets | -- | BERT-based text classification | HuggingFace, BERT | Yes |
 | [house-prices](./projects/competitions/house-prices) | House Prices Regression | -- | EDA + feature engineering + stacked ensemble | XGBoost, LightGBM, scikit-learn | No |
 | [digit-recognizer](./projects/competitions/digit-recognizer) | Digit Recognizer (MNIST) | -- | CNN from scratch to 99%+ accuracy | PyTorch | No |
+| [playground-series-s6e6](./projects/competitions/playground-series-s6e6) | Stellar Classification (Playground S6E6) | -- | GALAXY/QSO/STAR tabular classification, blended OOF-validated models | XGBoost, scikit-learn | No |
 
 ---
 
@@ -134,6 +135,16 @@ chmod +x manage.sh
 | [student-performance-r-analysis](./projects/educational/student-performance-r-analysis) | Student Performance in R | GPA driver analysis and fairness-oriented inspection | R, dplyr, ggplot2 | No |
 | [mental-health-tech-r-report](./projects/educational/mental-health-tech-r-report) | Mental Health in Tech Report | Policy-focused R Markdown report for treatment-seeking patterns | R Markdown, dplyr, ggplot2 | No |
 | [tabular-eda-utilities](./projects/educational/tabular-eda-utilities) | Tabular EDA Utilities | Reusable profiling helpers used by the Student Performance explorer and other tabular notebooks | Python | No |
+| [adversarial-validation-guide](./projects/educational/adversarial-validation-guide) | Adversarial Validation | Detecting train/test distribution shift to know when to trust CV | scikit-learn, pandas | No |
+| [data-leakage-cv-pitfalls](./projects/educational/data-leakage-cv-pitfalls) | Data Leakage & CV Pitfalls | 5 leakage patterns that inflate CV scores, plus a pre-submission checklist | scikit-learn, pandas | No |
+| [duckdb-analytics-guide](./projects/educational/duckdb-analytics-guide) | SQL Analytics with DuckDB | In-process SQL analytics over CSV/Parquet without a database server | DuckDB, pandas | No |
+| [polars-speed-guide](./projects/educational/polars-speed-guide) | Polars Speed Guide | pandas-vs-Polars benchmarks across common tabular operations | Polars, pandas | No |
+| [optuna-hyperparameter-guide](./projects/educational/optuna-hyperparameter-guide) | Hyperparameter Optimization (practical guide) | Optuna tuning walkthrough distinct from the [optuna-guide](./projects/educational/optuna-guide) masterclass | Optuna, XGBoost, LightGBM | No |
+| [fasttext-embeddings](./projects/educational/fasttext-embeddings) | FastText Subword Embeddings | Character n-gram embeddings, subword composition, training-speed benchmarks | FastText | No |
+| [self-attention-inspection](./projects/educational/self-attention-inspection) | Self-Attention Mechanism | Reimplemented scaled dot-product attention with attention-matrix visualization | PyTorch, HuggingFace Transformers | No |
+| [ai-data-jobs-market-analysis](./projects/educational/ai-data-jobs-market-analysis) | AI & Data Jobs Market Analysis | Salary and skill-demand trends across 36K job listings | pandas, scikit-learn, seaborn | No |
+| [github-analytics-popularity](./projects/educational/github-analytics-popularity) | GitHub Repository Popularity | EDA of star/fork power-law patterns plus a popularity regression | pandas, scikit-learn, seaborn | No |
+| [mental-health-treatment-prediction](./projects/educational/mental-health-treatment-prediction) | Mental Health in Tech EDA | Treatment-seeking prediction and workplace-policy correlation analysis | pandas, scikit-learn | No |
 
 ---
 

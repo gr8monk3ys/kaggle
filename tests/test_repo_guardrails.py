@@ -400,6 +400,44 @@ def test_hand_authored_explore_notebooks_are_protected_from_regeneration(repo_ro
     )
 
 
+def test_public_project_notebooks_are_listed_in_readme(repo_root):
+    """Every public projects/{competitions,educational}/* notebook earns a README row.
+
+    README.md's "Competition Entries" and "Educational Notebooks" tables are the
+    portfolio's public shop window -- the fleet's only external validation (medals
+    and votes from strangers) depends on visitors finding what is actually live.
+    10 educational notebooks and 1 competition entry (all confirmed public via
+    `is_private: false`, several already earning votes per KNOWN_PUBLIC_KERNEL_SLUGS
+    above) sat in the repo unlisted until this test was added -- real, published
+    work the README simply never caught up to.
+
+    A directory is only expected here if it carries a `kernel-metadata.json` with
+    `is_private: false`: a closed/retrospective competition (no notebook, e.g.
+    hull-tactical-market-prediction) or a private draft is correctly excluded.
+    """
+    readme_text = (repo_root / "README.md").read_text(encoding="utf-8")
+
+    missing = []
+    for category in ("competitions", "educational"):
+        for project_dir in sorted((repo_root / "projects" / category).iterdir()):
+            if not project_dir.is_dir():
+                continue
+            meta_path = project_dir / "kernel-metadata.json"
+            if not meta_path.exists():
+                continue
+            payload = json.loads(meta_path.read_text(encoding="utf-8"))
+            if payload.get("is_private") is not False:
+                continue
+            link = f"(./projects/{category}/{project_dir.name})"
+            if link not in readme_text:
+                missing.append(f"projects/{category}/{project_dir.name}")
+
+    assert not missing, (
+        "these public notebooks have no README.md row (add one to the "
+        f"Competition Entries or Educational Notebooks table): {missing}"
+    )
+
+
 def test_kernel_ids_that_diverge_from_their_title_are_known(repo_root):
     """A push can move a kernel's slug to match its title. Keep that list explicit.
 
