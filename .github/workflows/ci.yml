@@ -101,8 +101,5 @@ jobs:
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 weekly-plan >/tmp/weekly-plan.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 pace >/tmp/pace.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 sync-template --out-dir /tmp/medal_ops_sync_inputs >/tmp/sync-template.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.stale_content_detector --today 2026-02-22 >/tmp/stale-content.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_explore_generator --dir datasets/credit-card-fraud >/tmp/explore-gen.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.notebooks.competition_entry --help >/tmp/comp-entry.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.metadata_tracker --help >/tmp/metadata-tracker.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log

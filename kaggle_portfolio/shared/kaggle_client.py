@@ -341,20 +341,6 @@ class Submission:
 
 
 @dataclass(frozen=True)
-class DatasetMetadata:
-    title: str
-    subtitle: str
-    description: str
-    usability_rating: float | None
-    total_votes: int
-    total_downloads: int
-    is_private: bool | None
-    keywords: list[str]
-    licenses: list[dict[str, Any]]
-    raw: dict[str, Any] = field(default_factory=dict, repr=False)
-
-
-@dataclass(frozen=True)
 class PushOutcome:
     """The result of a mutating operation."""
 
@@ -473,11 +459,6 @@ class KaggleClient(Protocol):
     def my_datasets(self) -> list[Dataset]: ...
     def public_datasets_of(self, owner: str) -> list[Dataset]: ...
     def datasets_owned_by(self, owner: str) -> list[Dataset]: ...
-    def search_datasets(
-        self, *, sort_by: str | None = ..., pages: int = ...
-    ) -> list[Dataset]: ...
-    def dataset_metadata(self, ref: str, dest: Path) -> DatasetMetadata: ...
-    def dataset_files(self, ref: str) -> list[str]: ...
     def publish_dataset(self, path: Path, message: str) -> PushOutcome: ...
 
     # competitions
@@ -857,28 +838,6 @@ class CliKaggleClient:
             raise KaggleError("; ".join(errors))
         return list(by_ref.values())
 
-    def search_datasets(
-        self, *, sort_by: str | None = None, pages: int = 1
-    ) -> list[Dataset]:
-        rows: list[dict[str, str]] = []
-        args = ["datasets", "list"]
-        if sort_by:
-            args += ["--sort-by", sort_by]
-        for page in range(1, max(1, pages) + 1):
-            rows.extend(self._rows([*args, "--page", str(page)]))
-        return [Dataset.from_row(row) for row in rows]
-
-    def dataset_metadata(self, ref: str, dest: Path) -> DatasetMetadata:
-        dest.mkdir(parents=True, exist_ok=True)
-        self._run(["datasets", "metadata", ref, "-p", str(dest)])
-        return read_dataset_metadata(dest / "dataset-metadata.json")
-
-    def dataset_files(self, ref: str) -> list[str]:
-        rows = self._rows(["datasets", "files", ref])
-        return [
-            str(pick(row, ("name",), what="dataset file name")).strip() for row in rows
-        ]
-
     def publish_dataset(self, path: Path, message: str) -> PushOutcome:
         """Version an existing dataset, creating it if it does not exist yet.
 
@@ -990,32 +949,6 @@ class CliKaggleClient:
         )
 
 
-def read_dataset_metadata(path: Path) -> DatasetMetadata:
-    """Read a ``dataset-metadata.json``, tolerating a double-encoded payload."""
-    payload: Any = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(payload, str):
-        payload = json.loads(payload)
-    if not isinstance(payload, dict):
-        raise KaggleError(f"{path}: expected a JSON object")
-    return DatasetMetadata(
-        title=str(payload.get("title", "")),
-        subtitle=str(payload.get("subtitle", "")),
-        description=str(payload.get("description", "")),
-        usability_rating=_as_float(payload.get("usabilityRating")),
-        total_votes=_as_int(payload.get("totalVotes")),
-        total_downloads=_as_int(payload.get("totalDownloads")),
-        is_private=payload.get("isPrivate"),
-        keywords=list(payload.get("keywords", []) or []),
-        licenses=list(payload.get("licenses", []) or []),
-        raw=payload,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Test / dry-run adapter
-# ---------------------------------------------------------------------------
-
-
 class FakeKaggleClient:
     """An in-memory Kaggle, seeded with whatever a test needs.
 
@@ -1037,8 +970,6 @@ class FakeKaggleClient:
         entered: Iterable[Competition] | None = None,
         leaderboards: dict[str, list[LeaderboardEntry]] | None = None,
         submissions: dict[str, list[Submission]] | None = None,
-        metadata: dict[str, DatasetMetadata] | None = None,
-        files: dict[str, list[str]] | None = None,
         credentials_state: CredentialState | None = None,
         auth_probe: AuthProbe | None = None,
         available: bool = True,
@@ -1051,8 +982,6 @@ class FakeKaggleClient:
         self._entered = list(entered or [])
         self._leaderboards = dict(leaderboards or {})
         self._submissions = dict(submissions or {})
-        self._metadata = dict(metadata or {})
-        self._files = dict(files or {})
         # `or` would discard a deliberately-empty state: CredentialState is
         # falsy when it holds no credentials, which is exactly the case a test
         # seeding "no credentials" wants to express.
@@ -1157,22 +1086,6 @@ class FakeKaggleClient:
         return [
             d for d in self._datasets if d.ref.strip().lower().startswith(f"{wanted}/")
         ]
-
-    def search_datasets(
-        self, *, sort_by: str | None = None, pages: int = 1
-    ) -> list[Dataset]:
-        self._maybe_fail()
-        return list(self._datasets)
-
-    def dataset_metadata(self, ref: str, dest: Path) -> DatasetMetadata:
-        self._maybe_fail()
-        if ref not in self._metadata:
-            raise KaggleError(f"no seeded metadata for {ref}")
-        return self._metadata[ref]
-
-    def dataset_files(self, ref: str) -> list[str]:
-        self._maybe_fail()
-        return list(self._files.get(ref, []))
 
     def publish_dataset(self, path: Path, message: str) -> PushOutcome:
         refused = _refuse_incomplete_dataset(path)

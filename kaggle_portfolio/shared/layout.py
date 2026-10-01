@@ -117,10 +117,8 @@ class RepoLayout:
             rel = path.relative_to(self.root)
         except ValueError:
             return True
-        # Any dot-directory, plus __pycache__. A superset of the two rules this
-        # replaces: an explicit skip list here, and "any part starts with a dot"
-        # in metadata_tracker. Scratch dirs like .competition_lab are covered
-        # without having to be enumerated.
+        # Any dot-directory, plus __pycache__, so scratch dirs like
+        # .competition_lab are covered without having to be enumerated.
         return any(part.startswith(".") or part == "__pycache__" for part in rel.parts)
 
     def kernel_metadata_dirs(

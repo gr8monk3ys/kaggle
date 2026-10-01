@@ -974,12 +974,6 @@ COMMANDS = [
         cmd_usability_tracker,
     ),
     Command(
-        "usability-benchmark",
-        "Benchmark local datasets against public high-usability exemplars",
-        module="kaggle_portfolio.datasets.dataset_usability_benchmark",
-        requires_kaggle=True,
-    ),
-    Command(
         "publish-datasets",
         "Publish datasets through draft/live + quality gates",
         module="kaggle_portfolio.datasets.dataset_publish_pipeline",
@@ -1004,29 +998,10 @@ COMMANDS = [
         "[dataset ...]",
     ),
     Command(
-        "optimize-datasets",
-        "Generate README.md + improve dataset descriptions",
-        module="kaggle_portfolio.datasets.dataset_optimizer",
-        args="[--push]",
-    ),
-    Command(
         "scout",
         "Scout active competitions ranked by medal opportunity",
         module="kaggle_portfolio.notebooks.competition_scout",
         args="[--update]",
-    ),
-    Command(
-        "stale-content",
-        "Detect stale notebooks, datasets, and outdated library versions",
-        module="kaggle_portfolio.ops.stale_content_detector",
-        args="[--max-nb-age N] [--max-ds-age N]",
-    ),
-    Command(
-        "build-explore-notebooks",
-        "Generate rich EDA explore notebooks for all datasets",
-        module="kaggle_portfolio.datasets.dataset_explore_generator",
-        fixed_args=("--all",),
-        args="[--push]",
     ),
     Command(
         "create-competition-entry",
@@ -1039,12 +1014,6 @@ COMMANDS = [
         "Benchmark local competition models and optionally submit from the CLI",
         module="kaggle_portfolio.notebooks.competition_lab",
         args="<slug> [--write-submission] [--submit] [--force-download]",
-    ),
-    Command(
-        "metadata-tracker",
-        "Track metadata changes vs vote deltas over time",
-        module="kaggle_portfolio.ops.metadata_tracker",
-        args="<snapshot|annotate|report> [args...]",
     ),
     Command(
         "leaderboard",

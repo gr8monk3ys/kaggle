@@ -42,8 +42,6 @@ NOTEBOOK_QUALITY = Report("notebook-quality")
 NOTEBOOK_QUALITY_FIXES = Report("notebook-quality-fixes")
 DATASET_USABILITY = Report("dataset-usability")
 DATASET_USABILITY_TRACKER = Report("dataset-usability-tracker")
-USABILITY_BENCHMARK = Report("usability-benchmark")
-STALE_CONTENT = Report("stale-content")
 LIVE_RATINGS = Report("live-ratings")
 
 ALL_REPORTS = (
@@ -58,8 +56,6 @@ ALL_REPORTS = (
     NOTEBOOK_QUALITY_FIXES,
     DATASET_USABILITY,
     DATASET_USABILITY_TRACKER,
-    USABILITY_BENCHMARK,
-    STALE_CONTENT,
     LIVE_RATINGS,
 )
 
