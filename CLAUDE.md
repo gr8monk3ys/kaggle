@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A monorepo of Kaggle artifacts (competition entries, educational notebooks, published datasets, discussion drafts) **plus** `kaggle_portfolio/` — a tested Python package that automates the whole Kaggle workflow: validating/pushing notebooks & datasets, scoring quality/usability, tracking medal progress, and running promotion campaigns. Everything is driven through `./manage.sh` from the repo root.
+A monorepo of Kaggle artifacts (competition entries, educational notebooks, published datasets) **plus** `kaggle_portfolio/` — a tested Python package that automates the whole Kaggle workflow: validating/pushing notebooks & datasets, scoring quality/usability, and tracking medal progress. Everything is driven through `./manage.sh` from the repo root.
 
 **Goal**: Kaggle Grandmaster across all 4 categories (Competitions, Notebooks, Datasets, Discussion). Live status lives in `docs/reports/grandmaster-tracker.md` — refresh with `./manage.sh sync` rather than hardcoding counts anywhere (they go stale).
 
 ## Repository layout
 
 Run `ls` — the tree is self-describing. Two things it does not tell you: `medal_ops/`
-is generated output (gitignored except its README), and `pi-automation/` is a separate
-Docker + Playwright + cron stack with its own dependencies.
+is generated output (gitignored except its README), and dataset CSVs are build
+output: `./manage.sh build-datasets` regenerates them from each `create_dataset.py`.
 
 Each `projects/*` and `datasets/*` subfolder holds one `.ipynb` plus a
 `kernel-metadata.json` or `dataset-metadata.json`.
@@ -22,10 +22,8 @@ Each `projects/*` and `datasets/*` subfolder holds one `.ipynb` plus a
 Dispatch chain: `manage.sh` → `kaggle_portfolio/cli.py` → `manage_commands.main()`.
 
 - **Command registry**: `manage_commands.py` holds a `COMMANDS` list. Each entry
-  names a `handler` (a function here), a `module` (a dotted path whose
-  `main(argv, deps=...)` is called **in-process**), or a `script` (a subprocess —
-  reserved for `pi-automation`, whose Playwright dependency must not become
-  reachable from a `kaggle_portfolio` import). Modules are imported at dispatch,
+  names a `handler` (a function here) or a `module` (a dotted path whose
+  `main(argv, deps=...)` is called **in-process**). Modules are imported at dispatch,
   not when the table is built, so `help` does not pay for sklearn.
 - **Failure**: commands raise `CommandError`, which the dispatcher turns into an
   exit code. `SystemExit` from inside a command would kill the interpreter they
@@ -33,15 +31,14 @@ Dispatch chain: `manage.sh` → `kaggle_portfolio/cli.py` → `manage_commands.m
 - **Effects**: `--dry-run` is read once, at the dispatcher, and sets
   `deps.effects`. Mutating Kaggle calls and report writes are gated there rather
   than by a conditional each command remembers.
-- **Subpackages**: `ops/` `quality/` `datasets/` `notebooks/` `campaigns/` `shared/` —
+- **Subpackages**: `ops/` `quality/` `datasets/` `notebooks/` `shared/` —
   `ls kaggle_portfolio/*` for the modules. **Reuse `shared/` rather than
   re-implementing**: `kaggle_client` (the only thing that talks to Kaggle),
   `layout` (the only thing that derives a repo path), `clock`, `reports` (report
-  names and emission), `deps`, `errors`, `build_utils`. `discussions/draft_queue`
-  is the single Draft Queue model, shared with the `pi-automation` poster.
+  names and emission), `deps`, `errors`, `build_utils`.
   `notebooks/competition_lab/` is one module per competition behind an unchanged
   `BENCHMARKS` registry.
-- **Medal-ops data flow**: `docs/reports/grandmaster-tracker.md` is the hand-maintained baseline → `ops/medal_ops.py` reads it, syncs live Kaggle CLI counts, and writes reports into `medal_ops/reports/` (gitignored) via `shared/reports.py`. `--dry-run` previews without writing state (convention across `sync`, `campaign-execute`, `post-discussion`).
+- **Medal-ops data flow**: `docs/reports/grandmaster-tracker.md` is the hand-maintained baseline → `ops/medal_ops.py` reads it, syncs live Kaggle CLI counts, and writes reports into `medal_ops/reports/` (gitignored) via `shared/reports.py`. `--dry-run` previews without writing state (convention across `sync`, `push`, `publish-datasets`).
 
 ## Common commands
 
@@ -51,15 +48,15 @@ Dispatch chain: `manage.sh` → `kaggle_portfolio/cli.py` → `manage_commands.m
 coverage config. The suite is fully offline — Kaggle is mocked, so no test needs
 credentials or a network.
 
-There is **no** `pyproject.toml` / `setup.py` / `requirements.txt` at the root: the package is run via `PYTHONPATH` (set by `manage.sh` and `tests/conftest.py`), not pip-installed. Test fixtures (`repo_root`, `md_cell`, `code_cell`, `write_notebook`, `write_kernel_bundle`, `write_queue_json`) live in `tests/conftest.py`. `pi-automation/` has its own `scripts/requirements.txt` and `tests/`.
+There is **no** `pyproject.toml` / `setup.py` / `requirements.txt` at the root: the package is run via `PYTHONPATH` (set by `manage.sh` and `tests/conftest.py`), not pip-installed. Test fixtures (`repo_root`, `md_cell`, `code_cell`, `write_notebook`, `write_kernel_bundle`, `write_queue_json`) live in `tests/conftest.py`.
 
-### Publishing & ops (`./manage.sh`, run from repo root — `./manage.sh help` lists all ~48 subcommands)
+### Publishing & ops (`./manage.sh`, run from repo root — `./manage.sh help` lists all subcommands)
 
 ```bash
 ./manage.sh validate [dir]            # Validate metadata JSON + scan for leaked credentials (no Kaggle CLI needed)
 ./manage.sh push <dir>                # Push one notebook/dataset dir (auto-validates first)
 ./manage.sh push-nb | push-ds         # Push all notebooks / all datasets
-./manage.sh preflight [--no-pytest]   # Core gate: validate + doctor + quality + usability + draft SLA + pytest
+./manage.sh preflight [--no-pytest]   # Core gate: validate + doctor + quality + usability + pytest
 ./manage.sh doctor                    # Preflight checks (tracker age, sync inputs, env, credentials)
 ./manage.sh sync --dry-run            # Preview tracker metric sync from live Kaggle
 ./manage.sh scorecard | weekly-plan | pace      # Medal-ops reports → medal_ops/reports/

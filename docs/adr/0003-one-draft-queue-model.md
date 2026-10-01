@@ -1,5 +1,9 @@
 # One Draft Queue model, and the scheduler's selector is the canonical one
 
+> **Superseded by [ADR-0007](0007-no-automated-engagement.md) (2026-10-01).**
+> The Draft Queue described here was removed with the rest of the engagement
+> automation. Kept for the record.
+
 The Draft Queue existed twice — once in the scheduler, once in the automation
 scripts — joined only by a JSON file and three environment variables across a
 process. The copies had drifted, most consequentially in *which Draft posts

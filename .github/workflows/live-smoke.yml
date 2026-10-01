@@ -91,7 +91,6 @@ jobs:
             args+=(--include-live-datasets)
           fi
 
-
           bash manage.sh "${args[@]}"
 
       - name: Upload smoke artifacts

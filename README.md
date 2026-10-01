@@ -5,7 +5,7 @@
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
 [![Kaggle Profile](https://img.shields.io/badge/Kaggle-lorenzoscaturchio-20BEFF?logo=kaggle&logoColor=white)](https://www.kaggle.com/lorenzoscaturchio)
 
-A systematic collection of Kaggle notebooks, competition entries, datasets, and community engagement resources targeting Kaggle Grandmaster status across all four categories.
+A systematic collection of Kaggle notebooks, competition entries, and datasets targeting Kaggle Grandmaster status across all four categories.
 
 Progress is tracked in [docs/reports/grandmaster-tracker.md](./docs/reports/grandmaster-tracker.md).
 
@@ -162,8 +162,6 @@ All datasets live under [`datasets/`](./datasets). Each directory contains a `cr
 |----------|---------|
 | [docs/reports/grandmaster-tracker.md](./docs/reports/grandmaster-tracker.md) | Progress tracking across all 4 Grandmaster categories |
 | [docs/reports/competition-scout-report.md](./docs/reports/competition-scout-report.md) | Active competition analysis and medal probability assessment |
-| [docs/discussions/engagement-strategy.md](./docs/discussions/engagement-strategy.md) | 12-week community engagement roadmap |
-| [docs/discussions/discussion-drafts.md](./docs/discussions/discussion-drafts.md) | Pre-written discussion posts for community engagement |
 | [manage.sh](./manage.sh) | CLI tool for Kaggle notebook/dataset management |
 
 ---
@@ -197,18 +195,13 @@ chmod +x manage.sh
 | `sync` | Sync tracker metrics from live Kaggle CLI data or CSV exports | Depends |
 | `sync-template` | Generate CSV templates and export helper script for offline sync | No |
 | `doctor` | Run preflight checks (tracker, sync inputs, environment) | No |
-| `preflight` | Run validate + doctor + quality + usability + draft SLA + tests in one command | No |
+| `preflight` | Run validate + doctor + quality + usability + tests in one command | No |
 | `quality` | Score notebook quality against rubric (writes to `medal_ops/reports/`) | No |
 | `dataset-usability` | Score dataset usability and emit actionable report (writes to `medal_ops/reports/`) | No |
 | `usability-tracker` | Run live daily tracker with `0.8` alert gate and `1.0` target queue (persists/uses `medal_ops/reports/latest-live-ratings.csv`) | Depends |
-| `campaign-pack` | Generate multi-channel promotion campaign pack + queue from latest usability report | No |
-| `campaign-run` | Execute queue operations (`show`, `claim`, `complete`) and export runbook | No |
-| `publish-datasets` | Publish datasets through draft/live quality gates; optional UI metadata sync and JSON report | Yes |
-| `smoke-live` | Safely exercise live Kaggle publish/post prerequisites without mutating Kaggle state | Depends |
-| `dataset-ui-sync` | Sync Kaggle UI-only dataset fields (Authors/Coverage/DOI/Provenance/Citations) via Playwright | No |
-| `post-discussion [--dry-run|--init|--schedule-weeks N]` | Post next queued discussion draft or rebuild a rolling scheduled window | No |
-| `draft-ops` | Show draft stage counts, flow health, and prioritized backlog | No |
-| `draft-set <id> [--status/--priority/--deadline]` | Update one draft's status/priority/deadline and rebalance schedule window | No |
+| `publish-datasets` | Publish datasets through draft/live quality gates; optional JSON report | Yes |
+| `smoke-live` | Safely exercise live Kaggle publish prerequisites without mutating Kaggle state | Depends |
+| `build-datasets [name ...]` | Regenerate dataset CSVs (they are not committed) | No |
 | `help` | Show usage message | No |
 
 ### Examples
@@ -247,26 +240,11 @@ chmod +x manage.sh
 # Run live usability tracker with 0.8 gate + 1.0 target
 ./manage.sh usability-tracker --fail-on-live-alert
 
-# Publish top-scoring draft datasets, sync UI metadata fields, and write a machine report
+# Publish top-scoring draft datasets and write a machine report
 ./manage.sh publish-datasets --apply --owner lorenzoscaturchio --min-score 85 \
-  --sync-ui-metadata --report-json medal_ops/reports/dataset-publish-latest.json
+  --report-json medal_ops/reports/dataset-publish-latest.json
 
-# Build a 14-day promotion campaign pack + queue
-./manage.sh campaign-pack --days 14 --posts-per-day 2
-
-# Claim and export first 7 queue items for execution
-./manage.sh campaign-run --limit 7 --claim --print-copy
-
-# Rebuild draft queue with a 4-week scheduled window (rest stays ready)
-./manage.sh post-discussion --init --schedule-weeks 4
-
-# Review draft backlog flow health
-./manage.sh draft-ops
-
-# Update one draft and rebalance schedule window
-./manage.sh draft-set draft_012 --priority high --deadline 2026-03-08
-
-# Safely check live publish/post prerequisites without mutating Kaggle state
+# Safely check live publish prerequisites without mutating Kaggle state
 ./manage.sh smoke-live --owner lorenzoscaturchio
 
 # Offline sync with exported CSV files
@@ -286,12 +264,12 @@ GitHub Actions is split into three layers:
 
 - **PR / push CI**: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs security guardrails, `./manage.sh preflight --no-pytest`, full pytest coverage, and targeted generator/builder smoke tests on every push and pull request.
 - **Daily health monitoring**: [`.github/workflows/medal-ops-health.yml`](./.github/workflows/medal-ops-health.yml) runs the ongoing portfolio health checks below.
-- **Manual live smoke**: [`.github/workflows/live-smoke.yml`](./.github/workflows/live-smoke.yml) is `workflow_dispatch` only and safely exercises authenticated Kaggle publish/post prerequisites without mutating live Kaggle state.
+- **Manual live smoke**: [`.github/workflows/live-smoke.yml`](./.github/workflows/live-smoke.yml) is `workflow_dispatch` only and safely exercises authenticated Kaggle publish prerequisites without mutating live Kaggle state.
 
 The daily health workflow runs automated checks:
 
 - **Schedule**: Daily at 09:10 UTC
-- **Checks performed**: `doctor --strict`, `quality --fail-under-threshold`, `dataset-usability --strict`, `dataset-usability --daily-tracker`, `post-discussion --health-check`, `sync --dry-run`
+- **Checks performed**: `doctor --strict`, `quality --fail-under-threshold`, `dataset-usability --strict`, `dataset-usability --daily-tracker`, `sync --dry-run`
 - **On failure**: Opens (or updates) a GitHub issue with logs and run link
 - **On recovery**: Automatically closes the incident issue
 - **Quality gate**: Minimum notebook quality score of 95 (configurable)
@@ -306,9 +284,9 @@ The daily health workflow runs automated checks:
 | `live` | Queries Kaggle API directly (requires repository secrets) |
 | `offline-fixture` | Uses synthetic CSV fixtures so pipeline breakages are still caught without API access |
 
-Manual dispatch supports custom `mode`, `max_stale_days`, `min_quality_score`, `min_dataset_usability_score`, `live_alert_under`, `live_target_rating`, `max_overdue_scheduled`, and `max_days_until_next_post` inputs.
+Manual dispatch supports custom `mode`, `max_stale_days`, `min_quality_score`, `min_dataset_usability_score`, `live_alert_under`, and `live_target_rating` inputs. A Kaggle key that Kaggle rejects downgrades `auto` mode to `offline-fixture` with a warning to rotate it.
 
-The live smoke workflow supports manual inputs for `owner`, `limit`, `include_live_datasets`, and `discussion_mode` (`queue-only`, `login`, or `skip`). It is manual-only by design so authenticated checks remain explicit and debuggable.
+The live smoke workflow supports manual inputs for `owner`, `limit`, and `include_live_datasets`. It is manual-only by design so authenticated checks remain explicit and debuggable.
 
 ---
 
@@ -325,8 +303,6 @@ Never commit API credentials. `kaggle.json` is gitignored in this repo.
 
 For GitHub Actions live checks, add `KAGGLE_USERNAME` and `KAGGLE_KEY` in repository **Settings > Secrets and variables > Actions**.
 
-For discussion login verification in the manual live smoke workflow, also add `KAGGLE_EMAIL` and `KAGGLE_PASSWORD`.
-
 ---
 
 ## Project Structure
@@ -342,18 +318,13 @@ kaggle/
 ├── kaggle_portfolio/                   # Main Python package
 │   ├── cli.py                          # Central command entrypoint
 │   ├── manage_commands.py              # Command registry and dispatch
-│   ├── campaigns/                      # Campaign planning + execution
 │   ├── datasets/                       # Dataset quality/publish/build tooling
 │   ├── notebooks/                      # Notebook/competition orchestration
 │   ├── ops/                            # Repo health, auth, tracker, scheduling
 │   ├── quality/                        # Notebook quality scoring
 │   └── shared/                         # Shared helpers (Kaggle + notebook utils)
 ├── docs/
-│   ├── discussions/
-│   │   ├── discussion-drafts.md        # Pre-written discussion posts
-│   │   ├── discussion-posts-ready.md   # Ready-to-post discussion index
-│   │   └── engagement-strategy.md      # 12-week community engagement plan
-│   ├── plans/                          # Planning docs and design notes
+│   ├── adr/                            # Architecture decision records
 │   └── reports/
 │       ├── competition-scout-report.md # Active competition analysis
 │       └── grandmaster-tracker.md      # Progress across all 4 GM categories
@@ -402,12 +373,6 @@ kaggle/
 │   ├── spotify-tracks/                # 50K audio features
 │   └── student-performance/           # 10K student records
 │
-├── pi-automation/                      # Raspberry Pi automation (Docker)
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   ├── scripts/                       # Automation scripts
-│   └── tests/                         # Automation tests
-│
 ├── medal_ops/                          # Generated reports (gitignored)
 │   ├── reports/                       # Scorecard, pace, quality reports
 │   └── history/                       # Historical snapshots for trend analysis
@@ -439,7 +404,7 @@ kaggle/
 - **Optimization**: Optuna, Bayesian hyperparameter tuning
 - **Visualization**: Plotly, matplotlib, seaborn
 - **Data**: pandas, NumPy
-- **Tools**: Kaggle CLI, GGUF export, Docker (pi-automation)
+- **Tools**: Kaggle CLI, GGUF export
 - **CI/CD**: GitHub Actions (daily health checks, auto-issue management)
 - **Testing**: pytest (portfolio + automation tests covering medal ops, quality scoring, metadata validation, repo guardrails, dataset optimization, scheduling, and pipeline checks)
 
