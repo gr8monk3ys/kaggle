@@ -31,7 +31,7 @@ Dispatch chain: `manage.sh` → `kaggle_portfolio/cli.py` → `manage_commands.m
 - **Effects**: `--dry-run` is read once, at the dispatcher, and sets
   `deps.effects`. Mutating Kaggle calls and report writes are gated there rather
   than by a conditional each command remembers.
-- **Subpackages**: `ops/` `quality/` `datasets/` `notebooks/` `shared/` —
+- **Subpackages**: `ops/` `datasets/` `notebooks/` `shared/` —
   `ls kaggle_portfolio/*` for the modules. **Reuse `shared/` rather than
   re-implementing**: `kaggle_client` (the only thing that talks to Kaggle),
   `layout` (the only thing that derives a repo path), `clock`, `reports` (report
@@ -56,17 +56,17 @@ There is **no** `pyproject.toml` / `setup.py` / `requirements.txt` at the root: 
 ./manage.sh validate [dir]            # Validate metadata JSON + scan for leaked credentials (no Kaggle CLI needed)
 ./manage.sh push <dir>                # Push one notebook/dataset dir (auto-validates first)
 ./manage.sh push-nb | push-ds         # Push all notebooks / all datasets
-./manage.sh preflight [--no-pytest]   # Core gate: validate + doctor + quality + usability + pytest
+./manage.sh build-datasets            # Regenerate dataset CSVs (not committed)
+./manage.sh preflight [--no-pytest]   # Core gate: validate + doctor + dataset usability + pytest
 ./manage.sh doctor                    # Preflight checks (tracker age, env, credentials)
 ./manage.sh sync --dry-run            # Preview tracker metric sync from live Kaggle
 ./manage.sh sync                      # Live sync: updates the tracker + writes medal_ops/history/ snapshot
 ./manage.sh digest                    # One-message summary from the snapshot history
-./manage.sh quality --min-score 70 --scope all  # Notebook quality rubric
-./manage.sh scout --update            # Regenerate competition-scout-report.md
+./manage.sh scout --update            # Rank boards for medals (Featured/Research) and notebook votes
 ./manage.sh create-competition-entry <slug> [--gpu]   # Scaffold a new competition dir
 ```
 
-`requires_kaggle=True` commands need credentials; `validate`/`quality`/`digest` run offline.
+`requires_kaggle=True` commands need credentials; `validate`/`digest`/`build-datasets` run offline.
 
 ## Conventions & enforced guardrails
 

@@ -110,16 +110,6 @@ class TestKaggleCommands:
         assert manage_commands.cmd_status([]) == 0
         assert "unavailable" in capsys.readouterr().out
 
-    def test_competitions_now_reports_failure_instead_of_always_succeeding(
-        self, tmp_path, capsys
-    ):
-        from kaggle_portfolio.shared.kaggle_client import KaggleError
-
-        _use(tmp_path, fail_with=KaggleError("403 Forbidden"))
-        # This command previously discarded the return code and always returned 0.
-        assert manage_commands.cmd_competitions([]) == 1
-        assert "unavailable" in capsys.readouterr().out
-
 
 class TestDryRunReachesLocalHandlers:
     """--dry-run must gate handler commands, not just delegated modules.

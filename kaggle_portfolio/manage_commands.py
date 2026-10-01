@@ -766,23 +766,6 @@ def cmd_build_datasets(args: list[str]) -> int:
     return 1 if failures else 0
 
 
-def cmd_competitions(_: list[str]) -> int:
-    print(f"{BLUE}=== Active Medal-Eligible Competitions ==={RESET}")
-    failures = 0
-    for category in ("featured", "research", "playground"):
-        print(f"{YELLOW}{category.title()}:{RESET}")
-        try:
-            for comp in deps().client.search_competitions(category=category):
-                print(f"  {comp.slug:<55} {comp.team_count:>6} teams  {comp.deadline}")
-        except KaggleError as exc:
-            # This used to discard the return code entirely and always report
-            # success, so a broken CLI looked like an empty competition list.
-            print(f"  {RED}unavailable{RESET}: {exc}")
-            failures += 1
-        print("")
-    return 1 if failures else 0
-
-
 def cmd_usability_tracker(args: list[str]) -> int:
     """The daily live usability tracker.
 
@@ -892,12 +875,6 @@ COMMANDS = [
         requires_kaggle=True,
     ),
     Command(
-        "competitions",
-        "List active medal-eligible competitions",
-        cmd_competitions,
-        requires_kaggle=True,
-    ),
-    Command(
         "link-competition",
         "Add competition_sources to a notebook and re-push",
         cmd_link_competition,
@@ -924,7 +901,7 @@ COMMANDS = [
     ),
     Command(
         "preflight",
-        "Run the core repo gates: validate, doctor, quality, usability, draft SLA, tests",
+        "Run the core repo gates: validate, doctor, dataset usability, tests",
         module="kaggle_portfolio.ops.repo_ops",
         fixed_args=("preflight",),
     ),
