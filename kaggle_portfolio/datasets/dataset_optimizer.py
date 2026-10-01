@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 from kaggle_portfolio.shared.deps import Deps
-from kaggle_portfolio.shared.kaggle_client import KaggleClient
+from kaggle_portfolio.shared.kaggle_client import KaggleClient, missing_dataset_files
 
 ROOT = Path(__file__).resolve().parents[2]
 DATASETS_DIR = ROOT / "datasets"
@@ -649,6 +649,16 @@ def optimize_dataset(client: KaggleClient, ds_dir: Path, push: bool = False) -> 
         meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         print(f"    {GREEN}dataset-metadata.json normalized{RESET}")
     print(f"  Processing {BLUE}{ds_dir.name}{RESET}...")
+
+    missing = missing_dataset_files(ds_dir)
+    if missing:
+        # Without the data the README would be regenerated with no column
+        # dictionary or row counts, silently overwriting the committed one.
+        print(
+            f"    {RED}FAIL{RESET} data files missing ({', '.join(missing)}): "
+            "run ./manage.sh build-datasets first"
+        )
+        return False
 
     # Analyze tabular files
     csv_files = sorted(ds_dir.glob("*.csv"))

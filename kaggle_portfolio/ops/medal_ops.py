@@ -1045,7 +1045,6 @@ def generate_digest(snapshots: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-
 def generate_sync_markdown(
     tracker_path: Path,
     today: date,

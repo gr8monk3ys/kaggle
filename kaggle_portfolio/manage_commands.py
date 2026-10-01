@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import importlib
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -739,24 +740,28 @@ def cmd_build_datasets(args: list[str]) -> int:
     unknown = set(args) - {script.parent.name for script in scripts}
     if unknown:
         raise CommandError(f"Unknown dataset(s): {', '.join(sorted(unknown))}")
-    failures = 0
-    for script in scripts:
-        name = script.parent.name
-        if args and name not in args:
-            continue
-        print(f"Building {name}... ", end="", flush=True)
-        result = subprocess.run(
+    selected = [s for s in scripts if not args or s.parent.name in args]
+
+    def build(script: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
             [sys.executable, script.name],
             cwd=script.parent,
             capture_output=True,
             text=True,
             check=False,
         )
+
+    # The generators are independent processes, so run them side by side.
+    with ThreadPoolExecutor() as pool:
+        results = list(pool.map(build, selected))
+
+    failures = 0
+    for script, result in zip(selected, results):
         if result.returncode == 0:
-            print(f"{GREEN}ok{RESET}")
+            print(f"Built {script.parent.name}: {GREEN}ok{RESET}")
         else:
             failures += 1
-            print(f"{RED}failed{RESET}")
+            print(f"Built {script.parent.name}: {RED}failed{RESET}")
             print(result.stderr.strip()[-2000:])
     return 1 if failures else 0
 
@@ -851,9 +856,7 @@ class Command:
             finally:
                 set_deps(previous)
         if self.module is None:
-            raise CommandError(
-                f"Command {self.name!r} has no handler or module"
-            )
+            raise CommandError(f"Command {self.name!r} has no handler or module")
         module = importlib.import_module(self.module)
         return module.main([*self.fixed_args, *argv], deps=deps)
 

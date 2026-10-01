@@ -75,10 +75,10 @@ def probe_public_listing(client: KaggleClient, owner: str) -> tuple[bool, str]:
     return True, f"retrieved {len(rows)} public dataset rows"
 
 
-def probe_blob_upload_auth(client: KaggleClient, timeout: int) -> tuple[bool, str]:
-    """Check whether Kaggle's official upload-start flow accepts the credentials."""
-    probe = client.probe_upload_auth(timeout)
-    return probe.ok, probe.detail
+#: Exit status when Kaggle answered and refused the key. Scheduled workflows
+#: read it to downgrade to offline checks with a "rotate the key" warning,
+#: while any other failure (owner mismatch, network) stays a failure.
+REJECTED_EXIT = 3
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -149,7 +149,8 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     else:
         warnings.append(f"public listing probe failed: {listing_msg}")
 
-    upload_ok, upload_msg = probe_blob_upload_auth(deps.client, args.timeout)
+    upload = deps.client.probe_upload_auth(args.timeout)
+    upload_ok, upload_msg = upload.ok, upload.detail
     if "kaggle package not installed" in upload_msg:
         # The kaggle package is an optional dependency for the live upload probe.
         # Its absence is an environment-setup gap, not a credential failure, so it
@@ -178,6 +179,9 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         for item in failures:
             print(f"- {item}")
 
+    if upload.rejected:
+        print(f"{RED}AUTH DOCTOR: KEY REJECTED{RESET}")
+        return REJECTED_EXIT
     if failures or (args.strict and warnings):
         print(f"{RED}AUTH DOCTOR: FAIL{RESET}")
         return 1

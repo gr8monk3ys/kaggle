@@ -551,7 +551,9 @@ def test_run_preflight_checks_confirms_accepted_credentials(tmp_path):
 
 
 def test_run_preflight_checks_warns_when_the_credential_check_cannot_run(tmp_path):
-    flake = KaggleCommandFailed(["kaggle", "kernels", "list"], "", "503 Service Unavailable")
+    flake = KaggleCommandFailed(
+        ["kaggle", "kernels", "list"], "", "503 Service Unavailable"
+    )
     checks = _live_preflight(tmp_path, FakeKaggleClient(fail_with=flake))
 
     assert checks["errors"] == []
@@ -706,4 +708,3 @@ class TestDigest:
 
     def test_digest_no_snapshots(self):
         assert "No snapshots" in medal_ops.generate_digest([])
-

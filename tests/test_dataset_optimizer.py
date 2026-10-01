@@ -2,6 +2,8 @@ import csv
 import re
 from pathlib import Path
 
+import pytest
+
 from kaggle_portfolio.datasets import dataset_optimizer
 from kaggle_portfolio.shared import proc
 from kaggle_portfolio.shared.kaggle_client import FakeKaggleClient
@@ -130,6 +132,8 @@ def readme_row_claims(readme: Path) -> list[tuple[str, int]]:
 
 
 def test_generated_readmes_state_the_real_csv_row_count(repo_root):
+    if not any((repo_root / "datasets").glob("*/*.csv")):
+        pytest.skip("dataset CSVs are not built; run ./manage.sh build-datasets")
     mismatches = []
     checked = 0
     for readme in sorted((repo_root / "datasets").glob("*/README.md")):
@@ -204,3 +208,18 @@ def test_analyze_csv_marks_distinct_counts_that_hit_the_cap(tmp_path):
         ds_dir=tmp_path, meta={"title": "Ids"}, file_analyses=[analysis]
     )
     assert "10+" in readme
+
+
+def test_optimize_dataset_refuses_to_rewrite_readme_without_data(tmp_path):
+    ds = tmp_path / "ds"
+    ds.mkdir()
+    (ds / "dataset-metadata.json").write_text(
+        '{"id": "me/ds", "title": "DS", "resources": [{"path": "data.csv"}]}',
+        encoding="utf-8",
+    )
+    (ds / "README.md").write_text("hand-tuned readme\n", encoding="utf-8")
+    client = FakeKaggleClient()
+
+    assert dataset_optimizer.optimize_dataset(client, ds, push=True) is False
+    assert (ds / "README.md").read_text(encoding="utf-8") == "hand-tuned readme\n"
+    assert client.calls == []

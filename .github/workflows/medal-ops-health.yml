@@ -120,12 +120,18 @@ jobs:
             echo "accepted=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
-          if python -m kaggle_portfolio.ops.kaggle_auth_doctor >/tmp/auth.log 2>&1; then
-            echo "accepted=true" >> "${GITHUB_OUTPUT}"
-          else
+          python -m kaggle_portfolio.ops.kaggle_auth_doctor >/tmp/auth.log 2>&1
+          rc=$?
+          cat /tmp/auth.log
+          # 3 = Kaggle answered and refused the key (kaggle_auth_doctor.REJECTED_EXIT).
+          # Any other failure (owner mismatch, network) is not a key problem, so
+          # the live checks still run and surface it.
+          if [[ "${rc}" == "3" ]]; then
             echo "accepted=false" >> "${GITHUB_OUTPUT}"
             echo "::warning title=Kaggle credentials rejected::Kaggle refused the configured key. Running offline checks only. Rotate the KAGGLE_API_TOKEN secret (kaggle.com/settings -> API -> Create New Token)."
-            cat /tmp/auth.log
+          else
+            echo "accepted=true" >> "${GITHUB_OUTPUT}"
+            [[ "${rc}" == "0" ]] || echo "::warning title=Kaggle auth doctor failed::Not a rejected key (exit ${rc}); running live checks. See the auth log above."
           fi
 
       - name: Run medal ops health checks

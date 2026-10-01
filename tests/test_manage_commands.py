@@ -243,9 +243,7 @@ class TestBuildDatasets:
         assert manage_commands.cmd_build_datasets([]) == 1
 
     def test_unknown_names_are_rejected_before_anything_runs(self, tmp_path: Path):
-        one = _dataset_script(
-            tmp_path, "one", "open('data.csv', 'w').write('a,b')\n"
-        )
+        one = _dataset_script(tmp_path, "one", "open('data.csv', 'w').write('a,b')\n")
         _use(tmp_path)
         with pytest.raises(CommandError, match="nope"):
             manage_commands.cmd_build_datasets(["one", "nope"])

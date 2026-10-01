@@ -366,6 +366,43 @@ class PushOutcome:
         return self.ok
 
 
+def missing_dataset_files(folder: Path) -> list[str]:
+    """The resource paths ``dataset-metadata.json`` declares but ``folder`` lacks.
+
+    Dataset CSVs are build output (``./manage.sh build-datasets``), so a fresh
+    clone has metadata without data. Publishing that folder would replace the
+    live dataset with an empty version, which is why both adapters refuse it at
+    this seam rather than trusting every caller to have validated first.
+    """
+    folder = Path(folder)
+    try:
+        meta = json.loads(
+            (folder / "dataset-metadata.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return []
+    resources = meta.get("resources") if isinstance(meta, dict) else None
+    if not isinstance(resources, list):
+        return []
+    declared = [
+        str(item.get("path", "")).strip()
+        for item in resources
+        if isinstance(item, dict) and str(item.get("path", "")).strip()
+    ]
+    return [rel for rel in declared if not (folder / rel).exists()]
+
+
+def _refuse_incomplete_dataset(folder: Path) -> PushOutcome | None:
+    missing = missing_dataset_files(folder)
+    if not missing:
+        return None
+    return PushOutcome(
+        False,
+        f"refusing to publish {Path(folder).name}: missing {', '.join(missing)} "
+        "(run ./manage.sh build-datasets first)",
+    )
+
+
 @dataclass(frozen=True)
 class Credentials:
     username: str | None
@@ -396,6 +433,9 @@ class CredentialState:
 class AuthProbe:
     ok: bool
     detail: str
+    # True only when Kaggle answered and refused the key, as opposed to the
+    # probe failing for any other reason (network, missing SDK, bad response).
+    rejected: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -745,6 +785,7 @@ class CliKaggleClient:
                 return AuthProbe(
                     False,
                     f"official upload-start probe rejected credentials ({message})",
+                    rejected=True,
                 )
             return AuthProbe(False, f"official upload-start probe failed: {message}")
         finally:
@@ -843,6 +884,9 @@ class CliKaggleClient:
 
         Four call sites hand-rolled this version-then-create fallback.
         """
+        refused = _refuse_incomplete_dataset(path)
+        if refused is not None:
+            return refused
         skipped = self._guard_effects(f"publish dataset {path}")
         if skipped:
             return skipped
@@ -1131,6 +1175,10 @@ class FakeKaggleClient:
         return list(self._files.get(ref, []))
 
     def publish_dataset(self, path: Path, message: str) -> PushOutcome:
+        refused = _refuse_incomplete_dataset(path)
+        if refused is not None:
+            self.calls.append(("publish_dataset", (path, message)))
+            return refused
         return self._record("publish_dataset", path, message)
 
     def entered_competitions(self) -> list[Competition]:
