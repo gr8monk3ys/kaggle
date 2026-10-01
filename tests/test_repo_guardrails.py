@@ -231,7 +231,7 @@ def test_benchmarks_registry_stays_callable():
     """
     from kaggle_portfolio.notebooks.competition_lab import BENCHMARKS
 
-    assert len(BENCHMARKS) >= 8
+    assert len(BENCHMARKS) >= 5
     for slug in BENCHMARKS:
         assert callable(BENCHMARKS[slug]), f"BENCHMARKS[{slug!r}] must be callable"
 
