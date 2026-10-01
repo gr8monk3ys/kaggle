@@ -3,6 +3,26 @@
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
 **Last Updated:** 2026-08-19
 
+> The counts below are from the last successful live sync. The Kaggle key in
+> CI has been rejected since, so they stay stale until `./manage.sh sync` runs
+> with a fresh token. Discussion has no API and is read by hand from the profile.
+
+---
+
+## Next promotions
+
+The closest wins are in Datasets and Notebooks, not Competitions.
+
+| Category | Next tier | Gap | Most direct route |
+|----------|-----------|-----|-------------------|
+| **Datasets** | Expert (3 medals) | 1 more dataset at 5+ votes | Real, current data with a strong starter notebook (Spotify reached silver; GitHub Repo Metrics bronze) |
+| **Notebooks** | Expert (5 medals) | 2 more notebooks at 5+ votes | A strong public notebook posted early in a large, active competition |
+| **Competitions** | Expert (2 bronze) | 2 bronze medals | One Featured or Research board with 30-90 days left, worked for weeks (`./manage.sh scout`) |
+| **Discussion** | Expert (50 bronze) | Not broken out (17 net votes over 28 posts) | Useful answers in competitions you are actually working on |
+
+Only votes from accounts above Novice count toward medals, and votes on your own
+work never do.
+
 ---
 
 ## Tier Requirements
@@ -14,21 +34,28 @@
 | **Notebooks** | 0 | 0 | 5 bronze | 10 silver | 15 gold |
 | **Discussion** | 0 | 0 | 50 bronze | 50 silver + 200 total | 50 gold + 500 total |
 
-### Medal Thresholds
+A higher medal counts toward a lower requirement: a silver satisfies a bronze.
+
+### Medal thresholds
+
+Competition medals come only from **Featured and Research** boards. Playground,
+Getting Started and InClass competitions award no medals or points.
+
+| Teams | 0-99 | 100-249 | 250-999 | 1000+ |
+|-------|------|---------|---------|-------|
+| **Bronze** | Top 40% | Top 40% | Top 100 | Top 10% |
+| **Silver** | Top 20% | Top 20% | Top 50 | Top 5% |
+| **Gold** | Top 10% | Top 10 | Top 10 + 0.2% | Top 10 + 0.2% |
 
 | Category | Bronze | Silver | Gold |
 |----------|--------|--------|------|
-| **Competitions** | Top 40% (100+ teams) | Top 10% (100+ teams) | Top 10 or 10% (med tier) |
 | **Datasets** | >= 5 votes | >= 20 votes | >= 50 votes |
 | **Notebooks** | >= 5 votes | >= 20 votes | >= 50 votes |
 | **Discussion** | >= 1 net vote | >= 5 net votes | >= 10 net votes |
 
 ---
 
-## Current Progress (2026-03-09)
-
-> Note: Notebook, dataset, and competition metrics were refreshed live on 2026-03-09 from authenticated Kaggle CLI pulls.
-> Discussion metrics still reflect the last manual tracker snapshot.
+## Current Progress
 
 ### Competitions
 | Status | Target | Current |
@@ -39,183 +66,56 @@
 | Bronze medals | — | 0 |
 | Entered | — | 13 |
 
-**Active competitions to enter:**
+**Medal-awarding boards in play:**
 | Competition | Teams | Deadline | Medal Difficulty | Strategy |
 |-------------|-------|----------|-----------------|----------|
-| Playground Series S6E7 | 1,480 | Jul 31, 2026 | Medium (playground) | Reuse S6E6 PS-playbook (augment + 4-model stack) |
-| Autonomous Agent Prediction (beta) | 102 | Aug 6, 2026 | Easier (small field) | Fast baseline, iterate |
-| Rogii Wellbore Geology | 4,769 | Aug 5, 2026 | Hard (large field) | Sequence features + GBM baseline |
-| AI Agent Security: Tool Attacks | 1,794 | Sep 1, 2026 | Medium (was 19 teams in June, now 1,794) | Prompt-attack detection pipeline |
-| ARC Prize 2026 (ARC-AGI-2) | 1,132 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
-| ARC Prize 2026 (ARC-AGI-3) | 1,704 | Nov 2, 2026 | Very Hard (reasoning) | Program synthesis + LLM hybrid |
 
-**Priority: AI Agent Security (scout score 85) + Playground S6E7 (PS-playbook ready to reuse). NeuroGolf dropped — ARC-style tasks, 3,002 teams, 3 days left.**
+None recorded. Every board listed here previously has closed. Pick the next one
+from `./manage.sh scout --update` (its first table lists only medal-awarding
+boards) once the Kaggle key is rotated.
+
 ### Notebooks
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | 30+ | 77 via CLI — but only 38 are public |
+| Total notebooks | — | 38 public (74 including private drafts) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 3 |
 | Total votes | — | 80 |
 
-**Public vs total:** `kaggle kernels list` reports 77 because it includes the
-owner's private notebooks (10 are unsaved `[Private Notebook]` drafts). The
-public profile is the number that matters, and it is 38. Do not plan a
-"privatize the dead notebooks" sweep off the CLI figure — most of the gap is
-already private.
+Votes are spread at about one per notebook. Publishing an iteration as a new
+kernel splits its audience; version the existing one instead.
 
-**Duplicate clusters were the real dilution, not volume** (consolidated
-2026-08-19): five credit-card-fraud notebooks all sat at 0 votes, plus three
-ai-data-jobs and two ai-research-trends explorers. Publishing an iteration as
-a *new* kernel (`-v1`/`-v3`/`-hub`) instead of versioning the existing one
-splits the audience, so no single copy accumulates votes. Five orphans with
-no local source were made private; the maintained versions stayed public.
-Note that a dataset's `explore.ipynb` and a `projects/educational/` deep-dive
-on the same topic are **not** duplicates — they serve different readers.
-
-**Tracked notebook portfolio (curated live + pipeline subset):**
-| # | Notebook | Votes | Status |
-|---|----------|-------|--------|
-| 1 | Intro to FastText Subword Embeddings | 2 | Live |
-| 2 | Inspecting the Self-Attention Mechanism | 2 | Live |
-| 3 | Feature Engineering Cookbook 50 Techniques | 0 | Live |
-| 4 | Complete Guide to Attention Mechanisms | 0 | Live |
-| 5 | RAG from Scratch | 0 | Live |
-| 6 | Financial Time-Series Analysis & Prediction | 0 | Live |
-| 7 | End-to-End ML Pipeline: House Price Prediction | 0 | Live |
-| 8 | Credit Card Fraud Detection - ML Approach | 0 | Live |
-| 9 | Multi-Horizon Energy Demand Forecasting | 0 | Live |
-| 10 | Explainable Credit Card Fraud Detection | 0 | Live |
-| 11 | Deep Dive into ELMo Internals | 0 | Live |
-| 12 | spaCy Pipeline and Custom Models | 0 | Live |
-| 13 | PyTorch Under the Hood | 0 | Live |
-| 14 | TensorFlow Core Exploration | 0 | Live |
-| 15 | Deep Dive into Seaborn | 0 | Live |
-| 16 | Advanced Matplotlib Internals | 0 | Live |
-| 17 | Titanic Tutorial | 0 | Live |
-| 18 | Med-Gemma Challenge: EDA & Baseline Pipeline | 0 | Just uploaded |
-| 19 | Akkadian Translation: EDA & ByT5 Seq2Seq Baseline | 0 | Just uploaded |
-| 20 | Competition Masterclass: Full ML Pipeline | 0 | Just uploaded |
-| 21 | Vesuvius Challenge Surface EDA | 0 | Just uploaded |
-| 22 | LLM Fine-Tuning Cookbook: LoRA & QLoRA | — | Local (not pushed) |
-| 23 | Time Series Forecasting with Transformers | — | Local (not pushed) |
-| 24 | Image Segmentation Masterclass: U-Net+ | — | Local (not pushed) |
-| 25 | Ensemble & Stacking: Win Competitions | — | Local (not pushed) |
-| 26 | Graph Neural Networks: Practical Guide | — | Local (not pushed) |
-| 27 | SHAP Model Explainability Masterclass | — | Local (not pushed) |
-| 28 | Optuna Hyperparameter Optimization Guide | — | Local (not pushed) |
-| 29 | NLP Text Classification: TF-IDF to BERT | — | Local (not pushed) |
-| 30 | House Prices: Complete EDA + Feature Engineering | — | In progress |
-| 31 | Digit Recognizer: CNN from Scratch to 99%+ | — | In progress |
-
-**Note:** The table above is a curated portfolio subset, not the full live inventory (and its per-row vote counts and "Local (not pushed)" flags are stale — all educational notebooks are live as of 2026-07-15). The authoritative totals are the synced figures above: 74 notebooks, 75 votes.
 ### Datasets
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (5 gold) | Novice |
-| Total datasets | 7+ | 12 (on Kaggle) |
+| Total datasets | — | 12 (on Kaggle) |
 | Gold medals (50+ votes) | 5 | 0 |
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
 | Total votes | — | 55 |
 | Total downloads | — | 2198 |
 
-**Datasets on Kaggle:**
-| # | Dataset | Votes | Downloads | Usability |
-|---|---------|-------|-----------|-----------|
-| 1 | Spotify Tracks: Audio Features (50K Songs) | 23 | 309 | 0.882 |
-| 2 | GitHub Repository Metrics Dataset (5K+ Repos) | 9 | 44 | 0.882 |
-| 3 | Job Postings: NLP & Salary Prediction (15K) | 1 | 1 | 0.882 |
-| 4 | AI/ML Research Papers Trends (3K+ Papers) | 0 | 2 | 0.882 |
-| 5 | Student Academic Performance (10K Students) | 0 | 9 | 0.882 |
-| 6 | Credit Card Fraud Detection (200K Transactions) | 0 | 6 | 0.882 |
-| 7 | ML/DS Interview Questions & Answers (500+) | 0 | 31 | 0.882 |
-| 8 | Synthetic E-Commerce Customer Behavior Dataset | 0 | 29 | 0.882 |
-| 9 | Mental Health in Tech Survey (5K Responses) | 0 | 4 | 0.882 |
-| 10 | Programming Language Benchmarks Dataset | 0 | 2 | 0.882 |
-| 11 | Usability Probe Dataset (Tabular Sample) | 0 | 0 | n/a |
+| Dataset | Votes | Downloads | Note |
+|---------|-------|-----------|------|
+| Spotify Tracks: Audio Features (50K Songs) | 23 | 309 | Silver; 27 votes from gold |
+| GitHub Repository Metrics Dataset (5K+ Repos) | 9 | 44 | Bronze |
+| Job Postings: NLP & Salary Prediction (15K) | 1 | 1 | |
+| ML/DS Interview Questions & Answers (500+) | 0 | 31 | Downloaded but not voted |
+| Synthetic E-Commerce Customer Behavior Dataset | 0 | 29 | Downloaded but not voted |
+| Other six portfolio datasets | 0 | ≤ 9 each | |
 
-**Note:** All 11 live datasets are now accounted for in the tracker. Ten are portfolio datasets and one is a public usability probe used for rating checks. Portfolio dataset usability is solid at 0.882 across the board; the next step is turning downloads into votes and pushing ratings toward 1.0.
+All eleven portfolio datasets are synthetic. That caps how useful they can be,
+which is why the next dataset should be real data.
+
 ### Discussion
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (50 gold + 500 total) | Novice |
-| Total posts | 500+ | 28 |
-| — of which topics | — | 5 |
-| — of which comments | — | 23 |
+| Total posts | — | 28 (5 topics, 23 comments) |
 | Net votes | — | 17 |
-| Votes per post | — | 0.6 |
 
-**Source:** read from the public profile on 2026-08-19. There is no Kaggle API
-endpoint for discussion activity, so `sync` cannot refresh these — they are
-read by hand from <https://www.kaggle.com/lorenzoscaturchio/discussion> and
-must be re-read manually. This table previously recorded 0 posts, which was
-never true and made Discussion look like an untouched category in every plan
-derived from it.
-
-**Per-medal counts are not broken out** because the profile reports only net
-votes in aggregate; counting bronze/silver/gold needs a per-post pass.
-
-**Note:** 23 of the 28 contributions are comments. Comments earn discussion
-medals on the same terms as topics, which makes commenting the lowest-friction
-route to Discussion Expert (50 bronze, bronze = 1 net vote).
-
-**Strategy:** See ../discussions/engagement-strategy.md for 12-week plan
-**Total drafts:** 62 in queue, integrity-checked 2026-08-19 (see PR #50);
-posting is still manual — `./manage.sh next-post` prints the copy, since the
-Playwright session (`kaggle_storage_state.json`) has never been captured.
-
----
-
-## Action Items (Priority Order)
-
-### Immediate (This Week)
-- [x] Install Kaggle CLI
-- [x] Upload 3 competition notebooks + masterclass template
-- [x] Create management automation script
-- [x] Create 5 additional high-value notebooks (SHAP, Optuna, NLP Classification, House Prices, Digit Recognizer)
-- [x] Create 2 additional datasets (credit-card-fraud, job-postings; student-performance in progress)
-- [ ] Push all new notebooks to Kaggle (llm-finetuning, timeseries-transformers, image-segmentation, ensemble-stacking, graph-neural-networks, shap-explainability, optuna-guide, nlp-text-classification)
-- [x] Push all new datasets to Kaggle (ai-research-trends, programming-benchmarks, credit-card-fraud, job-postings)
-- [x] Run create_dataset.py for credit-card-fraud, job-postings, and student-performance datasets
-- [ ] Run a promotion sprint on Spotify Tracks, GitHub Repo Metrics, and ML/DS Interview QA to convert downloads into more votes
-- [ ] Accept rules for Med-Gemma, Vesuvius, Akkadian competitions
-- [ ] Post first 3 discussion drafts
-- [ ] Submit initial Med-Gemma baseline
-
-### Short-term (Weeks 2-4)
-- [ ] Post 2-3 discussion posts per day (target 10+ posts/week)
-- [ ] Enter Med-Gemma competition with competitive submission
-- [ ] Enter Vesuvius competition
-- [ ] Improve dataset usability scores (add column descriptions)
-- [ ] Cross-promote notebooks in competition discussions
-- [ ] Create 5 more notebooks on trending topics
-
-### Medium-term (Months 2-3)
-- [ ] Reach Discussion Expert (50 bronze medals)
-- [ ] Reach Notebooks Contributor
-- [ ] Get first competition bronze medal (Med-Gemma)
-- [ ] Create 5+ more datasets
-- [ ] Start active competition participation (submit weekly)
-
-### Long-term (Months 4-12)
-- [ ] Discussion Master (50 silver + 200 total)
-- [ ] Notebooks Expert (5 bronze)
-- [ ] Competitions Expert (2 bronze)
-- [ ] Datasets Expert (3 bronze)
-- [ ] Continue building toward Grandmaster in all categories
-
----
-
-## Key Metrics to Track Weekly
-
-| Metric | Week 1 | Week 2 | Week 3 | Week 4 |
-|--------|--------|--------|--------|--------|
-| Notebook votes (total) | 50 | | | |
-| Dataset votes (total) | 33 | | | |
-| Discussion medals | 0 | | | |
-| Competition entries | 4 | | | |
-| Competition medals | 0 | | | |
-| New content published | 4 | | | |
+Read by hand from <https://www.kaggle.com/lorenzoscaturchio/discussion> on
+2026-08-19. Per-medal counts need a per-post pass.
