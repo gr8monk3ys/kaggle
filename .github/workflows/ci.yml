@@ -94,9 +94,6 @@ jobs:
           set -euo pipefail
           PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/ai-research-trends/create_dataset.py >/tmp/ai-research.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/programming-benchmarks/create_dataset.py >/tmp/programming-benchmarks.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python projects/educational/ensemble-stacking/build_notebook.py >/tmp/ensemble.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python projects/educational/llm-finetuning/build_notebook.py >/tmp/llm.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python projects/educational/timeseries-transformers/_build_notebook.py >/tmp/timeseries.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 scorecard >/tmp/scorecard.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 weekly-plan >/tmp/weekly-plan.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 pace >/tmp/pace.log

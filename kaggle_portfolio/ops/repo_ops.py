@@ -91,7 +91,6 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
     from kaggle_portfolio import manage_commands
     from kaggle_portfolio.datasets import dataset_usability
     from kaggle_portfolio.ops import medal_ops
-    from kaggle_portfolio.quality import notebook_quality
 
     step_deps = deps.with_output_root(args.output_root)
     # --output-root is still forwarded explicitly: each module resolves it from its
@@ -119,15 +118,6 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
         if value:
             doctor_argv.extend([flag, value])
 
-    quality_argv = [
-        *out,
-        *today,
-        "--scope",
-        "all",
-        "--min-score",
-        str(args.min_quality_score),
-        "--fail-under-threshold",
-    ]
     dataset_argv = [
         *out,
         *today,
@@ -139,10 +129,6 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
     steps = [
         Step("metadata-validate", run=lambda: manage_commands.cmd_validate([])),
         Step("doctor", run=lambda: medal_ops.main(doctor_argv, deps=step_deps)),
-        Step(
-            "notebook-quality",
-            run=lambda: notebook_quality.main(quality_argv, deps=step_deps),
-        ),
         Step(
             "dataset-usability",
             run=lambda: dataset_usability.main(dataset_argv, deps=step_deps),
@@ -230,9 +216,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--competitions-csv",
         default=None,
         help="Optional exported competitions CSV for doctor.",
-    )
-    preflight.add_argument(
-        "--min-quality-score", type=int, default=95, help="Notebook quality threshold."
     )
     preflight.add_argument(
         "--min-dataset-usability-score",

@@ -33,7 +33,6 @@ class TestPreflightComposition:
         assert [s.name for s in steps] == [
             "metadata-validate",
             "doctor",
-            "notebook-quality",
             "dataset-usability",
             "pytest",
         ]

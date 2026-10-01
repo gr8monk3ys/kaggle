@@ -25,8 +25,8 @@ def deps() -> Deps:
     """The process-wide dependencies, built on first use.
 
     Lazily, not at import: constructing these used to mean two repo-wide rglob
-    walks every time anything imported this module — including notebook_quality,
-    which only wanted a twelve-line path predicate.
+    walks every time anything imported this module, even callers that only
+    wanted a twelve-line path predicate.
     """
     global _DEPS
     if _DEPS is None:
@@ -959,11 +959,6 @@ COMMANDS = [
         fixed_args=("preflight",),
     ),
     Command(
-        "quality",
-        "Score notebook quality against rubric",
-        module="kaggle_portfolio.quality.notebook_quality",
-    ),
-    Command(
         "dataset-usability",
         "Score dataset usability and generate reports",
         module="kaggle_portfolio.datasets.dataset_usability",
@@ -984,12 +979,6 @@ COMMANDS = [
         "auth-doctor",
         "Validate Kaggle credentials, owner alignment, and upload auth",
         module="kaggle_portfolio.ops.kaggle_auth_doctor",
-    ),
-    Command(
-        "build-all",
-        "Build all notebooks with build_notebook.py scripts",
-        module="kaggle_portfolio.notebooks.notebook_pipeline",
-        args="[--stale-only] [--push] [--validate-only] [--min-score N]",
     ),
     Command(
         "build-datasets",

@@ -3,7 +3,7 @@
 
 Six modules hand-rolled a private ``write_text``/``write_json``, and five
 hand-rolled the dated-plus-latest pair — ``medal_ops.main`` six times,
-``notebook_quality.main`` eight. The filenames were an implicit cross-module
+another module eight. The filenames were an implicit cross-module
 contract: one module read ``latest-dataset-usability.json`` by string literal,
 written by ``dataset_usability`` by a different string literal.
 
@@ -38,8 +38,6 @@ PACE = Report("pace")
 DIGEST = Report("digest")
 SYNC = Report("sync")
 DOCTOR = Report("doctor")
-NOTEBOOK_QUALITY = Report("notebook-quality")
-NOTEBOOK_QUALITY_FIXES = Report("notebook-quality-fixes")
 DATASET_USABILITY = Report("dataset-usability")
 DATASET_USABILITY_TRACKER = Report("dataset-usability-tracker")
 LIVE_RATINGS = Report("live-ratings")
@@ -52,8 +50,6 @@ ALL_REPORTS = (
     DIGEST,
     SYNC,
     DOCTOR,
-    NOTEBOOK_QUALITY,
-    NOTEBOOK_QUALITY_FIXES,
     DATASET_USABILITY,
     DATASET_USABILITY_TRACKER,
     LIVE_RATINGS,

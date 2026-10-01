@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Shared utilities for building Kaggle notebook .ipynb files.
 
-All build_notebook.py scripts import from here instead of redefining
-the cell factories and notebook-writing boilerplate.
+Used by the competition-entry scaffolder to write a starter notebook.
 
 Usage
 -----

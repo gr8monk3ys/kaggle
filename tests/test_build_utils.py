@@ -3,9 +3,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
-from conftest import ROOT
 
 from kaggle_portfolio.shared import build_utils
 
@@ -128,48 +125,3 @@ def test_write_notebook_no_exporter_key_in_plain_text(tmp_path, repo_root):
         encoding="utf-8"
     )
     assert '"nbconvert_exporter"' not in src  # uses string concatenation trick
-
-
-# ── build_notebook.py import smoke tests ─────────────────────────────────────
-
-
-def _build_scripts_using_imports():
-    """Return all build_notebook.py paths that should import from shared build_utils.
-
-    Returns a sorted list (not a generator) so pytest.parametrize gets a concrete
-    collection and the parametrization is deterministic.
-    """
-    excluded = {"datasets/mental-health-tech", "datasets/spotify-tracks"}
-    scripts = []
-    for p in sorted(ROOT.rglob("build_notebook.py")):
-        rel_path = p.relative_to(ROOT)
-        # Skip hidden dirs — .claude/worktrees holds agent worktree copies of the repo.
-        if any(part.startswith(".") for part in rel_path.parts):
-            continue
-        if rel_path.parent.as_posix() not in excluded:
-            scripts.append(p)
-    return scripts
-
-
-@pytest.mark.parametrize("script", _build_scripts_using_imports())
-def test_build_notebook_uses_build_utils_import(script):
-    """Each refactored build_notebook.py must import the shared build_utils helpers."""
-    src = script.read_text(encoding="utf-8")
-    assert "from kaggle_portfolio.shared.build_utils import" in src, (
-        f"{script.relative_to(ROOT)}: missing shared build_utils import"
-    )
-    # Must NOT define md or code locally (as functions or lambdas)
-    import ast
-
-    try:
-        tree = ast.parse(src)
-    except SyntaxError:
-        pytest.fail(f"{script.relative_to(ROOT)}: SyntaxError in refactored file")
-    local_defs = [
-        node.name
-        for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef) and node.name in ("md", "code")
-    ]
-    assert local_defs == [], (
-        f"{script.relative_to(ROOT)}: still defines local {local_defs} — remove them"
-    )

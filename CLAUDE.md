@@ -78,7 +78,7 @@ These are checked by `tests/test_repo_guardrails.py` — a violation fails CI:
 
 Other conventions:
 - One `.ipynb` per `projects/*` / `datasets/*` subfolder; each notebook declares its own deps (common: PyTorch/Transformers, scikit-learn, pandas/numpy, XGBoost/LightGBM, plotly/matplotlib/seaborn). GPU notebooks set `enable_gpu: true` in their `kernel-metadata.json`.
-- When a competition ships a `build_notebook.py`, the `.ipynb` is generated from it — edit the builder, not the notebook, and keep `model.py`/`baseline.py` logic in sync to avoid drift.
+- The `.ipynb` is the source. Edit notebooks directly (run them on Kaggle before pushing a claim about results); there are no generator scripts.
 - Don't hardcode medal/vote counts in docs; regenerate via `manage.sh`.
 
 ## CI / automation

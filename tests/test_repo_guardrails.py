@@ -56,7 +56,6 @@ def test_manage_help_available():
     assert "sync-template" in result.stdout
     assert "doctor" in result.stdout
     assert "preflight" in result.stdout
-    assert "quality" in result.stdout
     assert "dataset-usability" in result.stdout
     assert "usability-tracker" in result.stdout
     assert "publish-datasets" in result.stdout
@@ -83,7 +82,6 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "workflow_dispatch:" in content
     assert "mode:" in content
     assert "max_stale_days:" in content
-    assert "min_quality_score:" in content
     assert "min_dataset_usability_score:" in content
     assert "live_alert_under:" in content
     assert "live_target_rating:" in content
@@ -99,7 +97,6 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
         "sync --dry-run" in content
         or "sync --output-root /tmp/medal_ops_health --dry-run" in content
     )
-    assert "python -m kaggle_portfolio.quality.notebook_quality" in content
     assert "python -m kaggle_portfolio.datasets.dataset_usability" in content
     assert "dataset-usability.log" in content
     assert "dataset-usability-tracker.log" in content
@@ -206,7 +203,7 @@ def test_deps_global_stays_inside_the_cli_edge():
 
     ADR-0002 permits the edge to hold one constructed Deps; it does not permit
     command modules to default to it. That line was breached once already —
-    notebook_quality imported is_skipped from manage_commands, and that helper
+    a command module imported is_skipped from manage_commands, and that helper
     called deps() — so the rule is enforced rather than trusted.
     """
     package = ROOT / "kaggle_portfolio"
