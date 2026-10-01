@@ -60,6 +60,12 @@ jobs:
           # kaggle backs kaggle_auth_doctor / leaderboard_tracker test modules.
           python -m pip install pytest pytest-cov pytest-mock requests pyyaml numpy pandas scikit-learn "kaggle<2"
 
+      - name: Build datasets
+        run: |
+          set -euo pipefail
+          python -m pip install numpy pandas
+          bash manage.sh build-datasets
+
       - name: Prepare preflight fixtures
         run: |
           set -euo pipefail
@@ -71,14 +77,10 @@ jobs:
         run: |
           set -euo pipefail
           # PR CI gates on code correctness only. Content-freshness SLAs
-          # (doctor staleness, draft posting cadence) belong to the scheduled
-          # Medal Ops Health workflow — a frozen --today pin here previously
-          # made every PR fail once the discussion queue moved past the pin.
-          # Re-tighten the draft SLA caps when Phase 2 posting goes live.
+          # (doctor staleness) belong to the scheduled Medal Ops Health
+          # workflow, so --today is never pinned here.
           bash manage.sh preflight \
             --no-pytest \
-            --max-overdue-scheduled 999 \
-            --max-days-until-next-post 999 \
             --kernels-csv /tmp/kernels.csv \
             --datasets-csv /tmp/datasets.csv \
             --competitions-csv /tmp/competitions.csv

@@ -59,6 +59,20 @@ jobs:
           printf '{"username":"%s","key":"%s"}' "${KAGGLE_USERNAME}" "${KAGGLE_KEY}" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
+      # A rejected key is a warning to rotate it, not a red run every week.
+      - name: Probe Kaggle credentials
+        if: env.SKIP != '1'
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -uo pipefail
+          if ! python -m kaggle_portfolio.ops.kaggle_auth_doctor; then
+            echo "::warning title=Kaggle credentials rejected::Telemetry skipped. Rotate the KAGGLE_API_TOKEN secret (kaggle.com/settings -> API -> Create New Token)."
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
       - name: Sync tracker + record snapshot
         if: env.SKIP != '1'
         env:
@@ -71,20 +85,11 @@ jobs:
           python -m kaggle_portfolio.ops.medal_ops scorecard
           python -m kaggle_portfolio.notebooks.competition_scout --update || echo "scout refresh skipped"
 
-      - name: Compose + send digest
+      - name: Write digest to the job summary
         if: env.SKIP != '1'
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           set -euo pipefail
-          MSG="$(python -m kaggle_portfolio.ops.medal_ops digest || echo 'digest generation failed')"
-          echo "$MSG"
-          if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
-            python pi-automation/scripts/notify.py "$MSG" || echo "notify failed (non-fatal)"
-          else
-            echo "No Telegram token; digest printed to log only."
-          fi
+          python -m kaggle_portfolio.ops.medal_ops digest >> "$GITHUB_STEP_SUMMARY" || echo "digest generation failed"
 
       # main is a protected branch (PR required, enforced for admins), so the
       # snapshot goes up as a branch + PR rather than a direct push. The diff

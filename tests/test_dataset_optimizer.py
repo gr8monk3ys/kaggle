@@ -1,6 +1,5 @@
 import csv
 import re
-import sys
 from pathlib import Path
 
 from kaggle_portfolio.datasets import dataset_optimizer
@@ -110,7 +109,7 @@ README_ROWS_RE = re.compile(
 
 def count_csv_rows(path: Path) -> int:
     """Count data rows in a CSV, honouring quoted fields with embedded newlines."""
-    previous_limit = csv.field_size_limit(sys.maxsize)
+    previous_limit = csv.field_size_limit(2**31 - 1)
     try:
         with path.open(encoding="utf-8", errors="replace", newline="") as handle:
             reader = csv.reader(handle)

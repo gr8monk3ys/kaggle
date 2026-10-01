@@ -209,3 +209,59 @@ class TestDryRunReachesLocalHandlers:
         assert manage_commands.deps() is original, (
             "the effects-gated Deps must not leak past the command that used it"
         )
+
+
+def _dataset_script(root: Path, name: str, body: str) -> Path:
+    d = root / "datasets" / name
+    d.mkdir(parents=True)
+    (d / "create_dataset.py").write_text(body, encoding="utf-8")
+    return d
+
+
+class TestBuildDatasets:
+    def test_runs_each_generator_in_its_own_folder(self, tmp_path: Path):
+        writes = "open('data.csv', 'w').write('a,b')\n"
+        one = _dataset_script(tmp_path, "one", writes)
+        two = _dataset_script(tmp_path, "two", writes)
+        _use(tmp_path)
+        assert manage_commands.cmd_build_datasets([]) == 0
+        assert (one / "data.csv").exists()
+        assert (two / "data.csv").exists()
+
+    def test_builds_only_the_named_datasets(self, tmp_path: Path):
+        writes = "open('data.csv', 'w').write('a,b')\n"
+        one = _dataset_script(tmp_path, "one", writes)
+        two = _dataset_script(tmp_path, "two", writes)
+        _use(tmp_path)
+        assert manage_commands.cmd_build_datasets(["two"]) == 0
+        assert not (one / "data.csv").exists()
+        assert (two / "data.csv").exists()
+
+    def test_a_failing_generator_fails_the_command(self, tmp_path: Path):
+        _dataset_script(tmp_path, "broken", "raise SystemExit(3)\n")
+        _use(tmp_path)
+        assert manage_commands.cmd_build_datasets([]) == 1
+
+    def test_unknown_names_are_rejected_before_anything_runs(self, tmp_path: Path):
+        one = _dataset_script(
+            tmp_path, "one", "open('data.csv', 'w').write('a,b')\n"
+        )
+        _use(tmp_path)
+        with pytest.raises(CommandError, match="nope"):
+            manage_commands.cmd_build_datasets(["one", "nope"])
+        assert not (one / "data.csv").exists()
+
+    def test_validate_points_at_build_datasets_when_data_is_missing(
+        self, tmp_path: Path
+    ):
+        d = _dataset_script(tmp_path, "one", "")
+        meta = d / "dataset-metadata.json"
+        payload = {
+            "id": "u/one",
+            "resources": [{"path": "data.csv", "description": "rows"}],
+        }
+        raw = json.dumps(payload)
+        meta.write_text(raw, encoding="utf-8")
+        _use(tmp_path)
+        errors = manage_commands.validate_dataset(meta, payload, raw)
+        assert any("build-datasets" in e for e in errors)

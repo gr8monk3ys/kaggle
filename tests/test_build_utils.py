@@ -146,7 +146,7 @@ def _build_scripts_using_imports():
         # Skip hidden dirs — .claude/worktrees holds agent worktree copies of the repo.
         if any(part.startswith(".") for part in rel_path.parts):
             continue
-        if str(rel_path.parent) not in excluded:
+        if rel_path.parent.as_posix() not in excluded:
             scripts.append(p)
     return scripts
 

@@ -4,8 +4,8 @@
 Six modules hand-rolled a private ``write_text``/``write_json``, and five
 hand-rolled the dated-plus-latest pair — ``medal_ops.main`` six times,
 ``notebook_quality.main`` eight. The filenames were an implicit cross-module
-contract: ``campaign_pack`` read ``latest-dataset-usability.json`` by string
-literal, written by ``dataset_usability`` by a different string literal.
+contract: one module read ``latest-dataset-usability.json`` by string literal,
+written by ``dataset_usability`` by a different string literal.
 
 The registry below makes that contract a symbol. The emitter makes writing an
 effect that can be turned off at the seam rather than by an ``if`` each caller
@@ -43,8 +43,6 @@ NOTEBOOK_QUALITY_FIXES = Report("notebook-quality-fixes")
 DATASET_USABILITY = Report("dataset-usability")
 DATASET_USABILITY_TRACKER = Report("dataset-usability-tracker")
 USABILITY_BENCHMARK = Report("usability-benchmark")
-PROMOTION_CAMPAIGN = Report("promotion-campaign")
-CAMPAIGN_RUNBOOK = Report("campaign-runbook")
 STALE_CONTENT = Report("stale-content")
 LIVE_RATINGS = Report("live-ratings")
 
@@ -61,8 +59,6 @@ ALL_REPORTS = (
     DATASET_USABILITY,
     DATASET_USABILITY_TRACKER,
     USABILITY_BENCHMARK,
-    PROMOTION_CAMPAIGN,
-    CAMPAIGN_RUNBOOK,
     STALE_CONTENT,
     LIVE_RATINGS,
 )

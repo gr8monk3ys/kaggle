@@ -689,9 +689,7 @@ class TestDigest:
         s2 = self._snap(
             "2026-06-14", entered=11, nb_votes=68, ds_votes=54, posts=2, comps=comps
         )
-        health = {"ready_now": 2, "days_until_next_post": 4, "overdue_scheduled": 0}
-
-        out = medal_ops.generate_digest([s1, s2], health)
+        out = medal_ops.generate_digest([s1, s2])
 
         assert "2026-06-14" in out
         assert "+8" in out  # notebook votes 60 -> 68
@@ -699,19 +697,13 @@ class TestDigest:
             "Hull Tactical" in out and "3" in out
         )  # nearest deadline (not Orbit Wars at 12)
         assert "Orbit Wars" not in out
-        assert "ready" in out.lower()
         assert "Top action" in out
 
     def test_digest_first_snapshot_has_no_deltas(self):
         s1 = self._snap("2026-06-14", entered=10, nb_votes=60, ds_votes=54, posts=0)
-        out = medal_ops.generate_digest([s1], {})
+        out = medal_ops.generate_digest([s1])
         assert "First snapshot" in out
 
     def test_digest_no_snapshots(self):
-        assert "No snapshots" in medal_ops.generate_digest([], {})
+        assert "No snapshots" in medal_ops.generate_digest([])
 
-    def test_digest_tolerates_missing_queue_health(self):
-        s1 = self._snap("2026-06-13", entered=10, nb_votes=60, ds_votes=54, posts=0)
-        s2 = self._snap("2026-06-14", entered=10, nb_votes=60, ds_votes=54, posts=0)
-        out = medal_ops.generate_digest([s1, s2], {})
-        assert "2026-06-14" in out

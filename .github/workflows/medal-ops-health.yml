@@ -44,18 +44,6 @@ on:
         required: true
         default: "1.0"
         type: string
-      # Draft-SLA caps are relaxed while Phase 2 posting is gated on a host —
-      # no cadence exists to enforce yet. Re-tighten (0 / 7) when posting starts.
-      max_overdue_scheduled:
-        description: "maximum overdue scheduled drafts"
-        required: true
-        default: "999"
-        type: string
-      max_days_until_next_post:
-        description: "maximum days allowed until next scheduled discussion post"
-        required: true
-        default: "999"
-        type: string
 
 permissions:
   contents: read
@@ -110,6 +98,36 @@ jobs:
           EOF
           chmod 600 ~/.kaggle/kaggle.json
 
+      - name: Build datasets
+        run: |
+          set -euo pipefail
+          python -m pip install numpy pandas
+          bash manage.sh build-datasets
+
+      # A configured-but-rejected key used to turn every scheduled run red for
+      # weeks (see #106). In auto mode a rejected key now downgrades the run to
+      # the offline fixture checks with a visible warning; an explicit `live`
+      # dispatch still fails hard.
+      - name: Probe Kaggle credentials
+        id: auth
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          set -uo pipefail
+          if [[ -z "${KAGGLE_API_TOKEN:-}" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
+            echo "accepted=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          if python -m kaggle_portfolio.ops.kaggle_auth_doctor >/tmp/auth.log 2>&1; then
+            echo "accepted=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "accepted=false" >> "${GITHUB_OUTPUT}"
+            echo "::warning title=Kaggle credentials rejected::Kaggle refused the configured key. Running offline checks only. Rotate the KAGGLE_API_TOKEN secret (kaggle.com/settings -> API -> Create New Token)."
+            cat /tmp/auth.log
+          fi
+
       - name: Run medal ops health checks
         id: checks
         continue-on-error: true
@@ -123,14 +141,13 @@ jobs:
           MIN_DATASET_USABILITY_SCORE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.min_dataset_usability_score || '85' }}
           LIVE_ALERT_UNDER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.live_alert_under || '0.8' }}
           LIVE_TARGET_RATING: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.live_target_rating || '1.0' }}
-          MAX_OVERDUE_SCHEDULED: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_overdue_scheduled || '999' }}
-          MAX_DAYS_UNTIL_NEXT_POST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_days_until_next_post || '999' }}
+          AUTH_ACCEPTED: ${{ steps.auth.outputs.accepted }}
         run: |
           set -euo pipefail
           MODE="${FORCE_MODE}"
           if [[ "${MODE}" == "auto" ]]; then
             MODE="offline-fixture"
-            if [[ -n "${KAGGLE_API_TOKEN:-}" || ( -n "${KAGGLE_USERNAME:-}" && -n "${KAGGLE_KEY:-}" ) ]]; then
+            if [[ "${AUTH_ACCEPTED}" == "true" ]]; then
               MODE="live"
             fi
           fi
@@ -167,16 +184,6 @@ jobs:
               raise SystemExit("LIVE_ALERT_UNDER cannot be greater than LIVE_TARGET_RATING")
           PY
 
-          if ! [[ "${MAX_OVERDUE_SCHEDULED}" =~ ^[0-9]+$ ]]; then
-            echo "MAX_OVERDUE_SCHEDULED must be an integer: ${MAX_OVERDUE_SCHEDULED}" >&2
-            exit 1
-          fi
-
-          if ! [[ "${MAX_DAYS_UNTIL_NEXT_POST}" =~ ^[0-9]+$ ]]; then
-            echo "MAX_DAYS_UNTIL_NEXT_POST must be an integer: ${MAX_DAYS_UNTIL_NEXT_POST}" >&2
-            exit 1
-          fi
-
           if (( MIN_QUALITY_SCORE < 0 || MIN_QUALITY_SCORE > 100 )); then
             echo "MIN_QUALITY_SCORE must be between 0 and 100." >&2
             exit 1
@@ -205,7 +212,6 @@ jobs:
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.quality.notebook_quality --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --strict --fail-under "${MIN_DATASET_USABILITY_SCORE}" >/tmp/dataset-usability.log
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --live --owner "${KAGGLE_USERNAME}" --daily-tracker --alert-under "${LIVE_ALERT_UNDER}" --target-rating "${LIVE_TARGET_RATING}" --fail-on-live-alert >/tmp/dataset-usability-tracker.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.discussion_scheduler --health-check --max-overdue-scheduled "${MAX_OVERDUE_SCHEDULED}" --max-days-until-next-post "${MAX_DAYS_UNTIL_NEXT_POST}" >/tmp/draft-ops.log
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops sync --output-root /tmp/medal_ops_health --dry-run >/tmp/sync.log
           else
             printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
@@ -216,7 +222,6 @@ jobs:
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.quality.notebook_quality --output-root /tmp/medal_ops_health --scope all --min-score "${MIN_QUALITY_SCORE}" --fail-under-threshold >/tmp/quality.log
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --strict --fail-under "${MIN_DATASET_USABILITY_SCORE}" >/tmp/dataset-usability.log
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_usability --output-root /tmp/medal_ops_health --daily-tracker --live-ratings-csv /tmp/live-ratings.csv --alert-under "${LIVE_ALERT_UNDER}" --target-rating "${LIVE_TARGET_RATING}" >/tmp/dataset-usability-tracker.log
-            PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.discussion_scheduler --health-check --max-overdue-scheduled "${MAX_OVERDUE_SCHEDULED}" --max-days-until-next-post "${MAX_DAYS_UNTIL_NEXT_POST}" >/tmp/draft-ops.log
             PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops sync --output-root /tmp/medal_ops_health --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log
           fi
 
@@ -230,7 +235,7 @@ jobs:
             /tmp/quality.log
             /tmp/dataset-usability.log
             /tmp/dataset-usability-tracker.log
-            /tmp/draft-ops.log
+            /tmp/auth.log
             /tmp/sync.log
           if-no-files-found: ignore
 
@@ -258,7 +263,7 @@ jobs:
               `- Mode: ${mode}`,
               `- Commit: ${context.sha}`,
               "",
-              "The `medal-ops-health-logs` artifact contains `doctor.log`, `quality.log`, `dataset-usability.log`, `dataset-usability-tracker.log`, `draft-ops.log`, and `sync.log`."
+              "The `medal-ops-health-logs` artifact contains `doctor.log`, `quality.log`, `dataset-usability.log`, `dataset-usability-tracker.log`, `sync.log`, and `auth.log`."
             ].join("\n");
 
             const { data: issues } = await github.rest.issues.listForRepo({

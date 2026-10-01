@@ -991,13 +991,10 @@ def _fmt_delta(value: int | None) -> str:
     return f"+{value}" if value > 0 else str(value)
 
 
-def generate_digest(
-    snapshots: list[dict[str, Any]], queue_health: dict[str, Any]
-) -> str:
+def generate_digest(snapshots: list[dict[str, Any]]) -> str:
     """Compose a one-message daily Grandmaster digest (Markdown) from snapshot history.
 
-    Pure function: takes the chronological snapshot list and a draft-queue health
-    dict (may be empty), returns a Telegram-ready Markdown string.
+    Pure function: takes the chronological snapshot list, returns a Markdown string.
     """
     if not snapshots:
         return "No snapshots available yet — run `medal_ops sync` first."
@@ -1041,32 +1038,12 @@ def generate_digest(
     else:
         lines.append("*Nearest deadline:* none tracked")
 
-    if queue_health:
-        nd = queue_health.get("days_until_next_post")
-        nd_str = f"{nd}d" if isinstance(nd, int) else "n/a"
-        lines.append(
-            f"*Draft queue:* {queue_health.get('ready_now', 0)} ready, "
-            f"next post in {nd_str}, {queue_health.get('overdue_scheduled', 0)} overdue"
-        )
-
     actions = top_actions(current)
     if actions:
         lines.append(f"*Top action today:* {actions[0]}")
 
     return "\n".join(lines)
 
-
-def _load_queue_health() -> dict[str, Any]:
-    """Best-effort draft-queue health for the digest; empty dict if unavailable."""
-    try:
-        from kaggle_portfolio.ops.discussion_scheduler import (
-            build_ops_summary,
-            load_queue,
-        )
-
-        return build_ops_summary(load_queue())
-    except Exception:
-        return {}
 
 
 def generate_sync_markdown(
@@ -1581,7 +1558,7 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         snapshots = load_all_snapshots(history_dir)
         if not snapshots:
             snapshots = [snapshot]
-        print(generate_digest(snapshots, _load_queue_health()))
+        print(generate_digest(snapshots))
         return 0
 
     if args.command == "scorecard":

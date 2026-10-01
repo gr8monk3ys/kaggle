@@ -59,16 +59,10 @@ def test_manage_help_available():
     assert "quality" in result.stdout
     assert "dataset-usability" in result.stdout
     assert "usability-tracker" in result.stdout
-    assert "campaign-pack" in result.stdout
-    assert "campaign-run" in result.stdout
-    assert "campaign-execute" in result.stdout
     assert "usability-benchmark" in result.stdout
     assert "publish-datasets" in result.stdout
     assert "smoke-live" in result.stdout
     assert "auth-doctor" in result.stdout
-    assert "draft-ops" in result.stdout
-    assert "draft-set" in result.stdout
-    assert "--schedule-weeks" in result.stdout
 
 
 def test_repo_root_has_no_top_level_python_scripts():
@@ -96,8 +90,6 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "live_target_rating:" in content
     assert 'default: "0.8"' in content
     assert 'default: "1.0"' in content
-    assert "max_overdue_scheduled:" in content
-    assert "max_days_until_next_post:" in content
     assert 'default: "85"' in content
     # The medal_ops parser accepts shared flags before or after the subcommand,
     # so assert the doctor/sync steps exist with their key flags rather than
@@ -112,10 +104,8 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "python -m kaggle_portfolio.datasets.dataset_usability" in content
     assert "dataset-usability.log" in content
     assert "dataset-usability-tracker.log" in content
-    assert (
-        "python -m kaggle_portfolio.ops.discussion_scheduler --health-check" in content
-    )
-    assert "draft-ops.log" in content
+    assert "python -m kaggle_portfolio.ops.kaggle_auth_doctor" in content
+    assert "Kaggle credentials rejected" in content
     assert "Open or update incident issue" in content
 
 
@@ -124,10 +114,8 @@ def test_ci_workflow_runs_preflight_gate_and_script_smokes():
     assert workflow.exists()
     content = workflow.read_text(encoding="utf-8")
     assert "bash manage.sh preflight" in content
-    # PR CI must not enforce content-cadence SLAs (that is the scheduled
-    # health workflow's job) and must not pin --today: a frozen date plus a
-    # moving discussion queue once made every PR fail permanently.
-    assert "--max-overdue-scheduled" in content
+    # PR CI must not pin --today: content-freshness SLAs are the scheduled
+    # health workflow's job.
     preflight_step = content.split("bash manage.sh preflight")[1].split("- name:")[0]
     assert "--today" not in preflight_step
     assert "--no-pytest" in content
@@ -144,19 +132,16 @@ def test_live_smoke_workflow_exists_and_is_manual():
     assert "name: Live Smoke" in content
     assert "workflow_dispatch:" in content
     assert "schedule:" not in content
-    assert "discussion_mode:" in content
     assert "include_live_datasets:" in content
     assert "kaggle-live-smoke" in content
     assert "bash manage.sh" in content
     assert "smoke-live" in content
-    assert "--check-discussion-login" in content
-    assert "--no-discussion" in content
 
 
 def test_kaggle_session_cookie_is_gitignored():
-    """The Playwright session-cookie file must never be committable."""
+    """A browser session-cookie file must never be committable."""
     result = subprocess.run(
-        ["git", "check-ignore", "-q", "pi-automation/data/kaggle_storage_state.json"],
+        ["git", "check-ignore", "-q", "kaggle_storage_state.json"],
         cwd=ROOT,
         capture_output=True,
         check=False,

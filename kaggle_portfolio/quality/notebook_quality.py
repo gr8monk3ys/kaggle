@@ -228,7 +228,7 @@ def score_notebook(path: Path, root: Path, min_score: int) -> NotebookScore:
     except (OSError, json.JSONDecodeError) as exc:
         return NotebookScore(
             notebook_path=path,
-            slug=str(path.relative_to(root)),
+            slug=path.relative_to(root).as_posix(),
             title=path.stem,
             score=0,
             passed=False,
@@ -346,7 +346,7 @@ def score_notebook(path: Path, root: Path, min_score: int) -> NotebookScore:
     title = extract_title(cells, path.stem)
     return NotebookScore(
         notebook_path=path,
-        slug=str(path.relative_to(root)),
+        slug=path.relative_to(root).as_posix(),
         title=title,
         score=score,
         passed=score >= min_score,

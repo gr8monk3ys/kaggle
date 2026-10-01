@@ -5,7 +5,6 @@ Each cover image is a visually appealing chart saved as cover.png in the dataset
 Upload these to Kaggle dataset Settings to boost usability scores.
 """
 
-import json
 import sys
 from pathlib import Path
 
@@ -152,9 +151,7 @@ def gen_ecommerce(data_dir):
     )
     if spend_col and seg_col:
         grouped = df.groupby(seg_col)[spend_col].mean().sort_values(ascending=True)
-        bars = ax.barh(
-            grouped.index, grouped.values, color=ACCENT_COLORS[: len(grouped)]
-        )
+        ax.barh(grouped.index, grouped.values, color=ACCENT_COLORS[: len(grouped)])
         style_ax(ax, "Average Customer Spend by Segment", "Average Spend ($)", "")
     elif spend_col:
         ax.hist(

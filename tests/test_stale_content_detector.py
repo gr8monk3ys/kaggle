@@ -2,7 +2,6 @@ import json
 import os
 from datetime import date, datetime
 from pathlib import Path
-from typing import Optional
 
 from kaggle_portfolio.ops import stale_content_detector as scd
 

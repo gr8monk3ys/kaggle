@@ -10,8 +10,7 @@ See ``docs/adr/0001-kaggle-cli-behind-one-adapter.md``.
 
 Two adapters make the seam real: :class:`CliKaggleClient` in production and
 :class:`FakeKaggleClient` everywhere else. The fake ships in the package rather
-than in ``tests/`` so that ``pi-automation``'s suite and the dry-run paths can
-use it too.
+than in ``tests/`` so that the dry-run paths can use it too.
 """
 
 from __future__ import annotations
@@ -976,9 +975,9 @@ def read_dataset_metadata(path: Path) -> DatasetMetadata:
 class FakeKaggleClient:
     """An in-memory Kaggle, seeded with whatever a test needs.
 
-    This ships in the package rather than in ``tests/`` so that
-    ``pi-automation``'s suite and any future caller can reach it. Two adapters
-    are what make the seam real; one would be indirection.
+    This ships in the package rather than in ``tests/`` so that the dry-run
+    paths can reach it. Two adapters are what make the seam real; one would be
+    indirection.
 
     Seed with typed objects or with raw CSV rows — rows go through exactly the
     same parsing the production adapter uses, so a fixture captured from real
