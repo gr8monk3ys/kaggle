@@ -110,13 +110,6 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
         doctor_argv.append("--strict")
     if args.require_kaggle:
         doctor_argv.append("--require-kaggle")
-    for flag, value in (
-        ("--kernels-csv", args.kernels_csv),
-        ("--datasets-csv", args.datasets_csv),
-        ("--competitions-csv", args.competitions_csv),
-    ):
-        if value:
-            doctor_argv.extend([flag, value])
 
     dataset_argv = [
         *out,
@@ -203,19 +196,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--require-kaggle",
         action="store_true",
         help="Require live Kaggle access in doctor.",
-    )
-    preflight.add_argument(
-        "--kernels-csv", default=None, help="Optional exported kernels CSV for doctor."
-    )
-    preflight.add_argument(
-        "--datasets-csv",
-        default=None,
-        help="Optional exported datasets CSV for doctor.",
-    )
-    preflight.add_argument(
-        "--competitions-csv",
-        default=None,
-        help="Optional exported competitions CSV for doctor.",
     )
     preflight.add_argument(
         "--min-dataset-usability-score",

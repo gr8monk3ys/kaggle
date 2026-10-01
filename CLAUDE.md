@@ -57,15 +57,16 @@ There is **no** `pyproject.toml` / `setup.py` / `requirements.txt` at the root: 
 ./manage.sh push <dir>                # Push one notebook/dataset dir (auto-validates first)
 ./manage.sh push-nb | push-ds         # Push all notebooks / all datasets
 ./manage.sh preflight [--no-pytest]   # Core gate: validate + doctor + quality + usability + pytest
-./manage.sh doctor                    # Preflight checks (tracker age, sync inputs, env, credentials)
+./manage.sh doctor                    # Preflight checks (tracker age, env, credentials)
 ./manage.sh sync --dry-run            # Preview tracker metric sync from live Kaggle
-./manage.sh scorecard | weekly-plan | pace      # Medal-ops reports → medal_ops/reports/
+./manage.sh sync                      # Live sync: updates the tracker + writes medal_ops/history/ snapshot
+./manage.sh digest                    # One-message summary from the snapshot history
 ./manage.sh quality --min-score 70 --scope all  # Notebook quality rubric
 ./manage.sh scout --update            # Regenerate competition-scout-report.md
 ./manage.sh create-competition-entry <slug> [--gpu]   # Scaffold a new competition dir
 ```
 
-`requires_kaggle=True` commands need credentials; `validate`/`quality`/`scorecard` run offline.
+`requires_kaggle=True` commands need credentials; `validate`/`quality`/`digest` run offline.
 
 ## Conventions & enforced guardrails
 

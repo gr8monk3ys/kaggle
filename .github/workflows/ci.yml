@@ -66,24 +66,13 @@ jobs:
           python -m pip install numpy pandas
           bash manage.sh build-datasets
 
-      - name: Prepare preflight fixtures
-        run: |
-          set -euo pipefail
-          printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
-          printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
-          printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
-
       - name: Repository preflight
         run: |
           set -euo pipefail
           # PR CI gates on code correctness only. Content-freshness SLAs
           # (doctor staleness) belong to the scheduled Medal Ops Health
           # workflow, so --today is never pinned here.
-          bash manage.sh preflight \
-            --no-pytest \
-            --kernels-csv /tmp/kernels.csv \
-            --datasets-csv /tmp/datasets.csv \
-            --competitions-csv /tmp/competitions.csv
+          bash manage.sh preflight --no-pytest
 
       - name: Unit tests with coverage
         run: |
@@ -94,9 +83,5 @@ jobs:
           set -euo pipefail
           PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/ai-research-trends/create_dataset.py >/tmp/ai-research.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/programming-benchmarks/create_dataset.py >/tmp/programming-benchmarks.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 scorecard >/tmp/scorecard.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 weekly-plan >/tmp/weekly-plan.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 pace >/tmp/pace.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 sync-template --out-dir /tmp/medal_ops_sync_inputs >/tmp/sync-template.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci digest >/tmp/digest.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.notebooks.competition_entry --help >/tmp/comp-entry.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log

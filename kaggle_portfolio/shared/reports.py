@@ -31,10 +31,6 @@ class Report(str):
 # Anything reading another module's output should import the name from here
 # rather than retyping the string.
 
-SCORECARD = Report("scorecard")
-BADGE_PLAN = Report("badge-plan")
-WEEKLY_PLAN = Report("weekly-plan")
-PACE = Report("pace")
 DIGEST = Report("digest")
 SYNC = Report("sync")
 DOCTOR = Report("doctor")
@@ -43,10 +39,6 @@ DATASET_USABILITY_TRACKER = Report("dataset-usability-tracker")
 LIVE_RATINGS = Report("live-ratings")
 
 ALL_REPORTS = (
-    SCORECARD,
-    BADGE_PLAN,
-    WEEKLY_PLAN,
-    PACE,
     DIGEST,
     SYNC,
     DOCTOR,

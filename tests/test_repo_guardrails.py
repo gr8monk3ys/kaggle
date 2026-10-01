@@ -49,12 +49,13 @@ def test_manage_help_available():
     )
     assert result.returncode == 0
     assert "Usage:" in result.stdout
-    assert "scorecard" in result.stdout
-    assert "weekly-plan" in result.stdout
-    assert "pace" in result.stdout
-    assert "sync" in result.stdout
-    assert "sync-template" in result.stdout
-    assert "doctor" in result.stdout
+    listed = {
+        line.split()[0] for line in result.stdout.splitlines() if line.startswith("  ")
+    }
+    assert {"sync", "doctor", "digest"} <= listed
+    assert (
+        not {"scorecard", "badge-plan", "weekly-plan", "pace", "sync-template"} & listed
+    )
     assert "preflight" in result.stdout
     assert "dataset-usability" in result.stdout
     assert "usability-tracker" in result.stdout
@@ -145,7 +146,7 @@ def test_kaggle_session_cookie_is_gitignored():
 
 
 def test_medal_ops_history_is_tracked_not_ignored():
-    """Daily snapshots must be committable so pace history accumulates."""
+    """Snapshots must be committable so the digest has history to compare."""
     result = subprocess.run(
         ["git", "check-ignore", "-q", "medal_ops/history/snapshot-sample.json"],
         cwd=ROOT,
@@ -169,10 +170,7 @@ def test_telemetry_workflow_records_and_commits_snapshots():
     assert wf.get("permissions", {}).get("contents") == "write"
 
     body = wf_path.read_text(encoding="utf-8")
-    assert "medal_ops sync" in body
-    assert (
-        "medal_ops scorecard" in body
-    )  # scorecard is what actually writes the snapshot
+    assert "medal_ops sync" in body  # sync is what writes the snapshot
     assert "--dry-run" not in body
     assert "medal_ops digest" in body
 

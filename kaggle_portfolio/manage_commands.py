@@ -828,7 +828,7 @@ class Command:
       import the world.
 
     ``fixed_args`` are prepended to the user's argv, for modules whose CLI takes a
-    subcommand (``medal_ops scorecard``) or a mode flag.
+    subcommand (``medal_ops digest``) or a mode flag.
     """
 
     name: str
@@ -905,30 +905,6 @@ COMMANDS = [
         requires_kaggle=True,
     ),
     Command(
-        "scorecard",
-        "Generate medal operations scorecard report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("scorecard",),
-    ),
-    Command(
-        "badge-plan",
-        "Generate ordered Kaggle badge roadmap report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("badge-plan",),
-    ),
-    Command(
-        "weekly-plan",
-        "Generate weekly execution plan report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("weekly-plan",),
-    ),
-    Command(
-        "pace",
-        "Generate medal progress pace analysis report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("pace",),
-    ),
-    Command(
         "digest",
         "Print a one-message daily Grandmaster digest",
         module="kaggle_portfolio.ops.medal_ops",
@@ -936,19 +912,13 @@ COMMANDS = [
     ),
     Command(
         "sync",
-        "Sync tracker metrics from live Kaggle CLI data",
+        "Sync tracker metrics from live Kaggle CLI data and record a snapshot",
         module="kaggle_portfolio.ops.medal_ops",
         fixed_args=("sync",),
     ),
     Command(
-        "sync-template",
-        "Generate CSV templates + export helper for offline sync",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("sync-template",),
-    ),
-    Command(
         "doctor",
-        "Run preflight checks (tracker, sync inputs, environment)",
+        "Run preflight checks (tracker, environment, Kaggle credentials)",
         module="kaggle_portfolio.ops.medal_ops",
         fixed_args=("doctor",),
     ),

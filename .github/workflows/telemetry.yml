@@ -86,7 +86,6 @@ jobs:
         run: |
           set -euo pipefail
           python -m kaggle_portfolio.ops.medal_ops sync
-          python -m kaggle_portfolio.ops.medal_ops scorecard
           python -m kaggle_portfolio.notebooks.competition_scout --update || echo "scout refresh skipped"
 
       - name: Write digest to the job summary

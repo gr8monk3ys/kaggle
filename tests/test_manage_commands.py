@@ -90,10 +90,16 @@ class TestCredentials:
 
 class TestCommandRegistry:
     @pytest.mark.parametrize(
-        "name", ["digest", "leaderboard", "validate", "push", "scorecard"]
+        "name", ["digest", "sync", "doctor", "leaderboard", "validate", "push"]
     )
     def test_command_is_registered(self, name):
         assert name in [c.name for c in manage_commands.COMMANDS]
+
+    @pytest.mark.parametrize(
+        "name", ["scorecard", "badge-plan", "weekly-plan", "pace", "sync-template"]
+    )
+    def test_removed_planning_command_is_gone(self, name):
+        assert name not in [c.name for c in manage_commands.COMMANDS]
 
 
 class TestKaggleCommands:

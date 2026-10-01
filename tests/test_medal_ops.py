@@ -1,4 +1,3 @@
-import os
 from datetime import date
 
 from kaggle_portfolio.ops import medal_ops
@@ -95,34 +94,16 @@ def test_competition_deadline_parsing_and_sorting():
     assert by_name["Vesuvius Surface Detection"]["days_to_deadline"] == -9
 
 
-def test_scorecard_markdown_contains_actionable_sections():
-    snapshot = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 22))
-    md = medal_ops.generate_scorecard_markdown(snapshot, previous=None)
+def test_top_actions_flag_a_stale_tracker_and_never_suggest_promotion():
+    # Both tracked deadlines have passed by March, so nothing is in flight.
+    snapshot = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 3, 1))
+    actions = medal_ops.top_actions(snapshot)
 
-    assert "Kaggle Medal Ops Scorecard" in md
-    assert "Deadline Radar" in md
-    assert "Top Actions" in md
-    assert "stale" in md
-
-
-def test_weekly_plan_contains_kpis_and_cadence():
-    snapshot = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 22))
-    md = medal_ops.generate_weekly_plan_markdown(snapshot)
-
-    assert "Primary Objectives (7 days)" in md
-    assert "Daily Cadence" in md
-    assert "KPI Targets" in md
-
-
-def test_badge_plan_contains_ordered_phases():
-    snapshot = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 22))
-    md = medal_ops.generate_badge_plan_markdown(snapshot)
-
-    assert "Kaggle Badge Roadmap" in md
-    assert "Phase 1: Same-Day Wins" in md
-    assert "Phase 6: Seasonal Or Availability-Dependent" in md
-    assert "Current live tracker basis" in md
-    assert "Start a 7-day submission streak" in md
+    assert "35 days stale" in actions[0]
+    assert any("Featured or Research" in a for a in actions)
+    text = " ".join(actions).lower()
+    for word in ("promot", "campaign", "upvote", "follow", "cadence"):
+        assert word not in text
 
 
 def test_parse_args_accepts_shared_flags_after_subcommand(monkeypatch):
@@ -130,7 +111,7 @@ def test_parse_args_accepts_shared_flags_after_subcommand(monkeypatch):
         "sys.argv",
         [
             "medal_ops.py",
-            "badge-plan",
+            "digest",
             "--output-root",
             "custom-out",
             "--today",
@@ -140,7 +121,7 @@ def test_parse_args_accepts_shared_flags_after_subcommand(monkeypatch):
 
     args = medal_ops.parse_args()
 
-    assert args.command == "badge-plan"
+    assert args.command == "digest"
     assert args.output_root == "custom-out"
     assert args.today == "2026-03-09"
 
@@ -154,32 +135,15 @@ def test_parse_args_accepts_shared_flags_before_subcommand(monkeypatch):
             "custom-out",
             "--today",
             "2026-03-09",
-            "badge-plan",
+            "digest",
         ],
     )
 
     args = medal_ops.parse_args()
 
-    assert args.command == "badge-plan"
+    assert args.command == "digest"
     assert args.output_root == "custom-out"
     assert args.today == "2026-03-09"
-
-
-def test_pace_report_computes_velocity():
-    first = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 15))
-    second = medal_ops.build_snapshot(SAMPLE_TRACKER, today=date(2026, 2, 22))
-    second["categories"]["notebooks"]["total_votes"] = 14
-    second["categories"]["datasets"]["total_votes"] = 5
-    second["categories"]["discussion"]["total_posts"] = 14
-    second["categories"]["competitions"]["entered"] = 3
-
-    md = medal_ops.generate_pace_markdown([first, second])
-
-    assert "Kaggle Medal Ops Pace Analysis" in md
-    assert "Outcome Pace" in md
-    assert "Leading Indicators" in md
-    assert "Notebook votes velocity" in md
-    assert "/wk" in md
 
 
 def test_write_snapshot_dedupes_same_day_state(tmp_path):
@@ -261,83 +225,61 @@ def test_generate_sync_markdown_includes_change_summary():
     assert "Notebook votes pulled" in md
 
 
-def test_fetch_metrics_from_csv(tmp_path):
-    kernels_csv = tmp_path / "kernels.csv"
-    datasets_csv = tmp_path / "datasets.csv"
-    competitions_csv = tmp_path / "competitions.csv"
-
-    kernels_csv.write_text(
-        "title,totalVotes\nA,10\nB,25\nC,55\nD,3\n",
-        encoding="utf-8",
-    )
-    datasets_csv.write_text(
-        "title,voteCount,downloadCount\nD1,2,20\nD2,7,30\nD3,21,40\n",
-        encoding="utf-8",
-    )
-    competitions_csv.write_text(
-        "competition,userHasEntered\nC1,true\nC2,false\nC3,1\n",
-        encoding="utf-8",
+def _sync_client():
+    return FakeKaggleClient(
+        kernels=[Kernel.from_row({"ref": "me/a", "totalVotes": "12"})],
+        datasets=[Dataset.from_row({"ref": "me/x", "voteCount": "3"})],
+        entered=[Competition.from_row({"ref": "k/c1", "userHasEntered": "True"})],
     )
 
-    live = medal_ops.fetch_metrics_from_csv(kernels_csv, datasets_csv, competitions_csv)
 
-    assert live["notebooks_count"] == 4
-    assert live["notebooks_total_votes"] == 93
-    assert live["notebooks_bronze"] == 1
-    assert live["notebooks_silver"] == 1
-    assert live["notebooks_gold"] == 1
-    assert live["datasets_count"] == 3
-    assert live["datasets_total_votes"] == 30
-    assert live["datasets_total_downloads"] == 90
-    assert live["datasets_bronze"] == 1
-    assert live["datasets_silver"] == 1
-    assert live["datasets_gold"] == 0
-    assert live["competitions_entered"] == 2
-
-
-def test_fetch_metrics_from_csv_requires_vote_column(tmp_path):
-    kernels_csv = tmp_path / "kernels.csv"
-    datasets_csv = tmp_path / "datasets.csv"
-
-    kernels_csv.write_text(
-        "title,score\nA,10\n",
-        encoding="utf-8",
+def _run_sync(tmp_path, *extra):
+    tracker_path = tmp_path / "tracker.md"
+    tracker_path.write_text(SAMPLE_TRACKER, encoding="utf-8")
+    output_root = tmp_path / "out"
+    dry_run = "--dry-run" in extra
+    deps = medal_ops.Deps.for_test(
+        tmp_path,
+        today="2026-02-22",
+        client=_sync_client(),
+        output_root=output_root,
+        effects=not dry_run,
     )
-    datasets_csv.write_text(
-        "title,voteCount\nD1,2\n",
-        encoding="utf-8",
+    code = medal_ops.main(
+        [
+            "sync",
+            "--tracker",
+            str(tracker_path),
+            "--output-root",
+            str(output_root),
+            "--today",
+            "2026-02-22",
+            *extra,
+        ],
+        deps=deps,
     )
-
-    with pytest.raises(CommandError, match="missing a vote column"):
-        medal_ops.fetch_metrics_from_csv(
-            kernels_csv, datasets_csv, competitions_csv=None
-        )
+    assert code == 0
+    return tracker_path, output_root / "history"
 
 
-def test_fetch_metrics_from_csv_requires_entered_column_when_competitions_present(
-    tmp_path,
-):
-    kernels_csv = tmp_path / "kernels.csv"
-    datasets_csv = tmp_path / "datasets.csv"
-    competitions_csv = tmp_path / "competitions.csv"
+def test_sync_writes_tracker_and_a_history_snapshot(tmp_path):
+    tracker_path, history = _run_sync(tmp_path)
 
-    kernels_csv.write_text(
-        "title,totalVotes\nA,10\n",
-        encoding="utf-8",
+    snapshots = medal_ops.load_all_snapshots(history)
+    assert len(snapshots) == 1
+    assert snapshots[0]["generated_on"] == "2026-02-22"
+    assert snapshots[0]["categories"]["notebooks"]["total_votes"] == 12
+    notebooks = medal_ops.parse_progress_metrics(
+        tracker_path.read_text(encoding="utf-8"), "Notebooks"
     )
-    datasets_csv.write_text(
-        "title,voteCount\nD1,2\n",
-        encoding="utf-8",
-    )
-    competitions_csv.write_text(
-        "competition,teams\nC1,100\n",
-        encoding="utf-8",
-    )
+    assert notebooks["total_votes"] == 12
 
-    with pytest.raises(CommandError, match="missing an entered column"):
-        medal_ops.fetch_metrics_from_csv(
-            kernels_csv, datasets_csv, competitions_csv=competitions_csv
-        )
+
+def test_sync_dry_run_writes_neither_tracker_nor_snapshot(tmp_path):
+    tracker_path, history = _run_sync(tmp_path, "--dry-run")
+
+    assert medal_ops.load_all_snapshots(history) == []
+    assert tracker_path.read_text(encoding="utf-8") == SAMPLE_TRACKER
 
 
 def test_fetch_live_kaggle_metrics_counts_votes_medals_and_entries():
@@ -400,69 +342,12 @@ def test_has_kaggle_credentials_accepts_api_token(monkeypatch, tmp_path):
     assert "environment-token" in sources
 
 
-def test_generate_sync_template_assets(tmp_path):
-    out_dir = tmp_path / "sync_inputs"
-
-    statuses = medal_ops.generate_sync_template_assets(out_dir, force=False)
-
-    kernels_path = out_dir / "kernels.csv"
-    datasets_path = out_dir / "datasets.csv"
-    competitions_path = out_dir / "competitions.csv"
-    script_path = out_dir / "export_kaggle_sync_csv.sh"
-    readme_path = out_dir / "README.md"
-
-    assert kernels_path.exists()
-    assert datasets_path.exists()
-    assert competitions_path.exists()
-    assert script_path.exists()
-    assert readme_path.exists()
-    assert os.access(script_path, os.X_OK)
-    assert statuses[str(kernels_path)] == "created"
-
-    rerun_statuses = medal_ops.generate_sync_template_assets(out_dir, force=False)
-    assert rerun_statuses[str(kernels_path)] == "skipped"
-
-
-def test_run_preflight_checks_validates_csv_bundle(tmp_path):
-    tracker_path = tmp_path / "tracker.md"
-    output_root = tmp_path / "out"
-    kernels_csv = tmp_path / "kernels.csv"
-    datasets_csv = tmp_path / "datasets.csv"
-    competitions_csv = tmp_path / "competitions.csv"
-
-    tracker_path.write_text(SAMPLE_TRACKER, encoding="utf-8")
-    kernels_csv.write_text("title,totalVotes\nA,10\n", encoding="utf-8")
-    datasets_csv.write_text("title,voteCount\nD1,2\n", encoding="utf-8")
-    competitions_csv.write_text(
-        "competition,userHasEntered\nC1,true\n", encoding="utf-8"
-    )
-
-    checks = medal_ops.run_preflight_checks(
-        client=FakeKaggleClient(),
-        tracker_path=tracker_path,
-        output_root=output_root,
-        today=date(2026, 1, 25),
-        kernels_csv=kernels_csv,
-        datasets_csv=datasets_csv,
-        competitions_csv=competitions_csv,
-        require_kaggle=False,
-        max_stale_days=7,
-    )
-
-    assert checks["errors"] == []
-    assert any("CSV sync inputs validated" in item for item in checks["infos"])
-    assert checks["csv_metrics"]["notebooks_total_votes"] == 10
-
-
 def test_run_preflight_checks_reports_missing_tracker(tmp_path):
     checks = medal_ops.run_preflight_checks(
         client=FakeKaggleClient(),
         tracker_path=tmp_path / "missing-tracker.md",
         output_root=tmp_path / "out",
         today=date(2026, 2, 22),
-        kernels_csv=None,
-        datasets_csv=None,
-        competitions_csv=None,
         require_kaggle=False,
         max_stale_days=7,
     )
@@ -501,9 +386,6 @@ def test_run_preflight_checks_respects_max_stale_days(tmp_path):
         tracker_path=tracker_path,
         output_root=tmp_path / "out",
         today=date(2026, 2, 22),
-        kernels_csv=None,
-        datasets_csv=None,
-        competitions_csv=None,
         require_kaggle=False,
         max_stale_days=30,
     )
@@ -519,9 +401,6 @@ def _live_preflight(tmp_path, client):
         tracker_path=tracker_path,
         output_root=tmp_path / "out",
         today=date(2026, 1, 25),
-        kernels_csv=None,
-        datasets_csv=None,
-        competitions_csv=None,
         require_kaggle=True,
         max_stale_days=30,
     )
@@ -569,9 +448,6 @@ def test_run_preflight_checks_skips_the_live_check_unless_required(tmp_path):
         tracker_path=tracker_path,
         output_root=tmp_path / "out",
         today=date(2026, 1, 25),
-        kernels_csv=None,
-        datasets_csv=None,
-        competitions_csv=None,
         require_kaggle=False,
         max_stale_days=30,
     )
