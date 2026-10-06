@@ -1,7 +1,7 @@
 # Kaggle Portfolio
 
-A monorepo of Kaggle artifacts plus the automation that publishes, scores and
-promotes them. The goal it exists to serve is Grandmaster across all four Kaggle
+A monorepo of Kaggle artifacts plus the package that validates, publishes and
+tracks them. The goal it serves is Grandmaster across all four Kaggle
 categories, so most concepts here are either *an artifact we publish* or *a
 measure of how that artifact is doing*.
 
@@ -25,7 +25,8 @@ folder.
 _Avoid_: data, corpus
 
 **Competition**:
-A Kaggle contest we may enter, track, or submit to.
+A Kaggle contest we may enter, track, or submit to. Only Featured and Research
+Competitions award Medals.
 _Avoid_: contest, comp
 
 **Ref**:
@@ -40,12 +41,8 @@ _Avoid_: name, key
 
 ### Measures
 
-Three different numbers are all colloquially called "score". They are not
+Two different numbers are colloquially called "score". They are not
 interchangeable and must never be compared to each other.
-
-**Quality Score**:
-Our own rubric's rating of a Notebook, 0-100. Ours to define and to change.
-_Avoid_: score, rating
 
 **Usability**:
 Kaggle's rating of a Dataset, 0.0-1.0. Kaggle's to define; we can only influence
@@ -59,7 +56,8 @@ _Avoid_: score, result
 
 **Medal**:
 A Kaggle award on a single artifact. The count of these per category is what
-Grandmaster is measured in.
+Grandmaster is measured in. Earned only from other people's votes or from a
+Competition placing, never from anything automated here (ADR-0007).
 _Avoid_: award, badge
 
 **Tracker**:
@@ -68,34 +66,12 @@ goal. It is the baseline that live Kaggle counts are synced into, and the source
 of truth when the two disagree.
 _Avoid_: report, dashboard
 
-**Scorecard**:
-A generated snapshot of the portfolio's current standing, derived from the
-**Tracker** plus live counts. Regenerated, never edited.
-_Avoid_: report, summary
+**Snapshot**:
+A point-in-time copy of the Tracker's numbers, written by `sync` into
+`medal_ops/history/`. The digest compares the latest two.
+_Avoid_: scorecard, report
 
-### Discussion pipeline
-
-**Draft**:
-A written discussion post that has not been published to Kaggle. Drafts are
-authored by hand and reviewed before they become eligible to post.
-_Avoid_: post, article
-
-**Draft Queue**:
-The ordered set of Drafts together with their status and schedule. It is the
-single answer to "what posts next".
-_Avoid_: backlog, schedule
-
-**Draft Status**:
-A Draft's position in its lifecycle — `idea`, `unverified`, `ready`,
-`scheduled`, `pending`, `posted`, `expired`, `skipped`, `won-medal`.
-_Avoid_: state, stage
-
-**Postable**:
-The subset of Draft Statuses eligible to be published: `ready`, `scheduled`,
-`pending`. Every other status is terminal for scheduling purposes.
-_Avoid_: active, live
-
-### Automation
+### Competitions
 
 **Benchmark**:
 A local, reproducible model run for one Competition, producing a comparable
@@ -109,12 +85,7 @@ submits their output. Shortened to `lab` inside its own package
 spell it out everywhere else.
 _Avoid_: playground
 
-**Flywheel**:
-The loop that picks one automation action per tick and records that it happened,
-so the same action is never taken twice.
-_Avoid_: scheduler, runner
-
-**Campaign**:
-A multi-channel promotion effort for a published artifact, queued and dispatched
-rather than posted directly.
-_Avoid_: promotion, blast
+**Bronze Cutoff**:
+How many of the top places on a medal-awarding Competition earn at least bronze:
+40% of the field under 250 teams, 100 places up to 1,000, 10% beyond.
+_Avoid_: medal zone, threshold

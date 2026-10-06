@@ -144,11 +144,7 @@ def detect_category(title: str) -> str:
 
 
 def fetch_competition_info(client: KaggleClient, slug: str) -> Competition | None:
-    """Fetch competition info from Kaggle CLI.
-
-    Returns a dict with keys: ref, title, deadline, teamCount, category, etc.
-    Returns None on failure.
-    """
+    """The competition whose ref or slug is slug, or None if Kaggle has none."""
     for category in COMPETITION_LIST_CATEGORIES:
         try:
             found = client.search_competitions(category=category or None)
@@ -416,7 +412,7 @@ def create_entry(
     # Try to fetch competition info
     info = fetch_competition_info(client, slug)
     if info:
-        raw_title = info.get("title", slug)
+        raw_title = info.title or slug
         title = f"{raw_title}: EDA & Baseline"
         print(f"  Found competition: {raw_title}")
     else:

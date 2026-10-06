@@ -1,5 +1,9 @@
 # Regenerating the Campaign queue merges; it never replaces
 
+> **Superseded by [ADR-0007](0007-no-automated-engagement.md) (2026-10-01).**
+> The Campaign queue described here was removed with the rest of the engagement
+> automation. Kept for the record.
+
 `campaign-pack` builds the Campaign queue from the current Datasets and used to
 write the result wholesale, dropping `claim_count`, `claimed_at`, `completed_at`
 and `updated_at`. Re-running it therefore reset finished actions to `planned`.

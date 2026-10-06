@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import importlib
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -24,8 +25,8 @@ def deps() -> Deps:
     """The process-wide dependencies, built on first use.
 
     Lazily, not at import: constructing these used to mean two repo-wide rglob
-    walks every time anything imported this module — including notebook_quality,
-    which only wanted a twelve-line path predicate.
+    walks every time anything imported this module, even callers that only
+    wanted a twelve-line path predicate.
     """
     global _DEPS
     if _DEPS is None:
@@ -40,7 +41,6 @@ def set_deps(new: Deps | None) -> None:
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-PI_SCRIPTS = PACKAGE_ROOT / "pi-automation" / "scripts"
 DEFAULT_CREDENTIALS = Path.home() / ".kaggle" / "kaggle.json"
 # Kaggle rejects dataset uploads carrying more than this many keywords with
 # "You have exceeded the max category limit". Measured 2026-08-19: 7 fails, 6 succeeds.
@@ -119,13 +119,6 @@ def require_kaggle_credentials() -> None:
 def ensure_kaggle_ready() -> None:
     require_kaggle_cli()
     require_kaggle_credentials()
-
-
-def run_script(path: Path, args: list[str]) -> int:
-    result = subprocess.run(
-        [sys.executable, str(path), *args], cwd=PACKAGE_ROOT, check=False
-    )
-    return result.returncode
 
 
 def rel_path(path: Path) -> str:
@@ -347,8 +340,13 @@ def validate_dataset(path: Path, payload: dict, raw_text: str) -> list[str]:
                 errors.append(f"resource #{index} missing 'path'")
                 continue
             if not (path.parent / resource_path).exists():
+                hint = (
+                    " (data files are not committed: run ./manage.sh build-datasets)"
+                    if (path.parent / "create_dataset.py").exists()
+                    else ""
+                )
                 errors.append(
-                    f"resource path '{resource_path}' not found in {path.parent.name}/"
+                    f"resource path '{resource_path}' not found in {path.parent.name}/{hint}"
                 )
             if not str(item.get("description", "")).strip():
                 errors.append(f"resource #{index} missing 'description'")
@@ -732,61 +730,40 @@ def cmd_link_competition(args: list[str]) -> int:
     return rc
 
 
-def cmd_competitions(_: list[str]) -> int:
-    print(f"{BLUE}=== Active Medal-Eligible Competitions ==={RESET}")
-    failures = 0
-    for category in ("featured", "research", "playground"):
-        print(f"{YELLOW}{category.title()}:{RESET}")
-        try:
-            for comp in deps().client.search_competitions(category=category):
-                print(f"  {comp.slug:<55} {comp.team_count:>6} teams  {comp.deadline}")
-        except KaggleError as exc:
-            # This used to discard the return code entirely and always report
-            # success, so a broken CLI looked like an empty competition list.
-            print(f"  {RED}unavailable{RESET}: {exc}")
-            failures += 1
-        print("")
-    return 1 if failures else 0
+def cmd_build_datasets(args: list[str]) -> int:
+    """Regenerate dataset CSVs from each folder's seeded ``create_dataset.py``.
 
-
-def cmd_dataset_ui_sync(args: list[str]) -> int:
-    return run_script(PI_SCRIPTS / "dataset_metadata_sync.py", args)
-
-
-def cmd_upload_covers(args: list[str]) -> int:
-    return run_script(PI_SCRIPTS / "cover_image_upload.py", args)
-
-
-def cmd_follow_users(args: list[str]) -> int:
-    return run_script(PI_SCRIPTS / "follow_users.py", args)
-
-
-def cmd_upvote(args: list[str]) -> int:
-    return run_script(PI_SCRIPTS / "upvote_content.py", args)
-
-
-def cmd_post_comment(args: list[str]) -> int:
-    return run_script(PI_SCRIPTS / "comment_thread.py", args)
-
-
-def _scheduler_main(argv: list[str]) -> int:
-    from kaggle_portfolio.ops import discussion_scheduler
-
-    return discussion_scheduler.main(argv, deps=deps())
-
-
-def cmd_draft_set(args: list[str]) -> int:
-    """Set fields on one draft.
-
-    Takes the draft id positionally and re-emits it as ``--set-id``, which is why
-    this cannot be a plain declarative delegation.
+    The CSVs are build output, not source: they are gitignored and rebuilt here,
+    so ``validate`` (and therefore ``push``) can see the files a dataset declares.
     """
-    if not args:
-        raise CommandError(
-            "Usage: ./manage.sh draft-set <draft_id> [--status ...] [--priority ...] "
-            "[--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]"
+    scripts = sorted(deps().layout.datasets_dir.glob("*/create_dataset.py"))
+    unknown = set(args) - {script.parent.name for script in scripts}
+    if unknown:
+        raise CommandError(f"Unknown dataset(s): {', '.join(sorted(unknown))}")
+    selected = [s for s in scripts if not args or s.parent.name in args]
+
+    def build(script: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, script.name],
+            cwd=script.parent,
+            capture_output=True,
+            text=True,
+            check=False,
         )
-    return _scheduler_main(["--set-id", args[0], *args[1:]])
+
+    # The generators are independent processes, so run them side by side.
+    with ThreadPoolExecutor() as pool:
+        results = list(pool.map(build, selected))
+
+    failures = 0
+    for script, result in zip(selected, results):
+        if result.returncode == 0:
+            print(f"Built {script.parent.name}: {GREEN}ok{RESET}")
+        else:
+            failures += 1
+            print(f"Built {script.parent.name}: {RED}failed{RESET}")
+            print(result.stderr.strip()[-2000:])
+    return 1 if failures else 0
 
 
 def cmd_usability_tracker(args: list[str]) -> int:
@@ -825,18 +802,16 @@ def cmd_usability_tracker(args: list[str]) -> int:
 class Command:
     """One CLI command, dispatched in-process wherever that is possible.
 
-    Exactly one of ``handler``, ``module`` or ``script`` says how to run it:
+    Exactly one of ``handler`` or ``module`` says how to run it:
 
     - ``handler`` — a function in this file.
     - ``module`` — a dotted path whose ``main(argv, deps=...)`` is called directly.
       The module is imported at DISPATCH time, not at registry construction: some
-      command modules pull in pandas and sklearn, and one pulls in Playwright, so
-      importing the table must not import the world.
-    - ``script`` — a path run as a subprocess. Reserved for pi-automation, whose
-      Playwright dependency must not become reachable from a kaggle_portfolio import.
+      command modules pull in pandas and sklearn, so importing the table must not
+      import the world.
 
     ``fixed_args`` are prepended to the user's argv, for modules whose CLI takes a
-    subcommand (``medal_ops scorecard``) or a mode flag.
+    subcommand (``medal_ops digest``) or a mode flag.
     """
 
     name: str
@@ -847,7 +822,6 @@ class Command:
     hidden: bool = False
     module: str | None = None
     fixed_args: tuple[str, ...] = ()
-    script: Path | None = None
 
     def run(self, argv: list[str], deps: Deps) -> int:
         if self.handler is not None:
@@ -864,12 +838,8 @@ class Command:
                 return self.handler(argv)
             finally:
                 set_deps(previous)
-        if self.script is not None:
-            return run_script(self.script, argv)
         if self.module is None:
-            raise CommandError(
-                f"Command {self.name!r} has no handler, module or script"
-            )
+            raise CommandError(f"Command {self.name!r} has no handler or module")
         module = importlib.import_module(self.module)
         return module.main([*self.fixed_args, *argv], deps=deps)
 
@@ -905,41 +875,11 @@ COMMANDS = [
         requires_kaggle=True,
     ),
     Command(
-        "competitions",
-        "List active medal-eligible competitions",
-        cmd_competitions,
-        requires_kaggle=True,
-    ),
-    Command(
         "link-competition",
         "Add competition_sources to a notebook and re-push",
         cmd_link_competition,
         "<dir> <slug>",
         requires_kaggle=True,
-    ),
-    Command(
-        "scorecard",
-        "Generate medal operations scorecard report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("scorecard",),
-    ),
-    Command(
-        "badge-plan",
-        "Generate ordered Kaggle badge roadmap report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("badge-plan",),
-    ),
-    Command(
-        "weekly-plan",
-        "Generate weekly execution plan report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("weekly-plan",),
-    ),
-    Command(
-        "pace",
-        "Generate medal progress pace analysis report",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("pace",),
     ),
     Command(
         "digest",
@@ -949,32 +889,21 @@ COMMANDS = [
     ),
     Command(
         "sync",
-        "Sync tracker metrics from live Kaggle CLI data",
+        "Sync tracker metrics from live Kaggle CLI data and record a snapshot",
         module="kaggle_portfolio.ops.medal_ops",
         fixed_args=("sync",),
     ),
     Command(
-        "sync-template",
-        "Generate CSV templates + export helper for offline sync",
-        module="kaggle_portfolio.ops.medal_ops",
-        fixed_args=("sync-template",),
-    ),
-    Command(
         "doctor",
-        "Run preflight checks (tracker, sync inputs, environment)",
+        "Run preflight checks (tracker, environment, Kaggle credentials)",
         module="kaggle_portfolio.ops.medal_ops",
         fixed_args=("doctor",),
     ),
     Command(
         "preflight",
-        "Run the core repo gates: validate, doctor, quality, usability, draft SLA, tests",
+        "Run the core repo gates: validate, doctor, dataset usability, tests",
         module="kaggle_portfolio.ops.repo_ops",
         fixed_args=("preflight",),
-    ),
-    Command(
-        "quality",
-        "Score notebook quality against rubric",
-        module="kaggle_portfolio.quality.notebook_quality",
     ),
     Command(
         "dataset-usability",
@@ -985,28 +914,6 @@ COMMANDS = [
         "usability-tracker",
         "Daily live tracker with threshold alerts and ranked action queue",
         cmd_usability_tracker,
-    ),
-    Command(
-        "campaign-pack",
-        "Generate multi-channel promotion campaign pack + queue",
-        module="kaggle_portfolio.campaigns.campaign_pack",
-    ),
-    Command(
-        "campaign-run",
-        "Execute campaign queue (show/claim/complete + runbook export)",
-        module="kaggle_portfolio.campaigns.campaign_dispatcher",
-    ),
-    Command(
-        "campaign-execute",
-        "Execute due campaign queue actions by posting discussion topics",
-        module="kaggle_portfolio.campaigns.campaign_execute",
-        args="[--limit N] [--dry-run] [--headed] [--channel NAME]",
-    ),
-    Command(
-        "usability-benchmark",
-        "Benchmark local datasets against public high-usability exemplars",
-        module="kaggle_portfolio.datasets.dataset_usability_benchmark",
-        requires_kaggle=True,
     ),
     Command(
         "publish-datasets",
@@ -1021,92 +928,16 @@ COMMANDS = [
         module="kaggle_portfolio.ops.kaggle_auth_doctor",
     ),
     Command(
-        "build-all",
-        "Build all notebooks with build_notebook.py scripts",
-        module="kaggle_portfolio.notebooks.notebook_pipeline",
-        args="[--stale-only] [--push] [--validate-only] [--min-score N]",
-    ),
-    Command(
-        "optimize-datasets",
-        "Generate README.md + improve dataset descriptions",
-        module="kaggle_portfolio.datasets.dataset_optimizer",
-        args="[--push]",
-    ),
-    Command(
-        "vote-plan",
-        "Rank datasets by distance-to-medal + discoverability gaps",
-        module="kaggle_portfolio.datasets.dataset_vote_planner",
-        args="[--owner OWNER] [--json]",
-        requires_kaggle=True,
-    ),
-    Command(
-        "post-discussion",
-        "Post next queued discussion draft or rebuild queue window",
-        module="kaggle_portfolio.ops.discussion_scheduler",
-        args="[--dry-run|--init|--schedule-weeks N]",
-    ),
-    Command(
-        "draft-ops",
-        "Show draft backlog stage counts + priority queue",
-        module="kaggle_portfolio.ops.discussion_scheduler",
-        fixed_args=("--ops-report",),
-    ),
-    Command(
-        "draft-set",
-        "Update draft metadata and rebalance queue schedule window",
-        cmd_draft_set,
-        "<id> [--status STATUS] [--priority PRIORITY] [--deadline YYYY-MM-DD|--clear-deadline] [--schedule-weeks N]",
-    ),
-    Command(
-        "next-post",
-        "Show the next ready discussion draft to post manually (safe assist)",
-        module="kaggle_portfolio.ops.discussion_scheduler",
-        fixed_args=("--next-post",),
-    ),
-    Command(
-        "dataset-ui-sync",
-        "Sync Kaggle UI-only dataset sections",
-        cmd_dataset_ui_sync,
-        "[--apply] [--headed] [--dataset <dir>] [--dataset-ref <owner/slug>]",
-    ),
-    Command(
-        "promote-notebooks",
-        "Generate notebook promotion plan for competition forums",
-        module="kaggle_portfolio.notebooks.notebook_promoter",
-        args="[--auto]",
+        "build-datasets",
+        "Regenerate dataset CSVs from their seeded create_dataset.py scripts",
+        cmd_build_datasets,
+        "[dataset ...]",
     ),
     Command(
         "scout",
         "Scout active competitions ranked by medal opportunity",
         module="kaggle_portfolio.notebooks.competition_scout",
         args="[--update]",
-    ),
-    Command(
-        "flywheel-status",
-        "Print the growth-flywheel Reach-Score dashboard",
-        module="kaggle_portfolio.growth.flywheel",
-        fixed_args=("status",),
-    ),
-    Command(
-        "flywheel-tick",
-        "Run one growth-flywheel tick: score, gate, dispatch top safe actions",
-        module="kaggle_portfolio.growth.flywheel",
-        fixed_args=("tick",),
-        args="[--dry-run]",
-        requires_kaggle=True,
-    ),
-    Command(
-        "stale-content",
-        "Detect stale notebooks, datasets, and outdated library versions",
-        module="kaggle_portfolio.ops.stale_content_detector",
-        args="[--max-nb-age N] [--max-ds-age N]",
-    ),
-    Command(
-        "build-explore-notebooks",
-        "Generate rich EDA explore notebooks for all datasets",
-        module="kaggle_portfolio.datasets.dataset_explore_generator",
-        fixed_args=("--all",),
-        args="[--push]",
     ),
     Command(
         "create-competition-entry",
@@ -1121,12 +952,6 @@ COMMANDS = [
         args="<slug> [--write-submission] [--submit] [--force-download]",
     ),
     Command(
-        "metadata-tracker",
-        "Track metadata changes vs vote deltas over time",
-        module="kaggle_portfolio.ops.metadata_tracker",
-        args="<snapshot|annotate|report> [args...]",
-    ),
-    Command(
         "leaderboard",
         "Record/report competition leaderboard rank history",
         module="kaggle_portfolio.ops.leaderboard_tracker",
@@ -1135,26 +960,10 @@ COMMANDS = [
     ),
     Command(
         "smoke-live",
-        "Safely exercise live Kaggle publish/post prerequisites without mutating Kaggle state",
+        "Safely exercise live Kaggle publish prerequisites without mutating Kaggle state",
         module="kaggle_portfolio.ops.repo_ops",
         fixed_args=("smoke-live",),
-        args="[--owner OWNER] [--check-discussion-login]",
-    ),
-    Command(
-        "upload-covers",
-        "Upload cover images to Kaggle datasets via Playwright",
-        cmd_upload_covers,
-    ),
-    Command(
-        "follow-users",
-        "Follow Kaggle users to build visibility via Playwright",
-        cmd_follow_users,
-    ),
-    Command("upvote", "Upvote Kaggle content via Playwright", cmd_upvote),
-    Command(
-        "post-comment",
-        "Post comments on Kaggle threads via Playwright",
-        cmd_post_comment,
+        args="[--owner OWNER]",
     ),
 ]
 

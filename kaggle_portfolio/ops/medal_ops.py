@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from kaggle_portfolio.shared.clock import parse_iso_date, resolve_today
+from kaggle_portfolio.shared.clock import resolve_today
 from kaggle_portfolio.shared import reports
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import (
@@ -33,19 +32,7 @@ from kaggle_portfolio.ops.tracker import (
 
 DEFAULT_TRACKER_PATH = Path("docs/reports/grandmaster-tracker.md")
 DEFAULT_OUTPUT_ROOT = Path("medal_ops")
-DEFAULT_SYNC_INPUT_DIRNAME = "sync_inputs"
-DEFAULT_KAGGLE_PAGE_SIZE = 20
 UTC = getattr(datetime, "UTC", timezone.utc)
-
-
-def load_csv_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
-    if not path.exists():
-        raise CommandError(f"CSV file not found: {path}")
-    with path.open("r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        rows = [dict(row) for row in reader]
-        fieldnames = [name for name in (reader.fieldnames or []) if name]
-    return rows, fieldnames
 
 
 def find_key(keys: list[str], predicates: list[str]) -> str | None:
@@ -54,11 +41,6 @@ def find_key(keys: list[str], predicates: list[str]) -> str | None:
             if wanted in key.lower():
                 return key
     return None
-
-
-def parse_truthy(value: str) -> bool:
-    normalized = value.strip().lower()
-    return normalized in {"1", "true", "yes", "y", "t"}
 
 
 def format_columns(fieldnames: list[str]) -> str:
@@ -136,36 +118,14 @@ def count_vote_threshold_medals(
     return counts
 
 
-def parse_entered_total(
-    rows: list[dict[str, str]],
-    fieldnames: list[str],
-    source_label: str,
-    strict: bool,
-) -> tuple[int | None, str | None]:
-    keys = fieldnames or (list(rows[0].keys()) if rows else [])
-    entered_key = find_key(keys, ["userhasentered", "hasentered", "entered"])
-    if not entered_key:
-        if strict:
-            raise CommandError(
-                f"{source_label} is missing an entered column. "
-                f"Expected one containing userHasEntered, hasEntered, or entered. "
-                f"Found columns: {format_columns(keys)}"
-            )
-        return None, None
-    total = sum(1 for row in rows if parse_truthy(row.get(entered_key, "")))
-    return total, entered_key
-
-
 def fetch_live_kaggle_metrics(client: KaggleClient) -> dict[str, Any]:
     if not client.available():
         raise CommandError(
-            "kaggle CLI not found. Install/authenticate it, or run sync with exported CSV files "
-            "(--kernels-csv, --datasets-csv, --competitions-csv)."
+            "kaggle CLI not found. Install and authenticate it, then rerun sync."
         )
 
-    # The client paginates and strips Kaggle's banner lines; the raw rows are
-    # kept so the metric parsers below stay identical for the live and the
-    # exported-CSV paths.
+    # The client paginates and strips Kaggle's banner lines; the metric
+    # parsers below work on the raw CLI rows it keeps.
     kernels = client.my_kernels()
     datasets = client.my_datasets()
     entered = client.entered_competitions()
@@ -210,144 +170,6 @@ def fetch_live_kaggle_metrics(client: KaggleClient) -> dict[str, Any]:
         "competitions_entered": len(entered_rows),
         "competitions_entered_key": "group=entered",
     }
-
-
-def fetch_metrics_from_csv(
-    kernels_csv: Path, datasets_csv: Path, competitions_csv: Path | None
-) -> dict[str, Any]:
-    kernels_rows, kernels_columns = load_csv_rows(kernels_csv)
-    datasets_rows, datasets_columns = load_csv_rows(datasets_csv)
-
-    competition_rows: list[dict[str, str]] = []
-    competition_columns: list[str] = []
-    if competitions_csv:
-        competition_rows, competition_columns = load_csv_rows(competitions_csv)
-
-    notebooks_votes, notebooks_vote_key = parse_vote_total(
-        kernels_rows, kernels_columns, f"kernels CSV ({kernels_csv})", strict=True
-    )
-    notebook_medals = count_vote_threshold_medals(kernels_rows, notebooks_vote_key)
-    datasets_votes, datasets_vote_key = parse_vote_total(
-        datasets_rows, datasets_columns, f"datasets CSV ({datasets_csv})", strict=True
-    )
-    dataset_medals = count_vote_threshold_medals(datasets_rows, datasets_vote_key)
-    datasets_downloads, datasets_download_key = parse_integer_total(
-        datasets_rows,
-        datasets_columns,
-        f"datasets CSV ({datasets_csv})",
-        predicates=["downloadcount", "downloads", "download"],
-        metric_name="download",
-        strict=False,
-    )
-    if competitions_csv:
-        entered_total, entered_key = parse_entered_total(
-            competition_rows,
-            competition_columns,
-            f"competitions CSV ({competitions_csv})",
-            strict=True,
-        )
-    else:
-        entered_total, entered_key = None, None
-
-    return {
-        "notebooks_count": len(kernels_rows),
-        "notebooks_total_votes": notebooks_votes,
-        "notebooks_vote_key": notebooks_vote_key,
-        "notebooks_gold": notebook_medals["gold"],
-        "notebooks_silver": notebook_medals["silver"],
-        "notebooks_bronze": notebook_medals["bronze"],
-        "datasets_count": len(datasets_rows),
-        "datasets_total_votes": datasets_votes,
-        "datasets_vote_key": datasets_vote_key,
-        "datasets_total_downloads": datasets_downloads,
-        "datasets_download_key": datasets_download_key,
-        "datasets_gold": dataset_medals["gold"],
-        "datasets_silver": dataset_medals["silver"],
-        "datasets_bronze": dataset_medals["bronze"],
-        "competitions_entered": entered_total,
-        "competitions_entered_key": entered_key,
-    }
-
-
-def write_template_asset(path: Path, content: str, force: bool) -> str:
-    if path.exists():
-        if not force:
-            return "skipped"
-        path.write_text(content, encoding="utf-8")
-        return "overwritten"
-    path.write_text(content, encoding="utf-8")
-    return "created"
-
-
-def ensure_executable(path: Path) -> None:
-    path.chmod(path.stat().st_mode | 0o111)
-
-
-def generate_sync_template_assets(output_dir: Path, force: bool) -> dict[str, str]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    kernels_path = output_dir / "kernels.csv"
-    datasets_path = output_dir / "datasets.csv"
-    competitions_path = output_dir / "competitions.csv"
-    script_path = output_dir / "export_kaggle_sync_csv.sh"
-    readme_path = output_dir / "README.md"
-
-    script_content = """#!/usr/bin/env bash
-set -euo pipefail
-
-OUT_DIR="${1:-$(cd "$(dirname "$0")" && pwd)}"
-mkdir -p "${OUT_DIR}"
-
-kaggle kernels list --mine --page-size 100 --csv > "${OUT_DIR}/kernels.csv"
-kaggle datasets list -m --csv > "${OUT_DIR}/datasets.csv"
-kaggle competitions list --group entered --csv > "${OUT_DIR}/competitions.csv"
-
-echo "CSV exports written to ${OUT_DIR}"
-"""
-
-    readme_content = """# Sync Input Bundle
-
-This folder was generated by `python3 -m kaggle_portfolio.ops.medal_ops sync-template`.
-
-## Files
-
-- `kernels.csv`: expected to include a vote column such as `totalVotes`.
-- `datasets.csv`: expected to include a vote column such as `voteCount`.
-- `competitions.csv`: optional for sync; `kaggle competitions list --group entered` output is preferred.
-- `export_kaggle_sync_csv.sh`: helper that exports CSV files from Kaggle CLI.
-
-## Quick Start
-
-```bash
-# Requires authenticated kaggle CLI:
-./export_kaggle_sync_csv.sh
-
-# Dry-run sync:
-python3 -m kaggle_portfolio.ops.medal_ops sync --dry-run \\
-  --kernels-csv kernels.csv \\
-  --datasets-csv datasets.csv \\
-  --competitions-csv competitions.csv
-```
-"""
-
-    statuses = {
-        str(kernels_path): write_template_asset(
-            kernels_path, "title,totalVotes\nsample-notebook,0\n", force
-        ),
-        str(datasets_path): write_template_asset(
-            datasets_path, "title,voteCount\nsample-dataset,0\n", force
-        ),
-        str(competitions_path): write_template_asset(
-            competitions_path,
-            "competition,userHasEntered\nsample-competition,false\n",
-            force,
-        ),
-        str(script_path): write_template_asset(script_path, script_content, force),
-        str(readme_path): write_template_asset(readme_path, readme_content, force),
-    }
-
-    ensure_executable(script_path)
-    return statuses
 
 
 def build_snapshot(content: str, today: date) -> dict[str, Any]:
@@ -475,13 +297,6 @@ def load_latest_snapshot_path(history_dir: Path) -> Path | None:
     return snapshots[-1]
 
 
-def load_latest_snapshot(history_dir: Path) -> dict[str, Any] | None:
-    latest_path = load_latest_snapshot_path(history_dir)
-    if not latest_path:
-        return None
-    return json.loads(latest_path.read_text(encoding="utf-8"))
-
-
 def load_all_snapshots(history_dir: Path) -> list[dict[str, Any]]:
     if not history_dir.exists():
         return []
@@ -526,463 +341,30 @@ def delta(
     return curr - prev
 
 
-def format_delta(value: int | None) -> str:
-    if value is None:
-        return "n/a"
-    if value > 0:
-        return f"+{value}"
-    return str(value)
-
-
-def nested_int(snapshot: dict[str, Any], path: tuple[str, ...]) -> int | None:
-    node: Any = snapshot
-    for key in path:
-        if not isinstance(node, dict) or key not in node:
-            return None
-        node = node[key]
-    if not isinstance(node, int):
-        return None
-    return node
-
-
-def snapshot_generated_date(snapshot: dict[str, Any]) -> date | None:
-    generated = snapshot.get("generated_on")
-    if not isinstance(generated, str):
-        return None
-    return parse_iso_date(generated)
-
-
-def weekly_velocity(
-    snapshots: list[dict[str, Any]], path: tuple[str, ...]
-) -> float | None:
-    if len(snapshots) < 2:
-        return None
-
-    first = snapshots[0]
-    last = snapshots[-1]
-    first_date = snapshot_generated_date(first)
-    last_date = snapshot_generated_date(last)
-    if not first_date or not last_date:
-        return None
-
-    days = (last_date - first_date).days
-    if days <= 0:
-        return None
-
-    first_val = nested_int(first, path)
-    last_val = nested_int(last, path)
-    if first_val is None or last_val is None:
-        return None
-
-    return (last_val - first_val) * 7.0 / days
-
-
-def format_velocity(value: float | None) -> str:
-    if value is None:
-        return "n/a"
-    return f"{value:+.2f}/wk"
-
-
-def estimate_eta_weeks(gap: int | None, velocity_per_week: float | None) -> str:
-    if gap is None:
-        return "n/a"
-    if gap <= 0:
-        return "0.0"
-    if velocity_per_week is None or velocity_per_week <= 0:
-        return "n/a"
-    return f"{gap / velocity_per_week:.1f}"
-
-
 def top_actions(snapshot: dict[str, Any]) -> list[str]:
+    """Next steps that can earn medals: an honest tracker, real competitions, better work."""
     actions: list[str] = []
     stale_days = snapshot.get("tracker_stale_days")
-    categories = snapshot["categories"]
-
     if isinstance(stale_days, int) and stale_days > 7:
         actions.append(
-            f"Refresh `grandmaster-tracker.md` (currently {stale_days} days stale)."
+            f"Run `./manage.sh sync` to refresh the tracker ({stale_days} days stale)."
         )
-
-    discussion = categories["discussion"]
-    if (
-        isinstance(discussion.get("expert_bronze_gap"), int)
-        and discussion["expert_bronze_gap"] > 0
-    ):
-        actions.append(
-            f"Prioritize discussion medals: need {discussion['expert_bronze_gap']} more bronze-equivalent medals for Discussion Expert."
-        )
-
-    competitions = categories["competitions"]
-    if int(competitions.get("entered", 0)) < 3:
-        actions.append(
-            "Increase active competition footprint to at least 3 simultaneous entries."
-        )
-
-    notebooks = categories["notebooks"]
-    if int(notebooks.get("total_votes", 0)) < 20:
-        actions.append(
-            "Run a 7-day notebook promotion sprint on the top 5 notebooks to accelerate first notebook medals."
-        )
-
-    datasets = categories["datasets"]
-    if int(datasets.get("total_votes", 0)) == 0:
-        actions.append(
-            "Improve dataset discoverability: add full data dictionaries and publish one baseline notebook per dataset."
-        )
-
-    return actions[:5]
-
-
-def generate_scorecard_markdown(
-    snapshot: dict[str, Any], previous: dict[str, Any] | None
-) -> str:
-    categories = snapshot["categories"]
-    stale_days = snapshot.get("tracker_stale_days")
-    generated_on = snapshot["generated_on"]
-    tracker_last_updated = snapshot.get("tracker_last_updated") or "unknown"
-
-    lines = [
-        "# Kaggle Medal Ops Scorecard",
-        "",
-        f"- Generated: {generated_on}",
-        f"- Tracker last updated: {tracker_last_updated}",
-        "",
-    ]
-
-    if isinstance(stale_days, int):
-        freshness = "stale" if stale_days > 7 else "fresh"
-        lines.append(f"- Tracker freshness: {stale_days} day(s) ({freshness})")
-        lines.append("")
-
-    lines.extend(
-        [
-            "## Progress Snapshot",
-            "",
-            "| Category | Tier | Gold | Gold Goal | Gold Gap | Bronze | Votes/Posts |",
-            "|---|---|---:|---:|---:|---:|---:|",
-            f"| Competitions | {categories['competitions'].get('tier', 'n/a')} | {categories['competitions'].get('gold', 0)} | {categories['competitions'].get('gold_goal', 'n/a')} | {categories['competitions'].get('gold_gap', 'n/a')} | {categories['competitions'].get('bronze', 0)} | Entered: {categories['competitions'].get('entered', 0)} |",
-            f"| Notebooks | {categories['notebooks'].get('tier', 'n/a')} | {categories['notebooks'].get('gold', 0)} | {categories['notebooks'].get('gold_goal', 'n/a')} | {categories['notebooks'].get('gold_gap', 'n/a')} | {categories['notebooks'].get('bronze', 0)} | Votes: {categories['notebooks'].get('total_votes', 0)} |",
-            f"| Datasets | {categories['datasets'].get('tier', 'n/a')} | {categories['datasets'].get('gold', 0)} | {categories['datasets'].get('gold_goal', 'n/a')} | {categories['datasets'].get('gold_gap', 'n/a')} | {categories['datasets'].get('bronze', 0)} | Votes: {categories['datasets'].get('total_votes', 0)} |",
-            f"| Discussion | {categories['discussion'].get('tier', 'n/a')} | {categories['discussion'].get('gold', 0)} | {categories['discussion'].get('gold_goal', 'n/a')} | {categories['discussion'].get('gold_gap', 'n/a')} | {categories['discussion'].get('bronze', 0)} | Posts: {categories['discussion'].get('total_posts', 0)} |",
-            "",
-        ]
-    )
-
-    lines.extend(
-        [
-            "## Weekly Delta (vs previous snapshot)",
-            "",
-            f"- Notebook votes: {categories['notebooks'].get('total_votes', 0)} ({format_delta(delta(snapshot, previous, ('categories', 'notebooks', 'total_votes')))})",
-            f"- Dataset votes: {categories['datasets'].get('total_votes', 0)} ({format_delta(delta(snapshot, previous, ('categories', 'datasets', 'total_votes')))})",
-            f"- Discussion posts: {categories['discussion'].get('total_posts', 0)} ({format_delta(delta(snapshot, previous, ('categories', 'discussion', 'total_posts')))})",
-            f"- Competition entries: {categories['competitions'].get('entered', 0)} ({format_delta(delta(snapshot, previous, ('categories', 'competitions', 'entered')))})",
-            "",
-        ]
-    )
-
-    deadlines = []
-    for raw in snapshot.get("active_competitions", []):
-        days = raw.get("days_to_deadline")
-        if isinstance(days, int):
-            deadlines.append(raw)
-    deadlines.sort(key=lambda item: item["days_to_deadline"])
-
-    lines.append("## Deadline Radar")
-    lines.append("")
-    if not deadlines:
-        lines.append("- No parseable deadlines found in tracker.")
-    else:
-        for item in deadlines[:8]:
-            days = item["days_to_deadline"]
-            if days < 0:
-                status = f"overdue by {-days}d"
-            elif days == 0:
-                status = "due today"
-            elif days <= 7:
-                status = f"due in {days}d (urgent)"
-            else:
-                status = f"due in {days}d"
-            lines.append(f"- {item['competition']} ({item['deadline_raw']}): {status}")
-    lines.append("")
-
-    lines.append("## Top Actions")
-    lines.append("")
-    for action in top_actions(snapshot):
-        lines.append(f"- {action}")
-    lines.append("")
-
-    return "\n".join(lines)
-
-
-def generate_weekly_plan_markdown(snapshot: dict[str, Any]) -> str:
-    categories = snapshot["categories"]
-    discussion = categories["discussion"]
-    competitions = categories["competitions"]
-    notebooks = categories["notebooks"]
-    datasets = categories["datasets"]
-
-    discussion_gap = int(discussion.get("expert_bronze_gap") or 0)
-    discussion_target = min(14, max(7, discussion_gap // 5 if discussion_gap else 7))
-    competition_entries = int(competitions.get("entered", 0))
-    competition_target = 3 if competition_entries < 3 else competition_entries
 
     upcoming = [
-        item
-        for item in snapshot.get("active_competitions", [])
-        if isinstance(item.get("days_to_deadline"), int)
-        and item["days_to_deadline"] >= 0
+        c
+        for c in snapshot.get("active_competitions", [])
+        if isinstance(c.get("days_to_deadline"), int) and c["days_to_deadline"] >= 0
     ]
-    upcoming.sort(key=lambda item: item["days_to_deadline"])
-    urgent = [item for item in upcoming if item["days_to_deadline"] <= 10][:3]
-
-    lines = [
-        "# Kaggle Weekly Plan",
-        "",
-        f"- Plan generated: {snapshot['generated_on']}",
-        "",
-        "## Primary Objectives (7 days)",
-        "",
-        f"- Earn `{discussion_target}` discussion medals (comments + posts), with at least 1 medal/day.",
-        f"- Maintain `{competition_target}` active competitions and submit improvements on each active board.",
-        "- Run one notebook optimization sprint on top 5 notebooks (title/intro/results/update notes).",
-        "- Publish data dictionaries for all active datasets and one baseline notebook link per dataset.",
-        "",
-        "## Daily Cadence",
-        "",
-        "- 2 competition experiments and at least 1 submission when leaderboard gain is positive.",
-        "- 5 high-signal discussion comments + 1 focused discussion post.",
-        "- 1 notebook refresh block (20-30 minutes) with changelog note.",
-        "",
-        "## Competition Priority Queue",
-        "",
-    ]
-
-    if urgent:
-        for item in urgent:
-            lines.append(
-                f"- {item['competition']} ({item['deadline_raw']}, {item['days_to_deadline']}d left): {item.get('strategy', 'No strategy recorded')}"
-            )
-    elif upcoming:
-        for item in upcoming[:3]:
-            lines.append(
-                f"- {item['competition']} ({item['deadline_raw']}, {item['days_to_deadline']}d left): {item.get('strategy', 'No strategy recorded')}"
-            )
-    else:
-        lines.append(
-            "- Add current active competitions in `grandmaster-tracker.md` to generate a prioritized queue."
+    if not upcoming:
+        actions.append(
+            "Enter a Featured or Research competition; those are the ones that award medals."
         )
 
-    lines.extend(
-        [
-            "",
-            "## KPI Targets",
-            "",
-            f"- Notebook votes: {notebooks.get('total_votes', 0)} -> {notebooks.get('total_votes', 0) + 10}",
-            f"- Dataset votes: {datasets.get('total_votes', 0)} -> {datasets.get('total_votes', 0) + 5}",
-            f"- Discussion posts: {discussion.get('total_posts', 0)} -> {discussion.get('total_posts', 0) + 14}",
-            f"- Competition entries: {competition_entries} -> {competition_target}",
-            "",
-        ]
+    actions.append(
+        "Publish one notebook or dataset with a clear, reproducible result "
+        "before starting another."
     )
-
-    return "\n".join(lines)
-
-
-def generate_badge_plan_markdown(snapshot: dict[str, Any]) -> str:
-    categories = snapshot["categories"]
-    generated_on = snapshot["generated_on"]
-    notebook_votes = int(categories["notebooks"].get("total_votes", 0) or 0)
-    dataset_votes = int(categories["datasets"].get("total_votes", 0) or 0)
-    competition_entries = int(categories["competitions"].get("entered", 0) or 0)
-    discussion_posts = int(categories["discussion"].get("total_posts", 0) or 0)
-
-    submission_action = (
-        "Start a 7-day submission streak across your already-entered competitions."
-        if competition_entries > 0
-        else "Enter an easy competition first, then start a 7-day submission streak."
-    )
-
-    lines = [
-        "# Kaggle Badge Roadmap",
-        "",
-        f"- Generated: {generated_on}",
-        f"- Current live tracker basis: notebooks={categories['notebooks'].get('total_notebooks', 0)}, notebook_votes={notebook_votes}, datasets={categories['datasets'].get('total_datasets', 0)}, dataset_votes={dataset_votes}, competition_entries={competition_entries}, discussion_posts={discussion_posts}",
-        "",
-        "## Phase 1: Same-Day Wins",
-        "",
-        "| Badge(s) | Why now | Action |",
-        "|---|---|---|",
-        "| `Collector`, `Agent of Discord` | Pure UI/account actions with no content dependency. | Create one collection and link your Kaggle account to Discord. |",
-        "| `Github Coder`, `Colab Coder`, `Code Forker` | Fast notebook workflow badges. | Import one notebook from GitHub, open one Kaggle notebook in Colab, and fork one public notebook with a meaningful edit. |",
-        "",
-        "## Phase 2: Fast Publish Badges",
-        "",
-        "| Badge(s) | Why now | Action |",
-        "|---|---|---|",
-        "| `R Coder`, `R Markdown Coder` | Single artifact each; no traction required. | Publish one simple R notebook and one R Markdown script. |",
-        "| `Utility Scripter`, `Notebook Modeler` | Lightweight publishing tasks that build reusable assets. | Publish one utility script and one notebook that uses a Kaggle model. |",
-        "| `Learner` | Reliable progress with no vote dependency. | Complete one Kaggle Learn course. |",
-        "",
-        "## Phase 3: This Week",
-        "",
-        "| Badge(s) | Why now | Action |",
-        "|---|---|---|",
-        f"| `Submission Streak`, `7 Day Login Streak` | Pure consistency; easiest streak layer. | {submission_action} Also log in every day for 7 straight days. |",
-        "| `Dataset Pipeline Creator`, `Linked Dataset Creator` | Fits your existing repo workflow and content volume. | Create one dataset from notebook output and one dataset from a URL or GitHub link. |",
-        "| `Student` | Straight extension of `Learner`. | Push from 1 completed Kaggle Learn course to 5 total. |",
-        "",
-        "## Phase 4: This Month",
-        "",
-        "| Badge(s) | Why now | Action |",
-        "|---|---|---|",
-        "| `Competitor` | Requires a valid medal-eligible competition submission. | Submit to a current Featured, Community, Research, or Playground competition. |",
-        "| `Model Creator`, `Model Variation Creator`, `Model Tagger`, `Linked Model Creator`, `Model Pipeline Creator`, `Competition Modeler` | These chain well once you create the first model artifact. | Create one model, add a second variation, tag it, publish one from notebook output or a link, then use it in a competition notebook. |",
-        "| `Graduate`, `30 Day Login Streak`, `Super Submission Streak` | Medium-effort compounding badges. | Extend Learn progress to 10 courses and keep streaks alive for 30 days. |",
-        "",
-        "## Phase 5: Harder Quality Badges",
-        "",
-        "| Badge(s) | Why later | Action |",
-        "|---|---|---|",
-        "| `Dataset Documenter`, `Model Documenter` | These require a perfect usability score, not just publication. | Pick one flagship dataset/model and fully complete metadata, provenance, tags, descriptions, and usage docs until Kaggle shows a perfect rating. |",
-        "| `API Model Creator` | Depends on a working upload-capable API path. | Use a full Kaggle API credential set or the Kaggle UI to publish a model through the API workflow. |",
-        "",
-        "## Phase 6: Seasonal Or Availability-Dependent",
-        "",
-        "| Badge(s) | Why blocked | Action |",
-        "|---|---|---|",
-        "| `Research Competitor`, `Playground Competitor`, `Community Competitor` | Depends on live competition inventory. | Watch current competition listings and submit as soon as a qualifying competition is available. |",
-        "| `Simulation Competitor`, `Santa Competitor`, `March Mania Competitor`, `Code Submitter` | Product- or season-specific competition formats. | Join the relevant event when it is live and make one qualifying submission. |",
-        "",
-        "## Phase 7: Pure Time Gates Or Likely Retired",
-        "",
-        "- `10 Years on Kaggle`, `15 Years on Kaggle`",
-        "- `30 Day Login Streak`, `100 Day Login Streak`, `Year Long Login Streak`, `Mega Submission Streak`",
-        "- `Completed 5-Day Gen AI Intensive`, `5-Day AI Agents Intensive Course with Google`",
-        "- `Stack Overflow Road Safety Challenge Badge`, `Founding Benchmark Task Author`",
-        "",
-        "## Suggested Next 7 Actions",
-        "",
-        "- Create a collection.",
-        "- Link Discord.",
-        "- Import one notebook from GitHub.",
-        "- Open one Kaggle notebook in Colab.",
-        "- Fork one public notebook and save an edited version.",
-        "- Publish one R or R Markdown artifact.",
-        f"- {submission_action}",
-        "",
-    ]
-
-    return "\n".join(lines)
-
-
-def generate_pace_markdown(snapshots: list[dict[str, Any]]) -> str:
-    if not snapshots:
-        return "# Kaggle Medal Ops Pace Analysis\n\n- No snapshots found.\n"
-
-    current = snapshots[-1]
-    first_date = snapshot_generated_date(snapshots[0])
-    last_date = snapshot_generated_date(current)
-    sample_days = (last_date - first_date).days if first_date and last_date else 0
-    has_time_window = sample_days > 0
-
-    lines = [
-        "# Kaggle Medal Ops Pace Analysis",
-        "",
-        f"- Latest snapshot: {current.get('generated_on', 'unknown')}",
-        f"- Samples: {len(snapshots)} snapshot(s)",
-        f"- Analysis window: {sample_days} day(s)",
-        "",
-        "## Outcome Pace",
-        "",
-        "| Metric | Current | Goal | Gap | Velocity | ETA (weeks) |",
-        "|---|---:|---:|---:|---:|---:|",
-    ]
-
-    metric_specs = [
-        (
-            "Competitions Gold",
-            ("categories", "competitions", "gold"),
-            ("categories", "competitions", "gold_goal"),
-            ("categories", "competitions", "gold_gap"),
-        ),
-        (
-            "Notebooks Gold",
-            ("categories", "notebooks", "gold"),
-            ("categories", "notebooks", "gold_goal"),
-            ("categories", "notebooks", "gold_gap"),
-        ),
-        (
-            "Datasets Gold",
-            ("categories", "datasets", "gold"),
-            ("categories", "datasets", "gold_goal"),
-            ("categories", "datasets", "gold_gap"),
-        ),
-        (
-            "Discussion Gold",
-            ("categories", "discussion", "gold"),
-            ("categories", "discussion", "gold_goal"),
-            ("categories", "discussion", "gold_gap"),
-        ),
-        (
-            "Discussion Bronze (Expert)",
-            ("categories", "discussion", "bronze"),
-            ("categories", "discussion", "expert_bronze_goal"),
-            ("categories", "discussion", "expert_bronze_gap"),
-        ),
-    ]
-
-    for label, current_path, goal_path, gap_path in metric_specs:
-        current_value = nested_int(current, current_path) or 0
-        goal_value = nested_int(current, goal_path)
-        gap_value = nested_int(current, gap_path)
-        velocity = weekly_velocity(snapshots, current_path)
-        eta = estimate_eta_weeks(gap_value, velocity)
-        lines.append(
-            f"| {label} | {current_value} | {goal_value if goal_value is not None else 'n/a'} | "
-            f"{gap_value if gap_value is not None else 'n/a'} | {format_velocity(velocity)} | {eta} |"
-        )
-
-    lines.extend(
-        [
-            "",
-            "## Leading Indicators",
-            "",
-            f"- Competition entries velocity: {format_velocity(weekly_velocity(snapshots, ('categories', 'competitions', 'entered')))}",
-            f"- Notebook votes velocity: {format_velocity(weekly_velocity(snapshots, ('categories', 'notebooks', 'total_votes')))}",
-            f"- Dataset votes velocity: {format_velocity(weekly_velocity(snapshots, ('categories', 'datasets', 'total_votes')))}",
-            f"- Discussion posts velocity: {format_velocity(weekly_velocity(snapshots, ('categories', 'discussion', 'total_posts')))}",
-            "",
-            "## Pace Flags",
-            "",
-        ]
-    )
-
-    if len(snapshots) < 2:
-        lines.append("- Need at least 2 snapshots for reliable pace estimates.")
-    elif not has_time_window:
-        lines.append(
-            "- Need snapshots across at least 1 full day for velocity and ETA estimates."
-        )
-    else:
-        critical_flags: list[str] = []
-        for label, current_path, _, gap_path in metric_specs:
-            gap_value = nested_int(current, gap_path)
-            velocity = weekly_velocity(snapshots, current_path)
-            if (
-                isinstance(gap_value, int)
-                and gap_value > 0
-                and (velocity is None or velocity <= 0)
-            ):
-                critical_flags.append(
-                    f"- {label} is off pace (gap {gap_value}, velocity {format_velocity(velocity)})."
-                )
-        if not critical_flags:
-            lines.append("- No negative pace flags detected in tracked outcomes.")
-        else:
-            lines.extend(critical_flags)
-
-    lines.append("")
-    return "\n".join(lines)
+    return actions
 
 
 def _fmt_delta(value: int | None) -> str:
@@ -991,13 +373,10 @@ def _fmt_delta(value: int | None) -> str:
     return f"+{value}" if value > 0 else str(value)
 
 
-def generate_digest(
-    snapshots: list[dict[str, Any]], queue_health: dict[str, Any]
-) -> str:
+def generate_digest(snapshots: list[dict[str, Any]]) -> str:
     """Compose a one-message daily Grandmaster digest (Markdown) from snapshot history.
 
-    Pure function: takes the chronological snapshot list and a draft-queue health
-    dict (may be empty), returns a Telegram-ready Markdown string.
+    Pure function: takes the chronological snapshot list, returns a Markdown string.
     """
     if not snapshots:
         return "No snapshots available yet — run `medal_ops sync` first."
@@ -1041,32 +420,11 @@ def generate_digest(
     else:
         lines.append("*Nearest deadline:* none tracked")
 
-    if queue_health:
-        nd = queue_health.get("days_until_next_post")
-        nd_str = f"{nd}d" if isinstance(nd, int) else "n/a"
-        lines.append(
-            f"*Draft queue:* {queue_health.get('ready_now', 0)} ready, "
-            f"next post in {nd_str}, {queue_health.get('overdue_scheduled', 0)} overdue"
-        )
-
     actions = top_actions(current)
     if actions:
         lines.append(f"*Top action today:* {actions[0]}")
 
     return "\n".join(lines)
-
-
-def _load_queue_health() -> dict[str, Any]:
-    """Best-effort draft-queue health for the digest; empty dict if unavailable."""
-    try:
-        from kaggle_portfolio.ops.discussion_scheduler import (
-            build_ops_summary,
-            load_queue,
-        )
-
-        return build_ops_summary(load_queue())
-    except Exception:
-        return {}
 
 
 def generate_sync_markdown(
@@ -1143,9 +501,6 @@ def run_preflight_checks(
     tracker_path: Path,
     output_root: Path,
     today: date,
-    kernels_csv: Path | None,
-    datasets_csv: Path | None,
-    competitions_csv: Path | None,
     require_kaggle: bool,
     max_stale_days: int,
 ) -> dict[str, Any]:
@@ -1153,7 +508,6 @@ def run_preflight_checks(
     warnings: list[str] = []
     infos: list[str] = []
     snapshot: dict[str, Any] | None = None
-    csv_metrics: dict[str, Any] | None = None
 
     if not tracker_path.exists():
         errors.append(f"Tracker file not found: {tracker_path}")
@@ -1196,38 +550,29 @@ def run_preflight_checks(
     except OSError as exc:
         errors.append(f"Output root is not writable (`{output_root}`): {exc}")
 
-    offline_mode = bool(kernels_csv or datasets_csv or competitions_csv)
     kaggle_cli_available = client.available()
     if kaggle_cli_available:
         infos.append("kaggle CLI available.")
+    elif require_kaggle:
+        errors.append("kaggle CLI not found.")
     else:
-        if require_kaggle:
-            errors.append("kaggle CLI not found.")
-        elif offline_mode:
-            infos.append("kaggle CLI not found; offline CSV sync mode selected.")
-        else:
-            warnings.append("kaggle CLI not found; live sync is unavailable.")
+        warnings.append("kaggle CLI not found; live sync is unavailable.")
 
     creds_ok, creds_paths = has_kaggle_credentials(client)
     if creds_ok:
         joined = ", ".join(str(path) for path in creds_paths)
         infos.append(f"Kaggle credentials found: {joined}")
+    elif require_kaggle:
+        errors.append(
+            "Kaggle credentials not found (`~/.kaggle/kaggle.json` or local `kaggle.json`)."
+        )
     else:
-        if require_kaggle:
-            errors.append(
-                "Kaggle credentials not found (`~/.kaggle/kaggle.json` or local `kaggle.json`)."
-            )
-        elif offline_mode:
-            infos.append(
-                "Kaggle credentials not found; offline CSV sync mode selected."
-            )
-        else:
-            warnings.append("Kaggle credentials not found for live sync.")
+        warnings.append("Kaggle credentials not found for live sync.")
 
     # Present is not the same as accepted: an expired key passed every check
     # above while the live sync behind it failed with a 401 for weeks. When
     # the caller requires Kaggle, ask Kaggle, using the call sync makes first.
-    if require_kaggle and kaggle_cli_available and creds_ok and not offline_mode:
+    if require_kaggle and kaggle_cli_available and creds_ok:
         try:
             client.my_kernels()
             infos.append("Kaggle accepted the credentials (kernels list --mine).")
@@ -1236,39 +581,11 @@ def run_preflight_checks(
         except KaggleError as exc:
             warnings.append(f"Kaggle credential check could not complete: {exc}")
 
-    if offline_mode:
-        if not kernels_csv or not datasets_csv:
-            errors.append(
-                "CSV preflight requires both --kernels-csv and --datasets-csv when any CSV is provided."
-            )
-        else:
-            try:
-                csv_metrics = fetch_metrics_from_csv(
-                    kernels_csv, datasets_csv, competitions_csv
-                )
-                infos.append(
-                    "CSV sync inputs validated: "
-                    f"notebooks={csv_metrics['notebooks_count']}, "
-                    f"datasets={csv_metrics['datasets_count']}, "
-                    f"competitions_entered={csv_metrics.get('competitions_entered', 'n/a')}"
-                )
-                if not competitions_csv:
-                    warnings.append(
-                        "No competitions CSV provided; `Competitions.Entered` will not be updated during sync."
-                    )
-            except SystemExit as exc:
-                errors.append(str(exc))
-    elif not kaggle_cli_available or not creds_ok:
-        warnings.append(
-            "No fully configured live sync path detected. Run `./manage.sh sync-template` and use CSV sync."
-        )
-
     return {
         "errors": errors,
         "warnings": warnings,
         "infos": infos,
         "snapshot": snapshot,
-        "csv_metrics": csv_metrics,
         "kaggle_cli_available": kaggle_cli_available,
         "kaggle_credentials_available": creds_ok,
     }
@@ -1340,17 +657,8 @@ def generate_doctor_markdown(
     recommended: list[str] = []
     if any("Tracker file not found" in item for item in errors):
         recommended.append(f"Verify tracker path: `--tracker {tracker_path}`")
-    if any(
-        "missing a vote column" in item or "missing an entered column" in item
-        for item in errors
-    ):
-        recommended.append(
-            "Regenerate CSVs using `./manage.sh sync-template` and the export script."
-        )
     if any("kaggle CLI not found" in item for item in warnings + errors):
-        recommended.append(
-            "Install/authenticate Kaggle CLI, or continue with CSV sync."
-        )
+        recommended.append("Install and authenticate the Kaggle CLI.")
     if any("credentials not found" in item.lower() for item in warnings + errors):
         recommended.append(
             "Add Kaggle credentials to `~/.kaggle/kaggle.json` (chmod 600)."
@@ -1380,7 +688,7 @@ def add_shared_cli_args(
     # subparser so they are accepted before OR after the subcommand. On the
     # subparsers we suppress the defaults: without this, a subparser default
     # would overwrite a value already parsed from before the subcommand (e.g.
-    # ``medal_ops --output-root X scorecard`` would silently reset to the
+    # ``medal_ops --output-root X digest`` would silently reset to the
     # default). With SUPPRESS the subparser only sets these attributes when the
     # flag is actually given after the subcommand; otherwise the top-level
     # parser's value (given or default) is preserved.
@@ -1407,58 +715,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     add_shared_cli_args(parser)
 
     subparsers = parser.add_subparsers(dest="command", required=True)
-    scorecard_parser = subparsers.add_parser(
-        "scorecard", help="Generate scorecard report and save snapshot."
-    )
-    add_shared_cli_args(scorecard_parser, is_subparser=True)
-    badge_plan_parser = subparsers.add_parser(
-        "badge-plan", help="Generate ordered Kaggle badge roadmap."
-    )
-    add_shared_cli_args(badge_plan_parser, is_subparser=True)
-    weekly_parser = subparsers.add_parser(
-        "weekly-plan", help="Generate weekly execution plan."
-    )
-    add_shared_cli_args(weekly_parser, is_subparser=True)
-    pace_parser = subparsers.add_parser(
-        "pace", help="Generate progress velocity and ETA analysis."
-    )
-    add_shared_cli_args(pace_parser, is_subparser=True)
     sync_parser = subparsers.add_parser(
-        "sync", help="Sync tracker metrics from live Kaggle CLI data."
+        "sync",
+        help="Sync tracker metrics from live Kaggle CLI data and record a history snapshot.",
     )
     add_shared_cli_args(sync_parser, is_subparser=True)
     sync_parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Generate sync report without writing tracker changes.",
-    )
-    sync_parser.add_argument(
-        "--kernels-csv", default=None, help="Path to exported kernels CSV."
-    )
-    sync_parser.add_argument(
-        "--datasets-csv", default=None, help="Path to exported datasets CSV."
-    )
-    sync_parser.add_argument(
-        "--competitions-csv",
-        default=None,
-        help="Path to exported competitions CSV (optional, used for 'Entered' metric).",
-    )
-    template_parser = subparsers.add_parser(
-        "sync-template",
-        help="Generate CSV templates and helper script for offline sync.",
-    )
-    add_shared_cli_args(template_parser, is_subparser=True)
-    template_parser.add_argument(
-        "--out-dir",
-        default=None,
-        help=f"Directory for generated template files (default: <output-root>/{DEFAULT_SYNC_INPUT_DIRNAME}).",
-    )
-    template_parser.add_argument(
-        "--force", action="store_true", help="Overwrite existing template files."
+        help="Generate sync report without writing the tracker or a snapshot.",
     )
     doctor_parser = subparsers.add_parser(
         "doctor",
-        help="Run preflight checks for tracker health, environment readiness, and sync inputs.",
+        help="Run preflight checks for tracker health and environment readiness.",
     )
     add_shared_cli_args(doctor_parser, is_subparser=True)
     doctor_parser.add_argument(
@@ -1476,17 +745,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         default=7,
         help="Warn when tracker staleness exceeds this threshold (default: 7).",
-    )
-    doctor_parser.add_argument(
-        "--kernels-csv", default=None, help="Path to exported kernels CSV."
-    )
-    doctor_parser.add_argument(
-        "--datasets-csv", default=None, help="Path to exported datasets CSV."
-    )
-    doctor_parser.add_argument(
-        "--competitions-csv",
-        default=None,
-        help="Path to exported competitions CSV (optional).",
     )
     digest_parser = subparsers.add_parser(
         "digest", help="Print a one-message daily Grandmaster digest to stdout."
@@ -1507,20 +765,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     tracker_path = Path(args.tracker)
     history_dir = output_root / "history"
 
-    if args.command == "sync-template":
-        out_dir = (
-            Path(args.out_dir)
-            if args.out_dir
-            else output_root / DEFAULT_SYNC_INPUT_DIRNAME
-        )
-        statuses = generate_sync_template_assets(out_dir, force=args.force)
-        print(f"Sync templates directory: {out_dir}")
-        for path, status in statuses.items():
-            print(f"- {status}: {path}")
-        print("Next step:")
-        print(f"  {out_dir / 'export_kaggle_sync_csv.sh'}")
-        return 0
-
     if args.command == "doctor":
         if int(args.max_stale_days) < 0:
             raise CommandError("--max-stale-days must be >= 0")
@@ -1529,11 +773,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
             tracker_path=tracker_path,
             output_root=output_root,
             today=today,
-            kernels_csv=Path(args.kernels_csv) if args.kernels_csv else None,
-            datasets_csv=Path(args.datasets_csv) if args.datasets_csv else None,
-            competitions_csv=Path(args.competitions_csv)
-            if args.competitions_csv
-            else None,
             require_kaggle=bool(args.require_kaggle),
             max_stale_days=int(args.max_stale_days),
         )
@@ -1575,64 +814,28 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         raise CommandError(f"Tracker file not found: {tracker_path}")
 
     content = tracker_path.read_text(encoding="utf-8")
-    snapshot = build_snapshot(content, today)
 
     if args.command == "digest":
         snapshots = load_all_snapshots(history_dir)
         if not snapshots:
-            snapshots = [snapshot]
-        print(generate_digest(snapshots, _load_queue_health()))
-        return 0
-
-    if args.command == "scorecard":
-        previous = load_latest_snapshot(history_dir)
-        snapshot_path = write_snapshot(history_dir, snapshot)
-        report = generate_scorecard_markdown(snapshot, previous)
-        deps.emitter.emit(reports.SCORECARD, report)
-        print(f"Snapshot written: {snapshot_path}")
-        return 0
-
-    if args.command == "badge-plan":
-        report = generate_badge_plan_markdown(snapshot)
-        deps.emitter.emit(reports.BADGE_PLAN, report)
-        return 0
-
-    if args.command == "weekly-plan":
-        latest_snapshot = load_latest_snapshot(history_dir) or snapshot
-        report = generate_weekly_plan_markdown(latest_snapshot)
-        deps.emitter.emit(reports.WEEKLY_PLAN, report)
-        return 0
-
-    if args.command == "pace":
-        snapshot_path = write_snapshot(history_dir, snapshot)
-        snapshots = load_all_snapshots(history_dir)
-        report = generate_pace_markdown(snapshots)
-        deps.emitter.emit(reports.PACE, report)
-        print(f"Snapshot written: {snapshot_path}")
+            snapshots = [build_snapshot(content, today)]
+        print(generate_digest(snapshots))
         return 0
 
     if args.command == "sync":
-        if args.kernels_csv or args.datasets_csv or args.competitions_csv:
-            if not args.kernels_csv or not args.datasets_csv:
-                raise CommandError(
-                    "CSV sync requires both --kernels-csv and --datasets-csv."
-                )
-            live = fetch_metrics_from_csv(
-                kernels_csv=Path(args.kernels_csv),
-                datasets_csv=Path(args.datasets_csv),
-                competitions_csv=Path(args.competitions_csv)
-                if args.competitions_csv
-                else None,
-            )
-        else:
-            live = fetch_live_kaggle_metrics(deps.client)
-        original_content = tracker_path.read_text(encoding="utf-8")
-        updated_content, changes = apply_tracker_sync(original_content, today, live)
+        live = fetch_live_kaggle_metrics(deps.client)
+        updated_content, changes = apply_tracker_sync(content, today, live)
 
         # deps.effects, not args.dry_run: the dispatcher already resolved the
         # flag, and a second reading of it is how the two drifted apart before.
-        if deps.effects and updated_content != original_content:
-            tracker_path.write_text(updated_content, encoding="utf-8")
+        snapshot_path = None
+        if deps.effects:
+            if updated_content != content:
+                tracker_path.write_text(updated_content, encoding="utf-8")
+            # The snapshot history is what `digest` reads its deltas from.
+            snapshot_path = write_snapshot(
+                history_dir, build_snapshot(updated_content, today)
+            )
 
         report = generate_sync_markdown(
             tracker_path, today, live, changes, args.dry_run
@@ -1640,11 +843,13 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         deps.emitter.emit(reports.SYNC, report)
 
         if args.dry_run:
-            print("Dry-run mode: tracker file was not modified.")
-        elif updated_content != original_content:
+            print("Dry-run mode: tracker and snapshot history were not modified.")
+        elif updated_content != content:
             print(f"Tracker updated: {tracker_path}")
         else:
             print("Tracker already up to date with pulled metrics.")
+        if snapshot_path is not None:
+            print(f"Snapshot written: {snapshot_path}")
         return 0
 
     raise CommandError(f"Unsupported command: {args.command}")

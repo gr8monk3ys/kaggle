@@ -60,28 +60,19 @@ jobs:
           # kaggle backs kaggle_auth_doctor / leaderboard_tracker test modules.
           python -m pip install pytest pytest-cov pytest-mock requests pyyaml numpy pandas scikit-learn "kaggle<2"
 
-      - name: Prepare preflight fixtures
+      - name: Build datasets
         run: |
           set -euo pipefail
-          printf 'title,totalVotes\nA,10\nB,3\n' >/tmp/kernels.csv
-          printf 'title,voteCount\nD1,2\nD2,7\n' >/tmp/datasets.csv
-          printf 'competition,userHasEntered\nC1,true\nC2,false\nC3,1\n' >/tmp/competitions.csv
+          python -m pip install numpy pandas
+          bash manage.sh build-datasets
 
       - name: Repository preflight
         run: |
           set -euo pipefail
           # PR CI gates on code correctness only. Content-freshness SLAs
-          # (doctor staleness, draft posting cadence) belong to the scheduled
-          # Medal Ops Health workflow — a frozen --today pin here previously
-          # made every PR fail once the discussion queue moved past the pin.
-          # Re-tighten the draft SLA caps when Phase 2 posting goes live.
-          bash manage.sh preflight \
-            --no-pytest \
-            --max-overdue-scheduled 999 \
-            --max-days-until-next-post 999 \
-            --kernels-csv /tmp/kernels.csv \
-            --datasets-csv /tmp/datasets.csv \
-            --competitions-csv /tmp/competitions.csv
+          # (doctor staleness) belong to the scheduled Medal Ops Health
+          # workflow, so --today is never pinned here.
+          bash manage.sh preflight --no-pytest
 
       - name: Unit tests with coverage
         run: |
@@ -92,15 +83,5 @@ jobs:
           set -euo pipefail
           PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/ai-research-trends/create_dataset.py >/tmp/ai-research.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/programming-benchmarks/create_dataset.py >/tmp/programming-benchmarks.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python projects/educational/ensemble-stacking/build_notebook.py >/tmp/ensemble.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python projects/educational/llm-finetuning/build_notebook.py >/tmp/llm.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python projects/educational/timeseries-transformers/_build_notebook.py >/tmp/timeseries.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 scorecard >/tmp/scorecard.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 weekly-plan >/tmp/weekly-plan.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 pace >/tmp/pace.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 sync-template --out-dir /tmp/medal_ops_sync_inputs >/tmp/sync-template.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.stale_content_detector --today 2026-02-22 >/tmp/stale-content.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.datasets.dataset_explore_generator --dir datasets/credit-card-fraud >/tmp/explore-gen.log
+          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci digest >/tmp/digest.log
           PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.notebooks.competition_entry --help >/tmp/comp-entry.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.metadata_tracker --help >/tmp/metadata-tracker.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci --today 2026-02-22 sync --dry-run --kernels-csv /tmp/kernels.csv --datasets-csv /tmp/datasets.csv --competitions-csv /tmp/competitions.csv >/tmp/sync.log

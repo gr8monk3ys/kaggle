@@ -3,9 +3,9 @@
 
 Six modules hand-rolled a private ``write_text``/``write_json``, and five
 hand-rolled the dated-plus-latest pair — ``medal_ops.main`` six times,
-``notebook_quality.main`` eight. The filenames were an implicit cross-module
-contract: ``campaign_pack`` read ``latest-dataset-usability.json`` by string
-literal, written by ``dataset_usability`` by a different string literal.
+another module eight. The filenames were an implicit cross-module
+contract: one module read ``latest-dataset-usability.json`` by string literal,
+written by ``dataset_usability`` by a different string literal.
 
 The registry below makes that contract a symbol. The emitter makes writing an
 effect that can be turned off at the seam rather than by an ``if`` each caller
@@ -31,39 +31,19 @@ class Report(str):
 # Anything reading another module's output should import the name from here
 # rather than retyping the string.
 
-SCORECARD = Report("scorecard")
-BADGE_PLAN = Report("badge-plan")
-WEEKLY_PLAN = Report("weekly-plan")
-PACE = Report("pace")
 DIGEST = Report("digest")
 SYNC = Report("sync")
 DOCTOR = Report("doctor")
-NOTEBOOK_QUALITY = Report("notebook-quality")
-NOTEBOOK_QUALITY_FIXES = Report("notebook-quality-fixes")
 DATASET_USABILITY = Report("dataset-usability")
 DATASET_USABILITY_TRACKER = Report("dataset-usability-tracker")
-USABILITY_BENCHMARK = Report("usability-benchmark")
-PROMOTION_CAMPAIGN = Report("promotion-campaign")
-CAMPAIGN_RUNBOOK = Report("campaign-runbook")
-STALE_CONTENT = Report("stale-content")
 LIVE_RATINGS = Report("live-ratings")
 
 ALL_REPORTS = (
-    SCORECARD,
-    BADGE_PLAN,
-    WEEKLY_PLAN,
-    PACE,
     DIGEST,
     SYNC,
     DOCTOR,
-    NOTEBOOK_QUALITY,
-    NOTEBOOK_QUALITY_FIXES,
     DATASET_USABILITY,
     DATASET_USABILITY_TRACKER,
-    USABILITY_BENCHMARK,
-    PROMOTION_CAMPAIGN,
-    CAMPAIGN_RUNBOOK,
-    STALE_CONTENT,
     LIVE_RATINGS,
 )
 

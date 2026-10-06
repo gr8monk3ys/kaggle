@@ -340,3 +340,56 @@ class TestFake:
     def test_an_explicitly_empty_credential_state_is_preserved(self):
         state = kc.CredentialState(None, [], "nope")
         assert FakeKaggleClient(credentials_state=state).credentials() is state
+
+
+def _dataset_folder(root: Path, *, built: bool) -> Path:
+    folder = root / "ds"
+    folder.mkdir()
+    (folder / "dataset-metadata.json").write_text(
+        '{"id": "me/ds", "resources": [{"path": "data.csv"}]}',
+        encoding="utf-8",
+    )
+    if built:
+        (folder / "data.csv").write_text("a\n1\n", encoding="utf-8")
+    return folder
+
+
+class TestIncompleteDatasetsAreNeverPublished:
+    """CSVs are build output, so a fresh clone has metadata without data."""
+
+    def test_missing_dataset_files_lists_declared_but_absent_paths(self, tmp_path):
+        assert kc.missing_dataset_files(_dataset_folder(tmp_path, built=False)) == [
+            "data.csv"
+        ]
+
+    def test_a_built_folder_has_nothing_missing(self, tmp_path):
+        assert kc.missing_dataset_files(_dataset_folder(tmp_path, built=True)) == []
+
+    def test_cli_refuses_before_any_subprocess(self, tmp_path, monkeypatch):
+        def explode(*a, **k):
+            raise AssertionError("tried to upload an incomplete dataset")
+
+        monkeypatch.setattr(kc.subprocess, "run", explode)
+        outcome = CliKaggleClient().publish_dataset(
+            _dataset_folder(tmp_path, built=False), "msg"
+        )
+        assert not outcome.ok
+        assert "build-datasets" in outcome.detail
+
+    def test_cli_refuses_even_in_dry_run(self, tmp_path):
+        outcome = CliKaggleClient(effects=False).publish_dataset(
+            _dataset_folder(tmp_path, built=False), "msg"
+        )
+        assert not outcome.ok and not outcome.skipped
+
+    def test_fake_refuses_the_same_way(self, tmp_path):
+        client = FakeKaggleClient()
+        outcome = client.publish_dataset(_dataset_folder(tmp_path, built=False), "m")
+        assert not outcome.ok
+        assert [name for name, _ in client.calls] == ["publish_dataset"]
+
+    def test_fake_publishes_a_built_folder(self, tmp_path):
+        outcome = FakeKaggleClient().publish_dataset(
+            _dataset_folder(tmp_path, built=True), "m"
+        )
+        assert outcome.ok

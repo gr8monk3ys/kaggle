@@ -10,8 +10,7 @@ See ``docs/adr/0001-kaggle-cli-behind-one-adapter.md``.
 
 Two adapters make the seam real: :class:`CliKaggleClient` in production and
 :class:`FakeKaggleClient` everywhere else. The fake ships in the package rather
-than in ``tests/`` so that ``pi-automation``'s suite and the dry-run paths can
-use it too.
+than in ``tests/`` so that the dry-run paths can use it too.
 """
 
 from __future__ import annotations
@@ -342,20 +341,6 @@ class Submission:
 
 
 @dataclass(frozen=True)
-class DatasetMetadata:
-    title: str
-    subtitle: str
-    description: str
-    usability_rating: float | None
-    total_votes: int
-    total_downloads: int
-    is_private: bool | None
-    keywords: list[str]
-    licenses: list[dict[str, Any]]
-    raw: dict[str, Any] = field(default_factory=dict, repr=False)
-
-
-@dataclass(frozen=True)
 class PushOutcome:
     """The result of a mutating operation."""
 
@@ -365,6 +350,43 @@ class PushOutcome:
 
     def __bool__(self) -> bool:
         return self.ok
+
+
+def missing_dataset_files(folder: Path) -> list[str]:
+    """The resource paths ``dataset-metadata.json`` declares but ``folder`` lacks.
+
+    Dataset CSVs are build output (``./manage.sh build-datasets``), so a fresh
+    clone has metadata without data. Publishing that folder would replace the
+    live dataset with an empty version, which is why both adapters refuse it at
+    this seam rather than trusting every caller to have validated first.
+    """
+    folder = Path(folder)
+    try:
+        meta = json.loads(
+            (folder / "dataset-metadata.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return []
+    resources = meta.get("resources") if isinstance(meta, dict) else None
+    if not isinstance(resources, list):
+        return []
+    declared = [
+        str(item.get("path", "")).strip()
+        for item in resources
+        if isinstance(item, dict) and str(item.get("path", "")).strip()
+    ]
+    return [rel for rel in declared if not (folder / rel).exists()]
+
+
+def _refuse_incomplete_dataset(folder: Path) -> PushOutcome | None:
+    missing = missing_dataset_files(folder)
+    if not missing:
+        return None
+    return PushOutcome(
+        False,
+        f"refusing to publish {Path(folder).name}: missing {', '.join(missing)} "
+        "(run ./manage.sh build-datasets first)",
+    )
 
 
 @dataclass(frozen=True)
@@ -397,6 +419,9 @@ class CredentialState:
 class AuthProbe:
     ok: bool
     detail: str
+    # True only when Kaggle answered and refused the key, as opposed to the
+    # probe failing for any other reason (network, missing SDK, bad response).
+    rejected: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -434,11 +459,6 @@ class KaggleClient(Protocol):
     def my_datasets(self) -> list[Dataset]: ...
     def public_datasets_of(self, owner: str) -> list[Dataset]: ...
     def datasets_owned_by(self, owner: str) -> list[Dataset]: ...
-    def search_datasets(
-        self, *, sort_by: str | None = ..., pages: int = ...
-    ) -> list[Dataset]: ...
-    def dataset_metadata(self, ref: str, dest: Path) -> DatasetMetadata: ...
-    def dataset_files(self, ref: str) -> list[str]: ...
     def publish_dataset(self, path: Path, message: str) -> PushOutcome: ...
 
     # competitions
@@ -746,6 +766,7 @@ class CliKaggleClient:
                 return AuthProbe(
                     False,
                     f"official upload-start probe rejected credentials ({message})",
+                    rejected=True,
                 )
             return AuthProbe(False, f"official upload-start probe failed: {message}")
         finally:
@@ -817,33 +838,14 @@ class CliKaggleClient:
             raise KaggleError("; ".join(errors))
         return list(by_ref.values())
 
-    def search_datasets(
-        self, *, sort_by: str | None = None, pages: int = 1
-    ) -> list[Dataset]:
-        rows: list[dict[str, str]] = []
-        args = ["datasets", "list"]
-        if sort_by:
-            args += ["--sort-by", sort_by]
-        for page in range(1, max(1, pages) + 1):
-            rows.extend(self._rows([*args, "--page", str(page)]))
-        return [Dataset.from_row(row) for row in rows]
-
-    def dataset_metadata(self, ref: str, dest: Path) -> DatasetMetadata:
-        dest.mkdir(parents=True, exist_ok=True)
-        self._run(["datasets", "metadata", ref, "-p", str(dest)])
-        return read_dataset_metadata(dest / "dataset-metadata.json")
-
-    def dataset_files(self, ref: str) -> list[str]:
-        rows = self._rows(["datasets", "files", ref])
-        return [
-            str(pick(row, ("name",), what="dataset file name")).strip() for row in rows
-        ]
-
     def publish_dataset(self, path: Path, message: str) -> PushOutcome:
         """Version an existing dataset, creating it if it does not exist yet.
 
         Four call sites hand-rolled this version-then-create fallback.
         """
+        refused = _refuse_incomplete_dataset(path)
+        if refused is not None:
+            return refused
         skipped = self._guard_effects(f"publish dataset {path}")
         if skipped:
             return skipped
@@ -947,38 +949,12 @@ class CliKaggleClient:
         )
 
 
-def read_dataset_metadata(path: Path) -> DatasetMetadata:
-    """Read a ``dataset-metadata.json``, tolerating a double-encoded payload."""
-    payload: Any = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(payload, str):
-        payload = json.loads(payload)
-    if not isinstance(payload, dict):
-        raise KaggleError(f"{path}: expected a JSON object")
-    return DatasetMetadata(
-        title=str(payload.get("title", "")),
-        subtitle=str(payload.get("subtitle", "")),
-        description=str(payload.get("description", "")),
-        usability_rating=_as_float(payload.get("usabilityRating")),
-        total_votes=_as_int(payload.get("totalVotes")),
-        total_downloads=_as_int(payload.get("totalDownloads")),
-        is_private=payload.get("isPrivate"),
-        keywords=list(payload.get("keywords", []) or []),
-        licenses=list(payload.get("licenses", []) or []),
-        raw=payload,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Test / dry-run adapter
-# ---------------------------------------------------------------------------
-
-
 class FakeKaggleClient:
     """An in-memory Kaggle, seeded with whatever a test needs.
 
-    This ships in the package rather than in ``tests/`` so that
-    ``pi-automation``'s suite and any future caller can reach it. Two adapters
-    are what make the seam real; one would be indirection.
+    This ships in the package rather than in ``tests/`` so that the dry-run
+    paths can reach it. Two adapters are what make the seam real; one would be
+    indirection.
 
     Seed with typed objects or with raw CSV rows — rows go through exactly the
     same parsing the production adapter uses, so a fixture captured from real
@@ -994,8 +970,6 @@ class FakeKaggleClient:
         entered: Iterable[Competition] | None = None,
         leaderboards: dict[str, list[LeaderboardEntry]] | None = None,
         submissions: dict[str, list[Submission]] | None = None,
-        metadata: dict[str, DatasetMetadata] | None = None,
-        files: dict[str, list[str]] | None = None,
         credentials_state: CredentialState | None = None,
         auth_probe: AuthProbe | None = None,
         available: bool = True,
@@ -1008,8 +982,6 @@ class FakeKaggleClient:
         self._entered = list(entered or [])
         self._leaderboards = dict(leaderboards or {})
         self._submissions = dict(submissions or {})
-        self._metadata = dict(metadata or {})
-        self._files = dict(files or {})
         # `or` would discard a deliberately-empty state: CredentialState is
         # falsy when it holds no credentials, which is exactly the case a test
         # seeding "no credentials" wants to express.
@@ -1115,23 +1087,11 @@ class FakeKaggleClient:
             d for d in self._datasets if d.ref.strip().lower().startswith(f"{wanted}/")
         ]
 
-    def search_datasets(
-        self, *, sort_by: str | None = None, pages: int = 1
-    ) -> list[Dataset]:
-        self._maybe_fail()
-        return list(self._datasets)
-
-    def dataset_metadata(self, ref: str, dest: Path) -> DatasetMetadata:
-        self._maybe_fail()
-        if ref not in self._metadata:
-            raise KaggleError(f"no seeded metadata for {ref}")
-        return self._metadata[ref]
-
-    def dataset_files(self, ref: str) -> list[str]:
-        self._maybe_fail()
-        return list(self._files.get(ref, []))
-
     def publish_dataset(self, path: Path, message: str) -> PushOutcome:
+        refused = _refuse_incomplete_dataset(path)
+        if refused is not None:
+            self.calls.append(("publish_dataset", (path, message)))
+            return refused
         return self._record("publish_dataset", path, message)
 
     def entered_competitions(self) -> list[Competition]:
