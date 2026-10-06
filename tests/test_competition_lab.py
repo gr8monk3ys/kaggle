@@ -472,3 +472,121 @@ def test_benchmark_store_sales_prefers_lightgbm_future_when_it_wins(
 
     submission = pd.read_csv(result.submission_path)
     assert submission["sales"].tolist() == [42.0, 43.0]
+
+
+def test_store_sales_lightgbm_future_result_does_not_build_a_redundant_future_frame(
+    monkeypatch,
+):
+    """Regression test for a refactor leftover.
+
+    ``_store_sales_lightgbm_future_result`` used to build a future frame for the
+    whole test set into ``_submission_future`` and then discard it without ever
+    using it — the real submission predictions come from
+    ``_store_sales_recursive_predictions`` instead, which builds its own future
+    frame one day at a time. That dead build wasted a full future-frame
+    construction over the entire test set on every run. This pins the exact
+    number of ``_store_sales_build_future_frame`` calls the function performs
+    (validation_future once, plus once per distinct date recursed over for the
+    validation and test sets) so the leftover can't silently come back.
+    """
+    dates = pd.date_range("2024-01-01", periods=30, freq="D")
+    history = pd.DataFrame(
+        {
+            "date": dates,
+            "store_nbr": 1,
+            "family": "A",
+            "onpromotion": [idx % 2 for idx in range(30)],
+            "sales": np.linspace(10.0, 39.0, 30),
+        }
+    )
+    validation = pd.DataFrame(
+        [
+            {
+                "id": 101,
+                "date": pd.Timestamp("2024-01-31"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+                "sales": 40.0,
+            },
+            {
+                "id": 102,
+                "date": pd.Timestamp("2024-02-01"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+                "sales": 41.0,
+            },
+        ]
+    )
+    test = pd.DataFrame(
+        [
+            {
+                "id": 201,
+                "date": pd.Timestamp("2024-02-02"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 0,
+            },
+            {
+                "id": 202,
+                "date": pd.Timestamp("2024-02-03"),
+                "store_nbr": 1,
+                "family": "A",
+                "onpromotion": 1,
+            },
+        ]
+    )
+    stores = pd.DataFrame([{"store_nbr": 1, "type": "D", "cluster": 3}])
+    oil = pd.DataFrame(
+        [
+            {"date": pd.Timestamp("2024-01-01"), "dcoilwtico": 50.0},
+            {"date": pd.Timestamp("2024-02-03"), "dcoilwtico": 52.0},
+        ]
+    )
+    holidays = pd.DataFrame(
+        [{"date": pd.Timestamp("2024-01-15"), "locale": "National"}]
+    )
+
+    class FakeLGBMRegressor:
+        def __init__(self, **_kwargs):
+            self._mean = 0.0
+
+        def fit(self, _x_train, y_train, eval_set=None, callbacks=None):
+            self._mean = float(np.mean(y_train))
+            return self
+
+        def predict(self, frame):
+            return np.full(len(frame), self._mean)
+
+    fake_lightgbm = types.SimpleNamespace(
+        LGBMRegressor=FakeLGBMRegressor,
+        early_stopping=lambda *_args, **_kwargs: None,
+        log_evaluation=lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setitem(sys.modules, "lightgbm", fake_lightgbm)
+
+    real_build_future_frame = store_sales._store_sales_build_future_frame
+    call_count = {"n": 0}
+
+    def counting_build_future_frame(*args, **kwargs):
+        call_count["n"] += 1
+        return real_build_future_frame(*args, **kwargs)
+
+    monkeypatch.setattr(
+        store_sales, "_store_sales_build_future_frame", counting_build_future_frame
+    )
+
+    score, validation_pred, submission_pred = (
+        store_sales._store_sales_lightgbm_future_result(
+            history, validation, test, stores, oil, holidays
+        )
+    )
+
+    assert np.isfinite(score)
+    assert len(validation_pred) == 2
+    assert len(submission_pred) == 2
+    # validation_future (1) + one recursive build per distinct validation date (2)
+    # + one recursive build per distinct test date (2). No extra, discarded
+    # build for the whole test set.
+    assert call_count["n"] == 5
