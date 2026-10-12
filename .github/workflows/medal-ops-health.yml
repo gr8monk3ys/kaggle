@@ -115,8 +115,10 @@ jobs:
             echo "accepted=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
-          python -m kaggle_portfolio.ops.kaggle_auth_doctor >/tmp/auth.log 2>&1
-          rc=$?
+          # Steps run under `bash -e`, so a bare failing command would end the
+          # step before rc is read; `|| rc=$?` keeps the exit code instead.
+          rc=0
+          python -m kaggle_portfolio.ops.kaggle_auth_doctor >/tmp/auth.log 2>&1 || rc=$?
           cat /tmp/auth.log
           # 3 = Kaggle answered and refused the key (kaggle_auth_doctor.REJECTED_EXIT).
           # Any other failure (owner mismatch, network) is not a key problem, so
