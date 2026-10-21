@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-08-19
+**Last Updated:** 2026-09-20
 
 > The counts below are from the last successful live sync. The Kaggle key in
 > CI has been rejected since, so they stay stale until `./manage.sh sync` runs
@@ -16,7 +16,7 @@ The closest wins are in Datasets and Notebooks, not Competitions.
 | Category | Next tier | Gap | Most direct route |
 |----------|-----------|-----|-------------------|
 | **Datasets** | Expert (3 medals) | 1 more dataset at 5+ votes | Real, current data with a strong starter notebook (Spotify reached silver; GitHub Repo Metrics bronze) |
-| **Notebooks** | Expert (5 medals) | 2 more notebooks at 5+ votes | A strong public notebook posted early in a large, active competition |
+| **Notebooks** | Expert (5 medals) | 1 more notebook at 5+ votes | A strong public notebook posted early in a large, active competition |
 | **Competitions** | Expert (2 bronze) | 2 bronze medals | One Featured or Research board with 30-90 days left, worked for weeks (`./manage.sh scout`) |
 | **Discussion** | Expert (50 bronze) | Not broken out (17 net votes over 28 posts) | Useful answers in competitions you are actually working on |
 
@@ -78,11 +78,11 @@ boards) once the Kaggle key is rotated.
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | — | 38 public (74 including private drafts) |
+| Total notebooks | — | 38 public (77 including private drafts) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
-| Bronze medals (5+ votes) | — | 3 |
-| Total votes | — | 80 |
+| Bronze medals (5+ votes) | — | 4 |
+| Total votes | — | 83 |
 
 Votes are spread at about one per notebook. Publishing an iteration as a new
 kernel splits its audience; version the existing one instead.
@@ -95,8 +95,8 @@ kernel splits its audience; version the existing one instead.
 | Gold medals (50+ votes) | 5 | 0 |
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
-| Total votes | — | 55 |
-| Total downloads | — | 2198 |
+| Total votes | — | 57 |
+| Total downloads | — | 2779 |
 
 | Dataset | Votes | Downloads | Note |
 |---------|-------|-----------|------|
