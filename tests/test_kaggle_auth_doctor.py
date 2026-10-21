@@ -115,29 +115,24 @@ class TestUploadAuthProbe:
 
     def test_unauthorized_is_classified(self, monkeypatch):
         self._sdk(monkeypatch, should_fail=True)
-        ok, msg = kaggle_auth_doctor.probe_blob_upload_auth(
-            CliKaggleClient(), timeout=1
-        )
-        assert ok is False
-        assert "401" in msg and "rejected credentials" in msg
+        probe = CliKaggleClient().probe_upload_auth(timeout=1)
+        assert probe.ok is False and probe.rejected is True
+        assert "401" in probe.detail and "rejected credentials" in probe.detail
 
     def test_success(self, monkeypatch):
         self._sdk(monkeypatch, should_fail=False)
-        ok, msg = kaggle_auth_doctor.probe_blob_upload_auth(
-            CliKaggleClient(), timeout=1
-        )
-        assert ok is True
-        assert "succeeded" in msg
+        probe = CliKaggleClient().probe_upload_auth(timeout=1)
+        assert probe.ok is True and probe.rejected is False
+        assert "succeeded" in probe.detail
 
     def test_a_missing_sdk_is_reported_not_raised(self, monkeypatch):
         import sys
 
         monkeypatch.setitem(sys.modules, "kaggle.api.kaggle_api_extended", None)
-        ok, msg = kaggle_auth_doctor.probe_blob_upload_auth(
-            CliKaggleClient(), timeout=1
-        )
-        assert ok is False
-        assert "kaggle package not installed" in msg
+        probe = CliKaggleClient().probe_upload_auth(timeout=1)
+        assert probe.ok is False
+        assert probe.rejected is False  # an absent SDK is not a refused key
+        assert "kaggle package not installed" in probe.detail
 
 
 class TestMain:
@@ -163,3 +158,25 @@ class TestMain:
         out = capsys.readouterr().out
         assert "AUTH DOCTOR: PASS" in out
         assert rc == 0
+
+    def test_a_rejected_key_has_its_own_exit_status(self, tmp_path, capsys):
+        from kaggle_portfolio.shared.deps import Deps
+
+        client = FakeKaggleClient(
+            datasets=[Dataset.from_row({"ref": "tester/x"})],
+            auth_probe=AuthProbe(False, "401 Unauthorized", rejected=True),
+        )
+        deps = Deps.for_test(tmp_path, client=client)
+        rc = kaggle_auth_doctor.main(["--root", str(tmp_path)], deps=deps)
+        assert rc == kaggle_auth_doctor.REJECTED_EXIT
+        assert "KEY REJECTED" in capsys.readouterr().out
+
+    def test_other_probe_failures_stay_ordinary_failures(self, tmp_path):
+        from kaggle_portfolio.shared.deps import Deps
+
+        client = FakeKaggleClient(
+            datasets=[Dataset.from_row({"ref": "tester/x"})],
+            auth_probe=AuthProbe(False, "official upload-start probe failed: timeout"),
+        )
+        deps = Deps.for_test(tmp_path, client=client)
+        assert kaggle_auth_doctor.main(["--root", str(tmp_path)], deps=deps) == 1

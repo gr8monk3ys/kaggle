@@ -1,0 +1,22 @@
+{
+  "id": "lorenzoscaturchio/what-starred-ml-repos-say-about-open-source-ai",
+  "title": "What Starred ML Repos Say About Open-Source AI",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "artificial intelligence",
+    "exploratory data analysis",
+    "software",
+    "programming",
+    "data visualization"
+  ],
+  "dataset_sources": [
+    "lorenzoscaturchio/github-ml-ai-repositories-2026"
+  ],
+  "kernel_sources": [],
+  "competition_sources": []
+}

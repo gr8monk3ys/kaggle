@@ -90,8 +90,7 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
     """
     from kaggle_portfolio import manage_commands
     from kaggle_portfolio.datasets import dataset_usability
-    from kaggle_portfolio.ops import discussion_scheduler, medal_ops
-    from kaggle_portfolio.quality import notebook_quality
+    from kaggle_portfolio.ops import medal_ops
 
     step_deps = deps.with_output_root(args.output_root)
     # --output-root is still forwarded explicitly: each module resolves it from its
@@ -111,23 +110,7 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
         doctor_argv.append("--strict")
     if args.require_kaggle:
         doctor_argv.append("--require-kaggle")
-    for flag, value in (
-        ("--kernels-csv", args.kernels_csv),
-        ("--datasets-csv", args.datasets_csv),
-        ("--competitions-csv", args.competitions_csv),
-    ):
-        if value:
-            doctor_argv.extend([flag, value])
 
-    quality_argv = [
-        *out,
-        *today,
-        "--scope",
-        "all",
-        "--min-score",
-        str(args.min_quality_score),
-        "--fail-under-threshold",
-    ]
     dataset_argv = [
         *out,
         *today,
@@ -135,29 +118,13 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
         "--fail-under",
         str(args.min_dataset_usability_score),
     ]
-    draft_argv = [
-        "--health-check",
-        "--max-overdue-scheduled",
-        str(args.max_overdue_scheduled),
-        "--max-days-until-next-post",
-        str(args.max_days_until_next_post),
-        *today,
-    ]
 
     steps = [
         Step("metadata-validate", run=lambda: manage_commands.cmd_validate([])),
         Step("doctor", run=lambda: medal_ops.main(doctor_argv, deps=step_deps)),
         Step(
-            "notebook-quality",
-            run=lambda: notebook_quality.main(quality_argv, deps=step_deps),
-        ),
-        Step(
             "dataset-usability",
             run=lambda: dataset_usability.main(dataset_argv, deps=step_deps),
-        ),
-        Step(
-            "draft-ops",
-            run=lambda: discussion_scheduler.main(draft_argv, deps=step_deps),
         ),
     ]
     if not args.no_pytest:
@@ -166,17 +133,7 @@ def build_preflight_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
 
 
 def build_smoke_live_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
-    """Live, non-mutating smoke checks.
-
-    The discussion step stays a subprocess because it drives Playwright.
-
-    Note the rule is not currently airtight: campaign_execute imports
-    kaggle_browser from pi-automation/scripts at module level, so an in-process
-    campaign step already puts that module on the import path. Playwright itself
-    is imported lazily inside it, so nothing breaks today — but the boundary is a
-    convention here, not something the code enforces.
-    """
-    from kaggle_portfolio.campaigns import campaign_execute
+    """Live, non-mutating smoke checks."""
     from kaggle_portfolio.datasets import dataset_publish_pipeline
     from kaggle_portfolio.ops import kaggle_auth_doctor
 
@@ -195,16 +152,6 @@ def build_smoke_live_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
     if args.include_live_datasets:
         publish_argv.append("--all")
 
-    campaign_argv = ["--dry-run", "--limit", str(args.limit), "--no-respect-schedule"]
-
-    discussion_cmd = [
-        sys.executable,
-        str(deps.layout.pi_scripts / "discussion_post.py"),
-        "--smoke-test",
-    ]
-    if args.check_discussion_login:
-        discussion_cmd.append("--check-login")
-
     steps = [
         Step("auth-doctor", run=lambda: kaggle_auth_doctor.main(auth_argv, deps=deps))
     ]
@@ -215,15 +162,6 @@ def build_smoke_live_steps(args: argparse.Namespace, deps: Deps) -> list[Step]:
                 run=lambda: dataset_publish_pipeline.main(publish_argv, deps=deps),
             )
         )
-    if not args.no_campaign:
-        steps.append(
-            Step(
-                "campaign-execute-dry-run",
-                run=lambda: campaign_execute.main(campaign_argv, deps=deps),
-            )
-        )
-    if not args.no_discussion:
-        steps.append(Step("discussion-post-smoke", discussion_cmd))
     return steps
 
 
@@ -260,38 +198,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Require live Kaggle access in doctor.",
     )
     preflight.add_argument(
-        "--kernels-csv", default=None, help="Optional exported kernels CSV for doctor."
-    )
-    preflight.add_argument(
-        "--datasets-csv",
-        default=None,
-        help="Optional exported datasets CSV for doctor.",
-    )
-    preflight.add_argument(
-        "--competitions-csv",
-        default=None,
-        help="Optional exported competitions CSV for doctor.",
-    )
-    preflight.add_argument(
-        "--min-quality-score", type=int, default=95, help="Notebook quality threshold."
-    )
-    preflight.add_argument(
         "--min-dataset-usability-score",
         type=int,
         default=85,
         help="Dataset usability threshold.",
-    )
-    preflight.add_argument(
-        "--max-overdue-scheduled",
-        type=int,
-        default=0,
-        help="Allowed overdue scheduled drafts.",
-    )
-    preflight.add_argument(
-        "--max-days-until-next-post",
-        type=int,
-        default=14,
-        help="Allowed gap to next scheduled post.",
     )
     preflight.add_argument(
         "--no-pytest", action="store_true", help="Skip the full pytest run."
@@ -299,7 +209,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     smoke = sub.add_parser(
         "smoke-live",
-        help="Safely exercise live Kaggle publish/post prerequisites without mutating state.",
+        help="Safely exercise live Kaggle publish prerequisites without mutating state.",
     )
     smoke.add_argument("--owner", default=None, help="Expected Kaggle owner slug.")
     smoke.add_argument(
@@ -317,19 +227,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     smoke.add_argument(
         "--no-publish", action="store_true", help="Skip dataset publish dry-run."
-    )
-    smoke.add_argument(
-        "--no-campaign", action="store_true", help="Skip campaign queue dry-run."
-    )
-    smoke.add_argument(
-        "--no-discussion",
-        action="store_true",
-        help="Skip discussion posting smoke test.",
-    )
-    smoke.add_argument(
-        "--check-discussion-login",
-        action="store_true",
-        help="Open Playwright and verify Kaggle login without posting.",
     )
     return parser
 

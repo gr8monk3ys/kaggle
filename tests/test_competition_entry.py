@@ -240,17 +240,18 @@ class TestCreateEntry:
         # But notebook should be created
         assert (entry_dir / "notebook.ipynb").exists()
 
-    @patch("kaggle_portfolio.notebooks.competition_entry.fetch_competition_info")
-    def test_fetched_title_used(self, mock_fetch, tmp_path):
-        mock_fetch.return_value = {
-            "title": "Amazing Competition",
-            "ref": "amazing-comp",
-        }
+    def test_fetched_title_used(self, tmp_path):
+        # Seed the fake rather than mocking the lookup: a mock returning a dict
+        # is how create_entry shipped calling .get() on a Competition.
+        client = FakeKaggleClient(
+            competitions=[
+                Competition.from_row(row)
+                for row in parse_csv("ref,title\namazing-comp,Amazing Competition\n")
+            ]
+        )
 
         with patch.object(entry, "ROOT", tmp_path):
-            ok = entry.create_entry(
-                FakeKaggleClient(), "amazing-comp", gpu=False, push=False
-            )
+            ok = entry.create_entry(client, "amazing-comp", gpu=False, push=False)
 
         assert ok
         meta = json.loads(

@@ -49,26 +49,19 @@ def test_manage_help_available():
     )
     assert result.returncode == 0
     assert "Usage:" in result.stdout
-    assert "scorecard" in result.stdout
-    assert "weekly-plan" in result.stdout
-    assert "pace" in result.stdout
-    assert "sync" in result.stdout
-    assert "sync-template" in result.stdout
-    assert "doctor" in result.stdout
+    listed = {
+        line.split()[0] for line in result.stdout.splitlines() if line.startswith("  ")
+    }
+    assert {"sync", "doctor", "digest"} <= listed
+    assert (
+        not {"scorecard", "badge-plan", "weekly-plan", "pace", "sync-template"} & listed
+    )
     assert "preflight" in result.stdout
-    assert "quality" in result.stdout
     assert "dataset-usability" in result.stdout
     assert "usability-tracker" in result.stdout
-    assert "campaign-pack" in result.stdout
-    assert "campaign-run" in result.stdout
-    assert "campaign-execute" in result.stdout
-    assert "usability-benchmark" in result.stdout
     assert "publish-datasets" in result.stdout
     assert "smoke-live" in result.stdout
     assert "auth-doctor" in result.stdout
-    assert "draft-ops" in result.stdout
-    assert "draft-set" in result.stdout
-    assert "--schedule-weeks" in result.stdout
 
 
 def test_repo_root_has_no_top_level_python_scripts():
@@ -90,14 +83,11 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "workflow_dispatch:" in content
     assert "mode:" in content
     assert "max_stale_days:" in content
-    assert "min_quality_score:" in content
     assert "min_dataset_usability_score:" in content
     assert "live_alert_under:" in content
     assert "live_target_rating:" in content
     assert 'default: "0.8"' in content
     assert 'default: "1.0"' in content
-    assert "max_overdue_scheduled:" in content
-    assert "max_days_until_next_post:" in content
     assert 'default: "85"' in content
     # The medal_ops parser accepts shared flags before or after the subcommand,
     # so assert the doctor/sync steps exist with their key flags rather than
@@ -108,14 +98,11 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
         "sync --dry-run" in content
         or "sync --output-root /tmp/medal_ops_health --dry-run" in content
     )
-    assert "python -m kaggle_portfolio.quality.notebook_quality" in content
     assert "python -m kaggle_portfolio.datasets.dataset_usability" in content
     assert "dataset-usability.log" in content
     assert "dataset-usability-tracker.log" in content
-    assert (
-        "python -m kaggle_portfolio.ops.discussion_scheduler --health-check" in content
-    )
-    assert "draft-ops.log" in content
+    assert "python -m kaggle_portfolio.ops.kaggle_auth_doctor" in content
+    assert "Kaggle credentials rejected" in content
     assert "Open or update incident issue" in content
 
 
@@ -124,15 +111,12 @@ def test_ci_workflow_runs_preflight_gate_and_script_smokes():
     assert workflow.exists()
     content = workflow.read_text(encoding="utf-8")
     assert "bash manage.sh preflight" in content
-    # PR CI must not enforce content-cadence SLAs (that is the scheduled
-    # health workflow's job) and must not pin --today: a frozen date plus a
-    # moving discussion queue once made every PR fail permanently.
-    assert "--max-overdue-scheduled" in content
+    # PR CI must not pin --today: content-freshness SLAs are the scheduled
+    # health workflow's job.
     preflight_step = content.split("bash manage.sh preflight")[1].split("- name:")[0]
     assert "--today" not in preflight_step
     assert "--no-pytest" in content
     assert "pytest -q --cov=." in content
-    assert "python -m kaggle_portfolio.datasets.dataset_explore_generator" in content
     assert "python -m kaggle_portfolio.notebooks.competition_entry --help" in content
 
 
@@ -144,19 +128,16 @@ def test_live_smoke_workflow_exists_and_is_manual():
     assert "name: Live Smoke" in content
     assert "workflow_dispatch:" in content
     assert "schedule:" not in content
-    assert "discussion_mode:" in content
     assert "include_live_datasets:" in content
     assert "kaggle-live-smoke" in content
     assert "bash manage.sh" in content
     assert "smoke-live" in content
-    assert "--check-discussion-login" in content
-    assert "--no-discussion" in content
 
 
 def test_kaggle_session_cookie_is_gitignored():
-    """The Playwright session-cookie file must never be committable."""
+    """A browser session-cookie file must never be committable."""
     result = subprocess.run(
-        ["git", "check-ignore", "-q", "pi-automation/data/kaggle_storage_state.json"],
+        ["git", "check-ignore", "-q", "kaggle_storage_state.json"],
         cwd=ROOT,
         capture_output=True,
         check=False,
@@ -165,7 +146,7 @@ def test_kaggle_session_cookie_is_gitignored():
 
 
 def test_medal_ops_history_is_tracked_not_ignored():
-    """Daily snapshots must be committable so pace history accumulates."""
+    """Snapshots must be committable so the digest has history to compare."""
     result = subprocess.run(
         ["git", "check-ignore", "-q", "medal_ops/history/snapshot-sample.json"],
         cwd=ROOT,
@@ -189,10 +170,7 @@ def test_telemetry_workflow_records_and_commits_snapshots():
     assert wf.get("permissions", {}).get("contents") == "write"
 
     body = wf_path.read_text(encoding="utf-8")
-    assert "medal_ops sync" in body
-    assert (
-        "medal_ops scorecard" in body
-    )  # scorecard is what actually writes the snapshot
+    assert "medal_ops sync" in body  # sync is what writes the snapshot
     assert "--dry-run" not in body
     assert "medal_ops digest" in body
 
@@ -223,7 +201,7 @@ def test_deps_global_stays_inside_the_cli_edge():
 
     ADR-0002 permits the edge to hold one constructed Deps; it does not permit
     command modules to default to it. That line was breached once already —
-    notebook_quality imported is_skipped from manage_commands, and that helper
+    a command module imported is_skipped from manage_commands, and that helper
     called deps() — so the rule is enforced rather than trusted.
     """
     package = ROOT / "kaggle_portfolio"
@@ -251,7 +229,7 @@ def test_benchmarks_registry_stays_callable():
     """
     from kaggle_portfolio.notebooks.competition_lab import BENCHMARKS
 
-    assert len(BENCHMARKS) >= 8
+    assert len(BENCHMARKS) >= 5
     for slug in BENCHMARKS:
         assert callable(BENCHMARKS[slug]), f"BENCHMARKS[{slug!r}] must be callable"
 
@@ -366,37 +344,6 @@ def test_notebook_keywords_within_kaggle_limit():
         f"Notebooks exceed Kaggle's {MAX_KEYWORDS}-keyword cap; everything past "
         f"the {MAX_KEYWORDS}th is dropped on push without an error. Keep the "
         f"{MAX_KEYWORDS} most searchable terms: {offenders}"
-    )
-
-
-def test_hand_authored_explore_notebooks_are_protected_from_regeneration(repo_root):
-    """A hand-authored explore notebook must survive `dataset_explore_generator --all`.
-
-    This was a hardcoded name list that went stale: it protected spotify-tracks and
-    mental-health-tech, while student-performance and ecommerce-behavior — both
-    hand-authored, both carrying executed outputs — were left exposed to being
-    overwritten by the generic template.
-    """
-    from kaggle_portfolio.datasets.dataset_explore_generator import is_hand_authored
-
-    unprotected = []
-    for ds_dir in sorted((repo_root / "datasets").iterdir()):
-        if not ds_dir.is_dir():
-            continue
-        nb_path = ds_dir / "explore.ipynb"
-        if not nb_path.exists():
-            continue
-        nb = json.loads(nb_path.read_text(encoding="utf-8"))
-        # Saved outputs mean somebody executed it deliberately; the generator
-        # never produces them.
-        has_outputs = any(cell.get("outputs") for cell in nb.get("cells", []))
-        if has_outputs and not is_hand_authored(ds_dir):
-            unprotected.append(ds_dir.name)
-
-    assert not unprotected, (
-        "these explore notebooks carry executed outputs but would be overwritten by "
-        f"`dataset_explore_generator --all`: {unprotected}. Add a build_notebook.py "
-        'or set `"hand_authored": true` in the notebook metadata.'
     )
 
 

@@ -33,9 +33,7 @@ class TestPreflightComposition:
         assert [s.name for s in steps] == [
             "metadata-validate",
             "doctor",
-            "notebook-quality",
             "dataset-usability",
-            "draft-ops",
             "pytest",
         ]
 
@@ -56,7 +54,7 @@ class TestPreflightComposition:
         steps = repo_ops.build_preflight_steps(
             _args("preflight", "--no-pytest"), _deps(tmp_path)
         )
-        assert [s.name for s in steps][-1] == "draft-ops"
+        assert [s.name for s in steps][-1] == "dataset-usability"
         assert all(s.cmd is None for s in steps)
 
     def test_reports_go_to_the_requested_output_root(self, tmp_path):
@@ -75,32 +73,16 @@ class TestPreflightComposition:
 
 class TestSmokeLiveComposition:
     def test_includes_expected_checks(self, tmp_path):
-        args = _args(
-            "smoke-live", "--owner", "lorenzoscaturchio", "--check-discussion-login"
-        )
+        args = _args("smoke-live", "--owner", "lorenzoscaturchio")
         args.report_json = str(tmp_path / "r.json")
         steps = repo_ops.build_smoke_live_steps(args, _deps(tmp_path))
-        assert [s.name for s in steps] == [
-            "auth-doctor",
-            "publish-datasets-dry-run",
-            "campaign-execute-dry-run",
-            "discussion-post-smoke",
-        ]
-
-    def test_discussion_smoke_stays_a_subprocess(self, tmp_path):
-        """Playwright must not become reachable from a kaggle_portfolio import."""
-        args = _args("smoke-live")
-        args.report_json = str(tmp_path / "r.json")
-        steps = repo_ops.build_smoke_live_steps(args, _deps(tmp_path))
-        discussion = [s for s in steps if s.name == "discussion-post-smoke"][0]
-        assert discussion.cmd is not None
-        assert discussion.cmd[-1] == "--smoke-test"
+        assert [s.name for s in steps] == ["auth-doctor", "publish-datasets-dry-run"]
 
     def test_respects_skip_flags(self, tmp_path):
-        args = _args("smoke-live", "--no-publish", "--no-campaign")
+        args = _args("smoke-live", "--no-publish")
         args.report_json = str(tmp_path / "r.json")
         steps = repo_ops.build_smoke_live_steps(args, _deps(tmp_path))
-        assert [s.name for s in steps] == ["auth-doctor", "discussion-post-smoke"]
+        assert [s.name for s in steps] == ["auth-doctor"]
 
 
 class TestStepExecution:

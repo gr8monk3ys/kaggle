@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-import pytest
 
 from kaggle_portfolio.datasets import dataset_publish_pipeline as pipeline
+from kaggle_portfolio.shared.proc import summarize_output
 from kaggle_portfolio.shared.kaggle_client import (
     Dataset,
     FakeKaggleClient,
     KaggleError,
     parse_csv,
 )
-from kaggle_portfolio.shared.errors import CommandError
 
 
 def _candidate(
@@ -70,33 +68,6 @@ def test_fetch_live_refs_reports_kaggle_failure():
     assert "403 Forbidden" in err
 
 
-def test_build_ui_sync_command_includes_refs_and_flags():
-    cmd = pipeline.build_ui_sync_command(
-        ["owner/a", "owner/b"],
-        headed=True,
-        timeout_ms=12345,
-        manual_login=False,
-    )
-
-    assert cmd[0] == sys.executable
-    assert cmd[1].endswith("pi-automation/scripts/dataset_metadata_sync.py")
-    assert "--apply" in cmd
-    assert "--headed" in cmd
-    assert "--no-manual-login" in cmd
-    assert "--timeout-ms" in cmd
-    assert "12345" in cmd
-    assert cmd.count("--dataset-ref") == 2
-    assert "owner/a" in cmd and "owner/b" in cmd
-
-
-def test_main_rejects_sync_ui_without_apply(monkeypatch):
-    monkeypatch.setattr(
-        sys, "argv", ["dataset_publish_pipeline.py", "--sync-ui-metadata"]
-    )
-    with pytest.raises(CommandError, match="requires --apply"):
-        pipeline.main()
-
-
 def test_classify_live_state_handles_missing_lookup():
     assert pipeline.classify_live_state("owner/a", None) == "unknown"
     assert pipeline.classify_live_state(None, {"owner/a"}) == "unknown"
@@ -141,7 +112,7 @@ def test_select_targets_respects_draft_mode_and_max_items():
 
 
 def test_summarize_output_prefers_real_error_line():
-    message = pipeline.summarize_output(
+    message = summarize_output(
         "warning one\nwarning two\n",
         "401 Client Error: Unauthorized for url: https://www.kaggle.com/api/v1/blobs/upload\n"
         "  warnings.warn(\n",

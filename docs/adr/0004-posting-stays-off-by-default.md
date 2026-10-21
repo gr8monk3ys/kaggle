@@ -1,5 +1,9 @@
 # Posting stays off by default, and enabling it is a separate act
 
+> **Superseded by [ADR-0007](0007-no-automated-engagement.md) (2026-10-01).**
+> The discussion poster described here was removed with the rest of the engagement
+> automation. Kept for the record.
+
 Unifying the Draft Queue selector (ADR-0003) changes which Drafts are eligible to
 publish: under the old poster, twelve future-scheduled items caused it to decline
 entirely; under the canonical selector, thirty unscheduled `ready` Drafts count as

@@ -18,6 +18,7 @@ from kaggle_portfolio.shared.kaggle_client import (
     Competition,
     Dataset,
     FakeKaggleClient,
+    KaggleAuthRejected,
     KaggleClient,
     KaggleCommandFailed,
     KaggleFieldMissing,
@@ -170,6 +171,50 @@ class TestPageSizeCapability:
         with pytest.raises(KaggleCommandFailed) as excinfo:
             client.my_kernels()
         assert "403 Forbidden" in str(excinfo.value)
+        assert not isinstance(excinfo.value, KaggleAuthRejected)
+
+
+class TestAuthRejected:
+    """A 401 names the fix; it used to surface as an HTTP status in a traceback."""
+
+    def _client_failing_with(self, monkeypatch, stdout, stderr):
+        def fake_run(argv, **kwargs):
+            return subprocess.CompletedProcess(argv, 1, stdout, stderr)
+
+        monkeypatch.setattr(kc.subprocess, "run", fake_run)
+        client = CliKaggleClient(retries=1)
+        monkeypatch.setattr(client, "_prefix", lambda: ["kaggle"])
+        return client
+
+    @pytest.mark.parametrize(
+        "stdout,stderr",
+        [
+            # kaggle 1.8.x, verbatim from the 2026-09-21 telemetry run.
+            (
+                "",
+                "401 Client Error: Unauthorized for url: "
+                "https://api.kaggle.com/v1/kernels.KernelsApiService/ListKernels",
+            ),
+            # kaggle 2.x prints its banner to stdout and exits 1.
+            ("Authentication required to call the Kaggle API.\n", ""),
+        ],
+    )
+    def test_a_401_raises_auth_rejected_with_the_rotate_step(
+        self, monkeypatch, stdout, stderr
+    ):
+        client = self._client_failing_with(monkeypatch, stdout, stderr)
+        with pytest.raises(KaggleAuthRejected) as excinfo:
+            client.my_kernels()
+        message = str(excinfo.value)
+        assert message.startswith("Kaggle credentials rejected (401) — rotate the key")
+        assert "KAGGLE_API_TOKEN" in message
+        # The original command and output stay in the message for debugging.
+        assert "kernels list --mine" in message
+
+    def test_auth_rejected_is_still_a_command_failure(self, monkeypatch):
+        client = self._client_failing_with(monkeypatch, "", "401 Unauthorized")
+        with pytest.raises(KaggleCommandFailed):
+            client.my_kernels()
 
 
 class TestEffectsGate:
@@ -325,3 +370,56 @@ class TestFake:
     def test_an_explicitly_empty_credential_state_is_preserved(self):
         state = kc.CredentialState(None, [], "nope")
         assert FakeKaggleClient(credentials_state=state).credentials() is state
+
+
+def _dataset_folder(root: Path, *, built: bool) -> Path:
+    folder = root / "ds"
+    folder.mkdir()
+    (folder / "dataset-metadata.json").write_text(
+        '{"id": "me/ds", "resources": [{"path": "data.csv"}]}',
+        encoding="utf-8",
+    )
+    if built:
+        (folder / "data.csv").write_text("a\n1\n", encoding="utf-8")
+    return folder
+
+
+class TestIncompleteDatasetsAreNeverPublished:
+    """CSVs are build output, so a fresh clone has metadata without data."""
+
+    def test_missing_dataset_files_lists_declared_but_absent_paths(self, tmp_path):
+        assert kc.missing_dataset_files(_dataset_folder(tmp_path, built=False)) == [
+            "data.csv"
+        ]
+
+    def test_a_built_folder_has_nothing_missing(self, tmp_path):
+        assert kc.missing_dataset_files(_dataset_folder(tmp_path, built=True)) == []
+
+    def test_cli_refuses_before_any_subprocess(self, tmp_path, monkeypatch):
+        def explode(*a, **k):
+            raise AssertionError("tried to upload an incomplete dataset")
+
+        monkeypatch.setattr(kc.subprocess, "run", explode)
+        outcome = CliKaggleClient().publish_dataset(
+            _dataset_folder(tmp_path, built=False), "msg"
+        )
+        assert not outcome.ok
+        assert "build-datasets" in outcome.detail
+
+    def test_cli_refuses_even_in_dry_run(self, tmp_path):
+        outcome = CliKaggleClient(effects=False).publish_dataset(
+            _dataset_folder(tmp_path, built=False), "msg"
+        )
+        assert not outcome.ok and not outcome.skipped
+
+    def test_fake_refuses_the_same_way(self, tmp_path):
+        client = FakeKaggleClient()
+        outcome = client.publish_dataset(_dataset_folder(tmp_path, built=False), "m")
+        assert not outcome.ok
+        assert [name for name, _ in client.calls] == ["publish_dataset"]
+
+    def test_fake_publishes_a_built_folder(self, tmp_path):
+        outcome = FakeKaggleClient().publish_dataset(
+            _dataset_folder(tmp_path, built=True), "m"
+        )
+        assert outcome.ok

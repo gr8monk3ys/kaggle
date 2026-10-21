@@ -5,15 +5,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from kaggle_portfolio.datasets import dataset_usability
 from kaggle_portfolio.shared.deps import Deps
 from kaggle_portfolio.shared.kaggle_client import KaggleClient, KaggleError
-from kaggle_portfolio.shared.proc import summarize_output
 from kaggle_portfolio.shared.errors import CommandError
 
 
@@ -135,49 +132,6 @@ def publish_dataset(
     return outcome.ok, (outcome.detail or ("updated" if outcome.ok else "failed"))
 
 
-def build_ui_sync_command(
-    dataset_refs: list[str],
-    *,
-    headed: bool,
-    timeout_ms: int,
-    manual_login: bool,
-) -> list[str]:
-    script = ROOT / "pi-automation" / "scripts" / "dataset_metadata_sync.py"
-    cmd = [
-        sys.executable,
-        str(script),
-        "--apply",
-        "--timeout-ms",
-        str(timeout_ms),
-    ]
-    if headed:
-        cmd.append("--headed")
-    if not manual_login:
-        cmd.append("--no-manual-login")
-    for ref in dataset_refs:
-        cmd.extend(["--dataset-ref", ref])
-    return cmd
-
-
-def run_ui_metadata_sync(
-    dataset_refs: list[str],
-    *,
-    headed: bool,
-    timeout_ms: int,
-    manual_login: bool,
-) -> tuple[bool, str, str, str]:
-    cmd = build_ui_sync_command(
-        dataset_refs,
-        headed=headed,
-        timeout_ms=timeout_ms,
-        manual_login=manual_login,
-    )
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
-    ok = result.returncode == 0
-    detail = "updated" if ok else summarize_output(result.stdout, result.stderr)
-    return ok, detail, result.stdout, result.stderr
-
-
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -206,7 +160,6 @@ def build_report_payload(
     targets: list[PublishCandidate],
     candidates: list[PublishCandidate],
     results: list[dict],
-    ui_sync: dict,
     publish_summary: dict | None = None,
 ) -> dict:
     payload = {
@@ -218,7 +171,6 @@ def build_report_payload(
         "selected_count": len(targets),
         "candidates": [serialize_candidate(item) for item in candidates],
         "results": results,
-        "ui_sync": ui_sync,
     }
     if publish_summary is not None:
         payload["publish"] = publish_summary
@@ -278,28 +230,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--apply", action="store_true", help="Actually publish selected datasets."
     )
     parser.add_argument(
-        "--sync-ui-metadata",
-        action="store_true",
-        help="After successful --apply publish, sync UI-only metadata fields via Playwright.",
-    )
-    parser.add_argument(
-        "--ui-sync-headed",
-        action="store_true",
-        help="Run UI sync browser in headed mode.",
-    )
-    parser.add_argument(
-        "--ui-sync-timeout-ms",
-        type=int,
-        default=20000,
-        help="Playwright timeout for UI sync.",
-    )
-    parser.add_argument(
-        "--ui-sync-manual-login",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Allow interactive Kaggle login during UI sync.",
-    )
-    parser.add_argument(
         "--report-json",
         default=None,
         help="Optional output path for publish report JSON.",
@@ -314,10 +244,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
         raise CommandError("--min-score must be between 0 and 100")
     if args.max_items < 0:
         raise CommandError("--max-items must be >= 0")
-    if args.ui_sync_timeout_ms < 1:
-        raise CommandError("--ui-sync-timeout-ms must be >= 1")
-    if args.sync_ui_metadata and not args.apply:
-        raise CommandError("--sync-ui-metadata requires --apply")
 
     root = Path(args.root).resolve()
     print(f"{BLUE}=== Dataset Publish Pipeline ==={RESET}")
@@ -392,10 +318,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
                     targets=targets,
                     candidates=candidates,
                     results=[],
-                    ui_sync={
-                        "requested": bool(args.sync_ui_metadata),
-                        "status": "skipped",
-                    },
                 ),
             )
             print(f"Report written: {report_path}")
@@ -416,11 +338,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
                     targets=targets,
                     candidates=candidates,
                     results=[],
-                    ui_sync={
-                        "requested": bool(args.sync_ui_metadata),
-                        "status": "skipped",
-                        "reason": "no targets",
-                    },
                 ),
             )
             print(f"Report written: {report_path}")
@@ -432,50 +349,6 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
     print(
         f"Publish results: {GREEN}{success} succeeded{RESET}, {RED}{failed} failed{RESET}"
     )
-
-    ui_sync_payload: dict = {
-        "requested": bool(args.sync_ui_metadata),
-        "status": "skipped",
-    }
-    ui_sync_failed = False
-    if args.sync_ui_metadata:
-        refs = sorted(
-            {
-                str(item["dataset_ref"]).strip().lower()
-                for item in results
-                if item["ok"] and item["dataset_ref"]
-            }
-        )
-        if not refs:
-            print("UI metadata sync skipped: no successful dataset refs to sync.")
-            ui_sync_payload = {
-                "requested": True,
-                "status": "skipped",
-                "reason": "no successful refs",
-            }
-        else:
-            print(f"Running UI metadata sync for {len(refs)} dataset(s)...")
-            ok, detail, sync_stdout, sync_stderr = run_ui_metadata_sync(
-                refs,
-                headed=args.ui_sync_headed,
-                timeout_ms=args.ui_sync_timeout_ms,
-                manual_login=args.ui_sync_manual_login,
-            )
-            ui_sync_payload = {
-                "requested": True,
-                "status": "ok" if ok else "failed",
-                "detail": detail,
-                "dataset_refs": refs,
-            }
-            if sync_stdout.strip():
-                print(sync_stdout.strip())
-            if sync_stderr.strip():
-                print(sync_stderr.strip())
-            if ok:
-                print(f"{GREEN}UI metadata sync completed.{RESET}")
-            else:
-                print(f"{RED}UI metadata sync failed:{RESET} {detail}")
-                ui_sync_failed = True
 
     if args.report_json:
         report_path = Path(args.report_json).resolve()
@@ -490,13 +363,12 @@ def main(argv: list[str] | None = None, deps: Deps | None = None) -> int:
                 targets=targets,
                 candidates=candidates,
                 results=results,
-                ui_sync=ui_sync_payload,
                 publish_summary={"success": success, "failed": failed},
             ),
         )
         print(f"Report written: {report_path}")
 
-    return 0 if failed == 0 and not ui_sync_failed else 1
+    return 0 if failed == 0 else 1
 
 
 if __name__ == "__main__":

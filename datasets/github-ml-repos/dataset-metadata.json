@@ -1,0 +1,172 @@
+{
+  "id": "lorenzoscaturchio/github-ml-ai-repositories-2026",
+  "title": "GitHub ML & AI Repositories (2026 Snapshot)",
+  "subtitle": "7,550 real repos with 500+ stars across 20 ML/AI topics",
+  "description": "Every machine learning and AI repository on GitHub with at least 500 stars across 20 topics (machine-learning, deep-learning, llm, ai-agents, rag, computer-vision, nlp, reinforcement-learning, mlops, diffusion-models and more), pulled from GitHub's public search API on 2026-10-01. Real data, not generated.\n\nEach row is one repository: stars, forks, open issues, size, primary language, license, full topic list, which searched topics matched it, creation and last-push dates, archived and fork flags, and derived age and staleness in days.\n\nUseful for studying where open-source AI attention goes, how the field shifted toward LLM agents and TypeScript, how many popular projects are still maintained, and what you can legally build on. GitHub search returns at most 1,000 results per query, so the five largest topics are capped at their 1,000 most-starred repos; per-topic counts are lower bounds.\n\nRepository metadata comes from GitHub's public API; descriptions belong to their authors. Use is subject to GitHub's Terms of Service. The collection script is included so the snapshot can be repeated.",
+  "isPrivate": false,
+  "licenses": [
+    {
+      "name": "other"
+    }
+  ],
+  "keywords": [
+    "artificial intelligence",
+    "programming",
+    "software",
+    "exploratory data analysis",
+    "deep learning",
+    "tabular"
+  ],
+  "resources": [
+    {
+      "path": "github_ml_repos.csv",
+      "description": "One row per repository, sorted by stars (snapshot 2026-10-01)",
+      "schema": {
+        "fields": [
+          {
+            "name": "repo",
+            "title": "Repo",
+            "description": "owner/name on GitHub",
+            "type": "string"
+          },
+          {
+            "name": "owner",
+            "title": "Owner",
+            "description": "User or organization login",
+            "type": "string"
+          },
+          {
+            "name": "owner_type",
+            "title": "Owner type",
+            "description": "User or Organization",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "title": "Description",
+            "description": "Repository description as written by its authors",
+            "type": "string"
+          },
+          {
+            "name": "language",
+            "title": "Language",
+            "description": "Primary language detected by GitHub (blank when none)",
+            "type": "string"
+          },
+          {
+            "name": "stars",
+            "title": "Stars",
+            "description": "Stargazer count at snapshot time",
+            "type": "integer"
+          },
+          {
+            "name": "forks",
+            "title": "Forks",
+            "description": "Fork count at snapshot time",
+            "type": "integer"
+          },
+          {
+            "name": "open_issues",
+            "title": "Open issues",
+            "description": "Open issues plus open pull requests",
+            "type": "integer"
+          },
+          {
+            "name": "size_kb",
+            "title": "Size kb",
+            "description": "Repository size reported by GitHub, in KB",
+            "type": "integer"
+          },
+          {
+            "name": "license",
+            "title": "License",
+            "description": "SPDX identifier; blank when absent or unrecognised",
+            "type": "string"
+          },
+          {
+            "name": "topics",
+            "title": "Topics",
+            "description": "All repository topics, pipe-separated",
+            "type": "string"
+          },
+          {
+            "name": "n_topics",
+            "title": "N topics",
+            "description": "Number of repository topics",
+            "type": "integer"
+          },
+          {
+            "name": "matched_topics",
+            "title": "Matched topics",
+            "description": "Which of the 20 searched topics returned this repo, pipe-separated",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "title": "Created at",
+            "description": "Repository creation time (UTC, ISO 8601)",
+            "type": "datetime"
+          },
+          {
+            "name": "pushed_at",
+            "title": "Pushed at",
+            "description": "Time of the most recent push (UTC, ISO 8601)",
+            "type": "datetime"
+          },
+          {
+            "name": "age_days",
+            "title": "Age days",
+            "description": "Days from creation to the snapshot",
+            "type": "integer"
+          },
+          {
+            "name": "days_since_push",
+            "title": "Days since push",
+            "description": "Days from the last push to the snapshot",
+            "type": "integer"
+          },
+          {
+            "name": "archived",
+            "title": "Archived",
+            "description": "True when the repository is archived (read-only)",
+            "type": "boolean"
+          },
+          {
+            "name": "is_fork",
+            "title": "Is fork",
+            "description": "True when the repository is a fork",
+            "type": "boolean"
+          },
+          {
+            "name": "has_homepage",
+            "title": "Has homepage",
+            "description": "True when the repository lists a homepage URL",
+            "type": "boolean"
+          }
+        ]
+      }
+    }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2009-03-21",
+    "temporal_end_date": "2026-10-01",
+    "geospatial_coverage": "Global"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "GitHub REST API, search/repositories endpoint (api.github.com)"
+    ],
+    "collection_methodology": "One search per topic (topic:<name> stars:>=500, sorted by stars, up to 1,000 results each) for 20 ML/AI topics, deduplicated by repository. See fetch_dataset.py."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). GitHub ML & AI Repositories (2026 Snapshot). Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/github-ml-ai-repositories-2026"
+  ],
+  "updateFrequency": "Quarterly"
+}

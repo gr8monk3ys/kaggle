@@ -5,15 +5,13 @@ The interface is unchanged from the single-file version::
 
     BENCHMARKS[slug](data_dir, folds, write_submission) -> LabResult
 
-What changed is where the implementations live. Eight competitions shared one
-4,500-line namespace, distinguished only by a private-helper prefix convention
-(``_playground_``, ``_march_``, …) that was doing a module boundary's job — so
-touching store-sales meant navigating march-mania, and the tests reached past the
-interface to monkeypatch seven private helpers per benchmark.
+Each competition is its own module, so a benchmark can be added or retired
+without touching the others. Benchmarks for competitions that have ended are
+deleted rather than kept: the notebooks hold the published work.
 
 The registry holds dotted paths rather than imported callables: resolving a
 benchmark imports only its module, so listing the benchmarks does not drag in
-pandas, numpy and fourteen sklearn submodules eight times over.
+pandas, numpy and sklearn once per benchmark.
 """
 
 from __future__ import annotations
@@ -57,11 +55,8 @@ _TARGETS: dict[str, str] = {
     "titanic": "titanic:benchmark_titanic",
     "spaceship-titanic": "spaceship:benchmark_spaceship",
     "nlp-getting-started": "nlp:benchmark_nlp",
-    "playground-series-s6e3": "playground_telco:benchmark_playground_telco",
     "house-prices-advanced-regression-techniques": "house_prices:benchmark_house_prices",
     "store-sales-time-series-forecasting": "store_sales:benchmark_store_sales",
-    "deep-past-initiative-machine-translation": "deep_past:benchmark_deep_past",
-    "march-machine-learning-mania-2026": "march_mania:benchmark_march_mania",
 }
 
 

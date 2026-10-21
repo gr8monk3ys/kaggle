@@ -413,21 +413,6 @@ def _store_sales_lightgbm_future_result(
         store_dow_history,
         category_maps,
     )
-    # FIXME: computed and then discarded before the return — a refactor
-    # leftover. Left in place rather than deleted because it is outside the
-    # scope of this change and may have been meant to feed the submission.
-    _submission_future = _store_sales_build_future_frame(
-        test,
-        oil_df,
-        stores_df,
-        holidays_df,
-        lag_lookup,
-        history_summary,
-        family_dow_history,
-        store_dow_history,
-        category_maps,
-    )
-
     feature_cols = [
         col
         for col in history_features.columns

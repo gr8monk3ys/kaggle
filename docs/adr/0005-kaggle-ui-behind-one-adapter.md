@@ -1,5 +1,9 @@
 # The Kaggle browser path sits behind one adapter
 
+> **Superseded by [ADR-0007](0007-no-automated-engagement.md) (2026-10-01).**
+> The browser adapter described here was removed with the rest of the engagement
+> automation. Kept for the record.
+
 ADR-0001 put the Kaggle **CLI** behind one interface. The **browser** path was
 never covered and remained in the state the CLI had been in: `kaggle_browser`
 looked like the adapter, but its interface handed callers a Playwright `page`, so

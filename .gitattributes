@@ -1,0 +1,6 @@
+# Keep LF everywhere so a Windows checkout (core.autocrlf=true) still runs
+# manage.sh and the workflows byte-for-byte as CI does.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary

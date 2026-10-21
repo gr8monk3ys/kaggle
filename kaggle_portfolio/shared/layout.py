@@ -77,39 +77,6 @@ class RepoLayout:
         return self.root / "docs" / "reports" / "competition-scout-report.md"
 
     @property
-    def drafts_path(self) -> Path:
-        return self.root / "docs" / "discussions" / "discussion-drafts.md"
-
-    @property
-    def pi_root(self) -> Path:
-        return self.root / "pi-automation"
-
-    @property
-    def pi_scripts(self) -> Path:
-        return self.pi_root / "scripts"
-
-    @property
-    def pi_data(self) -> Path:
-        return self.pi_root / "data"
-
-    @property
-    def queue_path(self) -> Path:
-        return self.pi_data / "discussion_queue.json"
-
-    @property
-    def campaign_queue_path(self) -> Path:
-        return self.pi_data / "promotion_campaign_queue.json"
-
-    @property
-    def storage_state_path(self) -> Path:
-        return self.pi_data / "kaggle_storage_state.json"
-
-    @property
-    def growth_dir(self) -> Path:
-        env_dir = os.environ.get("FLYWHEEL_DIR", "").strip()
-        return Path(env_dir) if env_dir else self.root / "medal_ops" / "growth"
-
-    @property
     def datasets_dir(self) -> Path:
         return self.root / "datasets"
 
@@ -150,10 +117,8 @@ class RepoLayout:
             rel = path.relative_to(self.root)
         except ValueError:
             return True
-        # Any dot-directory, plus __pycache__. A superset of the two rules this
-        # replaces: an explicit skip list here, and "any part starts with a dot"
-        # in metadata_tracker. Scratch dirs like .competition_lab are covered
-        # without having to be enumerated.
+        # Any dot-directory, plus __pycache__, so scratch dirs like
+        # .competition_lab are covered without having to be enumerated.
         return any(part.startswith(".") or part == "__pycache__" for part in rel.parts)
 
     def kernel_metadata_dirs(

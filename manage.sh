@@ -6,7 +6,9 @@ MODULE_ROOT="${KAGGLE_DIR}"
 export KAGGLE_DIR
 export PYTHONPATH="${MODULE_ROOT}:${PYTHONPATH:-}"
 
+# Windows (Git Bash) ships `python`, not `python3`.
 PYTHON_BIN="python3"
+command -v python3 >/dev/null 2>&1 || PYTHON_BIN="python"
 if [[ -x "${KAGGLE_DIR}/.venv/bin/python3" ]]; then
     PYTHON_BIN="${KAGGLE_DIR}/.venv/bin/python3"
     # Fallback only: a kaggle binary already on the caller's PATH must win.

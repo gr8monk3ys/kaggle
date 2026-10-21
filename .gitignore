@@ -1,10 +1,9 @@
 # Secrets
 kaggle.json
 **/kaggle.json
-**/kaggle_storage_state.json
-# Playwright session storage state can carry login cookies/tokens
-*_storage_state.json
 .kaggle/
+# A browser session file can carry login cookies
+*_storage_state.json
 
 # Browser automation runtime artifacts
 .playwright-cli/
@@ -20,14 +19,13 @@ catboost_info/
 # Jupyter
 .ipynb_checkpoints/
 
-# Medal ops generated artifacts (history is committed for pace tracking; reports/sync_inputs stay local)
+# Medal ops reports stay local; the snapshot history is committed
 medal_ops/reports/
-medal_ops/sync_inputs/
-# Growth flywheel runtime state (caches; in the container these live in /data/growth)
-medal_ops/growth/flywheel_history.jsonl
-medal_ops/growth/flywheel_weights.json
-medal_ops/growth/flywheel_last_snapshot.json
 .competition_lab/
 
 .env
-pi-automation/.env
+
+# Dataset CSVs are build output: regenerate with ./manage.sh build-datasets.
+# A dataset of real, fetched data cannot be rebuilt, so its CSV is source.
+datasets/*/*.csv
+!datasets/github-ml-repos/*.csv
