@@ -74,7 +74,10 @@ jobs:
             exit 0
           fi
           python -m pip install --upgrade pip
-          python -m pip install "kaggle<2"
+          # kaggle<2 imports `six` but does not declare it; without it every
+          # CLI call dies with ModuleNotFoundError, so the credential and
+          # live checks report "could not complete" and strict mode fails.
+          python -m pip install "kaggle<2" six
 
       - name: Configure Kaggle credentials (live mode only)
         env:
