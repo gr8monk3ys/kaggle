@@ -86,9 +86,11 @@ client refuses an incomplete folder whichever command asks.
 
 Most datasets here are synthetic and say so in their README; their CSVs are
 rebuilt byte for byte by `./manage.sh build-datasets`, so they are not
-committed. `datasets/github-ml-repos/` is the exception: a real snapshot from
-GitHub's API (`fetch_dataset.py`, needs `gh auth login`), which cannot be
-regenerated later, so its CSV is committed as source.
+committed. Two are exceptions, real snapshots that cannot be regenerated
+later, so their CSVs are committed as source: `datasets/github-ml-repos/`
+(GitHub's API, `fetch_dataset.py`, needs `gh auth login`) and
+`datasets/federal-register/` (the Federal Register API, `fetch_dataset.py`, no
+key).
 
 ## Automation
 

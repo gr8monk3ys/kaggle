@@ -7,6 +7,7 @@ it is tested in exactly one place.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -423,3 +424,32 @@ class TestIncompleteDatasetsAreNeverPublished:
             _dataset_folder(tmp_path, built=True), "m"
         )
         assert outcome.ok
+
+
+class TestNewDatasetVisibility:
+    """`datasets create` makes a private dataset unless told --public."""
+
+    @pytest.mark.parametrize(
+        ("is_private", "expect_public"),
+        [(False, True), (True, False), (None, False)],
+    )
+    def test_create_follows_metadata_is_private(
+        self, tmp_path, monkeypatch, is_private, expect_public
+    ):
+        folder = _dataset_folder(tmp_path, built=True)
+        meta = json.loads((folder / "dataset-metadata.json").read_text())
+        if is_private is not None:
+            meta["isPrivate"] = is_private
+        (folder / "dataset-metadata.json").write_text(json.dumps(meta))
+        calls = []
+
+        def fake_run(argv, **_):
+            calls.append(argv)
+            # `version` fails (no such dataset yet), so the client falls back to create.
+            code = 1 if "version" in argv else 0
+            return subprocess.CompletedProcess(argv, code, "", "")
+
+        monkeypatch.setattr(kc.subprocess, "run", fake_run)
+        assert CliKaggleClient().publish_dataset(folder, "m").ok
+        create = next(argv for argv in calls if "create" in argv)
+        assert ("--public" in create) is expect_public

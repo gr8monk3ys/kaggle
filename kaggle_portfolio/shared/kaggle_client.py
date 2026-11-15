@@ -378,6 +378,17 @@ def missing_dataset_files(folder: Path) -> list[str]:
     return [rel for rel in declared if not (folder / rel).exists()]
 
 
+def _metadata_is_public(folder: Path) -> bool:
+    """True only when ``dataset-metadata.json`` explicitly says ``isPrivate: false``."""
+    try:
+        meta = json.loads(
+            (Path(folder) / "dataset-metadata.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return False
+    return isinstance(meta, dict) and meta.get("isPrivate") is False
+
+
 def _refuse_incomplete_dataset(folder: Path) -> PushOutcome | None:
     missing = missing_dataset_files(folder)
     if not missing:
@@ -873,8 +884,12 @@ class CliKaggleClient:
         )
         if version.returncode == 0:
             return PushOutcome(True, version.stdout.strip())
+        # `datasets create` ignores the metadata's isPrivate and creates a private
+        # dataset unless --public is passed.
+        public = ["--public"] if _metadata_is_public(path) else []
         create = self._run(
-            ["datasets", "create", "-p", str(path), "--dir-mode", "zip"], check=False
+            ["datasets", "create", "-p", str(path), "--dir-mode", "zip", *public],
+            check=False,
         )
         if create.returncode == 0:
             return PushOutcome(True, create.stdout.strip())
