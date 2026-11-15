@@ -1,0 +1,20 @@
+{
+  "id": "lorenzoscaturchio/federal-register-2024-2026-freeze-shutdown-eos",
+  "title": "Federal Register 2024-2026: Freeze, Shutdown, EOs",
+  "code_file": "explore.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "government",
+    "politics",
+    "nlp"
+  ],
+  "dataset_sources": [
+    "lorenzoscaturchio/us-federal-register-documents-2024-2026"
+  ],
+  "kernel_sources": [],
+  "competition_sources": []
+}

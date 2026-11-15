@@ -1,0 +1,214 @@
+{
+  "id": "lorenzoscaturchio/us-federal-register-documents-2024-2026",
+  "title": "US Federal Register Documents 2024-2026",
+  "subtitle": "76,223 rules, proposed rules, notices and executive orders, Jan 2024-Oct 2026",
+  "description": "Every document published in the US Federal Register from 1 January 2024 to 31 October 2026: 76,223 final rules, proposed rules, agency notices and presidential documents (executive orders, proclamations, memoranda), one row each. Pulled from the official Federal Register API on 2026-11-15. Real data, not generated.\n\nThe window spans the last year of the Biden administration and the first 21 months of the second Trump administration, so it captures a change of government in the regulatory record: the January 2025 regulatory freeze, the surge of executive orders, fewer final rules, and the October-November 2025 government shutdown, when the number of documents published fell by three quarters.\n\nEach row has the title, the agency's abstract, the action line, issuing agencies, the OIRA \"significant\" designation (EO 12866), page count, effective date, comment deadline and comment period length, CFR titles and topics amended, docket and RIN counts, executive order numbers and signing dates, and page views on federalregister.gov.\n\nGood for: text classification (predict the agency, document type or significance from the abstract), regulatory time series, comparing administrations, comment-period and effective-date analysis, and topic modelling. About 7,000 rules and proposed rules carry a significance label (roughly 18% significant), a ready-made imbalanced classification target; the starter notebook trains a TF-IDF baseline on it.\n\nSource: Federal Register API (https://www.federalregister.gov/developers/documentation/api/v1), published by the Office of the Federal Register (NARA) and the Government Publishing Office. Federal Register content is a work of the US government and is not subject to copyright in the United States, so this compilation is released under CC0. This is not an official legal edition of the Federal Register. page_views and significant can change after the snapshot date. The collection script is included so the snapshot can be repeated or extended.",
+  "isPrivate": false,
+  "licenses": [
+    {
+      "name": "CC0-1.0"
+    }
+  ],
+  "keywords": [
+    "government",
+    "politics",
+    "law",
+    "nlp",
+    "united states"
+  ],
+  "resources": [
+    {
+      "path": "federal_register_documents.csv",
+      "description": "One row per Federal Register document published 2024-01-01 to 2026-10-31, sorted by publication date (snapshot 2026-11-15)",
+      "schema": {
+        "fields": [
+          {
+            "name": "document_number",
+            "title": "Document number",
+            "description": "Federal Register document number, unique key; the page is https://www.federalregister.gov/d/<document_number>",
+            "type": "string"
+          },
+          {
+            "name": "publication_date",
+            "title": "Publication date",
+            "description": "Date the document was published in the Federal Register",
+            "type": "date"
+          },
+          {
+            "name": "type",
+            "title": "Type",
+            "description": "Rule, Proposed Rule, Notice or Presidential Document",
+            "type": "string"
+          },
+          {
+            "name": "subtype",
+            "title": "Subtype",
+            "description": "For presidential documents: Executive Order, Proclamation, Memorandum, Determination, Notice, etc. Blank otherwise",
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "title": "Title",
+            "description": "Document title",
+            "type": "string"
+          },
+          {
+            "name": "abstract",
+            "title": "Abstract",
+            "description": "Summary written by the issuing agency (blank for about 28% of documents, mostly notices and presidential documents)",
+            "type": "string"
+          },
+          {
+            "name": "action",
+            "title": "Action",
+            "description": "Short action line, e.g. 'Final rule.', 'Notice of proposed rulemaking.'",
+            "type": "string"
+          },
+          {
+            "name": "agency",
+            "title": "Agency",
+            "description": "Top-level issuing department or independent agency (the parent when a sub-agency is listed)",
+            "type": "string"
+          },
+          {
+            "name": "agencies",
+            "title": "Agencies",
+            "description": "All agencies named on the document, pipe-separated",
+            "type": "string"
+          },
+          {
+            "name": "n_agencies",
+            "title": "N agencies",
+            "description": "Number of agencies named",
+            "type": "integer"
+          },
+          {
+            "name": "significant",
+            "title": "Significant",
+            "description": "True when OIRA designated the rule significant under Executive Order 12866; blank when not reported (all notices, about half of rules)",
+            "type": "boolean"
+          },
+          {
+            "name": "page_length",
+            "title": "Page length",
+            "description": "Printed pages in the Federal Register",
+            "type": "integer"
+          },
+          {
+            "name": "effective_on",
+            "title": "Effective on",
+            "description": "Date a rule takes effect, when stated",
+            "type": "date"
+          },
+          {
+            "name": "days_to_effective",
+            "title": "Days to effective",
+            "description": "effective_on minus publication_date, in days",
+            "type": "integer"
+          },
+          {
+            "name": "comments_close_on",
+            "title": "Comments close on",
+            "description": "Public comment deadline, when the document invites comments",
+            "type": "date"
+          },
+          {
+            "name": "comment_period_days",
+            "title": "Comment period days",
+            "description": "comments_close_on minus publication_date, in days",
+            "type": "integer"
+          },
+          {
+            "name": "topics",
+            "title": "Topics",
+            "description": "CFR index topics assigned to the document, pipe-separated",
+            "type": "string"
+          },
+          {
+            "name": "n_topics",
+            "title": "N topics",
+            "description": "Number of CFR index topics",
+            "type": "integer"
+          },
+          {
+            "name": "cfr_titles",
+            "title": "Cfr titles",
+            "description": "Code of Federal Regulations titles the document amends (e.g. 40 = Protection of Environment), pipe-separated",
+            "type": "string"
+          },
+          {
+            "name": "n_cfr_references",
+            "title": "N cfr references",
+            "description": "Number of CFR title/part references",
+            "type": "integer"
+          },
+          {
+            "name": "n_dockets",
+            "title": "N dockets",
+            "description": "Number of docket identifiers",
+            "type": "integer"
+          },
+          {
+            "name": "regulation_id_numbers",
+            "title": "Regulation id numbers",
+            "description": "Regulation Identifier Numbers (RINs) linking to the Unified Agenda, pipe-separated",
+            "type": "string"
+          },
+          {
+            "name": "president",
+            "title": "President",
+            "description": "President in office on the publication date",
+            "type": "string"
+          },
+          {
+            "name": "executive_order_number",
+            "title": "Executive order number",
+            "description": "Executive order number, for executive orders only",
+            "type": "integer"
+          },
+          {
+            "name": "signing_date",
+            "title": "Signing date",
+            "description": "Date a presidential document was signed",
+            "type": "date"
+          },
+          {
+            "name": "is_correction",
+            "title": "Is correction",
+            "description": "True when the document corrects an earlier one",
+            "type": "boolean"
+          },
+          {
+            "name": "page_views",
+            "title": "Page views",
+            "description": "Page views on federalregister.gov as of the snapshot (2026-11-15); older documents have had longer to accumulate them",
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  ],
+  "authors": [
+    {
+      "name": "Lorenzo Scaturchio",
+      "bio": "Independent ML engineer."
+    }
+  ],
+  "coverage": {
+    "temporal_start_date": "2024-01-01",
+    "temporal_end_date": "2026-10-31",
+    "geospatial_coverage": "United States"
+  },
+  "doi": "Not assigned",
+  "provenance": {
+    "sources": [
+      "Federal Register API v1, documents endpoint (www.federalregister.gov/api/v1), Office of the Federal Register / NARA"
+    ],
+    "collection_methodology": "One query per calendar month with per_page=1000, following the API's cursor until every document the API reports for that month is collected (the script fails if the counts differ). Nested fields are flattened and a few durations derived. See fetch_dataset.py."
+  },
+  "citations": [
+    "Scaturchio, Lorenzo (2026). US Federal Register Documents 2024-2026. Kaggle Dataset. https://www.kaggle.com/datasets/lorenzoscaturchio/us-federal-register-documents-2024-2026",
+    "Office of the Federal Register, National Archives and Records Administration. Federal Register API. https://www.federalregister.gov/developers"
+  ],
+  "updateFrequency": "Quarterly"
+}

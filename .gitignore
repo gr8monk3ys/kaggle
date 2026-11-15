@@ -29,3 +29,4 @@ medal_ops/reports/
 # A dataset of real, fetched data cannot be rebuilt, so its CSV is source.
 datasets/*/*.csv
 !datasets/github-ml-repos/*.csv
+!datasets/federal-register/*.csv
