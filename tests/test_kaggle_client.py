@@ -174,6 +174,32 @@ class TestPageSizeCapability:
         assert not isinstance(excinfo.value, KaggleAuthRejected)
 
 
+class TestPushKernel:
+    def _client_returning(self, monkeypatch, stdout):
+        monkeypatch.setattr(
+            kc.subprocess,
+            "run",
+            lambda argv, **k: subprocess.CompletedProcess(argv, 0, stdout, ""),
+        )
+        client = CliKaggleClient(retries=1)
+        monkeypatch.setattr(client, "_prefix", lambda: ["kaggle"])
+        return client
+
+    def test_a_push_error_with_exit_zero_is_a_failure(self, monkeypatch):
+        # kaggle 1.8.4 and 2.2.5 both exit 0 here, verbatim from 2026-11-15.
+        stdout = (
+            "Kernel push error: You must accept this competition's rules before "
+            "you'll be able to add it as a datasource: name-that-llm\n"
+        )
+        outcome = self._client_returning(monkeypatch, stdout).push_kernel(Path("d"))
+        assert not outcome.ok
+        assert "accept this competition's rules" in outcome.detail
+
+    def test_a_successful_push_is_ok(self, monkeypatch):
+        stdout = "Kernel version 3 successfully pushed.  Please check progress at https://www.kaggle.com/code/me/x\n"
+        assert self._client_returning(monkeypatch, stdout).push_kernel(Path("d")).ok
+
+
 class TestAuthRejected:
     """A 401 names the fix; it used to surface as an HTTP status in a traceback."""
 
