@@ -797,7 +797,8 @@ class CliKaggleClient:
         if skipped:
             return skipped
         result = self._run(["kernels", "push", "-p", str(path)], check=False)
-        ok = result.returncode == 0
+        # The CLI exits 0 on a rejected push and only says so on stdout.
+        ok = result.returncode == 0 and "Kernel push error" not in result.stdout
         return PushOutcome(
             ok,
             (

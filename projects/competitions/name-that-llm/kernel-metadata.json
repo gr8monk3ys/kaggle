@@ -1,0 +1,20 @@
+{
+  "id": "lorenzoscaturchio/name-that-llm-tf-idf-baseline-grouped-cv",
+  "title": "Name That LLM: TF-IDF Baseline + Grouped CV",
+  "code_file": "name-that-llm_eda.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "nlp",
+    "text classification",
+    "beginner"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [
+    "name-that-llm"
+  ]
+}

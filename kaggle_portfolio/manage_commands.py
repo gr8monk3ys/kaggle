@@ -555,6 +555,8 @@ def cmd_push(args: list[str]) -> int:
         outcome = deps().client.push_kernel(path)
         if outcome.skipped:
             print(f"{YELLOW}  skipped (--dry-run): nothing was pushed{RESET}")
+        if not outcome.ok:
+            print(f"{RED}FAILED{RESET}: {outcome.detail}")
         return 0 if outcome.ok else 1
     raise CommandError(f"Error: No metadata found in {path}")
 
