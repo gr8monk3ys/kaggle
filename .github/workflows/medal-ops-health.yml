@@ -1,10 +1,10 @@
 name: Medal Ops Health
 
+# Scheduled monitor, not a gate: it checks content freshness (tracker age
+# against the wall clock) and probes live Kaggle with repository secrets, so
+# its result depends on the date and on an external service. It therefore
+# does not run on push/PR; correctness of main is the `quality` job in ci.yml.
 on:
-  push:
-    branches:
-      - main
-      - push-sync
   schedule:
     # Weekly (Sat 09:10 UTC) — free-plan private-repo minutes are capped.
     - cron: "10 9 * * 6"
