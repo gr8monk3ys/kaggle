@@ -258,6 +258,20 @@ class TestCredentials:
         assert state.credentials.username == "u"
         assert "environment-token" in state.sources
 
+    def test_bare_token_takes_owner_from_kaggle_username(self, monkeypatch, tmp_path):
+        # The tokens kaggle.com issues now carry no username; CI still sets
+        # KAGGLE_USERNAME, and the owner checks need it.
+        monkeypatch.setenv("KAGGLE_API_TOKEN", "KGAT_abc")
+        monkeypatch.setenv("KAGGLE_USERNAME", "owner")
+        monkeypatch.delenv("KAGGLE_KEY", raising=False)
+        monkeypatch.setenv("KAGGLE_CONFIG_DIR", str(tmp_path))
+        creds = CliKaggleClient().credentials().credentials
+        assert (creds.username, creds.key, creds.source) == (
+            "owner",
+            "KGAT_abc",
+            "environment-token",
+        )
+
     def test_env_username_and_key(self, monkeypatch):
         monkeypatch.delenv("KAGGLE_API_TOKEN", raising=False)
         monkeypatch.setenv("KAGGLE_USERNAME", "u2")

@@ -693,8 +693,9 @@ class CliKaggleClient:
         cfg = self._config_path()
         if not cfg.exists():
             if token:
+                # kaggle.com's tokens carry no username; KAGGLE_USERNAME names the owner.
                 return CredentialState(
-                    Credentials(None, token, "environment-token"), sources
+                    Credentials(user or None, token, "environment-token"), sources
                 )
             return CredentialState(
                 None, sources, f"Missing Kaggle credentials file: {cfg}"
