@@ -80,6 +80,10 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
     assert "name: Medal Ops Health" in content
     assert "schedule:" in content
     assert 'cron: "10 9 * * 6"' in content
+    # A monitor, not a gate: its result depends on the date and on live
+    # Kaggle secrets, so it must not run on push/PR (ci.yml gates main).
+    assert "\n  push:" not in content
+    assert "\n  pull_request:" not in content
     assert "workflow_dispatch:" in content
     assert "mode:" in content
     assert "max_stale_days:" in content
@@ -109,15 +113,22 @@ def test_medal_ops_health_workflow_exists_and_has_schedule():
 def test_ci_workflow_runs_preflight_gate_and_script_smokes():
     workflow = ROOT / ".github" / "workflows" / "ci.yml"
     assert workflow.exists()
-    content = workflow.read_text(encoding="utf-8")
+    ci = workflow.read_text(encoding="utf-8")
+    # CI runs the gate through the same entrypoint as `make verify`, on PRs
+    # and on push to main so the default branch has its own result.
+    assert "run: bash scripts/verify.sh" in ci
+    assert "push:\n    branches:\n      - main" in ci
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    assert "bash scripts/verify.sh" in makefile
+    content = (ROOT / "scripts" / "verify.sh").read_text(encoding="utf-8")
     assert "bash manage.sh preflight" in content
     # PR CI must not pin --today: content-freshness SLAs are the scheduled
     # health workflow's job.
-    preflight_step = content.split("bash manage.sh preflight")[1].split("- name:")[0]
+    preflight_step = content.split("bash manage.sh preflight")[1].split("step ")[0]
     assert "--today" not in preflight_step
     assert "--no-pytest" in content
-    assert "pytest -q --cov=." in content
-    assert "python -m kaggle_portfolio.notebooks.competition_entry --help" in content
+    assert "-m pytest -q --cov=." in content
+    assert "-m kaggle_portfolio.notebooks.competition_entry --help" in content
 
 
 def test_live_smoke_workflow_exists_and_is_manual():
