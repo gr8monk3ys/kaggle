@@ -1,11 +1,10 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-09-20
+**Last Updated:** 2026-11-15
 
-> The counts below are from the last successful live sync. The Kaggle key in
-> CI has been rejected since, so they stay stale until `./manage.sh sync` runs
-> with a fresh token. Discussion has no API and is read by hand from the profile.
+> The counts below are from the last live sync (`./manage.sh sync`).
+> Discussion has no API and is read by hand from the profile.
 
 ---
 
@@ -72,21 +71,20 @@ Getting Started and InClass competitions award no medals or points.
 
 None recorded. Every board listed here previously has closed. Pick the next one
 from `./manage.sh scout --update` (its first table lists only medal-awarding
-boards) once the Kaggle key is rotated.
+boards).
 
 ### Notebooks
 | Status | Target | Current |
 |--------|--------|---------|
 | Tier | Grandmaster (15 gold) | Novice |
-| Total notebooks | — | 38 public (77 including private drafts) |
+| Total notebooks | — | 77 (on Kaggle) |
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 4 |
-| Total votes | — | 83 |
+| Total votes | — | 84 |
 
 Votes are spread at about one per notebook. Publishing an iteration as a new
 kernel splits its audience; version the existing one instead.
-
 ### Datasets
 | Status | Target | Current |
 |--------|--------|---------|
@@ -95,8 +93,8 @@ kernel splits its audience; version the existing one instead.
 | Gold medals (50+ votes) | 5 | 0 |
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
-| Total votes | — | 57 |
-| Total downloads | — | 2779 |
+| Total votes | — | 59 |
+| Total downloads | — | 3224 |
 
 | Dataset | Votes | Downloads | Note |
 |---------|-------|-----------|------|
@@ -109,7 +107,6 @@ kernel splits its audience; version the existing one instead.
 
 All eleven portfolio datasets are synthetic. That caps how useful they can be,
 which is why the next dataset should be real data.
-
 ### Discussion
 | Status | Target | Current |
 |--------|--------|---------|
