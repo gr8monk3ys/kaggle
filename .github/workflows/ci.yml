@@ -2,13 +2,17 @@ name: CI
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
-# Free-plan private repo: minutes are capped, so run once per PR head, not
-# again on push-to-main (nothing lands on main outside a PR).
+# Runs on every PR head and again on push to main, so the default branch
+# always carries its own correctness result (the `quality` check).
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded PR pushes are cancelled; every main commit keeps its result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -27,31 +31,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Security guardrails
-        run: |
-          set -euo pipefail
-
-          if git ls-files --error-unmatch kaggle.json >/dev/null 2>&1; then
-            echo "::error file=kaggle.json::Remove committed Kaggle credentials."
-            exit 1
-          fi
-
-          if rg -n --glob '*.py' --glob '*.sh' --glob '!tests/**' --glob '!.venv/**' '/Users/' .; then
-            echo "::error::Hardcoded /Users paths found in scripts."
-            exit 1
-          fi
-
-          if rg -n --glob '*.py' --glob '*.sh' --glob '!tests/**' --glob '!.venv/**' 'trust_remote_code\\s*=\\s*True' .; then
-            echo "::error::Avoid trust_remote_code=True unless explicitly reviewed."
-            exit 1
-          fi
-
-      - name: Script syntax checks
-        run: |
-          set -euo pipefail
-          bash -n manage.sh
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m py_compile $(find . -maxdepth 4 -type f -name '*.py' | sort)
-
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
@@ -60,28 +39,5 @@ jobs:
           # kaggle backs kaggle_auth_doctor / leaderboard_tracker test modules.
           python -m pip install pytest pytest-cov pytest-mock requests pyyaml numpy pandas scikit-learn "kaggle<2"
 
-      - name: Build datasets
-        run: |
-          set -euo pipefail
-          python -m pip install numpy pandas
-          bash manage.sh build-datasets
-
-      - name: Repository preflight
-        run: |
-          set -euo pipefail
-          # PR CI gates on code correctness only. Content-freshness SLAs
-          # (doctor staleness) belong to the scheduled Medal Ops Health
-          # workflow, so --today is never pinned here.
-          bash manage.sh preflight --no-pytest
-
-      - name: Unit tests with coverage
-        run: |
-          pytest -q --cov=. --cov-report=term-missing:skip-covered --cov-config=.coveragerc
-
-      - name: Script smoke tests
-        run: |
-          set -euo pipefail
-          PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/ai-research-trends/create_dataset.py >/tmp/ai-research.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python datasets/programming-benchmarks/create_dataset.py >/tmp/programming-benchmarks.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.ops.medal_ops --output-root /tmp/medal_ops_ci digest >/tmp/digest.log
-          PYTHONPYCACHEPREFIX=/tmp/pycache python -m kaggle_portfolio.notebooks.competition_entry --help >/tmp/comp-entry.log
+      - name: Verify (same entrypoint as `make verify`)
+        run: bash scripts/verify.sh

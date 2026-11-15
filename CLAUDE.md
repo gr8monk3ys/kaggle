@@ -88,6 +88,12 @@ Workflows live in `.github/workflows/`. The one that matters when a PR goes red:
 `ci.yml` runs `preflight --no-pytest` plus the full pytest suite, so a preflight
 gate failure and a test failure look the same in the check name.
 
+`make verify` (= `bash scripts/verify.sh`) is the single local entrypoint: the
+`quality` job in `ci.yml` installs dependencies and then runs exactly that script,
+on every PR and on push to `main`. `medal-ops-health.yml` is a scheduled monitor
+(tracker freshness + live Kaggle probes with secrets), not a gate, so it does not
+run on push.
+
 ## Agent skills
 
 ### Issue tracker
