@@ -5,7 +5,7 @@
   "description": "119 individually written machine learning and data science interview questions with individually written answers (roughly 45-85 words each), organized into 10 categories: Statistics, ML Theory, Deep Learning, NLP, Computer Vision, System Design, SQL, Python, Feature Engineering, and A/B Testing. Each question carries an individually assigned difficulty label (easy/medium/hard) and fine-grained topic tags.\n\nEvery question is written individually: all 119 answers are distinct, none are produced by filling a variable into a shared template, and the question count is not padded. Earlier versions of this dataset inflated the bank to 500+ rows with template-generated questions that shared boilerplate answers and carried randomly assigned difficulty/company labels; those rows have been removed.\n\nBuilt for: interview preparation and study, text classification by category (the meaningful label for modeling), RAG system prototyping with a small structured knowledge base, and embedding similarity search. answer_length enables filtering by response depth; topic_tags provide fine-grained labels beyond category. Note the dataset is small (119 rows), so treat any classification experiment as a toy/teaching exercise rather than a benchmark.",
   "licenses": [
     {
-      "name": "GPL-3.0"
+      "name": "CC BY 4.0"
     }
   ],
   "keywords": [
