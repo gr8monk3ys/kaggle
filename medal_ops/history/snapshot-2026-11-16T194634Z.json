@@ -1,0 +1,53 @@
+{
+  "generated_on": "2026-11-16",
+  "tracker_last_updated": "2026-11-16",
+  "tracker_stale_days": 0,
+  "categories": {
+    "competitions": {
+      "tier": "Novice",
+      "gold": 0,
+      "silver": 0,
+      "bronze": 0,
+      "entered": 14,
+      "gold_goal": 5,
+      "gold_gap": 5,
+      "expert_bronze_goal": 2,
+      "expert_bronze_gap": 2
+    },
+    "notebooks": {
+      "tier": "Novice",
+      "total_notebooks": 80,
+      "gold": 0,
+      "silver": 0,
+      "bronze": 4,
+      "total_votes": 89,
+      "gold_goal": 15,
+      "gold_gap": 15,
+      "expert_bronze_goal": 5,
+      "expert_bronze_gap": 1
+    },
+    "datasets": {
+      "tier": "Novice",
+      "total_datasets": 14,
+      "gold": 0,
+      "silver": 1,
+      "bronze": 1,
+      "total_votes": 59,
+      "gold_goal": 5,
+      "gold_gap": 5,
+      "expert_bronze_goal": 3,
+      "expert_bronze_gap": 2
+    },
+    "discussion": {
+      "tier": "Novice",
+      "total_posts": 28,
+      "gold_goal": 50,
+      "gold_gap": null,
+      "total_goal": 500,
+      "total_gap": 472,
+      "expert_bronze_goal": 50,
+      "expert_bronze_gap": null
+    }
+  },
+  "active_competitions": []
+}
