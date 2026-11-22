@@ -142,7 +142,10 @@ class TestPageSizeCapability:
             calls.append(argv)
             if argv[1] == "datasets" and "--page-size" in argv:
                 return subprocess.CompletedProcess(
-                    argv, 2, "", "kaggle: error: unrecognized arguments: --page-size 100"
+                    argv,
+                    2,
+                    "",
+                    "kaggle: error: unrecognized arguments: --page-size 100",
                 )
             return subprocess.CompletedProcess(argv, 0, rows, "")
 

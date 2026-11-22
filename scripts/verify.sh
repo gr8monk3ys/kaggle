@@ -42,6 +42,10 @@ bash -n manage.sh
 # shellcheck disable=SC2046
 "${PYTHON_BIN}" -m py_compile $(git ls-files -- '*.py' | sort)
 
+step "Lint and format (ruff)"
+ruff check .
+ruff format --check .
+
 step "Build datasets"
 bash manage.sh build-datasets
 

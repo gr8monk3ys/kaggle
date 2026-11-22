@@ -23,6 +23,7 @@ Usage on Kaggle (inside the submission notebook):
   2. Implement `predict(test_row)` -> float allocation in [0, 2].
   3. Hand `predict` to the gateway server and start it.
 """
+
 from __future__ import annotations
 
 import os
@@ -34,7 +35,6 @@ import pandas as pd
 # offline CV and the live server use IDENTICAL logic (no train/serve skew).
 from baseline import (
     allocation_from_pred,
-    feature_columns,
     fit_model,
     load_train,
 )
