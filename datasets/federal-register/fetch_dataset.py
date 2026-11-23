@@ -86,7 +86,9 @@ FIELDS = (
 
 
 def get(url: str, attempts: int = 4) -> dict:
-    request = urllib.request.Request(url, headers={"User-Agent": "dataset-snapshot/1.0"})
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "dataset-snapshot/1.0"}
+    )
     for attempt in range(1, attempts + 1):
         try:
             with urllib.request.urlopen(request, timeout=120) as response:
@@ -128,7 +130,9 @@ def fetch_window(first: date, last: date) -> list[dict]:
         url = page.get("next_page_url")
         time.sleep(PAUSE_SECONDS)
     if len(docs) != expected:
-        raise RuntimeError(f"{first}..{last}: API reported {expected} documents, got {len(docs)}")
+        raise RuntimeError(
+            f"{first}..{last}: API reported {expected} documents, got {len(docs)}"
+        )
     return docs
 
 
@@ -150,7 +154,14 @@ def to_row(doc: dict) -> dict:
     agencies = doc.get("agencies") or []
     names = unique([a.get("name") or a.get("raw_name") for a in agencies])
     # The parent department when one is listed, else the first agency named.
-    top = next((a.get("name") for a in agencies if a.get("parent_id") is None and a.get("name")), None)
+    top = next(
+        (
+            a.get("name")
+            for a in agencies
+            if a.get("parent_id") is None and a.get("name")
+        ),
+        None,
+    )
     cfr = doc.get("cfr_references") or []
     topics = unique(doc.get("topics") or [])
     published = doc["publication_date"]
@@ -176,7 +187,9 @@ def to_row(doc: dict) -> dict:
         "cfr_titles": "|".join(str(t) for t in unique([c.get("title") for c in cfr])),
         "n_cfr_references": len(cfr),
         "n_dockets": len(doc.get("docket_ids") or []),
-        "regulation_id_numbers": "|".join(unique(doc.get("regulation_id_numbers") or [])),
+        "regulation_id_numbers": "|".join(
+            unique(doc.get("regulation_id_numbers") or [])
+        ),
         "president": (doc.get("president") or {}).get("name") or "",
         "executive_order_number": doc.get("executive_order_number") or "",
         "signing_date": doc.get("signing_date") or "",
@@ -196,14 +209,22 @@ def main(argv: list[str] | None = None) -> int:
     for first, last in month_windows(args.start, args.end):
         found = fetch_window(first, last)
         docs.update((d["document_number"], d) for d in found)
-        print(f"{first:%Y-%m}  {len(found):>5} documents  ({len(docs):>6} total)", flush=True)
+        print(
+            f"{first:%Y-%m}  {len(found):>5} documents  ({len(docs):>6} total)",
+            flush=True,
+        )
 
-    rows = sorted((to_row(d) for d in docs.values()), key=lambda r: (r["publication_date"], r["document_number"]))
+    rows = sorted(
+        (to_row(d) for d in docs.values()),
+        key=lambda r: (r["publication_date"], r["document_number"]),
+    )
     with args.output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
-    print(f"Wrote {len(rows)} documents to {args.output.name} (snapshot {datetime.now(timezone.utc):%Y-%m-%d})")
+    print(
+        f"Wrote {len(rows)} documents to {args.output.name} (snapshot {datetime.now(timezone.utc):%Y-%m-%d})"
+    )
     return 0
 
 

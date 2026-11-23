@@ -40,24 +40,57 @@ OUTPUT_DIR = Path(__file__).parent
 # Customer segments
 # ---------------------------------------------------------------------------
 SEGMENTS = {
-    "Budget Shopper":       {"frac": 0.30, "avg_spend": 25,  "freq": 0.5, "churn_prob": 0.25},
-    "Regular":              {"frac": 0.35, "avg_spend": 55,  "freq": 1.0, "churn_prob": 0.15},
-    "Premium":              {"frac": 0.20, "avg_spend": 120, "freq": 1.5, "churn_prob": 0.08},
-    "VIP":                  {"frac": 0.10, "avg_spend": 250, "freq": 2.5, "churn_prob": 0.03},
-    "Occasional Visitor":   {"frac": 0.05, "avg_spend": 40,  "freq": 0.2, "churn_prob": 0.40},
+    "Budget Shopper": {"frac": 0.30, "avg_spend": 25, "freq": 0.5, "churn_prob": 0.25},
+    "Regular": {"frac": 0.35, "avg_spend": 55, "freq": 1.0, "churn_prob": 0.15},
+    "Premium": {"frac": 0.20, "avg_spend": 120, "freq": 1.5, "churn_prob": 0.08},
+    "VIP": {"frac": 0.10, "avg_spend": 250, "freq": 2.5, "churn_prob": 0.03},
+    "Occasional Visitor": {
+        "frac": 0.05,
+        "avg_spend": 40,
+        "freq": 0.2,
+        "churn_prob": 0.40,
+    },
 }
 
 PRODUCT_CATEGORIES = [
-    "Electronics", "Clothing", "Home & Garden", "Books", "Sports",
-    "Beauty", "Toys", "Food & Grocery", "Office Supplies", "Automotive",
-    "Health", "Pet Supplies", "Jewelry", "Music", "Software",
+    "Electronics",
+    "Clothing",
+    "Home & Garden",
+    "Books",
+    "Sports",
+    "Beauty",
+    "Toys",
+    "Food & Grocery",
+    "Office Supplies",
+    "Automotive",
+    "Health",
+    "Pet Supplies",
+    "Jewelry",
+    "Music",
+    "Software",
 ]
 
 BRANDS = [
-    "TechPro", "StyleMax", "HomeEssentials", "ReadMore", "FitGear",
-    "GlowUp", "PlayTime", "FreshMarket", "WorkSmart", "AutoParts",
-    "WellBeing", "PetLife", "ShineOn", "SoundWave", "DigiTools",
-    "EcoLiving", "UrbanStyle", "ClassicCo", "NovaTech", "PureBrand",
+    "TechPro",
+    "StyleMax",
+    "HomeEssentials",
+    "ReadMore",
+    "FitGear",
+    "GlowUp",
+    "PlayTime",
+    "FreshMarket",
+    "WorkSmart",
+    "AutoParts",
+    "WellBeing",
+    "PetLife",
+    "ShineOn",
+    "SoundWave",
+    "DigiTools",
+    "EcoLiving",
+    "UrbanStyle",
+    "ClassicCo",
+    "NovaTech",
+    "PureBrand",
 ]
 
 GENDERS = ["M", "F", "Non-binary", "Prefer not to say"]
@@ -72,7 +105,14 @@ DEVICE_WEIGHTS = [0.35, 0.50, 0.15]
 CHANNELS = ["organic", "paid_search", "social", "email", "direct", "referral"]
 CHANNEL_WEIGHTS = [0.25, 0.20, 0.15, 0.15, 0.15, 0.10]
 
-PAYMENT_METHODS = ["credit_card", "debit_card", "paypal", "apple_pay", "google_pay", "bank_transfer"]
+PAYMENT_METHODS = [
+    "credit_card",
+    "debit_card",
+    "paypal",
+    "apple_pay",
+    "google_pay",
+    "bank_transfer",
+]
 PAYMENT_WEIGHTS = [0.35, 0.20, 0.18, 0.12, 0.10, 0.05]
 
 
@@ -90,8 +130,20 @@ def random_dates(start, end, n, rng):
 def seasonal_weight(date):
     """Return a seasonal multiplier (higher in Q4 / holidays)."""
     month = date.month
-    weights = {1: 0.7, 2: 0.6, 3: 0.7, 4: 0.8, 5: 0.85, 6: 0.9,
-               7: 0.95, 8: 0.9, 9: 0.85, 10: 1.0, 11: 1.3, 12: 1.5}
+    weights = {
+        1: 0.7,
+        2: 0.6,
+        3: 0.7,
+        4: 0.8,
+        5: 0.85,
+        6: 0.9,
+        7: 0.95,
+        8: 0.9,
+        9: 0.85,
+        10: 1.0,
+        11: 1.3,
+        12: 1.5,
+    }
     return weights.get(month, 1.0)
 
 
@@ -109,11 +161,15 @@ def generate_customers():
     signup_dates = []
     for seg in segments:
         if seg in ("VIP", "Premium"):
-            d = random_dates(pd.Timestamp("2020-01-01"), pd.Timestamp("2023-06-30"), 1, rng)[0]
+            d = random_dates(
+                pd.Timestamp("2020-01-01"), pd.Timestamp("2023-06-30"), 1, rng
+            )[0]
         elif seg == "Occasional Visitor":
             d = random_dates(pd.Timestamp("2023-06-01"), DATE_END, 1, rng)[0]
         else:
-            d = random_dates(pd.Timestamp("2021-01-01"), pd.Timestamp("2024-06-30"), 1, rng)[0]
+            d = random_dates(
+                pd.Timestamp("2021-01-01"), pd.Timestamp("2024-06-30"), 1, rng
+            )[0]
         signup_dates.append(d)
 
     ages = rng.normal(35, 12, N_CUSTOMERS).clip(18, 75).astype(int)
@@ -125,23 +181,30 @@ def generate_customers():
     is_churned = rng.random(N_CUSTOMERS) < churn_probs
 
     # Lifetime value (correlated with segment)
-    ltv = np.array([
-        max(0, rng.normal(SEGMENTS[s]["avg_spend"] * 20, SEGMENTS[s]["avg_spend"] * 5))
-        for s in segments
-    ]).round(2)
+    ltv = np.array(
+        [
+            max(
+                0,
+                rng.normal(SEGMENTS[s]["avg_spend"] * 20, SEGMENTS[s]["avg_spend"] * 5),
+            )
+            for s in segments
+        ]
+    ).round(2)
 
-    df = pd.DataFrame({
-        "customer_id": [f"C{str(i).zfill(5)}" for i in range(N_CUSTOMERS)],
-        "signup_date": signup_dates,
-        "age": ages,
-        "gender": genders,
-        "country": countries,
-        "segment": segments,
-        "is_churned": is_churned.astype(int),
-        "lifetime_value": ltv,
-        "email_opt_in": (rng.random(N_CUSTOMERS) > 0.3).astype(int),
-        "has_app": (rng.random(N_CUSTOMERS) > 0.45).astype(int),
-    })
+    df = pd.DataFrame(
+        {
+            "customer_id": [f"C{str(i).zfill(5)}" for i in range(N_CUSTOMERS)],
+            "signup_date": signup_dates,
+            "age": ages,
+            "gender": genders,
+            "country": countries,
+            "segment": segments,
+            "is_churned": is_churned.astype(int),
+            "lifetime_value": ltv,
+            "email_opt_in": (rng.random(N_CUSTOMERS) > 0.3).astype(int),
+            "has_app": (rng.random(N_CUSTOMERS) > 0.45).astype(int),
+        }
+    )
     df["signup_date"] = pd.to_datetime(df["signup_date"]).dt.date
     return df
 
@@ -156,10 +219,21 @@ def generate_products():
 
     # Price depends on category
     cat_base_price = {
-        "Electronics": 200, "Clothing": 45, "Home & Garden": 60, "Books": 15,
-        "Sports": 50, "Beauty": 30, "Toys": 25, "Food & Grocery": 12,
-        "Office Supplies": 20, "Automotive": 80, "Health": 35,
-        "Pet Supplies": 25, "Jewelry": 90, "Music": 18, "Software": 50,
+        "Electronics": 200,
+        "Clothing": 45,
+        "Home & Garden": 60,
+        "Books": 15,
+        "Sports": 50,
+        "Beauty": 30,
+        "Toys": 25,
+        "Food & Grocery": 12,
+        "Office Supplies": 20,
+        "Automotive": 80,
+        "Health": 35,
+        "Pet Supplies": 25,
+        "Jewelry": 90,
+        "Music": 18,
+        "Software": 50,
     }
 
     prices = []
@@ -169,27 +243,36 @@ def generate_products():
         prices.append(round(price, 2))
 
     # Rating correlated with price (slightly)
-    ratings = np.clip(rng.normal(3.8, 0.8, N_PRODUCTS) + (np.array(prices) > 50) * 0.2, 1.0, 5.0).round(1)
+    ratings = np.clip(
+        rng.normal(3.8, 0.8, N_PRODUCTS) + (np.array(prices) > 50) * 0.2, 1.0, 5.0
+    ).round(1)
     n_ratings = rng.integers(0, 500, N_PRODUCTS)
 
     # Stock & discount
     stock = rng.integers(0, 1000, N_PRODUCTS)
-    discount_pct = np.where(rng.random(N_PRODUCTS) > 0.7,
-                             rng.choice([5, 10, 15, 20, 25, 30, 40, 50], N_PRODUCTS), 0)
+    discount_pct = np.where(
+        rng.random(N_PRODUCTS) > 0.7,
+        rng.choice([5, 10, 15, 20, 25, 30, 40, 50], N_PRODUCTS),
+        0,
+    )
 
-    df = pd.DataFrame({
-        "product_id": [f"P{str(i).zfill(4)}" for i in range(N_PRODUCTS)],
-        "product_name": [f"{brands[i]} {categories[i]} #{i}" for i in range(N_PRODUCTS)],
-        "category": categories,
-        "brand": brands,
-        "price": prices,
-        "avg_rating": ratings,
-        "num_ratings": n_ratings,
-        "stock_quantity": stock,
-        "discount_pct": discount_pct,
-        "is_featured": (rng.random(N_PRODUCTS) > 0.9).astype(int),
-        "weight_kg": np.clip(rng.lognormal(0, 1, N_PRODUCTS), 0.05, 50).round(2),
-    })
+    df = pd.DataFrame(
+        {
+            "product_id": [f"P{str(i).zfill(4)}" for i in range(N_PRODUCTS)],
+            "product_name": [
+                f"{brands[i]} {categories[i]} #{i}" for i in range(N_PRODUCTS)
+            ],
+            "category": categories,
+            "brand": brands,
+            "price": prices,
+            "avg_rating": ratings,
+            "num_ratings": n_ratings,
+            "stock_quantity": stock,
+            "discount_pct": discount_pct,
+            "is_featured": (rng.random(N_PRODUCTS) > 0.9).astype(int),
+            "weight_kg": np.clip(rng.lognormal(0, 1, N_PRODUCTS), 0.05, 50).round(2),
+        }
+    )
     return df
 
 
@@ -227,25 +310,36 @@ def generate_transactions(customers_df, products_df):
     amounts = (unit_prices * quantities).round(2)
 
     statuses = rng.choice(
-        ["completed", "completed", "completed", "completed",
-         "refunded", "cancelled", "pending"],
+        [
+            "completed",
+            "completed",
+            "completed",
+            "completed",
+            "refunded",
+            "cancelled",
+            "pending",
+        ],
         size=N_TRANSACTIONS,
     )
     payments = rng.choice(PAYMENT_METHODS, size=N_TRANSACTIONS, p=PAYMENT_WEIGHTS)
 
-    df = pd.DataFrame({
-        "transaction_id": [f"T{str(i).zfill(6)}" for i in range(N_TRANSACTIONS)],
-        "customer_id": txn_customers,
-        "product_id": txn_products,
-        "transaction_date": txn_dates,
-        "quantity": quantities,
-        "unit_price": unit_prices.round(2),
-        "total_amount": amounts,
-        "discount_applied": discounts,
-        "status": statuses,
-        "payment_method": payments,
-        "shipping_cost": np.where(amounts > 50, 0.0, rng.uniform(3.99, 9.99, N_TRANSACTIONS)).round(2),
-    })
+    df = pd.DataFrame(
+        {
+            "transaction_id": [f"T{str(i).zfill(6)}" for i in range(N_TRANSACTIONS)],
+            "customer_id": txn_customers,
+            "product_id": txn_products,
+            "transaction_date": txn_dates,
+            "quantity": quantities,
+            "unit_price": unit_prices.round(2),
+            "total_amount": amounts,
+            "discount_applied": discounts,
+            "status": statuses,
+            "payment_method": payments,
+            "shipping_cost": np.where(
+                amounts > 50, 0.0, rng.uniform(3.99, 9.99, N_TRANSACTIONS)
+            ).round(2),
+        }
+    )
     df = df.sort_values("transaction_date").reset_index(drop=True)
     df["transaction_date"] = df["transaction_date"].dt.strftime("%Y-%m-%d %H:%M:%S")
     return df
@@ -272,37 +366,54 @@ def generate_sessions(customers_df):
     pages_viewed = []
     for i in range(N_SESSIONS):
         seg = cust_segments[session_customers[i]]
-        base_dur = {"Budget Shopper": 180, "Regular": 300, "Premium": 420,
-                    "VIP": 600, "Occasional Visitor": 120}[seg]
+        base_dur = {
+            "Budget Shopper": 180,
+            "Regular": 300,
+            "Premium": 420,
+            "VIP": 600,
+            "Occasional Visitor": 120,
+        }[seg]
         device_mult = {"desktop": 1.2, "mobile": 0.8, "tablet": 1.0}[devices[i]]
         dur = max(10, int(rng.exponential(base_dur * device_mult)))
         durations.append(dur)
         pages_viewed.append(max(1, int(dur / rng.uniform(30, 90))))
 
     # Conversion (did the session lead to a purchase?)
-    conversion_probs = np.array([
-        {"Budget Shopper": 0.05, "Regular": 0.08, "Premium": 0.12,
-         "VIP": 0.18, "Occasional Visitor": 0.03}[cust_segments[c]]
-        for c in session_customers
-    ])
+    conversion_probs = np.array(
+        [
+            {
+                "Budget Shopper": 0.05,
+                "Regular": 0.08,
+                "Premium": 0.12,
+                "VIP": 0.18,
+                "Occasional Visitor": 0.03,
+            }[cust_segments[c]]
+            for c in session_customers
+        ]
+    )
     converted = (rng.random(N_SESSIONS) < conversion_probs).astype(int)
 
     # Bounce = very short session
     bounced = (np.array(durations) < 30).astype(int)
 
-    df = pd.DataFrame({
-        "session_id": [f"S{str(i).zfill(6)}" for i in range(N_SESSIONS)],
-        "customer_id": session_customers,
-        "session_date": session_dates,
-        "device": devices,
-        "channel": channels,
-        "duration_seconds": durations,
-        "pages_viewed": pages_viewed,
-        "converted": converted,
-        "bounced": bounced,
-        "cart_additions": np.where(converted, rng.integers(1, 6, N_SESSIONS),
-                                    rng.choice([0, 0, 0, 1, 2], N_SESSIONS)),
-    })
+    df = pd.DataFrame(
+        {
+            "session_id": [f"S{str(i).zfill(6)}" for i in range(N_SESSIONS)],
+            "customer_id": session_customers,
+            "session_date": session_dates,
+            "device": devices,
+            "channel": channels,
+            "duration_seconds": durations,
+            "pages_viewed": pages_viewed,
+            "converted": converted,
+            "bounced": bounced,
+            "cart_additions": np.where(
+                converted,
+                rng.integers(1, 6, N_SESSIONS),
+                rng.choice([0, 0, 0, 1, 2], N_SESSIONS),
+            ),
+        }
+    )
     df = df.sort_values("session_date").reset_index(drop=True)
     df["session_date"] = df["session_date"].dt.strftime("%Y-%m-%d %H:%M:%S")
     return df
@@ -363,16 +474,18 @@ def generate_reviews(customers_df, products_df):
     helpful_votes = rng.integers(0, 50, N_REVIEWS)
     verified = (rng.random(N_REVIEWS) > 0.2).astype(int)
 
-    df = pd.DataFrame({
-        "review_id": [f"R{str(i).zfill(5)}" for i in range(N_REVIEWS)],
-        "customer_id": review_customers,
-        "product_id": review_products,
-        "review_date": review_dates,
-        "rating": ratings,
-        "review_text": review_texts,
-        "helpful_votes": helpful_votes,
-        "verified_purchase": verified,
-    })
+    df = pd.DataFrame(
+        {
+            "review_id": [f"R{str(i).zfill(5)}" for i in range(N_REVIEWS)],
+            "customer_id": review_customers,
+            "product_id": review_products,
+            "review_date": review_dates,
+            "rating": ratings,
+            "review_text": review_texts,
+            "helpful_votes": helpful_votes,
+            "verified_purchase": verified,
+        }
+    )
     df = df.sort_values("review_date").reset_index(drop=True)
     df["review_date"] = df["review_date"].dt.strftime("%Y-%m-%d")
     return df
@@ -411,7 +524,9 @@ def main():
     print("Summary:")
     print(f"  customers.csv  : {len(customers):>8,} rows x {customers.shape[1]} cols")
     print(f"  products.csv   : {len(products):>8,} rows x {products.shape[1]} cols")
-    print(f"  transactions.csv: {len(transactions):>8,} rows x {transactions.shape[1]} cols")
+    print(
+        f"  transactions.csv: {len(transactions):>8,} rows x {transactions.shape[1]} cols"
+    )
     print(f"  sessions.csv   : {len(sessions):>8,} rows x {sessions.shape[1]} cols")
     print(f"  reviews.csv    : {len(reviews):>8,} rows x {reviews.shape[1]} cols")
 

@@ -93,9 +93,11 @@ def _build_spaceship_features(
             .dropna(subset=[value])
             .groupby(key, observed=False)[value]
             .agg(
-                lambda s: s.mode(dropna=True).iloc[0]
-                if not s.mode(dropna=True).empty
-                else s.iloc[0]
+                lambda s: (
+                    s.mode(dropna=True).iloc[0]
+                    if not s.mode(dropna=True).empty
+                    else s.iloc[0]
+                )
             )
         )
         return grouped.to_dict()

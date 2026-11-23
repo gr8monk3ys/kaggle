@@ -10,6 +10,7 @@ submission.csv in the competition's id,class format.
 Usage:
     python baseline.py --data-dir /kaggle/input/playground-series-s6e6 --out submission.csv
 """
+
 from __future__ import annotations
 
 import argparse
