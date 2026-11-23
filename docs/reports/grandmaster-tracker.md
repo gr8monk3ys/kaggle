@@ -1,7 +1,7 @@
 # Kaggle Grandmaster Tracker
 
 **Profile:** [kaggle.com/lorenzoscaturchio](https://www.kaggle.com/lorenzoscaturchio)
-**Last Updated:** 2026-11-16
+**Last Updated:** 2026-11-23
 
 > The counts below are from the last live sync (`./manage.sh sync`).
 > Discussion has no API and is read by hand from the profile.
@@ -80,7 +80,7 @@ boards).
 | Gold medals (50+ votes) | 15 | 0 |
 | Silver medals (20+ votes) | — | 0 |
 | Bronze medals (5+ votes) | — | 4 |
-| Total votes | — | 89 |
+| Total votes | — | 91 |
 
 Votes are spread at about one per notebook. Publishing an iteration as a new
 kernel splits its audience; version the existing one instead.
@@ -93,7 +93,7 @@ kernel splits its audience; version the existing one instead.
 | Silver medals (20+ votes) | — | 1 |
 | Bronze medals (5+ votes) | — | 1 |
 | Total votes | — | 59 |
-| Total downloads | — | 3301 |
+| Total downloads | — | 3365 |
 
 | Dataset | Votes | Downloads | Note |
 |---------|-------|-----------|------|
