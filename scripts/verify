@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Fast gate that Claude Code runs before a session can finish: `make verify`
+# (scripts/verify.sh), exactly what CI's `quality` job runs. Offline, no Kaggle
+# credentials. With uv it runs in a cached env holding CI's package list.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if command -v uv >/dev/null 2>&1; then
+  exec uv run --no-project --python 3.11 \
+    --with pytest --with pytest-cov --with pytest-mock --with requests \
+    --with pyyaml --with numpy --with pandas --with scikit-learn \
+    --with "kaggle<2" --with ruff \
+    bash scripts/verify.sh
+fi
+bash scripts/verify.sh
